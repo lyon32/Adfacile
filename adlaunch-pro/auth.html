@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Créez votre compte AdLaunch Pro pour commencer à gérer vos campagnes Facebook Business">
+    <title>Connexion - AdLaunch Pro</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--gradient-hero);
+            padding: var(--spacing-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .auth-box {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--shadow-xl);
+            padding: var(--spacing-2xl);
+            width: 100%;
+            max-width: 450px;
+            position: relative;
+            z-index: 1;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .auth-header .logo {
+            font-size: var(--font-size-3xl);
+            margin-bottom: var(--spacing-sm);
+            display: block;
+        }
+
+        .auth-header p {
+            color: var(--color-gray);
+            font-size: var(--font-size-sm);
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-xl);
+            background: var(--color-off-white);
+            padding: var(--spacing-xs);
+            border-radius: var(--radius-lg);
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: var(--spacing-sm);
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            color: var(--color-gray);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+
+        .auth-tab.active {
+            background: var(--color-white);
+            color: var(--color-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            font-weight: 600;
+            color: var(--color-dark);
+            font-size: var(--font-size-sm);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 2px solid var(--color-gray-light);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-base);
+            font-family: var(--font-family);
+            transition: all var(--transition-base);
+            background: var(--color-white);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .form-input.error {
+            border-color: var(--color-secondary);
+        }
+
+        .form-error {
+            color: var(--color-secondary);
+            font-size: var(--font-size-xs);
+            margin-top: var(--spacing-xs);
+            display: none;
+        }
+
+        .form-error.show {
+            display: block;
+        }
+
+        .password-strength {
+            margin-top: var(--spacing-xs);
+            height: 4px;
+            background: var(--color-gray-light);
+            border-radius: var(--radius-full);
+            overflow: hidden;
+            display: none;
+        }
+
+        .password-strength.show {
+            display: block;
+        }
+
+        .password-strength-bar {
+            height: 100%;
+            width: 0%;
+            transition: all var(--transition-base);
+            border-radius: var(--radius-full);
+        }
+
+        .password-strength-bar.weak {
+            width: 33%;
+            background: #ef4444;
+        }
+
+        .password-strength-bar.medium {
+            width: 66%;
+            background: #f59e0b;
+        }
+
+        .password-strength-bar.strong {
+            width: 100%;
+            background: #10b981;
+        }
+
+        .password-strength-text {
+            font-size: var(--font-size-xs);
+            margin-top: var(--spacing-xs);
+            color: var(--color-gray);
+        }
+
+        .form-checkbox {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .form-checkbox input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .form-checkbox label {
+            font-size: var(--font-size-sm);
+            color: var(--color-gray);
+            cursor: pointer;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: var(--spacing-md);
+            background: var(--gradient-primary);
+            color: var(--color-white);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-base);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            margin-top: var(--spacing-md);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg), var(--shadow-glow);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+
+
+        .back-link {
+            text-align: center;
+            margin-top: var(--spacing-lg);
+        }
+
+        .back-link a {
+            color: var(--color-primary);
+            font-weight: 600;
+            transition: color var(--transition-base);
+        }
+
+        .back-link a:hover {
+            color: var(--color-primary-dark);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .auth-box {
+                padding: var(--spacing-lg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <div class="auth-header">
+                <a href="index.html" class="logo">AdLaunch Pro</a>
+                <p>Gérez vos campagnes Facebook Business facilement</p>
+            </div>
+
+            <!-- Auth Tabs -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login">Connexion</button>
+                <button class="auth-tab" data-tab="register">Inscription</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="auth-form active">
+                <div class="form-group">
+                    <label class="form-label" for="loginEmail">Email</label>
+                    <input 
+                        type="email" 
+                        id="loginEmail" 
+                        class="form-input" 
+                        placeholder="votre@email.com"
+                        required
+                    >
+                    <div class="form-error" id="loginEmailError">Email invalide</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="loginPassword">Mot de passe</label>
+                    <input 
+                        type="password" 
+                        id="loginPassword" 
+                        class="form-input" 
+                        placeholder="••••••••"
+                        required
+                    >
+                    <div class="form-error" id="loginPasswordError">Mot de passe requis</div>
+                </div>
+
+                <div class="form-checkbox">
+                    <input type="checkbox" id="rememberMe">
+                    <label for="rememberMe">Se souvenir de moi</label>
+                </div>
+
+                <button type="submit" class="submit-btn">Se connecter</button>
+
+
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label class="form-label" for="registerName">Nom complet</label>
+                    <input 
+                        type="text" 
+                        id="registerName" 
+                        class="form-input" 
+                        placeholder="Jean Dupont"
+                        required
+                    >
+                    <div class="form-error" id="registerNameError">Nom requis</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="registerEmail">Email</label>
+                    <input 
+                        type="email" 
+                        id="registerEmail" 
+                        class="form-input" 
+                        placeholder="votre@email.com"
+                        required
+                    >
+                    <div class="form-error" id="registerEmailError">Email invalide</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="registerPhone">Numéro de téléphone</label>
+                    <input 
+                        type="tel" 
+                        id="registerPhone" 
+                        class="form-input" 
+                        placeholder="+237 6 12 34 56 78"
+                        required
+                    >
+                    <div class="form-error" id="registerPhoneError">Numéro requis</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="registerPassword">Mot de passe</label>
+                    <input 
+                        type="password" 
+                        id="registerPassword" 
+                        class="form-input" 
+                        placeholder="••••••••"
+                        required
+                    >
+                    <div class="password-strength" id="passwordStrength">
+                        <div class="password-strength-bar"></div>
+                    </div>
+                    <div class="password-strength-text" id="passwordStrengthText"></div>
+                    <div class="form-error" id="registerPasswordError">Mot de passe trop faible</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="registerPasswordConfirm">Confirmer le mot de passe</label>
+                    <input 
+                        type="password" 
+                        id="registerPasswordConfirm" 
+                        class="form-input" 
+                        placeholder="••••••••"
+                        required
+                    >
+                    <div class="form-error" id="registerPasswordConfirmError">Les mots de passe ne correspondent pas</div>
+                </div>
+
+                <div class="form-checkbox">
+                    <input type="checkbox" id="acceptTerms" required>
+                    <label for="acceptTerms">J'accepte les conditions d'utilisation</label>
+                </div>
+
+                <button type="submit" class="submit-btn">Créer mon compte</button>
+
+
+            </form>
+
+            <div class="back-link">
+                <a href="index.html">← Retour à l'accueil</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script src="auth.js"></script>
+</body>
+</html>
