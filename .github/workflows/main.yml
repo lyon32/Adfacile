@@ -27,20 +27,21 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install Backend Dependencies
         working-directory: ./backend
         run: npm ci
 
       - name: Install Frontend Dependencies
-        working-directory: ./frontend
+        working-directory: ./
         run: npm ci
 
       - name: Lint Backend
@@ -48,11 +49,11 @@ jobs:
         run: npm run lint
 
       - name: Lint Frontend
-        working-directory: ./frontend
+        working-directory: ./
         run: npm run lint
 
       - name: Type Check (if TypeScript)
-        working-directory: ./frontend
+        working-directory: ./
         run: npm run type-check
         continue-on-error: true
 
@@ -66,15 +67,16 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install Dependencies
         run: |
@@ -86,7 +88,7 @@ jobs:
         run: npm audit --audit-level=high
 
       - name: Audit Frontend Dependencies
-        working-directory: ./frontend
+        working-directory: ./
         run: npm audit --audit-level=high
 
       - name: Scan for Secrets (TruffleHog)
@@ -97,7 +99,7 @@ jobs:
           head: HEAD
 
       - name: CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
         with:
           languages: javascript
 
@@ -113,7 +115,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || 'postgres' }}
           POSTGRES_DB: adsfacile_test
         options: >-
           --health-cmd pg_isready
@@ -131,13 +133,14 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install Backend Dependencies
         working-directory: ./backend
@@ -147,15 +150,15 @@ jobs:
         working-directory: ./backend
         run: npm run migrate:test
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/adsfacile_test
+          DATABASE_URL: postgresql://postgres:${{ secrets.POSTGRES_PASSWORD || 'postgres' }}@localhost:5432/adsfacile_test
 
       - name: Run Backend Unit Tests
         working-directory: ./backend
         run: npm run test:unit -- --coverage
         env:
           NODE_ENV: test
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/adsfacile_test
-          JWT_SECRET: test-secret-minimum-32-characters-long
+          DATABASE_URL: postgresql://postgres:${{ secrets.POSTGRES_PASSWORD || 'postgres' }}@localhost:5432/adsfacile_test
+          JWT_SECRET: ${{ secrets.TEST_JWT_SECRET || 'test-secret-that-is-public-and-safe-for-ci-testing' }}
           REDIS_URL: redis://localhost:6379
 
       - name: Run Backend Integration Tests
@@ -163,19 +166,19 @@ jobs:
         run: npm run test:integration
         env:
           NODE_ENV: test
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/adsfacile_test
-          JWT_SECRET: test-secret-minimum-32-characters-long
+          DATABASE_URL: postgresql://postgres:${{ secrets.POSTGRES_PASSWORD || 'postgres' }}@localhost:5432/adsfacile_test
+          JWT_SECRET: ${{ secrets.TEST_JWT_SECRET || 'test-secret-that-is-public-and-safe-for-ci-testing' }}
 
       - name: Install Frontend Dependencies
-        working-directory: ./frontend
+        working-directory: ./
         run: npm ci
 
       - name: Run Frontend Unit Tests
-        working-directory: ./frontend
+        working-directory: ./
         run: npm run test -- --coverage
 
       - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v3 # v4 requires token, staying on v3 for now if token not available
         with:
           files: |
             ./backend/coverage/lcov.info
@@ -192,16 +195,17 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install & Build Frontend
-        working-directory: ./frontend
+        working-directory: ./
         run: |
           npm ci
           npm run build
@@ -210,7 +214,7 @@ jobs:
           VITE_FACEBOOK_APP_ID: ${{ secrets.VITE_FACEBOOK_APP_ID }}
 
       - name: Upload Frontend Build Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-build
           path: frontend/dist
@@ -242,7 +246,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Deploy Backend to Railway (Staging)
         uses: bervProject/railway-deploy@main
@@ -256,10 +260,10 @@ jobs:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./frontend
+          working-directory: ./
 
       - name: Run E2E Tests on Staging
-        uses: cypress-io/github-action@v5
+        uses: cypress-io/github-action@v6
         with:
           working-directory: ./e2e
           config: baseUrl=https://staging.adsfacile.cm
@@ -294,12 +298,13 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Create Supabase Backup
         run: |
           echo "Creating DB backup before deploy..."
-          curl -X POST "${{ secrets.SUPABASE_MANAGEMENT_URL }}/v1/projects/${{ secrets.SUPABASE_PROJECT_ID }}/database/backups" \
+          # Note: Ensure SUPABASE_MANAGEMENT_URL is correct for your setup
+          curl -X POST "${{ secrets.SUPABASE_MANAGEMENT_URL || 'https://api.supabase.com' }}/v1/projects/${{ secrets.SUPABASE_PROJECT_ID }}/database/backups" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ACCESS_TOKEN }}"
 
       - name: Deploy Backend to Railway (Production)
@@ -315,7 +320,7 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: '--prod'
-          working-directory: ./frontend
+          working-directory: ./
 
       - name: Health Check
         run: |
@@ -329,12 +334,12 @@ jobs:
           BASE_URL: https://api.adsfacile.cm
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ github.run_number }}
-          release_name: Release v${{ github.run_number }}
+          name: Release v${{ github.run_number }}
           body: |
             ## Changes
             ${{ github.event.head_commit.message }}
@@ -370,3 +375,4 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+

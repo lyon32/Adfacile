@@ -5,7 +5,11 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "lint": "echo \"No linting configured yet\" && exit 0",
+    "test:unit": "echo \"No unit tests yet\" && exit 0",
+    "test:integration": "echo \"No integration tests yet\" && exit 0",
+    "migrate:test": "echo \"No migration tests yet\" && exit 0"
   },
   "keywords": [
     "adsfacile",
@@ -23,7 +27,12 @@
     "express": "^4.18.2",
     "express-rate-limit": "^8.2.1",
     "express-validator": "^7.0.1",
-    "jsonwebtoken": "^9.0.2"
+    "helmet": "^8.1.0",
+    "hpp": "^0.2.3",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "winston": "^3.19.0",
+    "xss-clean": "^0.1.4"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
