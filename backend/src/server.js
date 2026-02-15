@@ -6,6 +6,12 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const hpp = require('hpp');
+const xss = require('xss-clean');
+const rateLimit = require('express-rate-limit');
+const morgan = require('morgan');
+const logger = require('./utils/logger');
 
 // Import des routes
 const authRoutes = require('./routes/auth');
@@ -15,22 +21,48 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MIDDLEWARES
+// MIDDLEWARES DE SÉCURITÉ
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// CORS - Autoriser les requêtes du frontend
-// Supporte plusieurs origines : FRONTEND_URL peut être une liste séparée par des virgules
+// Helmet - Sécurisation des en-têtes HTTP
+app.use(helmet());
+
+// Logging HTTP avec Morgan (connecté à Winston)
+app.use(morgan('combined', { stream: { write: (message) => logger.http(message.trim()) } }));
+
+// Rate Limiting - Limiter les requêtes répétées
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limite chaque IP à 100 requêtes par fenêtre
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Trop de requêtes créées à partir de cette IP, veuillez réessayer après 15 minutes',
+});
+app.use(limiter);
+
+// Rate Limiting spécifique pour l'authentification (plus strict)
+const authLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 heure
+  max: 5, // 5 tentatives de connexion par heure
+  message: 'Trop de tentatives de connexion, veuillez réessayer après une heure',
+});
+app.use('/api/auth/login', authLimiter);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MIDDLEWARES GÉNÉRAUX
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// CORS
 const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173,http://localhost:3000')
   .split(',')
   .map(url => url.trim());
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Autoriser les requêtes sans origin (curl, healthcheck, etc.)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.warn(`⚠️ CORS bloqué pour origin: ${origin}`);
+      logger.warn(`⚠️ CORS bloqué pour origin: ${origin}`);
       callback(new Error('Non autorisé par CORS'));
     }
   },
@@ -45,46 +77,24 @@ app.use(express.json({ limit: '10mb' }));
 // Parser URL-encoded
 app.use(express.urlencoded({ extended: true }));
 
-// Logger des requêtes (développement)
-if (process.env.NODE_ENV === 'development') {
-  app.use((req, res, next) => {
-    console.log(`📥 ${req.method} ${req.path}`);
-    next();
-  });
-}
+// Data Sanitization
+app.use(xss()); // Protection contre XSS
+app.use(hpp()); // Protection contre HTTP Parameter Pollution
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ROUTES
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// Route racine - page d'accueil API
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: '🚀 AdsFacile API',
+    message: '🚀 AdsFacile API Secure',
     version: '1.0.0',
-    docs: '/api/health',
-    routes: {
-      health: 'GET /api/health',
-      signup: 'POST /api/auth/signup',
-      login: 'POST /api/auth/login',
-      forgotPassword: 'POST /api/auth/forgot-password',
-      resetPassword: 'POST /api/auth/reset-password'
-    }
+    docs: '/api/health'
   });
 });
 
-// Route de santé (Docker healthcheck + monitoring)
-app.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'AdsFacile API is running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    uptime: process.uptime()
-  });
-});
-
+app.get('/health', (req, res) => res.status(200).json({ status: 'UP' }));
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,
@@ -95,15 +105,15 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Routes d'authentification
 app.use('/api/auth', authRoutes);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GESTION DES ERREURS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// Route 404
+// 404
 app.use((req, res) => {
+  logger.warn(`Route non trouvée: ${req.method} ${req.path}`);
   res.status(404).json({
     success: false,
     message: 'Route non trouvée',
@@ -111,37 +121,24 @@ app.use((req, res) => {
   });
 });
 
-// Gestionnaire d'erreurs global
+// Global Error Handler
 app.use((err, req, res, next) => {
-  console.error('❌ Erreur serveur:', err);
-
+  logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
+  
   res.status(err.status || 500).json({
     success: false,
-    message: process.env.NODE_ENV === 'development' 
-      ? err.message 
-      : 'Une erreur est survenue',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Une erreur est survenue',
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DÉMARRAGE DU SERVEUR
+// DÉMARRAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 
 app.listen(PORT, () => {
-  console.log('═══════════════════════════════════════════════════════════════');
-  console.log(`🚀 AdsFacile Backend API`);
-  console.log(`📡 Port: ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-  console.log('═══════════════════════════════════════════════════════════════');
-  console.log('📋 Routes disponibles:');
-  console.log('   GET  /api/health              - Vérification santé API');
-  console.log('   POST /api/auth/signup         - Inscription utilisateur');
-  console.log('   POST /api/auth/login          - Connexion utilisateur');
-  console.log('   POST /api/auth/forgot-password - Mot de passe oublié');
-  console.log('   POST /api/auth/reset-password  - Réinitialiser mot de passe');
-  console.log('═══════════════════════════════════════════════════════════════');
+  logger.info(`🚀 AdsFacile Backend API running on port ${PORT}`);
+  logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
 module.exports = app;
