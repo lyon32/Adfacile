@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
-import { 
-  ArrowRight, 
-  Facebook, 
-  Target, 
-  BarChart3, 
-  Zap, 
-  TrendingUp, 
-  Clock, 
+import {
+  ArrowRight,
+  Facebook,
+  Target,
+  BarChart3,
+  Zap,
+  TrendingUp,
+  Clock,
   Users,
   ShoppingBag,
   UtensilsCrossed,
@@ -124,24 +124,24 @@ const HeroSection = () => {
 };
 
 const StatsSection = () => {
-  const stat1 = useCounter(10000, 2000);
-  const stat2 = useCounter(45, 1500);
-  const stat3 = useCounter(5, 1000);
+  const { count: count1, ref: ref1 } = useCounter(10000, 2000);
+  const { count: count2, ref: ref2 } = useCounter(45, 1500);
+  const { count: count3, ref: ref3 } = useCounter(5, 1000);
 
   return (
     <section className="stats section-alt">
       <div className="container">
         <div className="stats-grid">
-          <div className="stat-item" ref={stat1.ref}>
-            <div className="stat-number">{stat1.count.toLocaleString()}+</div>
+          <div className="stat-item" ref={ref1}>
+            <div className="stat-number">{count1.toLocaleString()}+</div>
             <div className="stat-label">Campagnes créées</div>
           </div>
-          <div className="stat-item" ref={stat2.ref}>
-            <div className="stat-number">{stat2.count}%</div>
+          <div className="stat-item" ref={ref2}>
+            <div className="stat-number">{count2}%</div>
             <div className="stat-label">Réduction du CPC moyen</div>
           </div>
-          <div className="stat-item" ref={stat3.ref}>
-            <div className="stat-number">{stat3.count} min</div>
+          <div className="stat-item" ref={ref3}>
+            <div className="stat-number">{count3} min</div>
             <div className="stat-label">Pour créer une campagne</div>
           </div>
         </div>
@@ -455,8 +455,8 @@ const PricingSection = () => {
         </div>
         <div className={`pricing-grid ${isVisible ? 'visible' : ''}`}>
           {plans.map((plan, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className={`pricing-card ${plan.featured ? 'featured' : ''}`}
               style={{ animationDelay: `${index * 0.15}s` }}
             >
@@ -475,8 +475,8 @@ const PricingSection = () => {
                   </li>
                 ))}
               </ul>
-              <Link 
-                to="/contact" 
+              <Link
+                to="/contact"
                 className={`btn ${plan.featured ? 'btn-primary' : 'btn-outline'}`}
                 style={{ width: '100%' }}
               >
@@ -533,12 +533,12 @@ const FAQSection = () => {
         </div>
         <div className={`faq-container ${isVisible ? 'visible' : ''}`}>
           {faqs.map((faq, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className={`faq-item ${openIndex === index ? 'open' : ''}`}
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <button 
+              <button
                 className="faq-question"
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
               >
