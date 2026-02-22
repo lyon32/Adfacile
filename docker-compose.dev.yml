@@ -1,14 +1,14 @@
 # ═══════════════════════════════════════════════════════════════
 # AdsFacile - Docker Compose DÉVELOPPEMENT
-# Lance tout le stack local avec: docker compose -f docker-compose.dev.yml up
+# Lance tout le stack local avec: docker compose -f docker-compose.dev.yml up --build
 # ═══════════════════════════════════════════════════════════════
 
 services:
-  # ── Backend Node.js (avec hot reload) ──
+  # ── Backend Node.js (avec hot reload via nodemon) ──
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: adsfacile-backend
     ports:
       - "5000:5000"
@@ -19,46 +19,30 @@ services:
     volumes:
       # Monte le code source pour hot reload
       - ./backend/src:/app/src
-    depends_on:
-      redis:
-        condition: service_healthy
     restart: unless-stopped
     networks:
       - adsfacile-net
 
-  # ── Frontend React (Vite dev server) ──
+  # ── Frontend React (Vite dev server avec hot reload) ──
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: adsfacile-frontend
     ports:
-      - "3000:80"
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+    volumes:
+      # Monte le code source pour hot reload
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./index.html:/app/index.html
     depends_on:
       - backend
     restart: unless-stopped
     networks:
       - adsfacile-net
-
-  # ── Redis (cache & rate limiting) ──
-  redis:
-    image: redis:7-alpine
-    container_name: adsfacile-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    networks:
-      - adsfacile-net
-
-volumes:
-  redis-data:
 
 networks:
   adsfacile-net:

@@ -1,0 +1,20 @@
+# ═══════════════════════════════════════════════════════════════
+# AdsFacile Backend - Dockerfile DEV
+# Node.js avec nodemon pour hot reload
+# ═══════════════════════════════════════════════════════════════
+
+FROM node:20-alpine
+WORKDIR /app
+
+# Installer toutes les dépendances (y compris devDependencies pour nodemon)
+COPY package*.json ./
+RUN npm ci
+
+# Copier le code source
+COPY . .
+
+ENV NODE_ENV=development
+EXPOSE 5000
+
+# Lancer avec nodemon pour le hot reload
+CMD ["npm", "run", "dev"]
