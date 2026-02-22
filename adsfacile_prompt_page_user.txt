@@ -1,0 +1,884 @@
+﻿ADSFACILE
+PROMPT ANTIGRAVITY - PAGE UTILISATEUR GRATUIT
+Création étape par étape • Fonctionnalités gratuites & payantes • API IA recommandée
+⚡ GRATUIT - Accès limité💎 PRO - 12,000 FCFA/mois🏢 AGENCY - 30,000 FCFA/mois
+PARTIE 1 - QUELLE API IA UTILISER ?
+🎯 Contexte d'utilisation
+AdsFacile utilise l'IA pour 3 choses précises :
+  1. Génération de textes publicitaires (3 variations)
+  2. Propositions de ciblage (audience, âge, intérêts) selon la niche
+  3. Analyse de texte / contenu pour recommandations (plan PRO/Agency)
+
+Ces appels IA sont courts (300-800 tokens input, 400-600 tokens output).
+Volume estimé : 50-500 appels/jour en phase bêta, 5000+/jour à l'échelle.
+1.1 Comparatif APIs IA - Coût pour AdsFacile
+API / ModèleInput (1M tok)Output (1M tok)Coût / 1000 appelsVerdictGemini 1.5 Flash$0.075$0.30~$0.08 (52 FCFA)🥇 MEILLEUR PRIXClaude Haiku 3.5$0.80$4.00~$0.45 (292 FCFA)🥈 QUALITÉ/PRIXGPT-4o Mini$0.15$0.60~$0.12 (78 FCFA)🥉 BONClaude Sonnet 3.5$3.00$15.00~$2.20 (1430 FCFA)❌ TROP CHERGPT-4o$2.50$10.00~$1.80 (1170 FCFA)❌ TROP CHER
+✅ RECOMMANDATION FINALE - STRATÉGIE HYBRIDE
+PLAN GRATUIT → Gemini 1.5 Flash (Google)
+  • Le moins cher du marché ($0.075/M tokens input)
+  • Qualité suffisante pour textes simples
+  • Gratuit jusqu'à 1500 requêtes/jour (quota Google AI Studio)
+  • Idéal pour limiter coûts en phase bêta
+
+PLAN PRO/AGENCY → Claude Haiku 3.5 (Anthropic)
+  • Meilleure qualité textes publicitaires en français
+  • Comprend mieux le contexte africain/camerounais
+  • Output plus créatif et pertinent pour ciblage
+  • Prix raisonnable vs qualité obtenue
+1.2 Configuration API Gemini (Gratuit / Plan Free)
+// .env
+GEMINI_API_KEY=votre_cle_google_ai_studio
+GEMINI_MODEL=gemini-1.5-flash
+
+// services/aiService.js
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+async function generateAdText({ product, niche, audience, tone }) {
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const prompt = `Tu es expert en publicités Facebook pour PME africaines.
+  Génère 3 textes publicitaires pour :
+  - Produit/Service : ${product}
+  - Secteur : ${niche}
+  - Audience cible : ${audience}
+  - Ton souhaité : ${tone}
+  Format JSON : [{text, headline, cta}]`;
+  const result = await model.generateContent(prompt);
+  return JSON.parse(result.response.text());
+}
+
+// Coût estimé : $0 jusqu'à 1500 req/jour (quota gratuit Google)
+1.3 Configuration API Claude Haiku (Plan PRO/Agency)
+// .env
+ANTHROPIC_API_KEY=votre_cle_anthropic
+CLAUDE_MODEL=claude-haiku-4-5-20251001
+
+// services/aiServicePro.js
+const Anthropic = require('@anthropic-ai/sdk');
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+async function generateAdTextPro({ product, niche, audience, budget, city }) {
+  const msg = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 1024,
+    messages: [{
+      role: 'user',
+      content: `Expert Facebook Ads Afrique. Génère 3 variations pub pour:
+      Business: ${product} | Niche: ${niche}
+      Ville: ${city} | Budget: ${budget} FCFA/jour
+      Audience: ${audience}
+      Inclure: texte, titre, CTA, ciblage suggéré (âge, intérêts)
+      Format: JSON valide uniquement.`
+    }]
+  });
+  return JSON.parse(msg.content[0].text);
+}
+
+// Coût estimé : ~292 FCFA / 1000 appels
+PARTIE 2 - PROMPT ANTIGRAVITY : PAGE UTILISATEUR
+📋 Instructions d'utilisation
+Ce prompt est divisé en 6 étapes. Copiez chaque étape SÉPARÉMENT dans Antigravity.
+Attendez que chaque étape soit complète avant de passer à la suivante.
+Les fonctionnalités marquées 🔒 PAYANT sont visibles mais bloquées pour les users gratuits.
+Les fonctionnalités marquées ✅ GRATUIT sont pleinement accessibles.
+📝 ÉTAPE 1 - BACKEND : ROUTES & CONTRÔLEUR PROFIL
+Durée estimée : 4-6 heures
+COPIEZ CE PROMPT DANS ANTIGRAVITY :
+Crée le backend Node.js + Express + Supabase pour la page profil
+utilisateur d'AdsFacile. Stack : Node.js, Express, Supabase, Multer,
+Sharp, Cloudflare R2 (ou Supabase Storage).
+
+=== FICHIERS À CRÉER ===
+
+1. /controllers/userController.js
+   Fonctions ASYNC avec try/catch :
+
+   getProfile(req, res) :
+   - SELECT id, email, phone, first_name, last_name, business_name,
+     niche, city, bio, profile_picture_url, plan, ai_credits,
+     email_verified, created_at, last_login
+   - FROM users WHERE id = req.user.id
+   - Retourner 200 + user data (SANS password_hash)
+
+   updateProfile(req, res) :
+   - Champs autorisés : first_name, last_name, business_name, niche,
+     city, bio (max 500 chars)
+   - Validation : first_name/last_name max 100 chars, niche dans
+     whitelist ['Restaurant','Mode','Tech','Formation','Santé',
+     'Beauté','Agriculture','Immobilier','Transport','Autre']
+   - UPDATE users SET ... WHERE id = req.user.id
+   - Log dans audit_logs : action='profile_updated'
+   - Retourner 200 + updated user
+
+   updateEmail(req, res) :
+   - Valider nouveau email (format + unique en base)
+   - Vérifier password actuel (bcrypt.compare)
+   - Générer token vérification email (crypto.randomBytes(32))
+   - Stocker dans email_verification_token (hashed sha256)
+   - Envoyer email confirmation (Brevo ou console.log dev)
+   - NE PAS changer email avant confirmation
+   - Retourner 200 + message 'Email de confirmation envoyé'
+   - PLAN REQUIS : Tous plans (gratuit inclus)
+
+   updatePhone(req, res) :
+   - Valider format +237XXXXXXXXX
+   - Vérifier unicité en base
+   - PLAN REQUIS : Tous plans
+   - Retourner 200 + updated phone
+
+   uploadProfilePicture(req, res) :
+   - Utiliser Multer (memStorage, max 2MB, jpeg/png/webp uniquement)
+   - Resize avec Sharp : 200x200px, format webp, qualité 80
+   - Upload vers Supabase Storage bucket 'avatars'
+   - Path : avatars/{user_id}.webp
+   - UPDATE users SET profile_picture_url = url publique
+   - Retourner 200 + { profile_picture_url }
+
+   deleteAccount(req, res) :
+   - Vérifier password actuel
+   - Vérifier aucun abonnement actif (si oui, demander annulation d'abord)
+   - Hard DELETE users WHERE id (CASCADE supprime tout)
+   - Supprimer avatar Supabase Storage
+   - Retourner 200 + message
+
+   getPlanLimits(req, res) :
+   - Retourner limits selon plan de l'user :
+     free    : { campaigns: 1, ai_credits: 3, analytics: false,
+                 competitor: false, website_audit: false,
+                 export_pdf: false, multi_account: false }
+     starter : { campaigns: 5, ai_credits: 20, analytics: 'basic',
+                 competitor: false, website_audit: 1,
+                 export_pdf: true, multi_account: false }
+     pro     : { campaigns: 999, ai_credits: 999,
+                 analytics: 'advanced', competitor: true,
+                 website_audit: 999, export_pdf: true,
+                 multi_account: true }
+     agency  : { tout illimité + white_label: true }
+
+2. /validators/userValidators.js
+   Créer avec express-validator :
+   validateUpdateProfile : [body('first_name').trim().isLength({max:100}),
+     body('last_name').trim().isLength({max:100}),
+     body('bio').isLength({max:500}).optional(),
+     body('niche').isIn([...liste niches]).optional()]
+   validateUpdateEmail : [body('new_email').isEmail().normalizeEmail(),
+     body('password').notEmpty()]
+
+3. /routes/users.js
+   GET    /api/users/me               → getProfile
+   PUT    /api/users/me               → updateProfile
+   PUT    /api/users/me/email         → updateEmail
+   PUT    /api/users/me/phone         → updatePhone
+   POST   /api/users/me/avatar        → uploadProfilePicture
+   DELETE /api/users/me               → deleteAccount
+   GET    /api/users/me/plan-limits   → getPlanLimits
+
+   Tous les routes : middleware authenticate obligatoire
+
+4. /middleware/checkPlan.js
+   Créer HOF checkPlan(requiredPlan) :
+   - Si user.plan < requiredPlan → 403 +
+     { error: 'upgrade_required', current: plan, required: requiredPlan,
+       upgrade_url: '/pricing' }
+   Usage : router.get('/competitor', authenticate, checkPlan('pro'), handler)
+
+SÉCURITÉ OBLIGATOIRE :
+- Tous endpoints : middleware authenticate (vérif JWT)
+- Rate limit upload avatar : 5 requêtes/heure
+- Validation côté serveur de TOUS les inputs
+- JAMAIS retourner password_hash dans responses
+- Audit log pour : profile_updated, email_change_requested,
+  avatar_uploaded, account_deleted
+
+RETOURNER uniquement les fichiers créés avec le code complet.
+🎨 ÉTAPE 2 - FRONTEND : COMPOSANT PAGE PROFIL (GRATUIT)
+Durée estimée : 5-7 heures
+COPIEZ CE PROMPT DANS ANTIGRAVITY :
+Crée la page profil utilisateur pour AdsFacile.
+Stack : React + Vite + Tailwind CSS.
+Couleur principale : #10B981 (vert). Police : Inter.
+
+=== FICHIER PRINCIPAL : /pages/Profile.jsx ===
+
+Structure de la page (layout 2 colonnes sur desktop,
+1 colonne sur mobile) :
+
+COLONNE GAUCHE (1/3) - Carte profil :
+┌─────────────────────────────────┐
+│  [Avatar 100x100 + btn upload] │
+│  Prénom Nom                     │
+│  [Badge PLAN : GRATUIT]         │
+│  📧 email@exemple.com           │
+│  📱 +237 6XX XXX XXX            │
+│  🏙️ Douala                      │
+│  🗓️ Membre depuis Jan 2026      │
+│  ─────────────────────────      │
+│  Mes Limites (plan actuel) :    │
+│  ✅ 1 campagne / mois           │
+│  ✅ 3 crédits IA                │
+│  🔒 Analytics avancés (PRO)     │
+│  🔒 Analyse concurrence (PRO)   │
+│  🔒 Audit site web (Starter+)   │
+│  🔒 Export PDF (Starter+)       │
+│  ─────────────────────────      │
+│  [🚀 Passer à PRO - 12K FCFA]  │
+└─────────────────────────────────┘
+
+COLONNE DROITE (2/3) - Formulaire avec onglets :
+
+ONGLETS : [Infos personnelles] [Sécurité] [Notifications] [Danger Zone]
+
+──── ONGLET 1 : INFOS PERSONNELLES ────
+Formulaire avec ces champs :
+- Prénom (input, max 100)
+- Nom (input, max 100)
+- Nom de l'entreprise (input, max 255)
+- Secteur d'activité (select) :
+  Options : Restaurant, Mode / Vêtements, Tech / Informatique,
+  Formation / Education, Santé / Beauté, Agriculture, Immobilier,
+  Transport / Livraison, E-commerce, Autre
+- Ville (select) : Douala, Yaoundé, Bafoussam, Garoua,
+  Bamenda, Maroua, Ngaoundéré, Edéa, Kribi, Autre
+- Bio (textarea 500 chars, compteur visible)
+- Bouton [Enregistrer les modifications] vert
+
+──── ONGLET 2 : SÉCURITÉ ────
+Section Changer Email :
+- Champ nouvel email
+- Champ mot de passe actuel (confirmation)
+- Bouton [Changer l'email]
+- Info : 'Un email de confirmation sera envoyé'
+
+Section Changer Téléphone :
+- Champ nouveau numéro (+237)
+- Bouton [Mettre à jour]
+
+Section Mot de passe :
+- Bouton [Réinitialiser le mot de passe]
+  (appelle POST /auth/forgot-password avec email actuel)
+
+Section 2FA (BADGE 🔒 STARTER+) :
+- Card grisée avec texte 'Authentification à 2 facteurs'
+- Badge '🔒 Disponible à partir du plan Starter'
+- Bouton désactivé [Activer la 2FA]
+- Lien [Voir les plans]
+
+──── ONGLET 3 : NOTIFICATIONS ────
+Toggles (tous activés par défaut pour gratuit) :
+- ✅ Email : Rapport hebdomadaire de mes campagnes
+- ✅ Email : Alerte si budget campagne épuisé
+- ✅ Email : Nouvelles fonctionnalités AdsFacile
+
+Section bloquée (🔒 PRO) avec overlay gris :
+- 🔒 WhatsApp : Alertes temps réel performances
+- 🔒 WhatsApp : Rapports journaliers automatiques
+- Badge 'Plan PRO requis' + bouton [Passer PRO]
+
+──── ONGLET 4 : DANGER ZONE ────
+Card rouge clair :
+- Titre 'Zone dangereuse' en rouge
+- 'Supprimer mon compte' → Modal confirmation :
+  * Avertissement conséquences (données supprimées définitivement)
+  * Champ : Tapez 'SUPPRIMER' pour confirmer
+  * Champ mot de passe
+  * Bouton rouge [Supprimer définitivement]
+
+=== COMPOSANT : /components/profile/AvatarUpload.jsx ===
+- Cercle 100x100 cliquable
+- Affiche photo si existe, sinon initiales user (fond vert)
+- Hover : overlay sombre + icône appareil photo
+- Click → input file (accept: image/jpeg,image/png,image/webp)
+- Validation client : taille max 2MB
+- Si taille > 2MB : toast erreur rouge
+- Preview immédiate avant upload (URL.createObjectURL)
+- Loading spinner pendant upload
+- POST /api/users/me/avatar (multipart/form-data)
+- Toast succès vert / erreur rouge
+
+=== COMPOSANT : /components/profile/PlanLimitsCard.jsx ===
+Reçoit en props : { plan, limits }
+Afficher liste features avec icônes :
+✅ = disponible (vert)  🔒 = payant (gris + badge plan requis)
+
+Features à afficher :
+{ label: 'Campagnes/mois',    free: '1',  starter: '5', pro: 'Illimité',  plan: 'free' }
+{ label: 'Crédits IA/mois',   free: '3',  starter: '20', pro: 'Illimité', plan: 'free' }
+{ label: 'Analytics avancés', free: false, starter: false, pro: true,      plan: 'pro' }
+{ label: 'Analyse concurrence',free:false, starter: false, pro: true,      plan: 'pro' }
+{ label: 'Audit site web',    free: false, starter: '1',  pro: 'Illimité', plan: 'starter' }
+{ label: 'Export PDF',        free: false, starter: true,  pro: true,      plan: 'starter' }
+{ label: 'Multi-comptes FB',  free: false, starter: false, pro: true,      plan: 'pro' }
+
+Si feature bloquée → afficher badge gris '🔒 [Plan requis]'
+  + tooltip au hover : 'Disponible avec le plan [X]'
+
+=== COMPOSANT : /components/profile/UpgradeBanner.jsx ===
+Banner gradient vert-bleu :
+'🚀 Débloquez toutes les fonctionnalités avec le plan PRO'
+Sous-titre : 'Campagnes illimitées, IA avancée, analytics détaillés'
+Prix : '12,000 FCFA / mois'  Bouton blanc [Passer à PRO]
+
+=== HOOKS : /hooks/useProfile.js ===
+- États : profile, loading, saving, activeTab
+- fetchProfile() : GET /api/users/me
+- updateProfile(data) : PUT /api/users/me
+- updateEmail(data) : PUT /api/users/me/email
+- updatePhone(data) : PUT /api/users/me/phone
+- fetchPlanLimits() : GET /api/users/me/plan-limits
+
+=== ÉTAT GLOBAL ===
+Après updateProfile réussi : mettre à jour AuthContext (user)
+Afficher toast succès : 'Profil mis à jour avec succès ✓'
+Afficher toast erreur si validation échoue
+
+=== RESPONSIVE ===
+Mobile (<768px) :
+- 1 colonne
+- Avatar centré
+- Onglets scrollables horizontalement
+Desktop (>768px) :
+- 2 colonnes (1/3 | 2/3)
+- Sticky sidebar gauche
+
+Retourner TOUS les fichiers avec code complet.
+Ne pas utiliser de librairies tierces (pas de React Hook Form,
+pas de Formik). Utiliser useState vanilla React.
+🤖 ÉTAPE 3 - IA GÉNÉRATION TEXTES (PLAN GRATUIT)
+Durée estimée : 4-5 heures
+COPIEZ CE PROMPT DANS ANTIGRAVITY :
+Crée le système de génération de textes IA pour AdsFacile.
+Plan GRATUIT : 3 crédits/mois via Gemini 1.5 Flash (API Google).
+Plan PRO+ : Illimité via Claude Haiku 3.5 (API Anthropic).
+
+=== BACKEND ===
+
+1. /services/aiTextService.js
+
+   generateAdText({ userId, product, niche, audience, tone, city }) :
+   a) Vérifier crédits IA user (SELECT ai_credits FROM users WHERE id=userId)
+   b) Si plan='free' et ai_credits <= 0 :
+      → Retourner 403 { error: 'credits_exhausted',
+        message: 'Vos 3 crédits IA gratuits sont épuisés.',
+        upgrade_url: '/pricing', credits_reset: '1er du mois prochain' }
+   c) Choisir API selon plan :
+      - free/starter → Gemini 1.5 Flash
+      - pro/agency   → Claude Haiku 3.5
+   d) Construire prompt :
+      SYSTEM: 'Tu es expert en publicités Facebook pour entrepreneurs
+      africains. Génère des textes adaptés au marché camerounais,
+      en français naturel, avec expressions locales si pertinent.
+      Format de réponse : JSON valide UNIQUEMENT, pas de markdown.'
+      USER: voir template ci-dessous
+   e) Appel API (Gemini OU Claude)
+   f) Parser JSON response
+   g) Décrémenter ai_credits (-1)
+   h) INSERT INTO ai_generations (type='ad_text', input, output, model_used)
+   i) Retourner { variations: [...], credits_remaining: N }
+
+   TEMPLATE PROMPT :
+   'Génère 3 variations de texte publicitaire Facebook pour :
+   - Business : {product}
+   - Secteur : {niche}
+   - Ville cible : {city}
+   - Audience : {audience}
+   - Ton : {tone} (friendly/professional/urgent/local)
+   
+   Retourne EXACTEMENT ce JSON :
+   [{
+     "variation": 1,
+     "ad_text": "texte principal max 150 mots",
+     "headline": "titre accrocheur max 40 chars",
+     "description": "sous-titre max 25 mots",
+     "cta": "En savoir plus|Acheter maintenant|Nous contacter|S'inscrire",
+     "emoji_used": ["🎯","✅"],
+     "target_keywords": ["mot1","mot2"]
+   }]'
+
+   generateAudienceTargeting({ userId, niche, city, budget }) :
+   a) Vérifier crédits IA (même logique que generateAdText)
+   b) Prompt pour propositions ciblage Facebook :
+      'Propose 3 stratégies de ciblage Facebook Ads pour :
+      - Secteur : {niche}
+      - Ville : {city}
+      - Budget journalier : {budget} FCFA
+      
+      Retourne JSON :
+      [{ strategy_name, age_min, age_max, gender,
+         interests: [], behaviors: [],
+         estimated_reach: "X,000 - Y,000",
+         recommended_budget: N,
+         why_this_works: "explication courte" }]'
+   c) Décrémenter crédits et logger
+
+   analyzeContentForPro({ userId, text, analysisType }) :
+   - PLAN PRO/AGENCY UNIQUEMENT
+   - Vérifier plan : if (user.plan === 'free' || user.plan === 'starter')
+     → 403 { error: 'upgrade_required', required: 'pro' }
+   - analysisType : 'competitor_ad' | 'my_performance' | 'audience_insight'
+   - Retourner analyse détaillée + recommandations
+
+2. /controllers/aiController.js
+   POST /api/ai/generate-text      → generateAdText
+   POST /api/ai/targeting          → generateAudienceTargeting
+   POST /api/ai/analyze (🔒 PRO)   → analyzeContentForPro
+   GET  /api/ai/credits            → { credits, plan, reset_date }
+
+=== FRONTEND ===
+
+3. /components/ai/AITextGenerator.jsx
+   (Intégré dans le wizard de création campagne - Étape 4 Creative)
+
+   Affichage si plan=free :
+   ┌────────────────────────────────────────┐
+   │ 🤖 Générer avec IA                     │
+   │ Crédits restants : [3/3] ██████ 100%   │
+   │                                         │
+   │ Produit/Service : [____________]        │
+   │ Ton : [Amical ▼]                        │
+   │                                         │
+   │ [🚀 Générer 3 variations]               │
+   │                                         │
+   │ ℹ️ 3 générations gratuites/mois          │
+   │ Besoin de plus ? → [Plan PRO]           │
+   └────────────────────────────────────────┘
+
+   Si crédits = 0 :
+   ┌────────────────────────────────────────┐
+   │ ⚠️ Crédits IA épuisés ce mois          │
+   │ Réinitialisation le 1er mars 2026       │
+   │ [Passer à PRO pour crédits illimités]  │
+   └────────────────────────────────────────┘
+
+   Après génération : afficher 3 cards :
+   [Variation 1 | Variation 2 | Variation 3]
+   Chaque card : texte + headline + CTA + [Utiliser cette variation]
+
+4. /components/ai/AITargetingHelper.jsx
+   Bouton '🎯 Suggérer une audience' dans Step2Audience du wizard
+   Modal avec 3 propositions de ciblage générées par IA
+   Bouton [Appliquer] sur chaque proposition
+
+5. /components/ai/AIAnalyzer.jsx (🔒 PRO)
+   Composant affiché mais bloqué pour plan free/starter :
+   Card grisée avec :
+   - Titre : 'Analyse IA avancée'
+   - Description : 'Analysez vos concurrents, comprenez vos performances'
+   - Overlay semi-transparent avec badge '🔒 Plan PRO requis'
+   - Bouton [Débloquer avec PRO - 12,000 FCFA/mois]
+
+Retourner TOUS les fichiers avec code complet.
+💳 ÉTAPE 4 - TABLEAU DE BORD PLAN & UPGRADE
+Durée estimée : 4-5 heures
+COPIEZ CE PROMPT DANS ANTIGRAVITY :
+Crée la page de gestion du plan et upgrade pour AdsFacile.
+Stack : React + Tailwind + Node.js backend.
+
+=== BACKEND ===
+
+1. /controllers/billingController.js
+
+   getPricingPlans(req, res) :
+   Retourner JSON des plans (pas de DB, hardcodé) :
+   [
+     { id:'free', name:'Gratuit', price:0, currency:'FCFA',
+       period:'toujours',
+       features:[
+         '1 campagne Facebook/mois',
+         '3 crédits IA/mois',
+         'Dashboard stats basiques',
+         'Connexion 1 compte Facebook',
+         'Support email'
+       ],
+       limits:{ campaigns:1, ai_credits:3, accounts:1 }
+     },
+     { id:'starter', name:'Starter', price:5000, currency:'FCFA',
+       period:'mois',
+       features:[
+         '5 campagnes/mois',
+         '20 crédits IA/mois',
+         'Audit site web (1/mois)',
+         'Export rapports PDF',
+         'Support prioritaire'
+       ],
+       limits:{ campaigns:5, ai_credits:20, accounts:1 }
+     },
+     { id:'pro', name:'PRO', price:12000, currency:'FCFA',
+       period:'mois', popular:true,
+       features:[
+         'Campagnes ILLIMITÉES',
+         'IA crédits ILLIMITÉS',
+         'Analytics avancés + graphiques',
+         'Analyse concurrence Facebook',
+         'Audit site web illimité',
+         'Multi-comptes Facebook',
+         'Recommandations IA avancées',
+         'Support WhatsApp dédié'
+       ],
+       limits:{ campaigns:99999, ai_credits:99999, accounts:5 }
+     },
+     { id:'agency', name:'Agency', price:30000, currency:'FCFA',
+       period:'mois',
+       features:[
+         'Tout PRO inclus',
+         'Clients illimités',
+         'Rapports marque blanche',
+         'API AdsFacile accès',
+         'Tableau de bord multi-clients',
+         'Account manager dédié'
+       ],
+       limits:{ campaigns:99999, ai_credits:99999, accounts:99999 }
+     }
+   ]
+
+   getCurrentSubscription(req, res) :
+   SELECT plan, plan_expires_at, ai_credits, campaigns_this_month
+   FROM users WHERE id = req.user.id
+   JOIN subscriptions s ON s.user_id = users.id AND s.status='active'
+   Retourner infos abonnement actuel
+
+   initiateUpgrade(req, res) :
+   - Body : { target_plan, payment_method }
+   - Valider plan existe et est supérieur au plan actuel
+   - Créer payment_intent (pending) en base
+   - Appel MeSomb pour initier paiement Mobile Money
+   - Retourner { payment_url, reference, amount }
+
+2. Routes /routes/billing.js
+   GET  /api/billing/plans              → getPricingPlans (public)
+   GET  /api/billing/subscription       → getCurrentSubscription
+   POST /api/billing/upgrade            → initiateUpgrade
+   GET  /api/billing/invoices           → getInvoices
+
+=== FRONTEND ===
+
+3. /pages/Billing.jsx
+
+   Section 1 : MON PLAN ACTUEL
+   Card avec fond vert clair (si free) ou bleu (si payant) :
+   - Plan actuel : GRATUIT (badge coloré)
+   - Usage ce mois :
+     * Campagnes : [1/1] barre progression rouge si 100%
+     * Crédits IA : [2/3] barre progression
+   - Date reset : 1er mars 2026
+   - Bouton [🚀 Passer à PRO] si plan=free
+
+   Section 2 : PLANS DISPONIBLES
+   Grille 4 colonnes (2 sur mobile) :
+
+   Chaque PricingCard.jsx :
+   ┌────────────────────────┐
+   │ [POPULAIRE ⭐]         │  ← Badge si plan populaire
+   │ PRO                    │
+   │ 12,000 FCFA/mois       │
+   │ ─────────────────────  │
+   │ ✅ Campagnes illimitées │
+   │ ✅ IA crédits illimités │
+   │ ✅ Analytics avancés    │
+   │ ✅ Analyse concurrence  │
+   │ ✅ Multi-comptes FB     │
+   │ ─────────────────────  │
+   │ [Choisir ce plan]      │  ← Vert si recommandé
+   └────────────────────────┘
+
+   Plan actuel : bouton grisé [Plan actuel]
+   Plan inférieur : bouton outline [Rétrograder]
+   Plan supérieur : bouton vert [Passer à ce plan]
+
+   Section 3 : HISTORIQUE PAIEMENTS
+   Table : Date | Plan | Montant | Méthode | Statut | Facture
+   Si aucun paiement : 'Aucun paiement pour l'instant'
+
+4. /components/billing/PaymentModal.jsx
+   Modal ouvert au clic [Choisir ce plan] :
+
+   Étape 1 : Récapitulatif
+   - Plan sélectionné + prix
+   - Économie annuelle si paiement annuel
+   - [Continuer vers le paiement]
+
+   Étape 2 : Choisir méthode
+   ┌─────────────────────────────────┐
+   │ [MTN Mobile Money] [Orange Money]│
+   │                                  │
+   │ Numéro : +237 [__________]       │
+   │                                  │
+   │ [Payer 12,000 FCFA maintenant]   │
+   └─────────────────────────────────┘
+
+   Étape 3 : Confirmation
+   - Spinner + 'En attente de confirmation...'
+   - 'Vérifiez votre téléphone pour confirmer le paiement'
+   - Timer 3 minutes
+   - Si succès : confetti + 'Plan PRO activé ! 🎉'
+   - Si timeout : 'Paiement non reçu. Réessayez.'
+
+Retourner TOUS les fichiers avec code complet.
+🔒 ÉTAPE 5 - FEATURE GATES (BLOCAGE FONCTIONNALITÉS PAYANTES)
+Durée estimée : 3-4 heures
+COPIEZ CE PROMPT DANS ANTIGRAVITY :
+Crée un système de feature gating pour AdsFacile.
+Les fonctionnalités payantes doivent être VISIBLES mais BLOQUÉES
+pour les users du plan gratuit, avec invitation claire à upgrader.
+
+=== COMPOSANTS RÉUTILISABLES ===
+
+1. /components/shared/FeatureGate.jsx
+   Props : { requiredPlan, currentPlan, featureName, children }
+
+   Si currentPlan >= requiredPlan → afficher children normalement
+
+   Sinon → afficher overlay :
+   ┌────────────────────────────────────┐
+   │  [CONTENU FLOUTTÉ / DÉSACTIVÉ]     │
+   │  ─────────────────────────────     │
+   │  🔒 {featureName}                  │
+   │  Disponible avec le plan {plan}     │
+   │  [Voir les plans] vert              │
+   └────────────────────────────────────┘
+
+   Variante compact (prop compact=true) :
+   Juste le badge 🔒 + tooltip au hover
+
+2. /components/shared/UpgradePrompt.jsx
+   Props : { feature, requiredPlan, size='normal' }
+   Composant inline pour inviter à upgrader :
+   '🔒 [featureName] est disponible avec le plan [PRO]
+    → [Voir les plans] ou [Essayer maintenant]'
+
+3. /hooks/usePlanFeatures.js
+   Hook retournant fonctions utilitaires :
+   const { canUse, isBlocked, planRequired } = usePlanFeatures();
+
+   canUse('analytics_advanced')   → true/false
+   canUse('competitor_analysis')  → true/false
+   canUse('ai_unlimited')         → true/false
+   canUse('export_pdf')           → true/false
+   canUse('website_audit')        → true/false
+   canUse('multi_account')        → true/false
+   canUse('whatsapp_alerts')      → true/false
+
+   Basé sur PLAN_FEATURES config :
+   const PLAN_FEATURES = {
+     analytics_advanced:  { min: 'pro' },
+     competitor_analysis: { min: 'pro' },
+     ai_unlimited:        { min: 'pro' },
+     export_pdf:          { min: 'starter' },
+     website_audit:       { min: 'starter' },
+     multi_account:       { min: 'pro' },
+     whatsapp_alerts:     { min: 'pro' },
+     white_label:         { min: 'agency' },
+   };
+   Ordre plans : free < starter < pro < agency
+
+=== INTÉGRATION SUR LES PAGES ===
+
+4. Dans /pages/Analytics.jsx
+   Wrapper FeatureGate autour de :
+   - Graphiques avancés (comparaison périodes)
+   - Export PDF bouton
+   - Breakdown par audience
+   - Heatmap horaire
+   Plan gratuit voit : stats basiques (impressions, clics, dépenses)
+   Plan gratuit NE VOIT PAS : graphiques avancés (bloqués)
+
+5. Dans /pages/Competitors.jsx
+   Si plan=free OU starter :
+   - Page entière bloquée
+   - Afficher landing 'Analyse de vos concurrents'
+   - Screenshots/mockups des fonctionnalités
+   - Badge '🔒 Plan PRO requis'
+   - Bouton [Passer à PRO - 12,000 FCFA/mois]
+   - 3 témoignages d'utilisateurs PRO
+
+6. Dans /pages/Dashboard.jsx
+   Bandeau en haut si plan=free :
+   ┌──────────────────────────────────────────────────┐
+   │ 🎁 Vous utilisez AdsFacile GRATUIT               │
+   │ Passez à PRO pour débloquer toutes les features   │
+   │ [Voir les plans PRO] [✕ Masquer]                  │
+   └──────────────────────────────────────────────────┘
+   (Masquable, ne pas réafficher avant 7 jours via localStorage)
+
+7. Dans /pages/CampaignCreate.jsx (Wizard)
+   Si user a atteint la limite (1 campagne/mois free) :
+   - Modal AVANT d'afficher le wizard :
+   'Vous avez utilisé votre 1 campagne gratuite ce mois.
+    Prochaine réinitialisation le 1er mars 2026.
+    Passez à Starter (5,000 FCFA) pour 5 campagnes/mois'
+   [Passer à Starter] [Annuler]
+
+=== LOGIQUE PLAN HIERARCHY ===
+Créer /utils/planUtils.js :
+const PLAN_ORDER = { free:0, starter:1, pro:2, agency:3 };
+function canAccessPlan(userPlan, requiredPlan) {
+  return PLAN_ORDER[userPlan] >= PLAN_ORDER[requiredPlan];
+}
+function getUpgradePath(currentPlan) {
+  if (currentPlan === 'free')    return 'starter';
+  if (currentPlan === 'starter') return 'pro';
+  if (currentPlan === 'pro')     return 'agency';
+  return null;
+}
+
+Retourner TOUS les fichiers avec code complet.
+🧪 ÉTAPE 6 - TESTS & INTÉGRATION FINALE
+Durée estimée : 3-4 heures
+COPIEZ CE PROMPT DANS ANTIGRAVITY :
+Crée les tests et complète l'intégration de la page profil
+AdsFacile. Backend Node.js + Frontend React.
+
+=== TESTS BACKEND (/tests/user.test.js) ===
+
+1. Tests endpoint GET /api/users/me :
+   ✅ Retourne profil sans password_hash
+   ✅ 401 si pas de token
+   ✅ 404 si user inexistant
+
+2. Tests endpoint PUT /api/users/me :
+   ✅ Mise à jour réussie avec données valides
+   ✅ 400 si bio > 500 chars
+   ✅ 400 si niche invalide (pas dans whitelist)
+   ✅ Un user ne peut pas modifier profil d'un autre
+
+3. Tests IA crédits :
+   ✅ Génération OK si crédits > 0
+   ✅ 403 si crédits = 0 et plan = free
+   ✅ Décrémentation correcte des crédits
+   ✅ Plan PRO → pas de vérification crédits
+
+4. Tests feature gates backend :
+   ✅ POST /api/ai/analyze → 403 si plan=free
+   ✅ POST /api/ai/analyze → 200 si plan=pro
+
+=== TESTS FRONTEND (/tests/components/Profile.test.jsx) ===
+
+5. Composant AvatarUpload :
+   ✅ Affiche initiales si pas de photo
+   ✅ Reject fichier > 2MB
+   ✅ Preview immédiate après sélection
+
+6. Composant PlanLimitsCard :
+   ✅ Affiche lock icon pour features payantes
+   ✅ Affiche check icon pour features disponibles
+
+7. Composant FeatureGate :
+   ✅ Affiche children si plan suffisant
+   ✅ Affiche overlay si plan insuffisant
+   ✅ Lien 'Voir les plans' visible dans overlay
+
+=== INTÉGRATION ROUTES APP ===
+
+8. Dans /App.jsx, ajouter routes :
+   <Route path='/profile'   element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+   <Route path='/billing'   element={<ProtectedRoute><Billing /></ProtectedRoute>} />
+   <Route path='/pricing'   element={<Pricing />} /> (publique)
+
+9. Dans /components/layout/Sidebar.jsx, ajouter liens :
+   - 👤 Mon Profil → /profile
+   - 💳 Abonnement → /billing [badge 'Gratuit' vert ou 'PRO' bleu]
+
+=== VÉRIFICATIONS FINALES ===
+
+10. Checklist à valider :
+
+   BACKEND :
+   □ GET /api/users/me → 200 + profil
+   □ PUT /api/users/me → 200 + profil mis à jour
+   □ POST /api/users/me/avatar → 200 + url
+   □ GET /api/users/me/plan-limits → 200 + limits object
+   □ POST /api/ai/generate-text (free, 3 crédits) → 200
+   □ POST /api/ai/generate-text (free, 0 crédits) → 403
+   □ POST /api/ai/targeting → 200 + 3 propositions
+   □ POST /api/ai/analyze (free) → 403 upgrade_required
+   □ POST /api/ai/analyze (pro)  → 200
+
+   FRONTEND :
+   □ Page /profile charge sans erreur
+   □ 4 onglets fonctionnels
+   □ Upload avatar fonctionne
+   □ Formulaire sauvegarde correctement
+   □ Plan limits affichées avec icônes
+   □ Features payantes affichent 🔒
+   □ Banner upgrade visible si plan=free
+   □ Compteur crédits IA visible
+   □ Page /billing charge avec plans
+   □ PaymentModal s'ouvre correctement
+
+   SÉCURITÉ :
+   □ Refresh token invalide → redirect /login
+   □ User ne peut pas modifier profil d'un autre via API
+   □ Plan limits respectées (pas de bypass côté client)
+
+Corriger tout problème détecté.
+Créer un fichier SUMMARY.md listant tous les fichiers créés
+avec leur rôle, les variables d'env nécessaires, et les
+commandes pour lancer backend et frontend.
+
+RÉCAPITULATIF COMPLET
+Variables d'environnement requises
+# Backend .env
+
+# Base
+NODE_ENV=development
+PORT=5000
+FRONTEND_URL=http://localhost:5173
+
+# Supabase
+SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_ANON_KEY=eyJhbGc...
+SUPABASE_SERVICE_KEY=eyJhbGc...
+
+# Auth
+JWT_SECRET=minimum_32_chars_random_string_here
+ENCRYPTION_KEY=64_hex_chars_for_aes256
+
+# IA - Plan GRATUIT (Gemini, quota gratuit jusqu'à 1500 req/jour)
+GEMINI_API_KEY=AIza...
+GEMINI_MODEL=gemini-1.5-flash
+
+# IA - Plan PRO/Agency (Claude Haiku, le plus abordable Anthropic)
+ANTHROPIC_API_KEY=sk-ant-...
+CLAUDE_MODEL=claude-haiku-4-5-20251001
+
+# Paiements
+MESOMB_API_KEY=votre_cle_mesomb
+MESOMB_SECRET=votre_secret_mesomb
+
+# Email
+BREVO_API_KEY=xkeysib-...
+FROM_EMAIL=noreply@adsfacile.cm
+
+# Storage
+SUPABASE_STORAGE_BUCKET=avatars
+
+# Facebook
+FACEBOOK_APP_ID=your_app_id
+FACEBOOK_APP_SECRET=your_app_secret
+FACEBOOK_REDIRECT_URI=http://localhost:5000/api/facebook/auth/callback
+
+# Monitoring
+SENTRY_DSN=https://xxx@sentry.io/xxx
+Résumé des fichiers créés par étape
+ÉtapeQuoiFichiers créésDurée1Backend ProfiluserController.js, userValidators.js, users.js (routes), checkPlan.js4-6h2Frontend ProfilProfile.jsx, AvatarUpload.jsx, PlanLimitsCard.jsx, UpgradeBanner.jsx, useProfile.js5-7h3IA GénérationaiTextService.js, aiController.js, AITextGenerator.jsx, AITargetingHelper.jsx, AIAnalyzer.jsx4-5h4Plans & BillingbillingController.js, billing.js (routes), Billing.jsx, PricingCard.jsx, PaymentModal.jsx4-5h5Feature GatesFeatureGate.jsx, UpgradePrompt.jsx, usePlanFeatures.js, planUtils.js3-4h6Tests & Intégrationuser.test.js, Profile.test.jsx, App.jsx (routes), Sidebar.jsx (liens), SUMMARY.md3-4h
+Fonctionnalités gratuites vs payantes - Récapitulatif final
+Fonctionnalité🆓 Gratuit⭐ Starter💎 PRO🏢 AgencyCampagnes Facebook / mois15IllimitéIllimitéCrédits IA / mois320IllimitéIllimitéGénération textes pub IA✅✅✅✅Propositions ciblage IA✅✅✅✅Dashboard stats basiques✅✅✅✅Analytics avancés🔒 PRO🔒 PRO✅✅Analyse concurrence🔒 PRO🔒 PRO✅✅Audit site web🔒1/moisIllimitéIllimitéExport rapports PDF🔒✅✅✅Multi-comptes Facebook🔒 PRO🔒 PRO5 comptesIllimitéAlertes WhatsApp temps réel🔒 PRO🔒 PRO✅✅Analyse IA avancée🔒 PRO🔒 PRO✅✅Rapports marque blanche🔒🔒🔒✅Support email✅✅✅✅Support WhatsApp dédié🔒🔒✅✅Prix mensuel0 FCFA5,000 FCFA12,000 FCFA30,000 FCFA
+🚀 CONSEIL FINAL - Ordre d'implémentation
+Pour aller le plus vite possible, suivez exactement l'ordre des 6 étapes.
+Chaque étape est indépendante et livrée en une session Antigravity.
+
+⚡ Estimation totale : 23-31 heures de développement
+📅 Avec 6-8h/jour : environ 3-4 jours de travail
+
+PRIORITÉ ABSOLUE (Étapes 1-2-3) :
+  → Backend profil + Frontend profil + Génération IA
+  → Ces 3 étapes = la valeur core du produit pour le plan gratuit
+
+MONÉTISATION (Étapes 4-5) :
+  → Plans + Billing + Feature Gates
+  → Implémentez-les dès que les étapes 1-3 sont stables
+
+QUALITÉ (Étape 6) :
+  → Tests et intégration finale
+  → À faire avant chaque démo investisseur ou lancement public
+🌍 ADSFACILE - Simplifier la publicité pour les entrepreneurs africains
+Document généré par Claude (Anthropic) • Projet Cameroun 2026

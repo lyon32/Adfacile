@@ -31,9 +31,21 @@
 /* Pricing Cards Section */
 .pricing-cards .pricing-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: var(--spacing-6);
-  align-items: flex-start;
+  align-items: stretch;
+}
+
+@media (max-width: 1200px) {
+  .pricing-grid.pricing-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .pricing-grid.pricing-grid-4 {
+    grid-template-columns: 1fr;
+  }
 }
 
 .pricing-cards .pricing-grid.visible .pricing-card {
@@ -46,6 +58,7 @@
   font-size: var(--font-size-sm);
   margin-top: var(--spacing-1);
 }
+
 
 .pricing-features li.disabled {
   color: var(--color-text-light);
