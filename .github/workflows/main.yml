@@ -12,7 +12,7 @@ on:
     branches: [ main ]
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
@@ -81,7 +81,7 @@ jobs:
       - name: Install Dependencies
         run: |
           cd backend && npm ci
-          cd ../frontend && npm ci
+          cd .. && npm ci
 
       - name: Audit Backend Dependencies
         working-directory: ./backend
@@ -188,7 +188,7 @@ jobs:
         with:
           files: |
             ./backend/coverage/lcov.info
-            ./frontend/coverage/lcov.info
+            ./coverage/lcov.info
           fail_ci_if_error: false
 
   # ─────────────────────────────────────────────────────────────
@@ -223,7 +223,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
-          path: frontend/dist
+          path: dist
           retention-days: 7
 
       - name: Build Backend Docker Image
