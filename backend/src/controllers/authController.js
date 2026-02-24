@@ -195,13 +195,14 @@ const login = async (req, res) => {
     if (error || !user) {
       // Log tentative échouée
       await logLoginAttempt(null, trimmed, ip, userAgent, false, 'User not found');
-      
+
       // Timing attack protection: hash quand même pour garder le même temps de réponse
       await bcrypt.hash(password, 10);
-      
-      return res.status(401).json({
+
+      return res.status(404).json({
         success: false,
-        message: 'Identifiants incorrects'
+        error: 'user_not_found',
+        message: 'Aucun compte associé à cet email/téléphone'
       });
     }
 
@@ -221,7 +222,8 @@ const login = async (req, res) => {
       await logLoginAttempt(user.id, trimmed, ip, userAgent, false, 'Invalid password');
       return res.status(401).json({
         success: false,
-        message: 'Identifiants incorrects'
+        error: 'invalid_password',
+        message: 'Le mot de passe est incorrect'
       });
     }
 

@@ -20,6 +20,7 @@
   "author": "AdsFacile Team",
   "license": "ISC",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.39.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
@@ -31,6 +32,8 @@
     "hpp": "^0.2.3",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
+    "multer": "^2.0.2",
+    "sharp": "^0.34.5",
     "winston": "^3.19.0",
     "xss-clean": "^0.1.4"
   },

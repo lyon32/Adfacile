@@ -13,6 +13,7 @@ import {
   GraduationCap,
   Megaphone,
   Check,
+  X,
   ChevronDown,
   HelpCircle,
   DollarSign,
@@ -400,46 +401,80 @@ const PricingSection = () => {
   const plans = [
     {
       name: 'Gratuit',
+      description: 'Pour découvrir AdsFacile',
       price: '0',
       currency: 'FCFA',
       period: '/mois',
       features: [
-        '1 campagne par mois',
-        'Recommandations de base',
-        'Statistiques limitées',
-        'Support par email'
+        { text: '1 campagne Facebook / mois', included: true },
+        { text: '3 crédits IA / mois', included: true },
+        { text: 'Dashboard stats basiques', included: true },
+        { text: 'Connexion 1 compte Facebook', included: true },
+        { text: 'Support par email', included: true },
+        { text: 'Alertes email temps réel', included: false },
+        { text: 'Analytics avancés', included: false },
+        { text: 'Analyse de la concurrence', included: false },
+        { text: 'Export des données PDF', included: false }
       ],
       cta: 'Commencer gratuitement',
       featured: false
     },
     {
-      name: 'Pro',
-      price: '10,000',
+      name: 'Starter',
+      description: 'Pour les petits commerçants qui lancent',
+      price: '5,000',
       currency: 'FCFA',
       period: '/mois',
       features: [
-        'Campagnes illimitées',
-        'Recommandations avancées',
-        'Analyse de la concurrence',
-        'Statistiques complètes',
-        'Support prioritaire',
-        'Export des données'
+        { text: '5 campagnes / mois', included: true },
+        { text: '20 crédits IA / mois', included: true },
+        { text: 'Audit site web (1 fois/mois)', included: true },
+        { text: 'Export rapports PDF', included: true },
+        { text: 'Alertes email basiques', included: true },
+        { text: 'Support email prioritaire', included: true },
+        { text: 'Analytics avancés', included: false },
+        { text: 'Analyse de la concurrence', included: false },
+        { text: 'Multi-comptes Facebook', included: false }
+      ],
+      cta: 'Essai gratuit 30 jours',
+      featured: false
+    },
+    {
+      name: 'PRO',
+      description: 'Pour les entrepreneurs qui veulent scaler',
+      price: '12,000',
+      currency: 'FCFA',
+      period: '/mois',
+      features: [
+        { text: 'Campagnes illimitées', included: true },
+        { text: 'Crédits IA illimités', included: true },
+        { text: 'Analytics avancés complets', included: true },
+        { text: 'Analyse de la concurrence', included: true },
+        { text: 'Audit site web illimité', included: true },
+        { text: 'Multi-comptes Facebook (5)', included: true },
+        { text: 'Alertes email temps réel complètes', included: true },
+        { text: 'Support email & chat dédié', included: true },
+        { text: 'Export PDF illimité', included: true }
       ],
       cta: 'Essai gratuit 30 jours',
       featured: true
     },
     {
-      name: 'Business',
-      price: '25,000',
+      name: 'Agency',
+      description: 'Pour les agences qui gèrent plusieurs clients',
+      price: '30,000',
       currency: 'FCFA',
       period: '/mois',
       features: [
-        'Tout de Pro +',
-        'Multi-comptes (jusqu\'à 10)',
-        'API access',
-        'Manager dédié',
-        'Formation personnalisée',
-        'Rapports sur mesure'
+        { text: 'Tout PRO inclus', included: true },
+        { text: 'Comptes Facebook illimités', included: true },
+        { text: 'Rapports marque blanche', included: true },
+        { text: 'Tableau de bord multi-clients', included: true },
+        { text: 'Accès API AdsFacile', included: true },
+        { text: 'Account manager dédié', included: true },
+        { text: 'Formation personnalisée', included: true },
+        { text: 'Alertes email personnalisées', included: true },
+        { text: 'SLA garanti', included: true }
       ],
       cta: 'Contacter les ventes',
       featured: false
@@ -447,13 +482,13 @@ const PricingSection = () => {
   ];
 
   return (
-    <section className="pricing section section-alt" id="pricing" ref={ref}>
+    <section className="pricing-cards section section-alt" id="pricing" ref={ref}>
       <div className="container">
         <div className="section-header">
           <h2>Tarifs simples et transparents</h2>
           <p>Choisissez le plan adapté à vos besoins</p>
         </div>
-        <div className={`pricing-grid ${isVisible ? 'visible' : ''}`}>
+        <div className={`pricing-grid pricing-grid-4 ${isVisible ? 'visible' : ''}`}>
           {plans.map((plan, index) => (
             <div
               key={index}
@@ -462,6 +497,7 @@ const PricingSection = () => {
             >
               <div className="pricing-header">
                 <div className="pricing-name">{plan.name}</div>
+                <div className="pricing-description">{plan.description}</div>
                 <div className="pricing-price">
                   {plan.price}
                   <span> {plan.currency}{plan.period}</span>
@@ -469,9 +505,13 @@ const PricingSection = () => {
               </div>
               <ul className="pricing-features">
                 {plan.features.map((feature, i) => (
-                  <li key={i}>
-                    <Check size={18} />
-                    {feature}
+                  <li key={i} className={feature.included ? '' : 'disabled'}>
+                    {feature.included ? (
+                      <Check size={18} className="check" />
+                    ) : (
+                      <X size={18} className="x" />
+                    )}
+                    {feature.text}
                   </li>
                 ))}
               </ul>
@@ -486,7 +526,13 @@ const PricingSection = () => {
           ))}
         </div>
         <div className="pricing-guarantee">
-          <p>🎯 Garantie satisfaction 30 jours • Annulez à tout moment</p>
+          <div className="guarantee-badge">
+            🎯 Garantie satisfaction 30 jours
+          </div>
+          <p>
+            Si vous n'êtes pas satisfait, nous vous remboursons intégralement.
+            Aucune question posée, aucune complication.
+          </p>
         </div>
       </div>
     </section>

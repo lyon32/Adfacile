@@ -37,9 +37,13 @@ api.interceptors.response.use(
   (error) => {
     // Si erreur 401 (non autorisé), déconnecter l'utilisateur
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Ignorer la redirection si l'erreur 401 provient de la tentative de connexion
+      const originalRequest = error.config;
+      if (!originalRequest.url || !originalRequest.url.includes('/auth/login')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -92,4 +96,44 @@ export const checkHealth = async () => {
   return response.data;
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// FONCTIONS API — INTELLIGENCE ARTIFICIELLE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Génère 3 variations de texte publicitaire via IA
+ * @param {Object} data - { product, niche, audience, tone, city }
+ */
+export const generateAdText = async (data) => {
+  const response = await api.post('/ai/generate-text', data);
+  return response.data;
+};
+
+/**
+ * Génère 3 propositions de ciblage audience via IA
+ * @param {Object} data - { niche, city, budget }
+ */
+export const generateTargeting = async (data) => {
+  const response = await api.post('/ai/targeting', data);
+  return response.data;
+};
+
+/**
+ * Analyse avancée IA (PRO/Agency uniquement)
+ * @param {Object} data - { text, analysisType }
+ */
+export const analyzeContent = async (data) => {
+  const response = await api.post('/ai/analyze', data);
+  return response.data;
+};
+
+/**
+ * Récupère les crédits IA restants de l'utilisateur
+ */
+export const getAICredits = async () => {
+  const response = await api.get('/ai/credits');
+  return response.data;
+};
+
 export default api;
+

@@ -1,215 +1,142 @@
 /**
- * Dashboard Page
+ * Dashboard Page — Page d'accueil du tableau de bord
  * AdsFacile Frontend
+ * 
+ * Utilise DashboardLayout pour le sidebar et le header
  */
 
 import { Link } from 'react-router-dom';
+import {
+  Target, Sparkles, BarChart3, ArrowRight,
+  TrendingUp, Eye, DollarSign, Zap
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import './DashboardPage.css';
 
 const DashboardPage = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
-  const handleLogout = () => {
-    logout();
-    // La redirection sera gérée par ProtectedRoute
-    window.location.href = '/login';
-  };
-
-  if (!user) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#f8fafc'
-      }}>
-        <div style={{
-          width: 40,
-          height: 40,
-          border: '3px solid #e2e8f0',
-          borderTopColor: '#10b981',
-          borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite'
-        }} />
-      </div>
-    );
-  }
+  const plan = user?.plan || 'free';
+  const isPro = plan === 'pro' || plan === 'agency';
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
-      {/* Header du Dashboard */}
-      <header style={{
-        background: 'white',
-        borderBottom: '1px solid #e5e7eb',
-      }}>
-        <div style={{
-          maxWidth: 1280,
-          margin: '0 auto',
-          padding: '0 1rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          height: 64
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '1.5rem' }}>📢</span>
-            <span style={{
-              fontSize: '1.25rem',
-              fontWeight: 800,
-              background: 'linear-gradient(135deg, #10b981, #3b82f6)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
-            }}>
-              AdsFacile
-            </span>
+    <DashboardLayout title="Dashboard">
+      <div className="dash-page">
+        {/* ── Bienvenue ── */}
+        <div className="dash-welcome">
+          <div>
+            <h2 className="dash-welcome-title">
+              Bienvenue, {user?.first_name || user?.email?.split('@')[0]} ! 👋
+            </h2>
+            <p className="dash-welcome-sub">
+              Lancez vos publicités Facebook en quelques minutes
+            </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-              {user.email}
-            </span>
-            <button
-              onClick={handleLogout}
-              style={{
-                fontSize: '0.875rem',
-                color: '#6b7280',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              Déconnexion
-            </button>
+          <Link to="/campaigns" className="dash-cta-btn">
+            <Target size={18} />
+            Créer une campagne
+          </Link>
+        </div>
+
+        {/* ── Statistiques rapides ── */}
+        <div className="dash-stats-grid">
+          <div className="dash-stat-box">
+            <div className="dash-stat-icon green">
+              <Target size={20} />
+            </div>
+            <div>
+              <span className="dash-stat-num">0</span>
+              <span className="dash-stat-txt">Campagnes ce mois</span>
+            </div>
+          </div>
+          <div className="dash-stat-box">
+            <div className="dash-stat-icon blue">
+              <Eye size={20} />
+            </div>
+            <div>
+              <span className="dash-stat-num">0</span>
+              <span className="dash-stat-txt">Impressions</span>
+            </div>
+          </div>
+          <div className="dash-stat-box">
+            <div className="dash-stat-icon purple">
+              <TrendingUp size={20} />
+            </div>
+            <div>
+              <span className="dash-stat-num">0</span>
+              <span className="dash-stat-txt">Clics</span>
+            </div>
+          </div>
+          <div className="dash-stat-box">
+            <div className="dash-stat-icon orange">
+              <DollarSign size={20} />
+            </div>
+            <div>
+              <span className="dash-stat-num">0 XAF</span>
+              <span className="dash-stat-txt">Budget dépensé</span>
+            </div>
           </div>
         </div>
-      </header>
 
-      {/* Contenu principal */}
-      <main style={{
-        maxWidth: 1280,
-        margin: '0 auto',
-        padding: '3rem 1rem'
-      }}>
-        <div style={{
-          background: 'white',
-          borderRadius: '1rem',
-          boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
-          border: '1px solid #f1f5f9',
-          padding: '2rem'
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 64,
-              height: 64,
-              borderRadius: '50%',
-              background: '#ecfdf5',
-              marginBottom: '1rem'
-            }}>
-              <span style={{ fontSize: '2rem' }}>🎉</span>
+        {/* ── Actions rapides ── */}
+        <div className="dash-actions-grid">
+          <Link to="/campaigns" className="dash-action-card">
+            <div className="dash-action-icon">
+              <Target size={24} />
             </div>
-            <h1 style={{
-              fontSize: '1.875rem',
-              fontWeight: 700,
-              color: '#111827',
-              marginBottom: '0.5rem'
-            }}>
-              Bienvenue, {user.first_name || user.email.split('@')[0]} !
-            </h1>
-            <p style={{
-              color: '#6b7280',
-              marginBottom: '2rem'
-            }}>
-              Votre compte a été créé avec succès. Vous êtes prêt à lancer vos premières publicités.
-            </p>
+            <h3>Créer une campagne</h3>
+            <p>Lancez une publicité Facebook en 5 étapes simples</p>
+            <span className="dash-action-link">
+              Commencer <ArrowRight size={14} />
+            </span>
+          </Link>
 
-            {/* Infos utilisateur */}
-            <div style={{
-              background: '#f8fafc',
-              borderRadius: '0.75rem',
-              padding: '1.5rem',
-              maxWidth: 400,
-              margin: '0 auto 2rem'
-            }}>
-              <h3 style={{ fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>Vos informations</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', textAlign: 'left' }}>
-                {[
-                  ['Email', user.email],
-                  ['Téléphone', user.phone],
-                  ['Ville', user.city],
-                  ['Plan', user.plan],
-                  ['Crédits IA', user.ai_credits]
-                ].map(([label, value]) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#6b7280' }}>{label}</span>
-                    <span style={{ fontWeight: 500 }}>
-                      {label === 'Plan' ? (
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          padding: '0.125rem 0.625rem',
-                          borderRadius: 9999,
-                          fontSize: '0.75rem',
-                          fontWeight: 500,
-                          background: '#ecfdf5',
-                          color: '#059669',
-                          textTransform: 'capitalize'
-                        }}>{value}</span>
-                      ) : value}
-                    </span>
-                  </div>
-                ))}
+          <div className="dash-action-card">
+            <div className="dash-action-icon ai">
+              <Sparkles size={24} />
+            </div>
+            <h3>Générer du texte IA</h3>
+            <p>
+              {isPro
+                ? 'Crédits illimités — Générez autant que vous voulez'
+                : `${user?.ai_credits || 0}/3 crédits restants ce mois`
+              }
+            </p>
+            <span className="dash-action-link">
+              Essayer <ArrowRight size={14} />
+            </span>
+          </div>
+
+          <Link to="/analytics" className="dash-action-card">
+            <div className="dash-action-icon blue">
+              <BarChart3 size={24} />
+            </div>
+            <h3>Voir les analytics</h3>
+            <p>Suivez les performances de vos campagnes en temps réel</p>
+            <span className="dash-action-link">
+              Voir les stats <ArrowRight size={14} />
+            </span>
+          </Link>
+        </div>
+
+        {/* ── Upgrade Banner ── */}
+        {plan === 'free' && (
+          <div className="dash-upgrade-banner">
+            <div className="dash-upgrade-content">
+              <Zap size={20} />
+              <div>
+                <strong>Débloquez tout avec le plan PRO</strong>
+                <p>Campagnes illimitées, IA avancée, analytics détaillés — 12,000 FCFA/mois</p>
               </div>
             </div>
-
-            {/* Actions */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.75rem',
-              justifyContent: 'center',
-              alignItems: 'center'
-            }}>
-              <Link
-                to="/"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '0.5rem',
-                  background: 'linear-gradient(135deg, #10b981, #059669)',
-                  color: 'white',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)'
-                }}
-              >
-                Créer ma première campagne
-              </Link>
-              <Link
-                to="/"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '0.5rem',
-                  border: '2px solid #e5e7eb',
-                  color: '#374151',
-                  fontWeight: 600,
-                  textDecoration: 'none'
-                }}
-              >
-                Retour à l'accueil
-              </Link>
-            </div>
+            <Link to="/plans" className="dash-upgrade-btn">
+              Passer à PRO
+            </Link>
           </div>
-        </div>
-      </main>
-    </div>
+        )}
+      </div>
+    </DashboardLayout>
   );
 };
 

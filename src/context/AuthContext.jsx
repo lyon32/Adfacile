@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
         try {
           const payload = JSON.parse(atob(storedToken.split('.')[1]));
           const isExpired = payload.exp * 1000 < Date.now();
-          
+
           if (isExpired) {
             // Token expiré, nettoyer
             localStorage.removeItem('token');
@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(true);
         return true;
       }
-      
+
       setIsAuthenticated(false);
       return false;
     } catch (error) {
@@ -83,13 +83,22 @@ export const AuthProvider = ({ children }) => {
 
   /**
    * Connexion : stocker user et token
+   * Retourne une promesse pour s'assurer que le state est à jour avant redirection
    */
   const login = useCallback((userData, authToken) => {
-    setUser(userData);
-    setToken(authToken);
-    setIsAuthenticated(true);
-    localStorage.setItem('token', authToken);
-    localStorage.setItem('user', JSON.stringify(userData));
+    return new Promise((resolve) => {
+      localStorage.setItem('token', authToken);
+      localStorage.setItem('user', JSON.stringify(userData));
+
+      setUser(userData);
+      setToken(authToken);
+      setIsAuthenticated(true);
+
+      // Laisser React faire son cycle de rendu (state batching)
+      setTimeout(() => {
+        resolve(true);
+      }, 0);
+    });
   }, []);
 
   /**
