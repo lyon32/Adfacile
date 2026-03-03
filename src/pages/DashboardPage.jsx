@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import ConnectFacebookButton from '../components/facebook/ConnectFacebookButton';
 import './DashboardPage.css';
 
 const DashboardPage = () => {
@@ -119,6 +120,9 @@ const DashboardPage = () => {
             </span>
           </Link>
         </div>
+
+        {/* ── Connexion Facebook ── */}
+        <ConnectFacebookButton />
 
         {/* ── Upgrade Banner ── */}
         {plan === 'free' && (

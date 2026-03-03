@@ -82,8 +82,8 @@ const LoginPage = () => {
 
       const { token, user } = response.data;
 
-      // Appel synchrone sans await
-      login(token, user);
+      // IMPORTANT: login(userData, authToken) — l'ordre compte !
+      login(user, token);
 
       // Navigation différée
       setTimeout(() => {

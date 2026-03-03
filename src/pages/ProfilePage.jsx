@@ -18,6 +18,7 @@ import { useProfile } from '../hooks/useProfile';
 import AvatarUpload from '../components/profile/AvatarUpload';
 import PlanLimitsCard from '../components/profile/PlanLimitsCard';
 import UpgradeBanner from '../components/profile/UpgradeBanner';
+import ConnectFacebookButton from '../components/facebook/ConnectFacebookButton';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import './ProfilePage.css';
 
@@ -154,6 +155,11 @@ const ProfilePage = () => {
                                 <div className="profile-divider" />
 
                                 <UpgradeBanner currentPlan={profile.plan} />
+
+                                <div className="profile-divider" />
+
+                                {/* Connexion Facebook */}
+                                <ConnectFacebookButton />
                             </div>
                         </aside>
 

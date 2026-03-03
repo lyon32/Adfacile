@@ -41,7 +41,9 @@ export const AuthProvider = ({ children }) => {
         // Vérifier que le token n'a pas expiré côté client
         // (décodage simple du payload JWT sans vérification de signature)
         try {
-          const payload = JSON.parse(atob(storedToken.split('.')[1]));
+          const base64Url = storedToken.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const payload = JSON.parse(atob(base64));
           const isExpired = payload.exp * 1000 < Date.now();
 
           if (isExpired) {
@@ -53,7 +55,8 @@ export const AuthProvider = ({ children }) => {
             setIsAuthenticated(false);
             return false;
           }
-        } catch {
+        } catch (e) {
+          console.error('Erreur auth context décodage:', e);
           // Si le décodage échoue, considérer le token comme invalide
           localStorage.removeItem('token');
           localStorage.removeItem('user');

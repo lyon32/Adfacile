@@ -1,0 +1,117 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FacebookCallback — Styles
+   AdsFacile Frontend
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.fb-callback-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-primary, #0f172a);
+    padding: 20px;
+}
+
+.fb-callback-card {
+    background: var(--glass-bg, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    border-radius: 20px;
+    padding: 48px 40px;
+    text-align: center;
+    max-width: 440px;
+    width: 100%;
+    backdrop-filter: blur(10px);
+}
+
+.fb-callback-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #4267B2, #3b5998);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin: 0 auto 28px;
+}
+
+.fb-callback-spinner {
+    color: #4267B2;
+    animation: fb-cb-spin 1s linear infinite;
+    margin: 0 auto 20px;
+    display: block;
+}
+
+@keyframes fb-cb-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.fb-callback-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-primary, #f1f5f9);
+    margin: 0 0 12px;
+}
+
+.fb-callback-text {
+    color: var(--text-secondary, #94a3b8);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0 0 8px;
+}
+
+.fb-callback-text.secondary {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    margin-top: 16px;
+}
+
+.fb-callback-success-icon {
+    color: #22c55e;
+    margin: 0 auto 18px;
+    display: block;
+}
+
+.fb-callback-error-icon {
+    color: #ef4444;
+    margin: 0 auto 18px;
+    display: block;
+}
+
+.fb-callback-retry {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #4267B2, #3b5998);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+}
+
+.fb-callback-retry:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(66, 103, 178, 0.4);
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+    .fb-callback-card {
+        padding: 32px 24px;
+    }
+
+    .fb-callback-title {
+        font-size: 1.15rem;
+    }
+}

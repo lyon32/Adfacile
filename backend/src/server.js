@@ -18,6 +18,8 @@ const authRoutes = require('./routes/auth');
 const aiRoutes = require('./routes/ai');
 const userRoutes = require('./routes/users');
 const billingRoutes = require('./routes/billing');
+const facebookRoutes = require('./routes/facebook');
+const campaignRoutes = require('./routes/campaigns');
 
 // Initialisation de l'application
 const app = express();
@@ -129,6 +131,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/facebook', facebookRoutes);
+app.use('/api/campaigns', campaignRoutes);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GESTION DES ERREURS

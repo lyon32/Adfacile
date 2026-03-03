@@ -32,18 +32,18 @@ api.interceptors.request.use(
 );
 
 // Intercepteur de réponses - Gestion des erreurs
+// IMPORTANT: On ne fait JAMAIS de déconnexion ici.
+// Les erreurs 401 sont remontées au composant appelant.
+// Seul AuthContext.checkAuth() gère l'authentification.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Si erreur 401 (non autorisé), déconnecter l'utilisateur
+    // Log en dev pour debug
     if (error.response?.status === 401) {
-      // Ignorer la redirection si l'erreur 401 provient de la tentative de connexion
-      const originalRequest = error.config;
-      if (!originalRequest.url || !originalRequest.url.includes('/auth/login')) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-      }
+      console.warn(
+        `[API] 401 sur ${error.config?.url || 'unknown'} — `,
+        error.response?.data?.message || 'Pas de message'
+      );
     }
     return Promise.reject(error);
   }
@@ -135,5 +135,66 @@ export const getAICredits = async () => {
   return response.data;
 };
 
-export default api;
+// ═══════════════════════════════════════════════════════════════════════════════
+// FONCTIONS API — FACEBOOK BUSINESS
+// ═══════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Récupère l'URL d'authentification Facebook OAuth
+ */
+export const getFacebookAuthUrl = async () => {
+  const response = await api.get('/facebook/auth/url');
+  return response.data;
+};
+
+/**
+ * Récupère le statut de connexion Facebook
+ */
+export const getFacebookStatus = async () => {
+  const response = await api.get('/facebook/status');
+  return response.data;
+};
+
+/**
+ * Déconnecte le compte Facebook de l'utilisateur
+ */
+export const disconnectFacebook = async () => {
+  const response = await api.post('/facebook/disconnect');
+  return response.data;
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FONCTIONS API CAMPAGNES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Liste des campagnes avec filtre optionnel */
+export const getCampaigns = async (params = {}) => {
+  const response = await api.get('/campaigns', { params });
+  return response.data;
+};
+
+/** Créer une campagne */
+export const createCampaignApi = async (data) => {
+  const response = await api.post('/campaigns', data);
+  return response.data;
+};
+
+/** Détails d'une campagne */
+export const getCampaignById = async (id) => {
+  const response = await api.get(`/campaigns/${id}`);
+  return response.data;
+};
+
+/** Mettre à jour le statut d'une campagne */
+export const updateCampaignStatus = async (id, status) => {
+  const response = await api.patch(`/campaigns/${id}/status`, { status });
+  return response.data;
+};
+
+/** Supprimer une campagne */
+export const deleteCampaignApi = async (id) => {
+  const response = await api.delete(`/campaigns/${id}`);
+  return response.data;
+};
+
+export default api;

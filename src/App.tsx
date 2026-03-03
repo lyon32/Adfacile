@@ -15,15 +15,19 @@ import { TestPage } from './pages/TestPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import BillingPage from './pages/BillingPage';
+import CampaignsListPage from './pages/CampaignsListPage';
+import CreateCampaignPage from './pages/CreateCampaignPage';
+import FacebookCallback from './pages/FacebookCallback';
 import './styles/global.css';
 import './styles/components.css';
+import './styles/tailwind-campaigns.css';
 
 // Layout conditionnel pour afficher ou non Header/Footer
 const AppLayout = () => {
   const location = useLocation();
 
   // Pages sans Header/Footer (authentification, dashboard)
-  const noLayoutPaths = ['/signup', '/login', '/forgot-password', '/reset-password', '/dashboard', '/profil', '/plans', '/campaigns', '/analytics', '/settings'];
+  const noLayoutPaths = ['/signup', '/login', '/forgot-password', '/reset-password', '/dashboard', '/profil', '/plans', '/campaigns', '/analytics', '/settings', '/facebook'];
   const hideLayout = noLayoutPaths.some(path => location.pathname.startsWith(path));
 
   return (
@@ -43,9 +47,11 @@ const AppLayout = () => {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/profil" element={<ProfilePage />} />
         <Route path="/plans" element={<BillingPage />} />
-        <Route path="/campaigns" element={<DashboardPage />} />
+        <Route path="/campaigns" element={<CampaignsListPage />} />
+        <Route path="/campaigns/new" element={<CreateCampaignPage />} />
         <Route path="/analytics" element={<DashboardPage />} />
         <Route path="/settings" element={<ProfilePage />} />
+        <Route path="/facebook/callback" element={<FacebookCallback />} />
       </Routes>
       {!hideLayout && <Footer />}
     </div>

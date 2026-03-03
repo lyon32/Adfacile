@@ -31,15 +31,21 @@ const BillingPage = () => {
     const fetchAll = async () => {
         setLoading(true);
         try {
-            const [plansRes, subRes, invRes] = await Promise.all([
+            const [plansRes, subRes, invRes] = await Promise.allSettled([
                 api.get('/billing/plans'),
                 api.get('/billing/subscription'),
                 api.get('/billing/invoices')
             ]);
 
-            if (plansRes.data.success) setPlans(plansRes.data.data.plans);
-            if (subRes.data.success) setSubscription(subRes.data.data);
-            if (invRes.data.success) setInvoices(invRes.data.data.invoices);
+            if (plansRes.status === 'fulfilled' && plansRes.value.data.success) {
+                setPlans(plansRes.value.data.data.plans);
+            }
+            if (subRes.status === 'fulfilled' && subRes.value.data.success) {
+                setSubscription(subRes.value.data.data);
+            }
+            if (invRes.status === 'fulfilled' && invRes.value.data.success) {
+                setInvoices(invRes.value.data.data.invoices);
+            }
         } catch (err) {
             console.error('Erreur chargement billing:', err);
         } finally {
