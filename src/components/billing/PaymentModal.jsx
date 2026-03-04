@@ -1,14 +1,15 @@
 /**
- * PaymentModal — Modal de paiement Mobile Money
+ * PaymentModal — Modal de paiement Mobile Money via CamPay
  * AdsFacile Frontend
- * 
+ *
  * 3 étapes : Récapitulatif → Méthode + Numéro → Confirmation/Attente
+ * Polling CamPay toutes les 3s pour vérifier le statut du paiement
  */
 
 import { useState, useEffect, useRef } from 'react';
 import {
     X as XIcon, ArrowRight, Phone, Loader2,
-    CheckCircle2, AlertTriangle, Shield
+    CheckCircle2, AlertTriangle, Shield, Info
 } from 'lucide-react';
 import api from '../../services/api';
 
@@ -19,24 +20,25 @@ const PaymentModal = ({ plan, onClose, onSuccess }) => {
     const [phoneError, setPhoneError] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [paymentRef, setPaymentRef] = useState('');
-    const [status, setStatus] = useState('pending'); // pending | success | timeout
+    const [paymentData, setPaymentData] = useState(null);
+    const [status, setStatus] = useState('pending'); // pending | successful | failed | timeout
     const [timer, setTimer] = useState(180); // 3 min
     const intervalRef = useRef(null);
+    const pollingRef = useRef(null);
 
-    // Nettoyage timer au démontage
+    // Nettoyage au démontage
     useEffect(() => {
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
+            if (pollingRef.current) clearInterval(pollingRef.current);
         };
     }, []);
 
-    // ─── Étape 2 : Initier le paiement ───
+    // ─── Initier le paiement CamPay ───
     const handlePay = async () => {
-        // Validation téléphone
         const cleaned = phone.replace(/\s/g, '');
-        if (!cleaned || cleaned.length < 8) {
-            setPhoneError('Numéro invalide');
+        if (!cleaned || cleaned.length < 9) {
+            setPhoneError('Numéro invalide (9 chiffres après +237)');
             return;
         }
         setPhoneError('');
@@ -51,8 +53,9 @@ const PaymentModal = ({ plan, onClose, onSuccess }) => {
             });
 
             if (res.data.success) {
-                setPaymentRef(res.data.data.reference);
+                setPaymentData(res.data.data);
                 setStep(3);
+                startPolling(res.data.data.reference);
                 startTimer();
             }
         } catch (err) {
@@ -63,6 +66,32 @@ const PaymentModal = ({ plan, onClose, onSuccess }) => {
         }
     };
 
+    // ─── Polling CamPay toutes les 3s ───
+    const startPolling = (reference) => {
+        pollingRef.current = setInterval(async () => {
+            try {
+                const res = await api.get('/billing/payment/status', {
+                    params: { reference }
+                });
+
+                const newStatus = res.data.data?.status;
+
+                if (newStatus === 'successful') {
+                    clearInterval(pollingRef.current);
+                    clearInterval(intervalRef.current);
+                    setStatus('successful');
+                    if (onSuccess) onSuccess(plan);
+                } else if (newStatus === 'failed') {
+                    clearInterval(pollingRef.current);
+                    clearInterval(intervalRef.current);
+                    setStatus('failed');
+                }
+            } catch (err) {
+                console.error('Status check error:', err);
+            }
+        }, 3000);
+    };
+
     // ─── Timer 3 minutes ───
     const startTimer = () => {
         setTimer(180);
@@ -70,22 +99,13 @@ const PaymentModal = ({ plan, onClose, onSuccess }) => {
             setTimer(prev => {
                 if (prev <= 1) {
                     clearInterval(intervalRef.current);
+                    clearInterval(pollingRef.current);
                     setStatus('timeout');
                     return 0;
                 }
                 return prev - 1;
             });
         }, 1000);
-
-        // Simulation succès après 5s (en dev)
-        // TODO: Remplacer par un vrai polling MeSomb
-        if (process.env.NODE_ENV === 'development' || true) {
-            setTimeout(() => {
-                clearInterval(intervalRef.current);
-                setStatus('success');
-                if (onSuccess) onSuccess(plan);
-            }, 5000);
-        }
     };
 
     const formatTimer = (s) => {
@@ -104,7 +124,12 @@ const PaymentModal = ({ plan, onClose, onSuccess }) => {
                     <h3>
                         {step === 1 && 'Récapitulatif'}
                         {step === 2 && 'Mode de paiement'}
-                        {step === 3 && (status === 'success' ? 'Paiement confirmé !' : 'En attente')}
+                        {step === 3 && (
+                            status === 'successful' ? 'Paiement confirmé !' :
+                                status === 'failed' ? 'Paiement échoué' :
+                                    status === 'timeout' ? 'Délai expiré' :
+                                        'En attente de confirmation...'
+                        )}
                     </h3>
                     <button className="pm-close" onClick={onClose}>
                         <XIcon size={20} />
@@ -133,7 +158,7 @@ const PaymentModal = ({ plan, onClose, onSuccess }) => {
                             </div>
 
                             <ul className="pm-features-list">
-                                {plan.features.slice(0, 4).map((f, i) => (
+                                {plan.features.slice(0, 5).map((f, i) => (
                                     <li key={i}><CheckCircle2 size={14} /> {f}</li>
                                 ))}
                             </ul>
@@ -191,6 +216,21 @@ const PaymentModal = ({ plan, onClose, onSuccess }) => {
                                 {phoneError && <span className="pm-error">{phoneError}</span>}
                             </div>
 
+                            {/* Info sandbox */}
+                            {paymentData?.sandbox_mode && (
+                                <div className="pm-sandbox-info">
+                                    <Info size={14} />
+                                    <div>
+                                        <strong>Mode Sandbox</strong>
+                                        <p>Montant test: {paymentData.sandbox_info?.message}</p>
+                                        <p className="pm-test-nums">
+                                            MTN OK: 677777777 • MTN FAIL: 677777770<br />
+                                            Orange OK: 699999999 • Orange FAIL: 699999990
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             {error && (
                                 <div className="pm-error-box">
                                     <AlertTriangle size={16} />
@@ -200,7 +240,7 @@ const PaymentModal = ({ plan, onClose, onSuccess }) => {
 
                             <div className="pm-secure">
                                 <Shield size={14} />
-                                <span>Paiement sécurisé par MeSomb</span>
+                                <span>Paiement sécurisé par CamPay</span>
                             </div>
 
                             <button
@@ -221,7 +261,7 @@ const PaymentModal = ({ plan, onClose, onSuccess }) => {
                         </div>
                     )}
 
-                    {/* ═══ ÉTAPE 3 : Confirmation ═══ */}
+                    {/* ═══ ÉTAPE 3 : Confirmation / Polling ═══ */}
                     {step === 3 && (
                         <div className="pm-confirm">
                             {status === 'pending' && (
@@ -232,19 +272,49 @@ const PaymentModal = ({ plan, onClose, onSuccess }) => {
                                     <h4>En attente de confirmation...</h4>
                                     <p>Vérifiez votre téléphone pour confirmer le paiement de <strong>{plan.price.toLocaleString()} FCFA</strong></p>
                                     <div className="pm-timer">{formatTimer(timer)}</div>
-                                    <p className="pm-ref">Réf : {paymentRef}</p>
+                                    {paymentData && (
+                                        <p className="pm-ref">Réf : {paymentData.reference}</p>
+                                    )}
+                                    {paymentData?.ussd_code && (
+                                        <p className="pm-ussd">Code USSD : {paymentData.ussd_code}</p>
+                                    )}
+                                    {paymentData?.sandbox_mode && (
+                                        <div className="pm-sandbox-badge">
+                                            ⚠️ Mode sandbox — Montant réel: {paymentData.amount} XAF
+                                        </div>
+                                    )}
                                 </>
                             )}
 
-                            {status === 'success' && (
+                            {status === 'successful' && (
                                 <>
                                     <div className="pm-success-icon">
                                         <CheckCircle2 size={56} />
                                     </div>
                                     <h4>Plan {plan.name} activé ! 🎉</h4>
                                     <p>Vous avez maintenant accès à toutes les fonctionnalités de votre nouveau plan.</p>
-                                    <button className="pm-btn primary" onClick={onClose}>
+                                    <button className="pm-btn primary" onClick={() => { onClose(); window.location.reload(); }}>
                                         C'est parti !
+                                    </button>
+                                </>
+                            )}
+
+                            {status === 'failed' && (
+                                <>
+                                    <div className="pm-timeout-icon">
+                                        <AlertTriangle size={48} />
+                                    </div>
+                                    <h4>Paiement échoué</h4>
+                                    <p>Le paiement n'a pas pu être traité. Veuillez réessayer.</p>
+                                    <button className="pm-btn primary" onClick={() => {
+                                        setStep(2);
+                                        setStatus('pending');
+                                        setPaymentData(null);
+                                    }}>
+                                        Réessayer
+                                    </button>
+                                    <button className="pm-btn secondary" onClick={onClose}>
+                                        Annuler
                                     </button>
                                 </>
                             )}
@@ -255,9 +325,16 @@ const PaymentModal = ({ plan, onClose, onSuccess }) => {
                                         <AlertTriangle size={48} />
                                     </div>
                                     <h4>Paiement non reçu</h4>
-                                    <p>Le délai de confirmation a expiré. Veuillez réessayer ou contacter le support.</p>
-                                    <button className="pm-btn primary" onClick={() => { setStep(2); setStatus('pending'); }}>
+                                    <p>Le délai de confirmation a expiré. Vérifiez votre historique de paiements.</p>
+                                    <button className="pm-btn primary" onClick={() => {
+                                        setStep(2);
+                                        setStatus('pending');
+                                        setPaymentData(null);
+                                    }}>
                                         Réessayer
+                                    </button>
+                                    <button className="pm-btn secondary" onClick={onClose}>
+                                        Fermer
                                     </button>
                                 </>
                             )}

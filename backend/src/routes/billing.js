@@ -1,6 +1,13 @@
 /**
- * Routes Billing — Plans & Paiements
+ * Routes Billing — Plans, Paiements CamPay & Webhook
  * AdsFacile Backend
+ *
+ * GET    /plans              → Plans disponibles (public)
+ * GET    /subscription       → Abonnement actuel (auth)
+ * POST   /upgrade            → Initier un upgrade CamPay (auth)
+ * GET    /payment/status     → Vérifier statut paiement (auth)
+ * GET    /payments           → Historique des paiements (auth)
+ * POST   /webhook            → Callback CamPay (signature)
  */
 
 const express = require('express');
@@ -10,19 +17,24 @@ const {
     getPricingPlans,
     getCurrentSubscription,
     initiateUpgrade,
-    getInvoices
+    checkPaymentStatusEndpoint,
+    handleWebhook,
+    getPaymentHistory
 } = require('../controllers/billingController');
 
 // Plans disponibles (public)
 router.get('/plans', getPricingPlans);
 
-// Abonnement actuel (authentifié)
+// Routes authentifiées
 router.get('/subscription', authenticate, getCurrentSubscription);
-
-// Initier un upgrade (authentifié)
 router.post('/upgrade', authenticate, initiateUpgrade);
+router.get('/payment/status', authenticate, checkPaymentStatusEndpoint);
+router.get('/payments', authenticate, getPaymentHistory);
 
-// Historique factures (authentifié)
-router.get('/invoices', authenticate, getInvoices);
+// Backward compat: /invoices alias
+router.get('/invoices', authenticate, getPaymentHistory);
+
+// Webhook CamPay (pas d'auth user — vérifié par signature)
+router.post('/webhook', handleWebhook);
 
 module.exports = router;

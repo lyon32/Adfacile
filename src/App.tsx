@@ -18,6 +18,7 @@ import BillingPage from './pages/BillingPage';
 import CampaignsListPage from './pages/CampaignsListPage';
 import CreateCampaignPage from './pages/CreateCampaignPage';
 import FacebookCallback from './pages/FacebookCallback';
+import AnalyticsPage from './pages/AnalyticsPage';
 import './styles/global.css';
 import './styles/components.css';
 import './styles/tailwind-campaigns.css';
@@ -49,7 +50,7 @@ const AppLayout = () => {
         <Route path="/plans" element={<BillingPage />} />
         <Route path="/campaigns" element={<CampaignsListPage />} />
         <Route path="/campaigns/new" element={<CreateCampaignPage />} />
-        <Route path="/analytics" element={<DashboardPage />} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/settings" element={<ProfilePage />} />
         <Route path="/facebook/callback" element={<FacebookCallback />} />
       </Routes>

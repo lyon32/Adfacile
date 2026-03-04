@@ -1,5 +1,5 @@
 /**
- * BillingPage — Gestion du plan & Upgrade
+ * BillingPage — Gestion du plan & Upgrade via CamPay
  * AdsFacile Frontend
  */
 
@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Loader2, Rocket, Calendar, Zap, CreditCard,
-    Download, FileText
+    Download, FileText, Shield, Info
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
@@ -20,9 +20,10 @@ const BillingPage = () => {
     const { user } = useAuth();
     const [plans, setPlans] = useState([]);
     const [subscription, setSubscription] = useState(null);
-    const [invoices, setInvoices] = useState([]);
+    const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedPlan, setSelectedPlan] = useState(null);
+    const [sandboxMode, setSandboxMode] = useState(false);
 
     useEffect(() => {
         fetchAll();
@@ -31,20 +32,21 @@ const BillingPage = () => {
     const fetchAll = async () => {
         setLoading(true);
         try {
-            const [plansRes, subRes, invRes] = await Promise.allSettled([
+            const [plansRes, subRes, payRes] = await Promise.allSettled([
                 api.get('/billing/plans'),
                 api.get('/billing/subscription'),
-                api.get('/billing/invoices')
+                api.get('/billing/payments')
             ]);
 
             if (plansRes.status === 'fulfilled' && plansRes.value.data.success) {
                 setPlans(plansRes.value.data.data.plans);
+                setSandboxMode(plansRes.value.data.data.sandbox_mode || false);
             }
             if (subRes.status === 'fulfilled' && subRes.value.data.success) {
                 setSubscription(subRes.value.data.data);
             }
-            if (invRes.status === 'fulfilled' && invRes.value.data.success) {
-                setInvoices(invRes.value.data.data.invoices);
+            if (payRes.status === 'fulfilled' && payRes.value.data.success) {
+                setPayments(payRes.value.data.data.invoices || []);
             }
         } catch (err) {
             console.error('Erreur chargement billing:', err);
@@ -63,6 +65,13 @@ const BillingPage = () => {
         ? new Date(subscription.reset_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
         : '';
 
+    const PLAN_NAMES = { free: 'Gratuit', starter: 'Starter', pro: 'PRO', agency: 'Agency' };
+    const STATUS_MAP = {
+        successful: { label: 'Payé', class: 'paid' },
+        pending: { label: 'En attente', class: 'pending' },
+        failed: { label: 'Échoué', class: 'failed' }
+    };
+
     if (loading) {
         return (
             <DashboardLayout title="Gestion du plan">
@@ -78,6 +87,19 @@ const BillingPage = () => {
         <DashboardLayout title="Gestion du plan">
             <div className="billing-page">
                 <div className="billing-container">
+
+                    {/* ═══ SANDBOX BANNER ═══ */}
+                    {sandboxMode && (
+                        <div className="pm-sandbox-info" style={{ marginBottom: '1.5rem' }}>
+                            <Info size={16} />
+                            <div>
+                                <strong>Mode Sandbox CamPay</strong>
+                                <p style={{ margin: '4px 0 0', fontSize: '0.8125rem' }}>
+                                    Paiements de test uniquement (max 25 XAF). Utilisez les numéros de test sandbox.
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* ═══ SECTION 1 : MON PLAN ACTUEL ═══ */}
                     {currentPlan && (
@@ -95,6 +117,12 @@ const BillingPage = () => {
                                             </span>
                                         )}
                                     </div>
+                                    {subscription?.plan_expires_at && (
+                                        <div className="current-plan-reset" style={{ marginTop: '0.5rem' }}>
+                                            <Calendar size={14} />
+                                            <span>Expire le {new Date(subscription.plan_expires_at).toLocaleDateString('fr-FR')}</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {currentPlan.id === 'free' && (
@@ -184,7 +212,7 @@ const BillingPage = () => {
                     {/* ═══ SECTION 3 : HISTORIQUE PAIEMENTS ═══ */}
                     <section className="billing-section">
                         <h2>Historique des paiements</h2>
-                        {invoices.length === 0 ? (
+                        {payments.length === 0 ? (
                             <div className="billing-empty">
                                 <FileText size={32} />
                                 <p>Aucun paiement pour l'instant</p>
@@ -197,35 +225,66 @@ const BillingPage = () => {
                                             <th>Date</th>
                                             <th>Plan</th>
                                             <th>Montant</th>
-                                            <th>Méthode</th>
+                                            <th>Opérateur</th>
                                             <th>Statut</th>
-                                            <th>Facture</th>
+                                            <th>Référence</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {invoices.map((inv, i) => (
-                                            <tr key={i}>
-                                                <td>{new Date(inv.date).toLocaleDateString('fr-FR')}</td>
-                                                <td><span className={`plan-name-badge plan-${inv.plan}`}>{inv.plan_name}</span></td>
-                                                <td>{inv.amount?.toLocaleString()} FCFA</td>
-                                                <td>{inv.method}</td>
-                                                <td>
-                                                    <span className={`status-badge ${inv.status}`}>
-                                                        {inv.status === 'paid' ? 'Payé' : inv.status === 'pending' ? 'En attente' : 'Échoué'}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <button className="invoice-download" title="Télécharger">
-                                                        <Download size={14} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {payments.map((p, i) => {
+                                            const statusInfo = STATUS_MAP[p.status] || { label: p.status, class: 'pending' };
+                                            return (
+                                                <tr key={p.id || i}>
+                                                    <td>{new Date(p.created_at).toLocaleDateString('fr-FR', {
+                                                        day: '2-digit', month: 'short', year: 'numeric'
+                                                    })}</td>
+                                                    <td>
+                                                        <span className={`plan-name-badge plan-${p.target_plan}`}>
+                                                            {p.plan_name || PLAN_NAMES[p.target_plan] || p.target_plan}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        {(p.real_amount || p.amount)?.toLocaleString()} FCFA
+                                                        {p.real_amount && p.amount !== p.real_amount && (
+                                                            <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block' }}>
+                                                                (test: {p.amount} XAF)
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td>
+                                                        {p.operator === 'MTN' ? (
+                                                            <span style={{ color: '#FFCC00', fontWeight: 700 }}>MTN</span>
+                                                        ) : p.operator === 'ORANGE' ? (
+                                                            <span style={{ color: '#FF6600', fontWeight: 700 }}>Orange</span>
+                                                        ) : (
+                                                            p.operator || '—'
+                                                        )}
+                                                    </td>
+                                                    <td>
+                                                        <span className={`status-badge ${statusInfo.class}`}>
+                                                            {statusInfo.label}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#94a3b8' }}>
+                                                        {p.campay_reference
+                                                            ? p.campay_reference.substring(0, 12) + '…'
+                                                            : '—'
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
                         )}
                     </section>
+
+                    {/* ═══ SECTION 4 : SÉCURITÉ ═══ */}
+                    <div className="billing-security-footer">
+                        <Shield size={14} />
+                        <span>Paiements sécurisés par CamPay — Mobile Money (MTN & Orange)</span>
+                    </div>
                 </div>
             </div>
 
@@ -242,3 +301,4 @@ const BillingPage = () => {
 };
 
 export default BillingPage;
+

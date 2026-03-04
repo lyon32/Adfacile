@@ -902,3 +902,76 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * CAMPAY SANDBOX & EXTRAS
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+.pm-sandbox-info {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+    padding: var(--spacing-4);
+    background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+    border: 1px solid #93C5FD;
+    border-radius: var(--radius-lg);
+    color: #1E40AF;
+    font-size: var(--font-size-sm);
+}
+
+.pm-sandbox-info strong {
+    display: block;
+    margin-bottom: 2px;
+}
+
+.pm-sandbox-info p {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    color: #1E3A8A;
+    line-height: 1.4;
+}
+
+.pm-test-nums {
+    font-family: monospace;
+    font-size: 0.7rem !important;
+    margin-top: 4px;
+}
+
+.pm-sandbox-badge {
+    display: inline-block;
+    padding: var(--spacing-2) var(--spacing-4);
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    border-radius: var(--radius);
+    font-size: var(--font-size-xs);
+    color: #92400E;
+    font-weight: 600;
+    margin-top: var(--spacing-3);
+}
+
+.pm-ussd {
+    font-size: var(--font-size-sm);
+    font-family: monospace;
+    background: var(--color-bg-alt);
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius);
+    display: inline-block;
+}
+
+.status-badge.successful,
+.status-badge.paid {
+    background: #D1FAE5;
+    color: #047857;
+}
+
+.billing-security-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-4);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-light);
+    border-top: 1px solid var(--color-border-light);
+    margin-top: var(--spacing-6);
+}
