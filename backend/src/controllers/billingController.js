@@ -6,7 +6,7 @@
  * Mode Sandbox par défaut pour tests
  */
 
-const { supabase } = require('../config/supabase');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 const campayService = require('../services/campayService');
 const campayConfig = require('../config/campay');
 const logger = require('../utils/logger');
@@ -34,7 +34,7 @@ const PLANS = [
     {
         id: 'starter',
         name: 'Starter',
-        price: 5000,
+        price: 25, // ⚠️ TEMPORAIRE: 25 XAF pour test CamPay sandbox (prix réel: 5000)
         currency: 'FCFA',
         period: 'mois',
         features: [
@@ -110,14 +110,49 @@ const getPricingPlans = async (req, res) => {
 
 const getCurrentSubscription = async (req, res) => {
     try {
-        const { data: user, error } = await supabase
+        const { data: user, error } = await supabaseAdmin
             .from('users')
             .select('plan, plan_expires_at, ai_credits, created_at')
             .eq('id', req.user.id)
             .single();
 
         if (error || !user) {
+            logger.error(`❌ getCurrentSubscription: user not found for id=${req.user.id}, error=${JSON.stringify(error)}`);
             return res.status(404).json({ success: false, message: 'Utilisateur non trouvé' });
+        }
+
+        // ─── Auto-repair: vérifier si un paiement "successful" n'a pas activé le plan ───
+        const { data: successfulPayments } = await supabase
+            .from('payments')
+            .select('id, target_plan')
+            .eq('user_id', req.user.id)
+            .eq('status', 'successful')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (successfulPayments && successfulPayments.length > 0) {
+            const latestPayment = successfulPayments[0];
+            const paymentPlanLevel = PLAN_ORDER[latestPayment.target_plan] ?? 0;
+            const currentPlanLevel = PLAN_ORDER[user.plan] ?? 0;
+
+            if (paymentPlanLevel > currentPlanLevel) {
+                logger.warn(`⚠️ Auto-repair: user ${req.user.id} should be on ${latestPayment.target_plan} but is on ${user.plan}. Activating...`);
+                try {
+                    await activatePlan(req.user.id, latestPayment.target_plan);
+                    // Re-fetch user data after fix
+                    const { data: fixedUser } = await supabase
+                        .from('users')
+                        .select('plan, plan_expires_at, ai_credits, created_at')
+                        .eq('id', req.user.id)
+                        .single();
+                    if (fixedUser) {
+                        Object.assign(user, fixedUser);
+                    }
+                    logger.info(`🎉 Auto-repair: Plan ${latestPayment.target_plan} activé pour user ${req.user.id}`);
+                } catch (repairErr) {
+                    logger.error('❌ Auto-repair failed:', repairErr.message);
+                }
+            }
         }
 
         // Compter les campagnes ce mois
@@ -318,8 +353,28 @@ const checkPaymentStatusEndpoint = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Paiement introuvable' });
         }
 
-        // Si déjà finalisé, retourner direct
+        // Si déjà finalisé en base
         if (payment.status === 'successful' || payment.status === 'failed') {
+            // Safety net: si le paiement est "successful" mais le plan n'a pas changé,
+            // retenter l'activation (cas de race condition)
+            if (payment.status === 'successful') {
+                const { data: user } = await supabase
+                    .from('users')
+                    .select('plan')
+                    .eq('id', userId)
+                    .single();
+
+                if (user && user.plan !== payment.target_plan) {
+                    logger.warn(`⚠️ Plan mismatch detected! Payment successful for ${payment.target_plan} but user still on ${user.plan}. Retrying activation...`);
+                    try {
+                        await activatePlan(userId, payment.target_plan);
+                        logger.info(`🎉 Plan ${payment.target_plan} activé (retry) pour user ${userId}`);
+                    } catch (activateErr) {
+                        logger.error('❌ Retry activation failed:', activateErr.message);
+                    }
+                }
+            }
+
             return res.json({
                 success: true,
                 data: {
@@ -336,16 +391,30 @@ const checkPaymentStatusEndpoint = async (req, res) => {
 
         // Mettre à jour en base si changement
         if (newStatus !== payment.status) {
+            // Si successful → activer le plan D'ABORD, puis mettre à jour le statut
+            if (newStatus === 'successful') {
+                try {
+                    await activatePlan(userId, payment.target_plan);
+                    logger.info(`🎉 Plan ${payment.target_plan} activé pour user ${userId}`);
+                } catch (activateErr) {
+                    logger.error('❌ Erreur activation plan:', activateErr.message);
+                    // Marquer en erreur pour pouvoir retenter
+                    await supabase
+                        .from('payments')
+                        .update({ status: 'activation_failed', updated_at: new Date().toISOString() })
+                        .eq('id', payment.id);
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Paiement reçu mais erreur activation du plan. Veuillez réessayer.'
+                    });
+                }
+            }
+
+            // Mettre à jour le statut seulement après activation réussie
             await supabase
                 .from('payments')
                 .update({ status: newStatus, updated_at: new Date().toISOString() })
                 .eq('id', payment.id);
-
-            // Si successful → activer le plan
-            if (newStatus === 'successful') {
-                await activatePlan(userId, payment.target_plan);
-                logger.info(`🎉 Plan ${payment.target_plan} activé pour user ${userId}`);
-            }
         }
 
         return res.json({
@@ -435,22 +504,32 @@ async function activatePlan(userId, plan) {
         agency: 99999
     };
 
-    const { error } = await supabase
+    logger.info(`🔄 activatePlan: userId=${userId}, plan=${plan}, credits=${credits[plan] || 3}, expires=${expiresAt.toISOString()}`);
+
+    const { data, error } = await supabaseAdmin
         .from('users')
         .update({
             plan: plan,
             plan_expires_at: expiresAt.toISOString(),
             ai_credits: credits[plan] || 3
         })
-        .eq('id', userId);
+        .eq('id', userId)
+        .select('id, plan, plan_expires_at, ai_credits');
 
     if (error) {
-        logger.error('❌ Erreur activation plan:', error);
+        logger.error('❌ Erreur activation plan:', JSON.stringify(error));
         throw new Error('Erreur activation du plan');
     }
 
+    if (!data || data.length === 0) {
+        logger.error(`❌ activatePlan: UPDATE returned 0 rows for userId=${userId}. User may not exist!`);
+        throw new Error('Utilisateur introuvable lors de l\'activation du plan');
+    }
+
+    logger.info(`✅ activatePlan SUCCESS: user=${userId}, plan=${data[0].plan}, expires=${data[0].plan_expires_at}, credits=${data[0].ai_credits}`);
+
     // Logger dans audit_logs
-    await supabase.from('audit_logs').insert({
+    await supabaseAdmin.from('audit_logs').insert({
         user_id: userId,
         action: 'plan_upgraded',
         details: { new_plan: plan, expires_at: expiresAt.toISOString() }
@@ -494,11 +573,80 @@ const getPaymentHistory = async (req, res) => {
     }
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// PAYMENT METHOD STATUS (Facebook Ad Account Funding Source)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const getPaymentMethodStatus = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Get user's Facebook credentials
+        const { data: user, error: userError } = await supabaseAdmin
+            .from('users')
+            .select('fb_account_id, fb_access_token')
+            .eq('id', userId)
+            .single();
+
+        if (userError || !user || !user.fb_account_id || !user.fb_access_token) {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    has_payment_method: false,
+                    ad_account_id: null,
+                    message: 'Compte Facebook non connecté ou compte publicitaire manquant'
+                }
+            });
+        }
+
+        const adAccountId = `act_${user.fb_account_id}`;
+
+        // Query Facebook Graph API for funding source
+        const axios = require('axios');
+        const fbRes = await axios.get(
+            `https://graph.facebook.com/v21.0/${adAccountId}`,
+            {
+                params: {
+                    fields: 'funding_source_details,account_status',
+                    access_token: user.fb_access_token
+                }
+            }
+        );
+
+        const fundingDetails = fbRes.data?.funding_source_details;
+        const hasPayment = fundingDetails && fundingDetails.id;
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                has_payment_method: !!hasPayment,
+                ad_account_id: user.fb_account_id,
+                payment_type: fundingDetails?.type || null,
+                display_string: fundingDetails?.display_string || null,
+                account_status: fbRes.data?.account_status || null
+            }
+        });
+
+    } catch (error) {
+        // If the FB API call fails (e.g., no permission), still return a safe response
+        logger.error('❌ Erreur getPaymentMethodStatus:', error?.response?.data || error.message);
+        return res.status(200).json({
+            success: true,
+            data: {
+                has_payment_method: false,
+                ad_account_id: null,
+                message: 'Impossible de vérifier la méthode de paiement Facebook'
+            }
+        });
+    }
+};
+
 module.exports = {
     getPricingPlans,
     getCurrentSubscription,
     initiateUpgrade,
     checkPaymentStatusEndpoint,
     handleWebhook,
-    getPaymentHistory
+    getPaymentHistory,
+    getPaymentMethodStatus
 };

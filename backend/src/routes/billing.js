@@ -19,7 +19,8 @@ const {
     initiateUpgrade,
     checkPaymentStatusEndpoint,
     handleWebhook,
-    getPaymentHistory
+    getPaymentHistory,
+    getPaymentMethodStatus
 } = require('../controllers/billingController');
 
 // Plans disponibles (public)
@@ -33,6 +34,9 @@ router.get('/payments', authenticate, getPaymentHistory);
 
 // Backward compat: /invoices alias
 router.get('/invoices', authenticate, getPaymentHistory);
+
+// Facebook payment method status
+router.get('/payment-method-status', authenticate, getPaymentMethodStatus);
 
 // Webhook CamPay (pas d'auth user — vérifié par signature)
 router.post('/webhook', handleWebhook);

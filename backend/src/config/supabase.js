@@ -28,5 +28,12 @@ const supabase = createClient(
   }
 );
 
-module.exports = { supabase };
+// Client Admin avec service_role key — bypass RLS pour opérations privilégiées
+// (ex: activation de plan après paiement)
+const supabaseAdmin = process.env.SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  })
+  : supabase; // Fallback si pas de service role key
 
+module.exports = { supabase, supabaseAdmin };

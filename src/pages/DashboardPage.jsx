@@ -5,21 +5,98 @@
  * Utilise DashboardLayout pour le sidebar et le header
  */
 
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Target, Sparkles, BarChart3, ArrowRight,
   TrendingUp, Eye, DollarSign, Zap
 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import ConnectFacebookButton from '../components/facebook/ConnectFacebookButton';
+import { ConnectionsCard } from '../components/dashboard/ConnectionsCard';
+import { SetupInstructions } from '../components/dashboard/SetupInstructions';
+import { WhatsAppSetupGuide } from '../components/dashboard/WhatsAppSetupGuide';
+import { PaymentMethodCard } from '../components/billing/PaymentMethodCard';
+import { ReconnectFacebookButton } from '../components/dashboard/ReconnectFacebookButton';
+import { PageSelector } from '../components/dashboard/PageSelector';
+import { useFacebook } from '../hooks/useFacebook';
 import './DashboardPage.css';
 
 const DashboardPage = () => {
   const { user } = useAuth();
+  const { connected: facebookConnected, disconnect } = useFacebook();
+  const [searchParams] = useSearchParams();
+  const [connections, setConnections] = useState(null);
+  const [permissionsData, setPermissionsData] = useState(null);
+  const [pages, setPages] = useState([]);
+  const [activePage, setActivePage] = useState(null);
 
   const plan = user?.plan || 'free';
   const isPro = plan === 'pro' || plan === 'agency';
+
+  // Fetch all data
+  const fetchData = useCallback(async () => {
+    try {
+      // Fetch connections + pages in parallel
+      const [connRes, pagesRes] = await Promise.all([
+        api.get('/facebook/connections'),
+        api.get('/facebook/pages')
+      ]);
+
+      setConnections(connRes.data.connections);
+      setPermissionsData(connRes.data.permissions || null);
+      setPages(pagesRes.data.pages || []);
+      setActivePage(pagesRes.data.activePage || null);
+    } catch (err) {
+      console.error('Dashboard fetch error:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (facebookConnected) {
+      fetchData();
+    }
+  }, [facebookConnected, fetchData]);
+
+  // Called when user switches page in PageSelector
+  const handlePageSwitch = useCallback(async () => {
+    await fetchData(); // Re-fetch all data for the newly active page
+  }, [fetchData]);
+
+  // Called when SetupInstructions refreshes connections
+  const handleRefresh = useCallback((updatedConnections) => {
+    // Update connections state locally
+    if (updatedConnections) {
+      setConnections(prev => ({
+        ...prev,
+        instagram: updatedConnections.instagram || prev?.instagram,
+        whatsapp: updatedConnections.whatsapp || prev?.whatsapp
+      }));
+      // Also update activePage
+      setActivePage(prev => prev ? {
+        ...prev,
+        instagram_connected: updatedConnections.instagram?.connected || false,
+        instagram_username: updatedConnections.instagram?.username || null,
+        whatsapp_connected: updatedConnections.whatsapp?.connected || false,
+        whatsapp_number: updatedConnections.whatsapp?.phoneNumber || null
+      } : prev);
+    }
+  }, []);
+
+  // Check for error params from OAuth redirect
+  const noPageError = searchParams.get('no_page') === 'true';
+
+  // Determine what to show — only ONE at a time
+  const needsReconnect = facebookConnected &&
+    permissionsData &&
+    (!permissionsData.hasInstagramPermission || !permissionsData.hasWhatsAppPermission) &&
+    connections?.hasPage;
+
+  const showSetupInstructions = facebookConnected &&
+    connections &&
+    !needsReconnect;
 
   return (
     <DashboardLayout title="Dashboard">
@@ -121,8 +198,63 @@ const DashboardPage = () => {
           </Link>
         </div>
 
-        {/* ── Connexion Facebook ── */}
-        <ConnectFacebookButton />
+        {/* ── Connexion Facebook & Plateformes ── */}
+        {/* SCENARIO 1: Not connected to Facebook */}
+        {!facebookConnected && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900">Connexion Facebook</h3>
+            <p className="text-gray-600 mb-4 text-sm">
+              Connectez votre compte Facebook Business pour créer des campagnes publicitaires.
+            </p>
+            <ConnectFacebookButton />
+          </div>
+        )}
+
+        {/* SCENARIO 2: Connected but needs reconnection for permissions */}
+        {needsReconnect && (
+          <ReconnectFacebookButton permissions={permissionsData} reason="permissions" />
+        )}
+
+        {/* SCENARIO 3: Connected with proper permissions — show setup & status */}
+        {showSetupInstructions && (
+          <>
+            {/* Page Selector (multi-page support) */}
+            {pages.length > 0 && (
+              <PageSelector
+                pages={pages}
+                activePage={activePage}
+                onPageSwitch={handlePageSwitch}
+              />
+            )}
+
+            <SetupInstructions
+              hasPage={connections.hasPage}
+              connections={connections}
+              onRefresh={handleRefresh}
+            />
+
+            {/* Config & WhatsApp info below */}
+            {connections.hasPage && (
+              <>
+                <ConnectionsCard
+                  connections={connections}
+                  onDisconnect={async () => {
+                    if (window.confirm("Êtes-vous sûr de vouloir déconnecter votre compte Facebook ? Cela suspendra vos campagnes en cours.")) {
+                      try {
+                        await disconnect();
+                        window.location.reload();
+                      } catch (err) {
+                        alert("Erreur lors de la déconnexion.");
+                      }
+                    }
+                  }}
+                />
+                <PaymentMethodCard businessId={connections.whatsapp?.business_id} />
+                <WhatsAppSetupGuide businessId={connections.whatsapp?.business_id} />
+              </>
+            )}
+          </>
+        )}
 
         {/* ── Upgrade Banner ── */}
         {plan === 'free' && (

@@ -15,6 +15,8 @@ import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import CampaignCard from '../components/campaigns/CampaignCard';
 import { useCampaigns } from '../hooks/useCampaigns';
+import { useFacebook } from '../hooks/useFacebook';
+import ConnectFacebookButton from '../components/facebook/ConnectFacebookButton';
 import '../styles/campaigns-list.css';
 
 const FILTERS = [
@@ -28,6 +30,7 @@ const CampaignsListPage = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const { campaigns, loading, error, meta, fetchCampaigns, updateStatus, deleteCampaign } = useCampaigns();
+    const { connected: fbConnected, loading: fbLoading } = useFacebook();
     const [activeFilter, setActiveFilter] = useState('all');
     const [showLimitModal, setShowLimitModal] = useState(false);
 
@@ -36,6 +39,11 @@ const CampaignsListPage = () => {
     }, [activeFilter, fetchCampaigns]);
 
     const handleCreateClick = () => {
+        if (!fbConnected) {
+            alert("Vous devez d'abord connecter votre compte Facebook !");
+            return;
+        }
+
         if (!meta.can_create && user?.plan === 'free') {
             setShowLimitModal(true);
         } else {
@@ -63,6 +71,34 @@ const CampaignsListPage = () => {
                         Créer une campagne
                     </button>
                 </div>
+
+                {/* FB Connection Alert */}
+                {!fbLoading && !fbConnected && (
+                    <div className="campaigns-fb-alert" style={{
+                        backgroundColor: '#FEF2F2',
+                        border: '1px solid #FCA5A5',
+                        borderRadius: '0.5rem',
+                        padding: '1.25rem',
+                        marginBottom: '1.5rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '1rem',
+                        alignItems: 'flex-start'
+                    }}>
+                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                            <AlertTriangle size={24} color="#EF4444" />
+                            <div>
+                                <h3 style={{ margin: 0, color: '#991B1B', fontSize: '1.125rem' }}>Connexion Facebook requise</h3>
+                                <p style={{ margin: '0.25rem 0 0 0', color: '#B91C1C', fontSize: '0.875rem' }}>
+                                    Vous devez connecter votre compte Facebook Business pour pouvoir créer et diffuser des campagnes publicitaires.
+                                </p>
+                            </div>
+                        </div>
+                        <div style={{ width: '100%', maxWidth: '350px' }}>
+                            <ConnectFacebookButton />
+                        </div>
+                    </div>
+                )}
 
                 {/* Filter Tabs */}
                 <div className="campaigns-filters">

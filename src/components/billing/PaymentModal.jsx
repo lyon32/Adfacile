@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 
-const PaymentModal = ({ plan, onClose, onSuccess }) => {
+const PaymentModal = ({ plan, onClose, onSuccess, onRefreshUser }) => {
     const [step, setStep] = useState(1);
     const [paymentMethod, setPaymentMethod] = useState('mtn');
     const [phone, setPhone] = useState('');
@@ -80,6 +80,10 @@ const PaymentModal = ({ plan, onClose, onSuccess }) => {
                     clearInterval(pollingRef.current);
                     clearInterval(intervalRef.current);
                     setStatus('successful');
+                    // Refresh user data in AuthContext (plan, credits, etc.)
+                    if (onRefreshUser) {
+                        try { await onRefreshUser(); } catch (e) { console.error('refreshUser error:', e); }
+                    }
                     if (onSuccess) onSuccess(plan);
                 } else if (newStatus === 'failed') {
                     clearInterval(pollingRef.current);
@@ -293,7 +297,7 @@ const PaymentModal = ({ plan, onClose, onSuccess }) => {
                                     </div>
                                     <h4>Plan {plan.name} activé ! 🎉</h4>
                                     <p>Vous avez maintenant accès à toutes les fonctionnalités de votre nouveau plan.</p>
-                                    <button className="pm-btn primary" onClick={() => { onClose(); window.location.reload(); }}>
+                                    <button className="pm-btn primary" onClick={onClose}>
                                         C'est parti !
                                     </button>
                                 </>

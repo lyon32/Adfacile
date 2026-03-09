@@ -10,7 +10,12 @@ const {
     getAuthUrl,
     handleCallback,
     getStatus,
-    disconnect
+    disconnect,
+    getConnectionStatus,
+    getPermissions,
+    getUserAllPages,
+    switchActivePage,
+    refreshConnections
 } = require('../controllers/facebookController');
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -32,5 +37,22 @@ router.get('/status', authenticate, getStatus);
 // POST /api/facebook/disconnect — Déconnecter Facebook (authentifié)
 // ═══════════════════════════════════════════════════════════════════════════════
 router.post('/disconnect', authenticate, disconnect);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GET /api/facebook/connections — Statut connexions (Facebook, Insta, WhatsApp)
+// ═══════════════════════════════════════════════════════════════════════════════
+router.get('/connections', authenticate, getConnectionStatus);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GET /api/facebook/permissions — Vérifier les permissions accordées
+// ═══════════════════════════════════════════════════════════════════════════════
+router.get('/permissions', authenticate, getPermissions);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Multi-Page Management
+// ═══════════════════════════════════════════════════════════════════════════════
+router.get('/pages', authenticate, getUserAllPages);
+router.post('/switch-page', authenticate, switchActivePage);
+router.post('/refresh-connections', authenticate, refreshConnections);
 
 module.exports = router;

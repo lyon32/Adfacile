@@ -4,6 +4,7 @@
  */
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext(null);
@@ -123,10 +124,35 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('user', JSON.stringify(userData));
   }, []);
 
+  /**
+   * Re-fetch le profil utilisateur depuis le backend
+   * Utile après un changement de plan, paiement, etc.
+   */
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await api.get('/users/me');
+      if (res.data.success && res.data.data?.user) {
+        const freshUser = res.data.data.user;
+        setUser(freshUser);
+        localStorage.setItem('user', JSON.stringify(freshUser));
+        return freshUser;
+      }
+    } catch (err) {
+      console.error('Erreur refreshUser:', err);
+    }
+    return null;
+  }, []);
+
   // Vérifier auth au montage
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    const isAuth = checkAuth();
+    // Refresh le profil en arrière-plan pour avoir les dernières données (plan, crédits)
+    // Utile car le webhook CamPay ou l'auto-repair côté backend met à jour la base
+    // sans que le localStorage du frontend ne soit au courant.
+    if (isAuth) {
+      refreshUser();
+    }
+  }, [checkAuth, refreshUser]);
 
   const value = {
     user,
@@ -136,7 +162,8 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     checkAuth,
-    updateUser
+    updateUser,
+    refreshUser
   };
 
   return (

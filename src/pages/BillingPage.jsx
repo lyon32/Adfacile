@@ -17,7 +17,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import './BillingPage.css';
 
 const BillingPage = () => {
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
     const [plans, setPlans] = useState([]);
     const [subscription, setSubscription] = useState(null);
     const [payments, setPayments] = useState([]);
@@ -294,6 +294,7 @@ const BillingPage = () => {
                     plan={selectedPlan}
                     onClose={() => setSelectedPlan(null)}
                     onSuccess={handleUpgradeSuccess}
+                    onRefreshUser={refreshUser}
                 />
             )}
         </DashboardLayout>
