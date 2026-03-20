@@ -15,7 +15,7 @@ const OBJECTIVES = [
         description: 'Touchez un maximum de personnes et augmentez la notoriété de votre marque'
     },
     {
-        id: 'OUTCOME_TRAFFIC',
+        id: 'LINK_CLICKS',
         icon: MousePointer,
         title: 'Traffic',
         subtitle: 'Trafic',
@@ -36,7 +36,7 @@ const OBJECTIVES = [
         description: 'Collectez des prospects pour votre entreprise'
     },
     {
-        id: 'OUTCOME_APP_PROMOTION',
+        id: 'APP_INSTALLS',
         icon: Smartphone,
         title: 'App promotion',
         subtitle: 'Application',

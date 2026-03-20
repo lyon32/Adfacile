@@ -85,7 +85,6 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
             });
 
             if (response.data.success) {
-                console.log(`✅ File uploaded: ${response.data.url}`);
                 updateCreative('media_url', response.data.url);
             }
         } catch (err) {

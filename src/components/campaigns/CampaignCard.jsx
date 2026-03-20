@@ -19,10 +19,10 @@ const STATUS_BADGES = {
 
 const OBJECTIVE_LABELS = {
     'OUTCOME_AWARENESS': 'Notoriété',
-    'OUTCOME_TRAFFIC': 'Trafic',
+    'LINK_CLICKS': 'Trafic',
     'OUTCOME_ENGAGEMENT': 'Engagement',
     'OUTCOME_LEADS': 'Prospects',
-    'OUTCOME_APP_PROMOTION': 'App',
+    'APP_INSTALLS': 'App',
     'OUTCOME_SALES': 'Ventes'
 };
 
