@@ -11,13 +11,16 @@
 
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 const { authenticate } = require('../middleware/auth');
 const {
     createCampaign,
     listCampaigns,
     getCampaignDetails,
     updateStatus,
-    deleteCampaign
+    deleteCampaign,
+    uploadMedia
 } = require('../controllers/campaignController');
 
 // Toutes les routes nécessitent l'authentification
@@ -25,6 +28,7 @@ router.use(authenticate);
 
 // CRUD
 router.post('/', createCampaign);
+router.post('/upload-media', upload.single('file'), uploadMedia);
 router.get('/', listCampaigns);
 router.get('/:id', getCampaignDetails);
 router.patch('/:id/status', updateStatus);

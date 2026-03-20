@@ -24,6 +24,9 @@ export const useFacebook = () => {
             const response = await api.get('/facebook/status');
             if (response.data.success) {
                 const { connected: isConnected, pageName: name, accountId: accId, fbUserId: uid } = response.data.data;
+                if (isConnected) {
+                    console.log(`✅ Facebook connected: ${name}`);
+                }
                 setConnected(isConnected);
                 setPageName(name);
                 setAccountId(accId);

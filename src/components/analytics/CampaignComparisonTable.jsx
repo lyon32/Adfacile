@@ -72,7 +72,7 @@ const CampaignComparisonTable = ({ campaigns = [], onExport }) => {
     };
 
     const OBJECTIVE_LABELS = {
-        'LINK_CLICKS': '🔗 Clics',
+        'OUTCOME_TRAFFIC': '🔗 Clics',
         'OUTCOME_ENGAGEMENT': '💬 Engagement',
         'OUTCOME_LEADS': '📋 Leads',
         'OUTCOME_SALES': '🛒 Ventes',

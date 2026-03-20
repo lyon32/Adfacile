@@ -25,6 +25,7 @@ async function getFacebookAccount(userId) {
         .from('facebook_accounts')
         .select('fb_user_id, fb_access_token, fb_account_id, fb_page_id')
         .eq('user_id', userId)
+        .eq('is_active', true)
         .single();
 
     if (error || !data) {

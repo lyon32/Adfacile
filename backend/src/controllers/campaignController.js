@@ -5,7 +5,7 @@
  * Flow Facebook : Campaign → Ad Set → Ad
  */
 
-const { supabase } = require('../config/supabase');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 const facebookAdsService = require('../services/facebookAdsService');
 const logger = require('../utils/logger');
 
@@ -101,6 +101,78 @@ function validateCampaignData(data) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // CREATE CAMPAIGN
 // ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Gère l'upload de médias pour la campagne
+ */
+const uploadMedia = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const file = req.file;
+
+        if (!file) {
+            return res.status(400).json({ success: false, message: 'Aucun fichier fourni' });
+        }
+
+        const fileName = `${userId}-${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        
+        logger.info(`📁 Uploading media for user ${userId}: ${file.originalname}`);
+
+        let { data, error } = await supabaseAdmin.storage
+            .from('campaign-media')
+            .upload(fileName, file.buffer, {
+                contentType: file.mimetype,
+                upsert: true
+            });
+
+        if (error) {
+            // Tentative de création du bucket s'il n'existe pas
+            if (error.message.includes('Bucket not found') || error.message.includes('not found')) {
+                logger.warn('⚠️ Bucket "campaign-media" non trouvé, création automatique...');
+                
+                const { error: createError } = await supabaseAdmin.storage
+                    .createBucket('campaign-media', {
+                        public: true,
+                        fileSizeLimit: 52428800 // 50MB
+                    });
+                
+                if (createError && !createError.message.includes('already exists')) {
+                    logger.error('❌ Echec de création du bucket:', createError);
+                    throw error; // Jeter l'erreur initiale
+                }
+                
+                // Réessayer l'upload
+                const retryUpload = await supabaseAdmin.storage
+                    .from('campaign-media')
+                    .upload(fileName, file.buffer, {
+                        contentType: file.mimetype,
+                        upsert: true
+                    });
+                
+                if (retryUpload.error) {
+                    throw retryUpload.error;
+                }
+                
+                data = retryUpload.data;
+            } else {
+                throw error;
+            }
+        }
+
+        const publicUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/campaign-media/${fileName}`;
+        
+        logger.info(`✅ Media uploaded: ${publicUrl}`);
+
+        return res.json({
+            success: true,
+            url: publicUrl
+        });
+
+    } catch (error) {
+        logger.error('❌ Erreur upload media:', error);
+        return res.status(500).json({ success: false, message: "Erreur lors de l'upload" });
+    }
+};
 
 /**
  * Crée une campagne complète (3 niveaux Facebook)
@@ -330,5 +402,6 @@ module.exports = {
     listCampaigns,
     getCampaignDetails,
     updateStatus,
-    deleteCampaign
+    deleteCampaign,
+    uploadMedia
 };

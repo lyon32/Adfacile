@@ -11,7 +11,7 @@ const { supabase } = require('../config/supabase');
 const { decryptToken } = require('./facebookService');
 const logger = require('../utils/logger');
 
-const FACEBOOK_GRAPH_URL = 'https://graph.facebook.com/v19.0';
+const FACEBOOK_GRAPH_URL = 'https://graph.facebook.com/v21.0';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // HELPERS
@@ -41,14 +41,14 @@ function getCityKey(city) {
  */
 function getOptimizationGoal(objective) {
     const goals = {
-        'LINK_CLICKS': 'LINK_CLICKS',
-        'OUTCOME_ENGAGEMENT': 'ENGAGEMENT',
+        'OUTCOME_TRAFFIC': 'LINK_CLICKS',
+        'OUTCOME_ENGAGEMENT': 'POST_ENGAGEMENT',
         'OUTCOME_LEADS': 'LEAD_GENERATION',
         'OUTCOME_SALES': 'OFFSITE_CONVERSIONS',
         'OUTCOME_AWARENESS': 'REACH',
-        'APP_INSTALLS': 'APP_INSTALLS'
+        'OUTCOME_APP_PROMOTION': 'APP_INSTALLS'
     };
-    return goals[objective] || 'REACH';
+    return goals[objective] || 'LINK_CLICKS';
 }
 
 /**
@@ -86,6 +86,8 @@ function buildTargeting(targeting) {
 
     result.geo_locations = geoLocations;
 
+    // TEMPORARY: Comment out interests and genders until we implement proper interest search
+    /*
     // Genre
     if (targeting.genders && targeting.genders.length > 0) {
         result.genders = targeting.genders.map(g => g === 'male' ? 1 : 2);
@@ -102,6 +104,7 @@ function buildTargeting(targeting) {
         if (!result.flexible_spec) result.flexible_spec = [{}];
         result.flexible_spec[0].behaviors = targeting.behaviors.map(b => ({ name: b }));
     }
+    */
 
     return result;
 }
@@ -114,17 +117,25 @@ function buildTargeting(targeting) {
  * Récupère les credentials Facebook d'un utilisateur depuis la DB
  */
 async function getFacebookAccount(userId) {
+    logger.info(`🔍 getFacebookAccount: Looking for facebook_accounts with user_id=${userId}, is_active=true`);
+
     const { data, error } = await supabase
         .from('facebook_accounts')
-        .select('fb_user_id, fb_access_token, fb_account_id, fb_page_id, fb_page_name, fb_page_token')
+        .select('fb_user_id, fb_access_token, fb_account_id, fb_page_id, fb_page_name')
         .eq('user_id', userId)
+        .eq('is_active', true)
         .single();
 
-    if (error || !data) {
-        logger.warn(`Pas de compte Facebook pour user ${userId}`);
+    if (error) {
+        logger.warn(`❌ getFacebookAccount error for user ${userId}: ${error.message} (code: ${error.code}, details: ${JSON.stringify(error.details)})`);
+    }
+
+    if (!data) {
+        logger.warn(`❌ getFacebookAccount: No data found for user ${userId}`);
         return null;
     }
 
+    logger.info(`✅ getFacebookAccount: Found account for user ${userId}, page=${data.fb_page_name}, page_id=${data.fb_page_id}`);
     return data;
 }
 
@@ -150,21 +161,30 @@ async function createFullCampaign(userId, data) {
     }
 
     const accessToken = decryptToken(fb.fb_access_token);
-    const adAccountId = `act_${fb.fb_account_id}`;
+    const adAccountId = fb.fb_account_id.startsWith('act_') 
+        ? fb.fb_account_id 
+        : `act_${fb.fb_account_id}`;
 
     logger.info(`📢 Création campagne FB pour user ${userId}, account ${adAccountId}`);
 
     try {
         // 2. Créer la Campaign
         logger.info('📢 Étape 1/4 : Création Campaign...');
+        
+        // Paramètres MINIMAUX pour test
+        const campaignParams = {
+            name: data.campaign_name || "Test Campaign AdsFacile",
+            objective: data.objective || "OUTCOME_TRAFFIC", // Le plus simple
+            status: "PAUSED", // Ne pas lancer tout de suite
+            special_ad_categories: [], // Obligatoire même vide
+            is_adset_budget_sharing_enabled: false // Requis dans l'API v21
+        };
+        
+        logger.info('📤 Paramètres campagne:\n' + JSON.stringify(campaignParams, null, 2));
+
         const campaignResponse = await axios.post(
             `${FACEBOOK_GRAPH_URL}/${adAccountId}/campaigns`,
-            {
-                name: data.campaign_name,
-                objective: data.objective,
-                status: 'PAUSED',
-                special_ad_categories: []
-            },
+            campaignParams,
             { params: { access_token: accessToken } }
         );
         const fbCampaignId = campaignResponse.data.id;
@@ -172,12 +192,32 @@ async function createFullCampaign(userId, data) {
 
         // 3. Créer l'Ad Set
         logger.info('📢 Étape 2/4 : Création Ad Set...');
+
+        // VALIDATE required fields
+        if (!data.daily_budget || data.daily_budget < 1000) {
+            throw new Error('Budget minimum : 1000 FCFA/jour');
+        }
+
+        if (!data.targeting || !data.targeting.locations || data.targeting.locations.length === 0) {
+            throw new Error('Au moins une localisation est requise');
+        }
+
+        const dailyBudgetInCents = Math.round(data.daily_budget * 100);
+
+        // Verify it's a valid number
+        if (isNaN(dailyBudgetInCents) || dailyBudgetInCents < 100000) {
+            throw new Error(`Budget invalide: ${data.daily_budget}. Minimum 1000 FCFA.`);
+        }
+
+        logger.info(`💰 Budget validé: ${data.daily_budget} FCFA = ${dailyBudgetInCents} centimes`);
+
         const adSetPayload = {
             name: data.adset_name || `${data.campaign_name} - AdSet`,
             campaign_id: fbCampaignId,
-            daily_budget: Math.round(data.daily_budget * 100), // centimes
+            daily_budget: dailyBudgetInCents,
             billing_event: 'IMPRESSIONS',
             optimization_goal: getOptimizationGoal(data.objective),
+            bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
             targeting: buildTargeting(data.targeting),
             status: 'PAUSED',
             start_time: data.start_date ? new Date(data.start_date).toISOString() : new Date().toISOString()
@@ -185,12 +225,21 @@ async function createFullCampaign(userId, data) {
 
         if (data.budget_type === 'lifetime' && data.end_date) {
             delete adSetPayload.daily_budget;
-            adSetPayload.lifetime_budget = Math.round(data.daily_budget * 100);
+            const lifetimeBudgetInCents = Math.round((data.lifetime_budget || data.daily_budget) * 100);
+            
+            if (isNaN(lifetimeBudgetInCents) || lifetimeBudgetInCents < 100000) {
+                throw new Error('Budget lifetime minimum : 1000 FCFA');
+            }
+            
+            adSetPayload.lifetime_budget = lifetimeBudgetInCents;
         }
 
         if (data.end_date) {
             adSetPayload.end_time = new Date(data.end_date).toISOString();
         }
+
+        // Log complete Ad Set payload BEFORE sending
+        logger.info('📤 Paramètres Ad Set:\n' + JSON.stringify(adSetPayload, null, 2));
 
         const adSetResponse = await axios.post(
             `${FACEBOOK_GRAPH_URL}/${adAccountId}/adsets`,
@@ -325,11 +374,38 @@ async function createFullCampaign(userId, data) {
         };
 
     } catch (error) {
-        logger.error('❌ Erreur création campagne Facebook:', error.response?.data || error.message);
+        // Log the FULL error object
+        if (error.response?.data) {
+            logger.error('❌ Facebook API Full Error Response:');
+            logger.error(JSON.stringify(error.response.data, null, 2));
+        } else {
+            logger.error('❌ Error without response:', error.message);
+        }
+        
+        let stepContext = '';
+        if (typeof fbCampaignId !== 'undefined' && typeof fbAdSetId === 'undefined') {
+            stepContext = ' (Campaign créée, échec Ad Set)';
+        } else if (typeof fbAdSetId !== 'undefined' && typeof fbCreativeId === 'undefined') {
+            stepContext = ' (Campaign+AdSet créés, échec Creative)';
+        } else if (typeof fbCreativeId !== 'undefined' && typeof fbAdId === 'undefined') {
+            stepContext = ' (Campaign+AdSet+Creative créés, échec Ad)';
+        }
+
+        logger.error(`❌ Erreur création campagne Facebook${stepContext}:`, error.response?.data || error.message);
 
         // Remonter l'erreur Facebook avec plus de détails
         if (error.response?.data?.error) {
             const fbError = error.response.data.error;
+            
+            // Log all error details
+            logger.error('Facebook Error Details:');
+            logger.error('- Message:', fbError.message);
+            logger.error('- Code:', fbError.code);
+            logger.error('- Subcode:', fbError.error_subcode);
+            logger.error('- User Title:', fbError.error_user_title);
+            logger.error('- User Message:', fbError.error_user_msg);
+            logger.error('- Trace ID:', fbError.fbtrace_id);
+            
             const err = new Error(fbError.message || 'Erreur Facebook API');
             err.response = { error: fbError };
             err.fbErrorCode = fbError.code;

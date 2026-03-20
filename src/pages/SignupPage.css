@@ -232,6 +232,8 @@
 /* Inputs */
 .form-group input,
 .form-group select {
+  width: 100%;
+  box-sizing: border-box;
   height: 42px;
   padding: 0 0.875rem;
   border: 1.5px solid #e2e8f0;
@@ -285,6 +287,7 @@
 
 .phone-input-wrapper input {
   flex: 1;
+  min-width: 0;
   border-radius: 0 0.625rem 0.625rem 0;
 }
 
@@ -447,7 +450,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -549,21 +554,21 @@
   .signup-branding {
     display: flex;
   }
-  
+
   .signup-form-side {
     flex: 0 0 50%;
     max-width: 50%;
     background: transparent;
   }
-  
+
   .signup-header {
     display: none;
   }
-  
+
   .signup-container {
     max-width: 420px;
   }
-  
+
   .signup-card {
     padding: 2rem;
   }
@@ -573,7 +578,7 @@
   .signup-container {
     max-width: 460px;
   }
-  
+
   .branding-headline {
     font-size: 3rem;
   }
@@ -587,27 +592,27 @@
   .signup-form-side {
     padding: 1rem;
   }
-  
+
   .signup-card {
     padding: 1.25rem;
   }
-  
+
   .form-row,
   .selects-row {
     grid-template-columns: 1fr;
     gap: 0.75rem;
   }
-  
+
   .oauth-buttons {
     grid-template-columns: 1fr;
   }
-  
+
   .signup-badges {
     flex-direction: column;
     gap: 0.5rem;
     align-items: center;
   }
-  
+
   .signup-header h1 {
     font-size: 1.25rem;
   }

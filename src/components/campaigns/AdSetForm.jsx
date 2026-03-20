@@ -23,12 +23,12 @@ const INTEREST_SUGGESTIONS = [
 ];
 
 const OPTIMIZATION_LABELS = {
-    'LINK_CLICKS': 'Clics sur le lien',
+    'OUTCOME_TRAFFIC': 'Clics sur le lien',
     'OUTCOME_ENGAGEMENT': 'Engagement sur la publication',
     'OUTCOME_LEADS': 'Prospects',
     'OUTCOME_SALES': 'Conversions',
     'OUTCOME_AWARENESS': 'Portée maximale',
-    'APP_INSTALLS': "Installations d'application"
+    'OUTCOME_APP_PROMOTION': "Installations d'application"
 };
 
 const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
@@ -80,17 +80,22 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
     // Audience estimation (simplified)
     const audienceEstimate = useMemo(() => {
         let base = 500000;
-        if (targeting.locations.includes('Cameroun')) base = 5000000;
+        if (targeting.locations.length === 0) base = 100000; // Default when empty
+        else if (targeting.locations.includes('Cameroun')) base = 5000000;
         else base = targeting.locations.length * 300000;
 
-        const ageRange = (targeting.age_max - targeting.age_min) / 47;
+        // Prevent age range from being negative or zero
+        let ageDiff = targeting.age_max - targeting.age_min;
+        if (ageDiff <= 0) ageDiff = 1;
+
+        const ageRange = ageDiff / 47;
         base *= ageRange;
 
         if (targeting.genders.length === 1) base *= 0.5;
         if (targeting.interests.length > 0) base *= (0.3 + targeting.interests.length * 0.05);
 
         const min = Math.max(1000, Math.round(base * 0.6));
-        const max = Math.round(base * 1.4);
+        const max = Math.max(min + 1000, Math.round(base * 1.4));
         return { min, max };
     }, [targeting]);
 
