@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { Facebook, Loader2, CheckCircle2, Unplug, AlertCircle } from 'lucide-react';
 import { useFacebook } from '../../hooks/useFacebook';
+import { FacebookPreConnectionChecklist } from '../dashboard/FacebookPreConnectionChecklist';
 import './ConnectFacebookButton.css';
 
 const ConnectFacebookButton = () => {
@@ -108,48 +109,10 @@ const ConnectFacebookButton = () => {
 
     // Non connecté
     return (
-        <div className="fb-connect-card">
-            <div className="fb-connect-header">
-                <div className="fb-icon-circle">
-                    <Facebook size={22} />
-                </div>
-                <div>
-                    <h3 className="fb-connect-title">Facebook Business</h3>
-                    <p className="fb-connect-subtitle">
-                        Connectez votre compte pour lancer des campagnes
-                    </p>
-                </div>
-            </div>
-
-            {error && (
-                <div className="fb-error-msg">
-                    <AlertCircle size={14} />
-                    <span>{error}</span>
-                </div>
-            )}
-
-            <button
-                className="fb-btn-connect"
-                onClick={handleConnect}
-                disabled={redirecting}
-            >
-                {redirecting ? (
-                    <>
-                        <Loader2 size={18} className="spinner" />
-                        Redirection vers Facebook...
-                    </>
-                ) : (
-                    <>
-                        <Facebook size={18} />
-                        Connecter Facebook Business
-                    </>
-                )}
-            </button>
-
-            <p className="fb-connect-note">
-                Nous demanderons l'accès à vos pages et comptes publicitaires Facebook.
-            </p>
-        </div>
+        <FacebookPreConnectionChecklist 
+            onReady={handleConnect} 
+            isRedirecting={redirecting} 
+        />
     );
 };
 
