@@ -218,6 +218,18 @@
     color: #059669;
 }
 
+.adset-dropdown-loading {
+    padding: 12px;
+    text-align: center;
+    color: #6B7280;
+    font-size: 13px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #ffffff;
+    margin-top: 6px;
+}
+
+
 /* ---- Tags / Chips ---- */
 .adset-tag {
     display: inline-flex;
@@ -882,4 +894,64 @@
 
 .adset-mt-sm {
     margin-top: 0.75rem;
+}
+/* === DESTINATION BUTTONS === */
+.adset-destination-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.adset-destination-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    border: 2px solid #E5E7EB;
+    border-radius: 10px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    width: 100%;
+}
+
+.adset-destination-btn:hover {
+    border-color: #10B981;
+    background: #F0FDF4;
+}
+
+.adset-destination-btn.active {
+    border-color: #10B981;
+    background: #ECFDF5;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.dest-icon {
+    font-size: 24px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.dest-content {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.dest-label {
+    font-weight: 600;
+    font-size: 14px;
+    color: #111827;
+}
+
+.dest-desc {
+    font-size: 12px;
+    color: #6B7280;
+}
+
+.adset-hint {
+    font-size: 13px;
+    color: #6B7280;
+    margin-top: 6px;
 }

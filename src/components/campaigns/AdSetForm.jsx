@@ -2,25 +2,17 @@
  * AdSetForm — Étape 2 du wizard
  * Audience (localisation, âge, genre, intérêts) + Budget + Calendrier
  * Layout 2 colonnes : gauche = formulaire, droite = estimation audience
+ * 
+ * Locations and interests use live Facebook Targeting Search API autocomplete.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
     MapPin, Calendar, DollarSign, ChevronLeft, ChevronRight,
     X, Plus, Sparkles, Info, Users, Target
 } from 'lucide-react';
 import AITargetingHelper from '../ai/AITargetingHelper';
 import '../../styles/adset-form.css';
-
-const LOCATIONS = [
-    'Cameroun', 'Douala', 'Yaoundé', 'Bafoussam', 'Garoua',
-    'Bamenda', 'Maroua', 'Ngaoundéré', 'Edéa', 'Kribi'
-];
-
-const INTEREST_SUGGESTIONS = [
-    'Sport', 'Mode', 'Tech', 'Voyage', 'Cuisine', 'Musique',
-    'Fitness', 'Business', 'Beauté', 'Automobile', 'Éducation', 'Immobilier'
-];
 
 const OPTIMIZATION_LABELS = {
     'LINK_CLICKS': 'Clics sur le lien',
@@ -31,10 +23,48 @@ const OPTIMIZATION_LABELS = {
     'APP_INSTALLS': "Installations d'application"
 };
 
+// -------------------------------------------------------------------
+// Debounce hook
+// -------------------------------------------------------------------
+function useDebounce(value, delay) {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+    useEffect(() => {
+        const handler = setTimeout(() => setDebouncedValue(value), delay);
+        return () => clearTimeout(handler);
+    }, [value, delay]);
+    return debouncedValue;
+}
+
+// Extract just the origin (scheme + host + port) from VITE_API_URL.
+// Works whether it is 'http://localhost:5000' or 'http://localhost:5000/api'.
+const RAW_BASE = import.meta.env.VITE_API_URL || '';
+let API_BASE = '';
+try {
+    API_BASE = RAW_BASE ? new URL(RAW_BASE).origin : '';
+} catch {
+    API_BASE = RAW_BASE.replace(/\/api\/?$/, '');
+}
+
+// -------------------------------------------------------------------
+// Component
+// -------------------------------------------------------------------
 const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
+    // -------------------------------------------------------------------
+    // Location autocomplete state
+    // -------------------------------------------------------------------
     const [locationSearch, setLocationSearch] = useState('');
+    const [locationSuggestions, setLocationSuggestions] = useState([]);
+    const [loadingLocations, setLoadingLocations] = useState(false);
+
+    // -------------------------------------------------------------------
+    // Interest autocomplete state
+    // -------------------------------------------------------------------
     const [interestInput, setInterestInput] = useState('');
-    const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+    const [interestSuggestions, setInterestSuggestions] = useState([]);
+    const [loadingInterests, setLoadingInterests] = useState(false);
+
+    const debouncedLocationSearch = useDebounce(locationSearch, 500);
+    const debouncedInterestSearch = useDebounce(interestInput, 500);
 
     const { targeting, daily_budget, budget_type, start_date, end_date, objective } = campaignData;
 
@@ -49,39 +79,111 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
         setCampaignData(prev => ({ ...prev, [field]: value }));
     };
 
-    // Location management
-    const filteredLocations = LOCATIONS.filter(
-        loc => !targeting.locations.includes(loc) &&
-            loc.toLowerCase().includes(locationSearch.toLowerCase())
-    );
+    // -------------------------------------------------------------------
+    // Location API search
+    // -------------------------------------------------------------------
+    useEffect(() => {
+        if (debouncedLocationSearch.length < 2) {
+            setLocationSuggestions([]);
+            return;
+        }
+        const searchLocations = async () => {
+            setLoadingLocations(true);
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(
+                    `${API_BASE}/api/facebook/targeting/locations?q=${encodeURIComponent(debouncedLocationSearch)}`,
+                    { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+                const data = await response.json();
+                setLocationSuggestions(data.suggestions || []);
+            } catch (err) {
+                console.error('Location search error:', err);
+                setLocationSuggestions([]);
+            } finally {
+                setLoadingLocations(false);
+            }
+        };
+        searchLocations();
+    }, [debouncedLocationSearch]);
 
-    const addLocation = (loc) => {
-        updateTargeting('locations', [...targeting.locations, loc]);
+    // -------------------------------------------------------------------
+    // Interest API search
+    // -------------------------------------------------------------------
+    useEffect(() => {
+        if (debouncedInterestSearch.length < 2) {
+            setInterestSuggestions([]);
+            return;
+        }
+        const searchInterests = async () => {
+            setLoadingInterests(true);
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(
+                    `${API_BASE}/api/facebook/targeting/interests?q=${encodeURIComponent(debouncedInterestSearch)}`,
+                    { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+                const data = await response.json();
+                setInterestSuggestions(data.suggestions || []);
+            } catch (err) {
+                console.error('Interest search error:', err);
+                setInterestSuggestions([]);
+            } finally {
+                setLoadingInterests(false);
+            }
+        };
+        searchInterests();
+    }, [debouncedInterestSearch]);
+
+    // -------------------------------------------------------------------
+    // Location management — stores objects {key, name, type, country_code}
+    // -------------------------------------------------------------------
+    const addLocation = (locSuggestion) => {
+        const newLoc = {
+            key: locSuggestion.key,
+            name: locSuggestion.name,
+            type: locSuggestion.type,
+            country_code: locSuggestion.country_code
+        };
+        if (!targeting.locations.find(l => l.key === newLoc.key)) {
+            updateTargeting('locations', [...targeting.locations, newLoc]);
+        }
         setLocationSearch('');
-        setShowLocationDropdown(false);
+        setLocationSuggestions([]);
     };
 
-    const removeLocation = (loc) => {
-        updateTargeting('locations', targeting.locations.filter(l => l !== loc));
+    const removeLocation = (locationKey) => {
+        updateTargeting('locations', targeting.locations.filter(l => l.key !== locationKey));
     };
 
-    // Interest management
-    const addInterest = (interest) => {
-        if (interest.trim() && !targeting.interests.includes(interest.trim())) {
-            updateTargeting('interests', [...targeting.interests, interest.trim()]);
+    // -------------------------------------------------------------------
+    // Interest management — stores objects {id, name}
+    // -------------------------------------------------------------------
+    const addInterest = (interestSuggestion) => {
+        const newInterest = {
+            id: interestSuggestion.id,
+            name: interestSuggestion.name
+        };
+        if (!targeting.interests.find(i => i.id === newInterest.id)) {
+            updateTargeting('interests', [...targeting.interests, newInterest]);
         }
         setInterestInput('');
+        setInterestSuggestions([]);
     };
 
-    const removeInterest = (interest) => {
-        updateTargeting('interests', targeting.interests.filter(i => i !== interest));
+    const removeInterest = (interestId) => {
+        updateTargeting('interests', targeting.interests.filter(i => i.id !== interestId));
     };
 
+    // -------------------------------------------------------------------
     // Audience estimation (simplified)
+    // -------------------------------------------------------------------
     const audienceEstimate = useMemo(() => {
         let base = 500000;
-        if (targeting.locations.includes('Cameroun')) base = 5000000;
-        else base = targeting.locations.length * 300000;
+        // Use location count for estimation; objects now
+        const locCount = targeting.locations.length;
+        base = locCount * 300000;
+        if (locCount === 0) base = 500000;
 
         const ageRange = (targeting.age_max - targeting.age_min) / 47;
         base *= ageRange;
@@ -112,6 +214,13 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
         return n.toString();
     };
 
+    const formatAudience = (n) => {
+        if (!n) return null;
+        if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+        if (n >= 1000) return `${Math.round(n / 1000)}K`;
+        return n.toString();
+    };
+
     // Budget calculation
     const totalEstimate = useMemo(() => {
         if (!start_date) return daily_budget;
@@ -121,10 +230,12 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
     }, [daily_budget, start_date, end_date]);
 
     // Validation
+    const destType = campaignData.destination_type || 'WEBSITE';
     const isValid = targeting.locations.length > 0 &&
         targeting.age_min >= 18 &&
         targeting.age_max <= 65 &&
-        daily_budget >= 1000;
+        daily_budget >= 1000 &&
+        (destType !== 'WEBSITE' || (campaignData.website_url && campaignData.website_url.startsWith('http')));
 
     const rangePct = Math.round(((daily_budget - 1000) / (50000 - 1000)) * 100);
 
@@ -137,6 +248,63 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
             <div className="adset-grid">
                 {/* LEFT — Form */}
                 <div className="adset-left">
+
+                    {/* === SECTION 0: DESTINATION === */}
+                    <div className="adset-card">
+                        <div className="adset-section-header">
+                            <div className="adset-section-icon audience">
+                                <Target size={22} />
+                            </div>
+                            <div>
+                                <h3 className="adset-section-title">Destination du trafic</h3>
+                                <p className="adset-section-subtitle">Où voulez-vous envoyer les visiteurs ?</p>
+                            </div>
+                        </div>
+
+                        <div className="adset-field-group">
+                            <label className="adset-label">Type de destination <span className="required">*</span></label>
+                            <div className="adset-destination-group">
+                                {[
+                                    { value: 'WEBSITE', label: 'Site web', icon: '🌐', desc: 'Rediriger vers votre site' },
+                                    { value: 'MESSENGER', label: 'Messenger', icon: '💬', desc: 'Discuter via Messenger' },
+                                    { value: 'WHATSAPP', label: 'WhatsApp', icon: '📱', desc: 'Contacter via WhatsApp' },
+                                    { value: 'INSTAGRAM_PROFILE', label: 'Instagram', icon: '📷', desc: 'Visiter votre Instagram' }
+                                ].map(opt => {
+                                    const isSelected = (campaignData.destination_type || 'WEBSITE') === opt.value;
+                                    return (
+                                        <button
+                                            key={opt.value}
+                                            type="button"
+                                            onClick={() => updateField('destination_type', opt.value)}
+                                            className={`adset-destination-btn ${isSelected ? 'active' : ''}`}
+                                        >
+                                            <span className="dest-icon">{opt.icon}</span>
+                                            <div className="dest-content">
+                                                <span className="dest-label">{opt.label}</span>
+                                                <span className="dest-desc">{opt.desc}</span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {(campaignData.destination_type === 'WEBSITE' || !campaignData.destination_type) && (
+                            <div className="adset-field-group">
+                                <label className="adset-label">
+                                    URL du site web <span className="required">*</span>
+                                </label>
+                                <input
+                                    type="url"
+                                    value={campaignData.website_url || ''}
+                                    onChange={(e) => updateField('website_url', e.target.value)}
+                                    placeholder="https://votre-site.com"
+                                    className={`adset-input ${campaignData.website_url && !campaignData.website_url.startsWith('http') ? 'error' : ''}`}
+                                />
+                                <p className="adset-hint">💡 Les visiteurs seront redirigés vers cette URL</p>
+                            </div>
+                        )}
+                    </div>
 
                     {/* === SECTION A: AUDIENCE === */}
                     <div className="adset-card">
@@ -159,21 +327,29 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                 <input
                                     type="text"
                                     value={locationSearch}
-                                    onChange={(e) => { setLocationSearch(e.target.value); setShowLocationDropdown(true); }}
-                                    onFocus={() => setShowLocationDropdown(true)}
+                                    onChange={(e) => setLocationSearch(e.target.value)}
                                     placeholder="🔍 Rechercher une ville ou un pays..."
                                     className="adset-input"
+                                    autoComplete="off"
                                 />
-                                {showLocationDropdown && filteredLocations.length > 0 && (
+                                {loadingLocations && (
+                                    <div className="adset-dropdown-loading">🔍 Recherche...</div>
+                                )}
+                                {!loadingLocations && locationSuggestions.length > 0 && (
                                     <div className="adset-dropdown">
-                                        {filteredLocations.map(loc => (
+                                        {locationSuggestions.map(loc => (
                                             <button
-                                                key={loc}
+                                                key={loc.key}
                                                 onClick={() => addLocation(loc)}
                                                 className="adset-dropdown-item"
                                             >
                                                 <MapPin size={15} />
-                                                {loc}
+                                                <div>
+                                                    <div>{loc.name}</div>
+                                                    <div style={{ fontSize: '11px', color: '#6B7280' }}>
+                                                        {loc.type} · {loc.country_name || loc.country_code}
+                                                    </div>
+                                                </div>
                                             </button>
                                         ))}
                                     </div>
@@ -182,10 +358,10 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                             {targeting.locations.length > 0 && (
                                 <div className="adset-tags-row">
                                     {targeting.locations.map(loc => (
-                                        <span key={loc} className="adset-tag location">
+                                        <span key={loc.key} className="adset-tag location">
                                             <MapPin size={14} />
-                                            {loc}
-                                            <button onClick={() => removeLocation(loc)} className="adset-tag-remove">
+                                            {loc.name}
+                                            <button onClick={() => removeLocation(loc.key)} className="adset-tag-remove">
                                                 <X size={13} />
                                             </button>
                                         </span>
@@ -254,56 +430,55 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                             </div>
                         </div>
 
-                        {/* 4. Ciblage détaillé */}
+                        {/* 4. Intérêts */}
                         <div className="adset-field-group">
                             <label className="adset-label">
                                 Centres d'intérêt <span className="optional">(optionnel)</span>
                             </label>
-                            <div className="adset-interest-row">
-                                <input
-                                    type="text"
-                                    value={interestInput}
-                                    onChange={(e) => setInterestInput(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') { e.preventDefault(); addInterest(interestInput); }
-                                    }}
-                                    placeholder="Ex: Mode, E-commerce, Football..."
-                                    className="adset-input"
-                                    style={{ flex: 1 }}
-                                />
-                                <button
-                                    onClick={() => addInterest(interestInput)}
-                                    disabled={!interestInput.trim()}
-                                    className="adset-interest-add-btn"
-                                >
-                                    <Plus size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
-                                    Ajouter
-                                </button>
-                            </div>
-
-                            {/* Suggestions */}
-                            <div className="adset-suggestions">
-                                {INTEREST_SUGGESTIONS
-                                    .filter(s => !targeting.interests.includes(s))
-                                    .slice(0, 8)
-                                    .map(suggestion => (
-                                        <button
-                                            key={suggestion}
-                                            onClick={() => addInterest(suggestion)}
-                                            className="adset-suggestion-chip"
-                                        >
-                                            + {suggestion}
-                                        </button>
-                                    ))}
+                            <div className="adset-relative">
+                                <div className="adset-interest-row">
+                                    <input
+                                        type="text"
+                                        value={interestInput}
+                                        onChange={(e) => setInterestInput(e.target.value)}
+                                        placeholder="🔍 Rechercher un intérêt (ex: Mode, Football)..."
+                                        className="adset-input"
+                                        style={{ flex: 1 }}
+                                        autoComplete="off"
+                                    />
+                                </div>
+                                {loadingInterests && (
+                                    <div className="adset-dropdown-loading">🔍 Recherche...</div>
+                                )}
+                                {!loadingInterests && interestSuggestions.length > 0 && (
+                                    <div className="adset-dropdown" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                        {interestSuggestions.map(interest => (
+                                            <button
+                                                key={interest.id}
+                                                onClick={() => addInterest(interest)}
+                                                className="adset-dropdown-item"
+                                            >
+                                                <div style={{ flex: 1 }}>
+                                                    <div>{interest.name}</div>
+                                                    {interest.audience_size_lower_bound && (
+                                                        <div style={{ fontSize: '11px', color: '#6B7280' }}>
+                                                            ~{formatAudience(interest.audience_size_lower_bound)} – {formatAudience(interest.audience_size_upper_bound)} personnes
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Selected interests */}
                             {targeting.interests.length > 0 && (
                                 <div className="adset-tags-row" style={{ marginTop: 14 }}>
                                     {targeting.interests.map(interest => (
-                                        <span key={interest} className="adset-tag interest">
-                                            {interest}
-                                            <button onClick={() => removeInterest(interest)} className="adset-tag-remove">
+                                        <span key={interest.id} className="adset-tag interest">
+                                            {interest.name}
+                                            <button onClick={() => removeInterest(interest.id)} className="adset-tag-remove">
                                                 <X size={13} />
                                             </button>
                                         </span>
@@ -316,7 +491,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                         <div className="adset-ai-divider">
                             <AITargetingHelper
                                 niche={user?.business_niche || user?.niche || 'Autre'}
-                                city={targeting.locations[0] || 'Douala'}
+                                city={targeting.locations[0]?.name || 'Douala'}
                                 budget={daily_budget}
                                 onApplyStrategy={(strategy) => {
                                     setCampaignData(prev => ({
@@ -326,7 +501,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                             age_min: strategy.age_min || prev.targeting.age_min,
                                             age_max: strategy.age_max || prev.targeting.age_max,
                                             genders: strategy.gender === 'all' ? [] : (strategy.gender ? [strategy.gender] : prev.targeting.genders),
-                                            interests: strategy.interests || prev.targeting.interests,
+                                            interests: prev.targeting.interests, // keep API-sourced interests
                                             behaviors: strategy.behaviors || prev.targeting.behaviors
                                         }
                                     }));
@@ -510,7 +685,9 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                 <div className="adset-est-row">
                                     <span className="adset-est-row-label">📍 Localisation</span>
                                     <span className="adset-est-row-value">
-                                        {targeting.locations.length > 0 ? targeting.locations.join(', ') : '—'}
+                                        {targeting.locations.length > 0
+                                            ? targeting.locations.map(l => l.name).join(', ')
+                                            : '—'}
                                     </span>
                                 </div>
                                 <div className="adset-est-row">

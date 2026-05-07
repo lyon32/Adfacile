@@ -55,6 +55,8 @@ const CreateCampaignPage = () => {
         start_date: new Date(),
         end_date: null,
         optimization_goal: '',
+        destination_type: 'WEBSITE',
+        website_url: '',
 
         // Niveau Ad
         ad_name: '',

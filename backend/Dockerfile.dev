@@ -8,7 +8,11 @@ WORKDIR /app
 
 # Installer toutes les dépendances (y compris devDependencies pour nodemon)
 COPY package*.json ./
-RUN npm ci
+# npm install est plus robuste que npm ci face aux coupures réseau
+RUN npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retries 5 && \
+    npm install
 
 # Copier le code source
 COPY . .

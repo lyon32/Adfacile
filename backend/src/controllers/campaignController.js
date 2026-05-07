@@ -8,6 +8,8 @@
 const { supabase } = require('../config/supabase');
 const facebookAdsService = require('../services/facebookAdsService');
 const logger = require('../utils/logger');
+const fs = require('fs');
+const path = require('path');
 
 // Limites par plan
 const PLAN_LIMITS = {
@@ -325,10 +327,56 @@ const deleteCampaign = async (req, res) => {
     }
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// UPLOAD MEDIA
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const uploadMedia = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'Aucun fichier fourni' });
+        }
+
+        const file = req.file;
+        const fileExt = path.extname(file.originalname);
+        const fileName = `${req.user.id}_${Date.now()}${fileExt}`;
+        const filePath = `ad-creatives/${fileName}`;
+
+        // Upload to Supabase Storage
+        const { data, error } = await supabase.storage
+            .from('campaign-media')
+            .upload(filePath, file.buffer, {
+                contentType: file.mimetype,
+                upsert: true
+            });
+
+        if (error) {
+            logger.error('Erreur Supabase upload:', error);
+            return res.status(500).json({ success: false, message: 'Erreur lors de l\'upload' });
+        }
+
+        // Récupérer le lien public
+        const { data: { publicUrl } } = supabase.storage
+            .from('campaign-media')
+            .getPublicUrl(filePath);
+
+        return res.json({
+            success: true,
+            url: publicUrl,
+            message: 'Fichier uploadé avec succès'
+        });
+
+    } catch (error) {
+        logger.error('❌ uploadMedia error:', error);
+        return res.status(500).json({ success: false, message: 'Erreur serveur lors de l\'upload' });
+    }
+};
+
 module.exports = {
     createCampaign,
     listCampaigns,
     getCampaignDetails,
     updateStatus,
-    deleteCampaign
+    deleteCampaign,
+    uploadMedia
 };

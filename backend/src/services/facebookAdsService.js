@@ -11,48 +11,32 @@ const { supabase } = require('../config/supabase');
 const { decryptToken } = require('./facebookService');
 const logger = require('../utils/logger');
 
-const FACEBOOK_GRAPH_URL = 'https://graph.facebook.com/v19.0';
+const FACEBOOK_GRAPH_URL = 'https://graph.facebook.com/v21.0';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Map des clés Facebook pour les villes camerounaises
- */
-const CITY_KEYS = {
-    'Douala': '111787',
-    'Yaoundé': '111793',
-    'Bafoussam': '111748',
-    'Garoua': '111768',
-    'Bamenda': '111750',
-    'Maroua': '111780',
-    'Ngaoundéré': '111784',
-    'Edéa': '111764',
-    'Kribi': '111776'
-};
-
-function getCityKey(city) {
-    return CITY_KEYS[city] || null;
-}
-
-/**
  * Mappe l'objectif campagne vers l'optimization goal Facebook
  */
 function getOptimizationGoal(objective) {
     const goals = {
-        'LINK_CLICKS': 'LINK_CLICKS',
-        'OUTCOME_ENGAGEMENT': 'ENGAGEMENT',
+        'OUTCOME_TRAFFIC': 'LINK_CLICKS',
+        'OUTCOME_ENGAGEMENT': 'POST_ENGAGEMENT',
         'OUTCOME_LEADS': 'LEAD_GENERATION',
         'OUTCOME_SALES': 'OFFSITE_CONVERSIONS',
         'OUTCOME_AWARENESS': 'REACH',
-        'APP_INSTALLS': 'APP_INSTALLS'
+        'OUTCOME_APP_PROMOTION': 'APP_INSTALLS'
     };
-    return goals[objective] || 'REACH';
+    return goals[objective] || 'LINK_CLICKS';
 }
 
 /**
- * Construit l'objet targeting Facebook à partir des données app
+ * Construit l'objet targeting Facebook à partir des données app.
+ * 
+ * targeting.locations  — array of { key, name, type, country_code } from Facebook Targeting API
+ * targeting.interests  — array of { id, name } from Facebook Targeting API
  */
 function buildTargeting(targeting) {
     const result = {
@@ -60,47 +44,55 @@ function buildTargeting(targeting) {
         age_max: targeting.age_max || 65
     };
 
-    // Géo-localisation
+    // ═══════════════════════════════════════════════════════════════════
+    // GÉO-LOCALISATION avec location keys de Facebook
+    // ═══════════════════════════════════════════════════════════════════
     const geoLocations = {};
 
-    if (targeting.locations && targeting.locations.includes('Cameroun')) {
-        geoLocations.countries = ['CM'];
+    if (targeting.locations && targeting.locations.length > 0) {
+        const countries = [];
+        const cities = [];
+        const regions = [];
+
+        targeting.locations.forEach(loc => {
+            // loc is an object: { key, name, type, country_code }
+            if (loc.type === 'country') {
+                countries.push(loc.country_code || loc.key);
+            } else if (loc.type === 'city') {
+                cities.push({ key: loc.key, radius: 25, distance_unit: 'kilometer' });
+            } else if (loc.type === 'region') {
+                regions.push({ key: loc.key });
+            } else {
+                // Default: treat as city
+                cities.push({ key: loc.key, radius: 25, distance_unit: 'kilometer' });
+            }
+        });
+
+        if (countries.length > 0) geoLocations.countries = countries;
+        if (cities.length > 0) geoLocations.cities = cities;
+        if (regions.length > 0) geoLocations.regions = regions;
     }
 
-    const cities = (targeting.locations || [])
-        .filter(l => l !== 'Cameroun')
-        .map(city => {
-            const key = getCityKey(city);
-            return key ? { key, name: city, radius: 25, distance_unit: 'kilometer' } : null;
-        })
-        .filter(Boolean);
-
-    if (cities.length > 0) {
-        geoLocations.cities = cities;
-    }
-
-    // Fallback : si aucune localisation, cibler le Cameroun
-    if (!geoLocations.countries && !geoLocations.cities) {
+    // Fallback: if no locations, target Cameroon
+    if (!geoLocations.countries && !geoLocations.cities && !geoLocations.regions) {
         geoLocations.countries = ['CM'];
     }
 
     result.geo_locations = geoLocations;
 
-    // Genre
-    if (targeting.genders && targeting.genders.length > 0) {
-        result.genders = targeting.genders.map(g => g === 'male' ? 1 : 2);
-    }
-
-    // Intérêts et comportements
+    // ═══════════════════════════════════════════════════════════════════
+    // INTÉRÊTS avec IDs de Facebook
+    // ═══════════════════════════════════════════════════════════════════
     if (targeting.interests && targeting.interests.length > 0) {
+        // interests is now array of { id, name }
         result.flexible_spec = [
-            { interests: targeting.interests.map(i => ({ name: i })) }
+            {
+                interests: targeting.interests.map(i => ({
+                    id: i.id,
+                    name: i.name
+                }))
+            }
         ];
-    }
-
-    if (targeting.behaviors && targeting.behaviors.length > 0) {
-        if (!result.flexible_spec) result.flexible_spec = [{}];
-        result.flexible_spec[0].behaviors = targeting.behaviors.map(b => ({ name: b }));
     }
 
     return result;
@@ -114,23 +106,77 @@ function buildTargeting(targeting) {
  * Récupère les credentials Facebook d'un utilisateur depuis la DB
  */
 async function getFacebookAccount(userId) {
+    logger.info(`🔍 getFacebookAccount: Looking for facebook_accounts with user_id=${userId}, is_active=true`);
+
     const { data, error } = await supabase
         .from('facebook_accounts')
-        .select('fb_user_id, fb_access_token, fb_account_id, fb_page_id, fb_page_name, fb_page_token')
+        .select('fb_user_id, fb_access_token, fb_account_id, fb_page_id, fb_page_name')
         .eq('user_id', userId)
+        .eq('is_active', true)
         .single();
 
-    if (error || !data) {
-        logger.warn(`Pas de compte Facebook pour user ${userId}`);
+    if (error) {
+        logger.warn(`❌ getFacebookAccount error for user ${userId}: ${error.message} (code: ${error.code})`);
+    }
+
+    if (!data) {
+        logger.warn(`❌ getFacebookAccount: No data found for user ${userId}`);
         return null;
     }
 
+    logger.info(`✅ getFacebookAccount: Found account for user ${userId}, page=${data.fb_page_name}, page_id=${data.fb_page_id}`);
     return data;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PROMOTED OBJECT BUILDER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Construit le promoted_object selon le type de destination
+ */
+function buildPromotedObject(data, fb) {
+    const destType = data.destination_type || 'WEBSITE';
+
+    switch (destType) {
+        case 'MESSENGER':
+        case 'INSTAGRAM_PROFILE':
+        case 'WHATSAPP':
+            return { page_id: fb.fb_page_id };
+        case 'WEBSITE':
+        default:
+            // Pour WEBSITE, pas de promoted_object requis (pixel_id optionnel)
+            return undefined;
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CRÉATION COMPLÈTE DE CAMPAGNE (3 niveaux)
 // ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Compatibilité : convertit les anciens objectifs (frontend) vers les nouveaux (API v21)
+ */
+const OBJECTIVE_COMPAT_MAP = {
+    'LINK_CLICKS': 'OUTCOME_TRAFFIC',
+    'PAGE_LIKES': 'OUTCOME_AWARENESS',
+    'POST_ENGAGEMENT': 'OUTCOME_ENGAGEMENT',
+    'REACH': 'OUTCOME_AWARENESS',
+    'BRAND_AWARENESS': 'OUTCOME_AWARENESS',
+    'LEAD_GENERATION': 'OUTCOME_LEADS',
+    'CONVERSIONS': 'OUTCOME_SALES',
+    'APP_INSTALLS': 'OUTCOME_APP_PROMOTION',
+    'VIDEO_VIEWS': 'OUTCOME_ENGAGEMENT',
+    'MESSAGES': 'OUTCOME_ENGAGEMENT'
+};
+
+function normalizeObjective(objective) {
+    const normalized = OBJECTIVE_COMPAT_MAP[objective] || objective;
+    if (normalized !== objective) {
+        logger.info(`🔄 Objectif normalisé: ${objective} → ${normalized}`);
+    }
+    return normalized;
+}
 
 /**
  * Crée une campagne complète sur Facebook :
@@ -143,6 +189,9 @@ async function getFacebookAccount(userId) {
  * @returns {Object} { success, campaign_id, fb_campaign_id }
  */
 async function createFullCampaign(userId, data) {
+    // 0. Normaliser l'objectif (compatibilité ancienne API → v21)
+    data.objective = normalizeObjective(data.objective);
+
     // 1. Récupérer credentials Facebook
     const fb = await getFacebookAccount(userId);
     if (!fb) {
@@ -150,21 +199,30 @@ async function createFullCampaign(userId, data) {
     }
 
     const accessToken = decryptToken(fb.fb_access_token);
-    const adAccountId = `act_${fb.fb_account_id}`;
+    const adAccountId = fb.fb_account_id.startsWith('act_')
+        ? fb.fb_account_id
+        : `act_${fb.fb_account_id}`;
 
     logger.info(`📢 Création campagne FB pour user ${userId}, account ${adAccountId}`);
 
     try {
         // 2. Créer la Campaign
         logger.info('📢 Étape 1/4 : Création Campaign...');
+
+        // Paramètres MINIMAUX pour test
+        const campaignParams = {
+            name: data.campaign_name || "Test Campaign AdsFacile",
+            objective: data.objective || "OUTCOME_TRAFFIC", // Le plus simple
+            status: "PAUSED", // Ne pas lancer tout de suite
+            special_ad_categories: [], // Obligatoire même vide
+            is_adset_budget_sharing_enabled: false // Requis dans l'API v21
+        };
+
+        logger.info('📦 Paramètres campagne:\n' + JSON.stringify(campaignParams, null, 2));
+
         const campaignResponse = await axios.post(
             `${FACEBOOK_GRAPH_URL}/${adAccountId}/campaigns`,
-            {
-                name: data.campaign_name,
-                objective: data.objective,
-                status: 'PAUSED',
-                special_ad_categories: []
-            },
+            campaignParams,
             { params: { access_token: accessToken } }
         );
         const fbCampaignId = campaignResponse.data.id;
@@ -172,25 +230,68 @@ async function createFullCampaign(userId, data) {
 
         // 3. Créer l'Ad Set
         logger.info('📢 Étape 2/4 : Création Ad Set...');
+
+        // VALIDATE required fields
+        if (!data.daily_budget || data.daily_budget < 1000) {
+            throw new Error('Budget minimum : 1000 FCFA/jour');
+        }
+
+        if (!data.targeting || !data.targeting.locations || data.targeting.locations.length === 0) {
+            throw new Error('Au moins une localisation est requise');
+        }
+
+        const dailyBudgetInCents = Math.round(data.daily_budget * 100);
+
+        // Verify it's a valid number
+        if (isNaN(dailyBudgetInCents) || dailyBudgetInCents < 100000) {
+            throw new Error(`Budget invalide: ${data.daily_budget}. Minimum 1000 FCFA.`);
+        }
+
+        logger.info(`💰 Budget validé: ${data.daily_budget} FCFA = ${dailyBudgetInCents} centimes`);
+
         const adSetPayload = {
             name: data.adset_name || `${data.campaign_name} - AdSet`,
             campaign_id: fbCampaignId,
-            daily_budget: Math.round(data.daily_budget * 100), // centimes
+            daily_budget: dailyBudgetInCents,
             billing_event: 'IMPRESSIONS',
             optimization_goal: getOptimizationGoal(data.objective),
+            bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
             targeting: buildTargeting(data.targeting),
+            targeting_automation: {
+                advantage_audience: 0
+            },
+            destination_type: data.destination_type || 'WEBSITE',
             status: 'PAUSED',
-            start_time: data.start_date ? new Date(data.start_date).toISOString() : new Date().toISOString()
+            start_time: data.start_date ? new Date(data.start_date).toISOString() : new Date().toISOString(),
+            // DSA (Digital Services Act) — required by Facebook for all ad sets
+            dsa_beneficiary: fb.fb_page_name || data.campaign_name || 'Advertiser',
+            dsa_payor: fb.fb_page_name || data.campaign_name || 'Advertiser'
         };
+
+        // Ajouter promoted_object seulement si nécessaire (Messenger, WhatsApp, Instagram)
+        const promotedObject = buildPromotedObject(data, fb);
+        if (promotedObject) {
+            adSetPayload.promoted_object = promotedObject;
+        }
+
 
         if (data.budget_type === 'lifetime' && data.end_date) {
             delete adSetPayload.daily_budget;
-            adSetPayload.lifetime_budget = Math.round(data.daily_budget * 100);
+            const lifetimeBudgetInCents = Math.round((data.lifetime_budget || data.daily_budget) * 100);
+
+            if (isNaN(lifetimeBudgetInCents) || lifetimeBudgetInCents < 100000) {
+                throw new Error('Budget lifetime minimum : 1000 FCFA');
+            }
+
+            adSetPayload.lifetime_budget = lifetimeBudgetInCents;
         }
 
         if (data.end_date) {
             adSetPayload.end_time = new Date(data.end_date).toISOString();
         }
+
+        // Log complete Ad Set payload BEFORE sending
+        logger.info('📦 Paramètres Ad Set:\n' + JSON.stringify(adSetPayload, null, 2));
 
         const adSetResponse = await axios.post(
             `${FACEBOOK_GRAPH_URL}/${adAccountId}/adsets`,
@@ -325,11 +426,38 @@ async function createFullCampaign(userId, data) {
         };
 
     } catch (error) {
-        logger.error('❌ Erreur création campagne Facebook:', error.response?.data || error.message);
+        // Log the FULL error object
+        if (error.response?.data) {
+            logger.error('❌ Facebook API Full Error Response:');
+            logger.error(JSON.stringify(error.response.data, null, 2));
+        } else {
+            logger.error('❌ Error without response:', error.message);
+        }
+
+        let stepContext = '';
+        if (typeof fbCampaignId !== 'undefined' && typeof fbAdSetId === 'undefined') {
+            stepContext = ' (Campaign créée, échec Ad Set)';
+        } else if (typeof fbAdSetId !== 'undefined' && typeof fbCreativeId === 'undefined') {
+            stepContext = ' (Campaign+AdSet créés, échec Creative)';
+        } else if (typeof fbCreativeId !== 'undefined' && typeof fbAdId === 'undefined') {
+            stepContext = ' (Campaign+AdSet+Creative créés, échec Ad)';
+        }
+
+        logger.error(`❌ Erreur création campagne Facebook${stepContext}:`, error.response?.data || error.message);
 
         // Remonter l'erreur Facebook avec plus de détails
         if (error.response?.data?.error) {
             const fbError = error.response.data.error;
+
+            // Log all error details
+            logger.error('Facebook Error Details:');
+            logger.error('- Message:', fbError.message);
+            logger.error('- Code:', fbError.code);
+            logger.error('- Subcode:', fbError.error_subcode);
+            logger.error('- User Title:', fbError.error_user_title);
+            logger.error('- User Message:', fbError.error_user_msg);
+            logger.error('- Trace ID:', fbError.fbtrace_id);
+
             const err = new Error(fbError.message || 'Erreur Facebook API');
             err.response = { error: fbError };
             err.fbErrorCode = fbError.code;

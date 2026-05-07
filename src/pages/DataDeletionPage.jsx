@@ -24,8 +24,10 @@ export default function DataDeletionPage() {
           </h2>
           <p className="text-green-800">
             Envoyez un email à{' '}
-            <a href="mailto:support@adsfacile.xyz" className="font-semibold underline hover:text-green-900">
-              support@adsfacile.xyz
+            <a href="mailto:lionelyvan24@gmail.com
+" className="font-semibold underline hover:text-green-900">
+              lionelyvan24@gmail.com
+
             </a>
             {' '}avec l'objet "Demande de suppression de données".
           </p>

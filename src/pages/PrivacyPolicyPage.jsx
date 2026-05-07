@@ -5,7 +5,7 @@ export default function PrivacyPolicyPage() {
         <h1 className="text-3xl font-bold text-gray-900 mb-6">
           Politique de Confidentialité
         </h1>
-        
+
         <p className="text-sm text-gray-600 mb-6">
           Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')}
         </p>
@@ -46,8 +46,10 @@ export default function PrivacyPolicyPage() {
             Contact
           </h2>
           <p className="text-gray-700">
-            Email : <a href="mailto:support@adsfacile.xyz" className="text-blue-600 hover:underline">
-              support@adsfacile.xyz
+            Email : <a href="mailto:lionelyvan24@gmail.com
+" className="text-blue-600 hover:underline">
+              lionelyvan24@gmail.com
+
             </a>
           </p>
         </section>

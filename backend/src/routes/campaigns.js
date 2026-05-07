@@ -11,14 +11,24 @@
 
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
 const { authenticate } = require('../middleware/auth');
 const {
     createCampaign,
     listCampaigns,
     getCampaignDetails,
     updateStatus,
-    deleteCampaign
+    deleteCampaign,
+    uploadMedia
 } = require('../controllers/campaignController');
+
+// Configuration Multer: on garde le fichier en mémoire pour l'envoyer directement à Supabase
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 50 * 1024 * 1024 // 50MB max pour les vidéos
+    }
+});
 
 // Toutes les routes nécessitent l'authentification
 router.use(authenticate);
@@ -29,5 +39,8 @@ router.get('/', listCampaigns);
 router.get('/:id', getCampaignDetails);
 router.patch('/:id/status', updateStatus);
 router.delete('/:id', deleteCampaign);
+
+// Upload
+router.post('/upload-media', upload.single('file'), uploadMedia);
 
 module.exports = router;
