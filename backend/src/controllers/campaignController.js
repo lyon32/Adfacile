@@ -281,13 +281,33 @@ const updateStatus = async (req, res) => {
         // Vérifier que la campagne appartient à l'utilisateur
         const { data: campaign, error: fetchError } = await supabase
             .from('campaigns')
-            .select('id, fb_campaign_id')
+            .select('id, fb_campaign_id, fb_adset_id, fb_ad_id')
             .eq('id', id)
             .eq('user_id', userId)
             .single();
 
         if (fetchError || !campaign) {
             return res.status(404).json({ success: false, message: 'Campagne non trouvée' });
+        }
+
+        // Appliquer le statut chez Facebook AVANT la base : sans cela, AdsFacile
+        // afficherait « active » pendant que la campagne reste en pause côté
+        // Meta, et l'utilisateur croirait diffuser sans rien diffuser.
+        try {
+            await facebookAdsService.updateCampaignStatus(userId, campaign, status);
+        } catch (fbErr) {
+            logger.error('❌ Statut non appliqué chez Facebook:', fbErr.response?.data || fbErr.message);
+            const translated = fbErr.response?.data?.error
+                ? translateFacebookError(fbErr.response.data.error)
+                : { title: 'Erreur Facebook', message: fbErr.message, fix: null };
+
+            return res.status(400).json({
+                success: false,
+                error: 'facebook_api_error',
+                title: translated.title,
+                message: `Le statut n'a pas pu être modifié sur Facebook. ${translated.message}`,
+                fix: translated.fix
+            });
         }
 
         // Mettre à jour en base

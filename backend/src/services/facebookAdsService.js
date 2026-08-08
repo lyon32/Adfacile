@@ -22,9 +22,32 @@ const {
     FB_MIN_DAILY_BUDGET_CENTS,
     ACCOUNT_CURRENCY
 } = require('../utils/currency');
+const { debutDeJournee, finDeJournee } = require('../utils/adAccountTime');
 const logger = require('../utils/logger');
 
 const FACEBOOK_GRAPH_URL = 'https://graph.facebook.com/v21.0';
+
+/** Fuseau retenu si Meta ne renvoie pas celui du compte. */
+const FUSEAU_PAR_DEFAUT = 'America/Los_Angeles';
+
+/**
+ * Récupère le fuseau horaire du compte publicitaire.
+ *
+ * Meta interprète les dates de diffusion dans ce fuseau, jamais en UTC : sans
+ * lui, une date de fin recule d'un jour pour tout compte à l'ouest de Greenwich.
+ */
+async function getAdAccountTimezone(adAccountId, accessToken) {
+    try {
+        const response = await axios.get(`${FACEBOOK_GRAPH_URL}/${adAccountId}`, {
+            params: { access_token: accessToken, fields: 'timezone_name' }
+        });
+        return response.data.timezone_name || FUSEAU_PAR_DEFAUT;
+    } catch (err) {
+        logger.warn('⚠️ Fuseau du compte publicitaire indisponible, repli sur '
+            + `${FUSEAU_PAR_DEFAUT}: ${err.response?.data?.error?.message || err.message}`);
+        return FUSEAU_PAR_DEFAUT;
+    }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // HELPERS
@@ -363,6 +386,9 @@ async function createFullCampaign(userId, data) {
     logger.info(`🎯 Destination : ${destination.destination_type} `
         + `(optimisation ${destination.optimization_goal})`);
 
+    const timezone = await getAdAccountTimezone(adAccountId, accessToken);
+    logger.info(`🕐 Fuseau du compte publicitaire : ${timezone}`);
+
     // Identifiants des objets créés, pour pouvoir revenir en arrière.
     const created = { campaign: null, adset: null, creative: null, ad: null };
 
@@ -422,7 +448,7 @@ async function createFullCampaign(userId, data) {
             },
             destination_type: destination.destination_type,
             status: 'PAUSED',
-            start_time: data.start_date ? new Date(data.start_date).toISOString() : new Date().toISOString(),
+            start_time: debutDeJournee(data.start_date, timezone),
             // DSA (Digital Services Act) — required by Facebook for all ad sets
             dsa_beneficiary: fb.fb_page_name || data.campaign_name || 'Advertiser',
             dsa_payor: fb.fb_page_name || data.campaign_name || 'Advertiser'
@@ -455,7 +481,10 @@ async function createFullCampaign(userId, data) {
         }
 
         if (data.end_date) {
-            adSetPayload.end_time = new Date(data.end_date).toISOString();
+            // Fin de la journée choisie dans le fuseau du compte : minuit UTC
+            // ferait s'arrêter la campagne la veille au soir pour un compte
+            // situé à l'ouest de Greenwich.
+            adSetPayload.end_time = finDeJournee(data.end_date, timezone);
         }
 
         // Log complete Ad Set payload BEFORE sending
@@ -641,8 +670,59 @@ async function createFullCampaign(userId, data) {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// CHANGEMENT DE STATUT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Applique un statut chez Meta sur les trois niveaux de la campagne.
+ *
+ * Les trois doivent bouger ensemble. Activer la seule campagne ne diffuse rien,
+ * parce que l'ensemble de publicités et la publicité restent en pause depuis
+ * leur création : l'utilisateur voit « active » dans AdsFacile pendant que
+ * Facebook n'affiche aucune diffusion.
+ *
+ * Ordre : du plus large au plus fin à l'activation, l'inverse à la mise en
+ * pause, pour ne jamais laisser un niveau actif sous un parent en pause.
+ *
+ * @param {Object} campaign  ligne campaigns (fb_campaign_id, fb_adset_id, fb_ad_id)
+ * @param {'active'|'paused'} status
+ */
+async function updateCampaignStatus(userId, campaign, status) {
+    const fb = await getFacebookAccount(userId);
+    if (!fb) {
+        const err = new Error('Compte Facebook non connecté.');
+        err.userFacing = true;
+        throw err;
+    }
+
+    const accessToken = decryptToken(fb.fb_access_token);
+    const fbStatus = status === 'active' ? 'ACTIVE' : 'PAUSED';
+
+    const niveaux = [
+        ['campagne', campaign.fb_campaign_id],
+        ['ensemble de publicités', campaign.fb_adset_id],
+        ['publicité', campaign.fb_ad_id]
+    ].filter(([, id]) => Boolean(id));
+
+    const ordonnes = fbStatus === 'ACTIVE' ? niveaux : [...niveaux].reverse();
+
+    for (const [label, id] of ordonnes) {
+        await axios.post(
+            `${FACEBOOK_GRAPH_URL}/${id}`,
+            { status: fbStatus },
+            { params: { access_token: accessToken } }
+        );
+        logger.info(`🔁 ${label} ${id} → ${fbStatus}`);
+    }
+
+    return { status: fbStatus, levels: ordonnes.length };
+}
+
 module.exports = {
     createFullCampaign,
+    updateCampaignStatus,
+    getAdAccountTimezone,
     getFacebookAccount,
     buildTargeting,
     getOptimizationGoal,
