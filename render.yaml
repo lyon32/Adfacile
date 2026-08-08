@@ -2,7 +2,10 @@ services:
   - type: web
     name: adsfacile-backend
     runtime: docker
-    plan: starter
+    # Plan free : pour tester uniquement. Le service se met en veille apres
+    # 15 min d'inactivite (1re requete ensuite : 30-50 s) et est limite a
+    # 512 Mo de RAM. Repasser en "starter" avant la mise en production.
+    plan: free
     region: frankfurt
     rootDir: backend
     dockerfilePath: ./Dockerfile
