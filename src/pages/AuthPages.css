@@ -396,6 +396,13 @@
   transform: none;
 }
 
+/* Même bouton, rendu par un <Link> (état lien invalide) */
+.auth-submit-link {
+  text-decoration: none;
+  text-align: center;
+  box-sizing: border-box;
+}
+
 .auth-spinner {
   width: 18px;
   height: 18px;

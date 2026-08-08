@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { HomePage } from './pages/HomePage';
@@ -46,6 +46,9 @@ const AppLayout = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        {/* Repli : lien tronqué ou sans jeton — la page explique et renvoie
+            vers une nouvelle demande, au lieu d'une page blanche. */}
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         {/* Dashboard pages — auth handled by DashboardLayout */}
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/profil" element={<ProfilePage />} />
@@ -70,6 +73,7 @@ function App() {
       <AuthProvider>
         <AppLayout />
       </AuthProvider>
+      <Analytics debug={false} />
     </Router>
   );
 }

@@ -114,14 +114,26 @@ const ResetPasswordPage = () => {
         <AuthBackground />
         <div className="auth-form-side">
           <div className="auth-container">
+            <div className="auth-header">
+              <Link to="/" className="auth-logo">
+                <span className="logo-icon">📢</span>
+                <span className="logo-text">AdsFacile</span>
+              </Link>
+            </div>
             <div className="auth-card">
               <div className="auth-error-alert">
                 <AlertCircle size={18} />
-                <span>Lien de réinitialisation invalide. Aucun token fourni.</span>
+                <span>
+                  Ce lien de réinitialisation est incomplet. Les liens envoyés par email
+                  sont parfois coupés : demandez-en un nouveau, il arrive en quelques secondes.
+                </span>
               </div>
-              <Link to="/forgot-password" className="auth-submit" style={{ textDecoration: 'none', textAlign: 'center' }}>
+              <Link to="/forgot-password" className="auth-submit auth-submit-link">
                 Demander un nouveau lien
               </Link>
+              <p className="auth-footer-link">
+                Vous vous souvenez de votre mot de passe ? <Link to="/login">Se connecter</Link>
+              </p>
             </div>
           </div>
         </div>
