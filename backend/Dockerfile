@@ -4,13 +4,13 @@
 # ═══════════════════════════════════════════════════════════════
 
 # ── Étape 1 : Installer les dépendances ──
-FROM node:18-alpine AS deps
+FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
 # ── Étape 2 : Image de production ──
-FROM node:18-alpine
+FROM node:20-alpine
 WORKDIR /app
 
 # Sécurité : ne pas tourner en root
@@ -20,6 +20,9 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY src ./src
+
+# Dossier de logs inscriptible par appuser (Winston y ecrit error.log et all.log)
+RUN mkdir -p logs && chown -R appuser:appgroup logs
 
 # Variables d'environnement
 ENV NODE_ENV=production
@@ -33,7 +36,7 @@ USER appuser
 
 # Healthcheck - vérifie que le serveur répond
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget -qO- http://localhost:5000/health || exit 1
+  CMD wget -qO- "http://localhost:${PORT}/health" || exit 1
 
 # Démarrer le serveur
 CMD ["node", "src/server.js"]

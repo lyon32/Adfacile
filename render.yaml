@@ -1,0 +1,67 @@
+services:
+  - type: web
+    name: adsfacile-backend
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Ne PAS definir PORT ici : Render l'injecte lui-meme et le serveur le lit
+      # via process.env.PORT (src/server.js).
+      - key: NODE_ENV
+        value: production
+
+      # ── Supabase ──
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+      # ── Auth ──
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRE
+        sync: false
+
+      # ── Facebook / Meta ──
+      # FACEBOOK_REDIRECT_URI doit pointer sur ce service :
+      # https://<service>.onrender.com/api/facebook/callback
+      - key: FACEBOOK_APP_ID
+        sync: false
+      - key: FACEBOOK_APP_SECRET
+        sync: false
+      - key: FACEBOOK_REDIRECT_URI
+        sync: false
+
+      # ── Frontend (origines CORS, separees par des virgules) ──
+      - key: FRONTEND_URL
+        sync: false
+
+      # ── IA ──
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CLAUDE_MODEL
+        sync: false
+      - key: USE_CLAUDE_FOR_PRO
+        sync: false
+
+      # ── Paiement Campay ──
+      - key: CAMPAY_API_URL
+        sync: false
+      - key: CAMPAY_APP_USERNAME
+        sync: false
+      - key: CAMPAY_APP_PASSWORD
+        sync: false
+      - key: CAMPAY_ENV
+        sync: false
+      - key: CAMPAY_WEBHOOK_SECRET
+        sync: false
