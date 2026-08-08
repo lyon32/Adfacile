@@ -152,12 +152,14 @@ const createCampaign = async (req, res) => {
 
         // Erreur Facebook API
         if (error.response?.error) {
+            const fbError = error.response.error;
             return res.status(400).json({
                 success: false,
                 error: 'facebook_api_error',
-                message: error.response.error.message || 'Erreur Facebook API',
-                code: error.response.error.code,
-                fb_error_subcode: error.response.error.error_subcode
+                message: fbError.error_user_msg || fbError.message || 'Erreur Facebook API',
+                title: fbError.error_user_title,
+                code: fbError.code,
+                fb_error_subcode: fbError.error_subcode
             });
         }
 

@@ -55,6 +55,7 @@ const CreateCampaignPage = () => {
         start_date: new Date(),
         end_date: null,
         optimization_goal: '',
+        cost_per_result_goal: '',
         destination_type: 'WEBSITE',
         website_url: '',
 
@@ -258,6 +259,9 @@ const CreateCampaignPage = () => {
                                             start_date: new Date(),
                                             end_date: null,
                                             optimization_goal: '',
+                                            cost_per_result_goal: '',
+                                            destination_type: 'WEBSITE',
+                                            website_url: '',
                                             ad_name: '',
                                             creative: {
                                                 message: '', headline: '', description: '',

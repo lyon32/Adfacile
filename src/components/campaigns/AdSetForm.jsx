@@ -23,6 +23,49 @@ const OPTIMIZATION_LABELS = {
     'APP_INSTALLS': "Installations d'application"
 };
 
+// Objectifs de performance disponibles pour une campagne Trafic (OUTCOME_TRAFFIC),
+// groupés comme dans Ads Manager natif : "Objectifs de trafic" puis "Autres objectifs".
+const TRAFFIC_PERFORMANCE_GOAL_GROUPS = [
+    {
+        group: 'Objectifs de trafic',
+        options: [
+            {
+                value: 'LANDING_PAGE_VIEWS',
+                label: 'Maximiser le nombre de vues de la page de destination',
+                description: 'Nous essaierons de montrer vos publicités aux personnes les plus susceptibles de consulter le site Web dont le lien se trouve dans la publicité.'
+            },
+            {
+                value: 'LINK_CLICKS',
+                label: 'Maximiser le nombre de clics sur un lien',
+                description: 'Nous essaierons de montrer vos publicités aux personnes les plus susceptibles de cliquer sur celles-ci.'
+            }
+        ]
+    },
+    {
+        group: 'Autres objectifs',
+        options: [
+            {
+                value: 'REACH',
+                label: 'Optimiser la couverture unique quotidienne',
+                description: 'Nous essaierons de montrer vos publicités aux personnes jusqu’à une fois par jour.'
+            },
+            {
+                value: 'CONVERSATIONS',
+                label: 'Maximiser le nombre de conversations par messages',
+                description: 'Nous essaierons de montrer vos publicités aux personnes les plus susceptibles d’échanger avec vous par message.'
+            },
+            {
+                value: 'IMPRESSIONS',
+                label: "Optimiser le nombre d'impressions",
+                description: 'Nous essaierons de montrer vos publicités aux personnes autant de fois que possible.'
+            }
+        ]
+    }
+];
+
+// À plat, pour retrouver facilement le label/description d'une valeur sélectionnée.
+const TRAFFIC_PERFORMANCE_GOALS = TRAFFIC_PERFORMANCE_GOAL_GROUPS.flatMap(g => g.options);
+
 // -------------------------------------------------------------------
 // Debounce hook
 // -------------------------------------------------------------------
@@ -49,6 +92,11 @@ try {
 // Component
 // -------------------------------------------------------------------
 const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
+    // -------------------------------------------------------------------
+    // Performance goal dropdown state (Trafic)
+    // -------------------------------------------------------------------
+    const [showGoalDropdown, setShowGoalDropdown] = useState(false);
+
     // -------------------------------------------------------------------
     // Location autocomplete state
     // -------------------------------------------------------------------
@@ -249,62 +297,230 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                 {/* LEFT — Form */}
                 <div className="adset-left">
 
-                    {/* === SECTION 0: DESTINATION === */}
-                    <div className="adset-card">
-                        <div className="adset-section-header">
-                            <div className="adset-section-icon audience">
-                                <Target size={22} />
+                    {objective === 'LINK_CLICKS' ? (
+                        <>
+                            {/* === NOM DE L'ENSEMBLE DE PUBLICITÉS (spécifique Trafic) === */}
+                            <div className="adset-card">
+                                <div className="adset-field-group">
+                                    <label className="adset-label">Nom de l'ensemble de publicités</label>
+                                    <input
+                                        type="text"
+                                        value={campaignData.adset_name || ''}
+                                        onChange={(e) => updateField('adset_name', e.target.value)}
+                                        placeholder="Nouvel ensemble de publicités de Trafic"
+                                        className="adset-input"
+                                    />
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="adset-section-title">Destination du trafic</h3>
-                                <p className="adset-section-subtitle">Où voulez-vous envoyer les visiteurs ?</p>
-                            </div>
-                        </div>
 
-                        <div className="adset-field-group">
-                            <label className="adset-label">Type de destination <span className="required">*</span></label>
-                            <div className="adset-destination-group">
-                                {[
-                                    { value: 'WEBSITE', label: 'Site web', icon: '🌐', desc: 'Rediriger vers votre site' },
-                                    { value: 'MESSENGER', label: 'Messenger', icon: '💬', desc: 'Discuter via Messenger' },
-                                    { value: 'WHATSAPP', label: 'WhatsApp', icon: '📱', desc: 'Contacter via WhatsApp' },
-                                    { value: 'INSTAGRAM_PROFILE', label: 'Instagram', icon: '📷', desc: 'Visiter votre Instagram' }
-                                ].map(opt => {
-                                    const isSelected = (campaignData.destination_type || 'WEBSITE') === opt.value;
-                                    return (
-                                        <button
-                                            key={opt.value}
-                                            type="button"
-                                            onClick={() => updateField('destination_type', opt.value)}
-                                            className={`adset-destination-btn ${isSelected ? 'active' : ''}`}
+                            {/* === SECTION 0 (TRAFIC): CONVERSION === */}
+                            <div className="adset-card">
+                                <div className="adset-section-header">
+                                    <div className="adset-section-icon audience">
+                                        <Target size={22} />
+                                    </div>
+                                    <div>
+                                        <h3 className="adset-section-title">Conversion</h3>
+                                        <p className="adset-section-subtitle">Choisissez où vous voulez générer du trafic</p>
+                                    </div>
+                                </div>
+
+                                <div className="adset-field-group">
+                                    <label className="adset-label">Lieu de conversion <span className="required">*</span></label>
+                                    <div className="adset-destination-group">
+                                        {[
+                                            { value: 'WEBSITE', label: 'Site Web', icon: '🌐', desc: 'Envoyez le trafic vers votre site Web', disabled: false },
+                                            { value: 'APP', label: 'Application', icon: '📲', desc: 'Envoyez le trafic vers votre application', disabled: true },
+                                            { value: 'MESSENGER', label: 'Applications de messagerie', icon: '💬', desc: 'Envoyez le trafic vers Messenger ou WhatsApp', disabled: false },
+                                            { value: 'INSTAGRAM_PROFILE', label: 'Instagram ou Facebook', icon: '📷', desc: 'Envoyez le trafic vers un profil Instagram ou une Page Facebook', disabled: false },
+                                            { value: 'PHONE_CALL', label: 'Appels', icon: '📞', desc: 'Incitez les personnes à appeler votre entreprise', disabled: true },
+                                            { value: 'WEBSITE_AND_PHONE_CALL', label: 'Site Web et appels', icon: '🌐📞', desc: 'Redirigez vers votre site et incitez aux appels', disabled: true }
+                                        ].map(opt => {
+                                            const isSelected = (campaignData.destination_type || 'WEBSITE') === opt.value;
+                                            return (
+                                                <button
+                                                    key={opt.value}
+                                                    type="button"
+                                                    disabled={opt.disabled}
+                                                    title={opt.disabled ? 'Bientôt disponible' : undefined}
+                                                    onClick={() => updateField('destination_type', opt.value)}
+                                                    className={`adset-destination-btn ${isSelected ? 'active' : ''}`}
+                                                    style={opt.disabled ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
+                                                >
+                                                    <span className="dest-icon">{opt.icon}</span>
+                                                    <div className="dest-content">
+                                                        <span className="dest-label">{opt.label}{opt.disabled ? ' (bientôt)' : ''}</span>
+                                                        <span className="dest-desc">{opt.desc}</span>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {(campaignData.destination_type === 'WEBSITE' || !campaignData.destination_type) && (
+                                    <div className="adset-field-group">
+                                        <label className="adset-label">
+                                            URL du site web <span className="required">*</span>
+                                        </label>
+                                        <input
+                                            type="url"
+                                            value={campaignData.website_url || ''}
+                                            onChange={(e) => updateField('website_url', e.target.value)}
+                                            placeholder="https://votre-site.com"
+                                            className={`adset-input ${campaignData.website_url && !campaignData.website_url.startsWith('http') ? 'error' : ''}`}
+                                        />
+                                        <p className="adset-hint">💡 Les visiteurs seront redirigés vers cette URL</p>
+                                    </div>
+                                )}
+
+                                <div className="adset-field-group adset-relative">
+                                    <label className="adset-label">Objectif de performance</label>
+                                    {(() => {
+                                        const selectedGoal = TRAFFIC_PERFORMANCE_GOALS.find(
+                                            opt => opt.value === (campaignData.optimization_goal || 'LANDING_PAGE_VIEWS')
+                                        );
+                                        return (
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowGoalDropdown(v => !v)}
+                                                className="adset-input"
+                                                style={{
+                                                    width: '100%',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    cursor: 'pointer',
+                                                    background: '#fff',
+                                                    textAlign: 'left'
+                                                }}
+                                            >
+                                                <span>{selectedGoal?.label}</span>
+                                                <span style={{ color: '#6B7280' }}>{showGoalDropdown ? '▲' : '▼'}</span>
+                                            </button>
+                                        );
+                                    })()}
+
+                                    {showGoalDropdown && (
+                                        <div
+                                            className="adset-dropdown"
+                                            style={{ maxHeight: 360, overflowY: 'auto', padding: '10px 0' }}
                                         >
-                                            <span className="dest-icon">{opt.icon}</span>
-                                            <div className="dest-content">
-                                                <span className="dest-label">{opt.label}</span>
-                                                <span className="dest-desc">{opt.desc}</span>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
+                                            {TRAFFIC_PERFORMANCE_GOAL_GROUPS.map(grp => (
+                                                <div key={grp.group} style={{ marginBottom: 8 }}>
+                                                    <p style={{ fontWeight: 700, fontSize: 14, margin: '4px 16px 6px' }}>{grp.group}</p>
+                                                    {grp.options.map(opt => {
+                                                        const isSelected = (campaignData.optimization_goal || 'LANDING_PAGE_VIEWS') === opt.value;
+                                                        return (
+                                                            <label
+                                                                key={opt.value}
+                                                                style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'flex-start',
+                                                                    gap: 10,
+                                                                    padding: '8px 16px',
+                                                                    cursor: 'pointer',
+                                                                    backgroundColor: isSelected ? '#EAF3FF' : 'transparent'
+                                                                }}
+                                                            >
+                                                                <input
+                                                                    type="radio"
+                                                                    name="optimization_goal"
+                                                                    value={opt.value}
+                                                                    checked={isSelected}
+                                                                    onChange={() => {
+                                                                        updateField('optimization_goal', opt.value);
+                                                                        setShowGoalDropdown(false);
+                                                                    }}
+                                                                    style={{ marginTop: 3 }}
+                                                                />
+                                                                <span>
+                                                                    <span style={{ display: 'block', fontWeight: 600, fontSize: 14 }}>{opt.label}</span>
+                                                                    <span style={{ display: 'block', fontSize: 13, color: '#6B7280' }}>{opt.description}</span>
+                                                                </span>
+                                                            </label>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="adset-field-group">
+                                    <label className="adset-label">
+                                        Objectif de coût par résultat <span className="optional">(optionnel)</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        value={campaignData.cost_per_result_goal || ''}
+                                        onChange={(e) => updateField('cost_per_result_goal', e.target.value)}
+                                        placeholder="FCFA"
+                                        className="adset-input"
+                                    />
+                                    <p className="adset-hint">💡 Laissez vide pour le coût le plus bas sans plafond</p>
+                                </div>
                             </div>
-                        </div>
+                        </>
+                    ) : (
+                        /* === SECTION 0: DESTINATION (autres objectifs) === */
+                        <div className="adset-card">
+                            <div className="adset-section-header">
+                                <div className="adset-section-icon audience">
+                                    <Target size={22} />
+                                </div>
+                                <div>
+                                    <h3 className="adset-section-title">Destination du trafic</h3>
+                                    <p className="adset-section-subtitle">Où voulez-vous envoyer les visiteurs ?</p>
+                                </div>
+                            </div>
 
-                        {(campaignData.destination_type === 'WEBSITE' || !campaignData.destination_type) && (
                             <div className="adset-field-group">
-                                <label className="adset-label">
-                                    URL du site web <span className="required">*</span>
-                                </label>
-                                <input
-                                    type="url"
-                                    value={campaignData.website_url || ''}
-                                    onChange={(e) => updateField('website_url', e.target.value)}
-                                    placeholder="https://votre-site.com"
-                                    className={`adset-input ${campaignData.website_url && !campaignData.website_url.startsWith('http') ? 'error' : ''}`}
-                                />
-                                <p className="adset-hint">💡 Les visiteurs seront redirigés vers cette URL</p>
+                                <label className="adset-label">Type de destination <span className="required">*</span></label>
+                                <div className="adset-destination-group">
+                                    {[
+                                        { value: 'WEBSITE', label: 'Site web', icon: '🌐', desc: 'Rediriger vers votre site' },
+                                        { value: 'MESSENGER', label: 'Messenger', icon: '💬', desc: 'Discuter via Messenger' },
+                                        { value: 'WHATSAPP', label: 'WhatsApp', icon: '📱', desc: 'Contacter via WhatsApp' },
+                                        { value: 'INSTAGRAM_PROFILE', label: 'Instagram', icon: '📷', desc: 'Visiter votre Instagram' }
+                                    ].map(opt => {
+                                        const isSelected = (campaignData.destination_type || 'WEBSITE') === opt.value;
+                                        return (
+                                            <button
+                                                key={opt.value}
+                                                type="button"
+                                                onClick={() => updateField('destination_type', opt.value)}
+                                                className={`adset-destination-btn ${isSelected ? 'active' : ''}`}
+                                            >
+                                                <span className="dest-icon">{opt.icon}</span>
+                                                <div className="dest-content">
+                                                    <span className="dest-label">{opt.label}</span>
+                                                    <span className="dest-desc">{opt.desc}</span>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        )}
-                    </div>
+
+                            {(campaignData.destination_type === 'WEBSITE' || !campaignData.destination_type) && (
+                                <div className="adset-field-group">
+                                    <label className="adset-label">
+                                        URL du site web <span className="required">*</span>
+                                    </label>
+                                    <input
+                                        type="url"
+                                        value={campaignData.website_url || ''}
+                                        onChange={(e) => updateField('website_url', e.target.value)}
+                                        placeholder="https://votre-site.com"
+                                        className={`adset-input ${campaignData.website_url && !campaignData.website_url.startsWith('http') ? 'error' : ''}`}
+                                    />
+                                    <p className="adset-hint">💡 Les visiteurs seront redirigés vers cette URL</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* === SECTION A: AUDIENCE === */}
                     <div className="adset-card">
@@ -623,16 +839,18 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                             </label>
                         </div>
 
-                        {/* Optimization */}
-                        <div className="adset-field-group">
-                            <label className="adset-label">Optimisation de la diffusion</label>
-                            <div className="adset-opt-pill">
-                                <Sparkles size={16} className="opt-icon" />
-                                <span className="opt-text">
-                                    {OPTIMIZATION_LABELS[objective] || 'Portée maximale'}
-                                </span>
+                        {/* Optimization — pour Trafic, ces réglages sont déjà dans la carte "Conversion" plus haut */}
+                        {objective !== 'LINK_CLICKS' && (
+                            <div className="adset-field-group">
+                                <label className="adset-label">Optimisation de la diffusion</label>
+                                <div className="adset-opt-pill">
+                                    <Sparkles size={16} className="opt-icon" />
+                                    <span className="opt-text">
+                                        {OPTIMIZATION_LABELS[objective] || 'Portée maximale'}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Total estimate (dark bar) */}
                         <div className="adset-total-bar">

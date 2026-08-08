@@ -53,6 +53,7 @@ function buildTargeting(targeting) {
         const countries = [];
         const cities = [];
         const regions = [];
+        const geoMarkets = [];
 
         targeting.locations.forEach(loc => {
             // loc is an object: { key, name, type, country_code }
@@ -62,6 +63,8 @@ function buildTargeting(targeting) {
                 cities.push({ key: loc.key, radius: 25, distance_unit: 'kilometer' });
             } else if (loc.type === 'region') {
                 regions.push({ key: loc.key });
+            } else if (loc.type === 'geo_market') {
+                geoMarkets.push({ key: loc.key });
             } else {
                 // Default: treat as city
                 cities.push({ key: loc.key, radius: 25, distance_unit: 'kilometer' });
@@ -71,6 +74,7 @@ function buildTargeting(targeting) {
         if (countries.length > 0) geoLocations.countries = countries;
         if (cities.length > 0) geoLocations.cities = cities;
         if (regions.length > 0) geoLocations.regions = regions;
+        if (geoMarkets.length > 0) geoLocations.geo_markets = geoMarkets;
     }
 
     // Fallback: if no locations, target Cameroon
@@ -254,7 +258,7 @@ async function createFullCampaign(userId, data) {
             campaign_id: fbCampaignId,
             daily_budget: dailyBudgetInCents,
             billing_event: 'IMPRESSIONS',
-            optimization_goal: getOptimizationGoal(data.objective),
+            optimization_goal: data.optimization_goal || getOptimizationGoal(data.objective),
             bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
             targeting: buildTargeting(data.targeting),
             targeting_automation: {
@@ -272,6 +276,12 @@ async function createFullCampaign(userId, data) {
         const promotedObject = buildPromotedObject(data, fb);
         if (promotedObject) {
             adSetPayload.promoted_object = promotedObject;
+        }
+
+        // Objectif de coût par résultat (optionnel) — bascule en stratégie "coût maîtrisé"
+        if (data.cost_per_result_goal && Number(data.cost_per_result_goal) > 0) {
+            adSetPayload.bid_strategy = 'COST_CAP';
+            adSetPayload.bid_amount = Math.round(Number(data.cost_per_result_goal) * 100);
         }
 
 
@@ -451,12 +461,12 @@ async function createFullCampaign(userId, data) {
 
             // Log all error details
             logger.error('Facebook Error Details:');
-            logger.error('- Message:', fbError.message);
-            logger.error('- Code:', fbError.code);
-            logger.error('- Subcode:', fbError.error_subcode);
-            logger.error('- User Title:', fbError.error_user_title);
-            logger.error('- User Message:', fbError.error_user_msg);
-            logger.error('- Trace ID:', fbError.fbtrace_id);
+            logger.error(`- Message: ${fbError.message}`);
+            logger.error(`- Code: ${fbError.code}`);
+            logger.error(`- Subcode: ${fbError.error_subcode}`);
+            logger.error(`- User Title: ${fbError.error_user_title}`);
+            logger.error(`- User Message: ${fbError.error_user_msg}`);
+            logger.error(`- Trace ID: ${fbError.fbtrace_id}`);
 
             const err = new Error(fbError.message || 'Erreur Facebook API');
             err.response = { error: fbError };
