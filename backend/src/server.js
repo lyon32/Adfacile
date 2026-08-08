@@ -12,6 +12,7 @@ const xss = require('xss-clean');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const logger = require('./utils/logger');
+const { validateFacebookConfig, GRAPH_VERSION } = require('./config/facebook');
 
 // Import des routes
 const authRoutes = require('./routes/auth');
@@ -169,9 +170,23 @@ app.use((err, req, res, next) => {
 // DÉMARRAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// Configuration Facebook : on échoue tôt plutôt que de laisser Meta répondre
+// « Impossible de charger cette URL » sans indice sur la cause.
+const fbConfig = validateFacebookConfig();
+fbConfig.warnings.forEach(w => logger.warn(`⚠️  Config Facebook : ${w}`));
+if (!fbConfig.valid) {
+  fbConfig.errors.forEach(e => logger.error(`❌ Config Facebook : ${e}`));
+  if (process.env.NODE_ENV === 'production') {
+    logger.error('❌ Démarrage interrompu : configuration Facebook incomplète.');
+    process.exit(1);
+  }
+  logger.warn('⚠️  La connexion Facebook échouera tant que ces points ne sont pas corrigés.');
+}
+
 app.listen(PORT, () => {
   logger.info(`🚀 AdsFacile Backend API running on port ${PORT}`);
   logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`📘 Facebook Graph API: ${GRAPH_VERSION}`);
 });
 
 module.exports = app;

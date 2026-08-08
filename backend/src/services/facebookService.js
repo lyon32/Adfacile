@@ -6,8 +6,9 @@
 const axios = require('axios');
 const crypto = require('crypto');
 const logger = require('../utils/logger');
+const { GRAPH_URL } = require('../config/facebook');
 
-const FACEBOOK_GRAPH_URL = 'https://graph.facebook.com/v19.0';
+const FACEBOOK_GRAPH_URL = GRAPH_URL;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CHIFFREMENT / DÉCHIFFREMENT DES TOKENS

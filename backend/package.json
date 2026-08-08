@@ -7,7 +7,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "lint": "echo \"No linting configured yet\" && exit 0",
-    "test:unit": "echo \"No unit tests yet\" && exit 0",
+    "test:unit": "jest",
     "test:integration": "echo \"No integration tests yet\" && exit 0",
     "migrate:test": "echo \"No migration tests yet\" && exit 0"
   },
@@ -41,6 +41,7 @@
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {
+    "jest": "^30.4.2",
     "nodemon": "^3.0.2"
   }
 }

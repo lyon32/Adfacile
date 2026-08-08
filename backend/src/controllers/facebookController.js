@@ -6,6 +6,7 @@
 const crypto = require('crypto');
 const { supabase } = require('../config/supabase');
 const logger = require('../utils/logger');
+const { OAUTH_DIALOG_URL, validateFacebookConfig } = require('../config/facebook');
 const {
     exchangeCodeForToken,
     getLongLivedToken,
@@ -42,6 +43,17 @@ const FACEBOOK_SCOPES = [
  */
 const getAuthUrl = async (req, res) => {
     try {
+        // Sans configuration valide, on renverrait une URL que Meta rejette avec
+        // « Impossible de charger cette URL ». Mieux vaut un message exploitable.
+        const config = validateFacebookConfig();
+        if (!config.valid) {
+            config.errors.forEach(e => logger.error(`❌ Config Facebook : ${e}`));
+            return res.status(500).json({
+                success: false,
+                message: 'La connexion Facebook n\'est pas configurée sur le serveur. Contactez le support.'
+            });
+        }
+
         const state = crypto.randomBytes(16).toString('hex');
 
         // Stocker le state en session côté serveur via un token temporaire
@@ -60,7 +72,7 @@ const getAuthUrl = async (req, res) => {
             auth_type: 'rerequest'
         });
 
-        const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?${params.toString()}`;
+        const authUrl = `${OAUTH_DIALOG_URL}?${params.toString()}`;
 
         logger.info(`🔗 URL OAuth générée pour user ${req.user.id}`);
         return res.json({

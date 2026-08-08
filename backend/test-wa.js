@@ -4,7 +4,7 @@ const fs = require('fs');
 const { decryptToken } = require('./src/services/facebookService');
 
 async function testWhatsapp() {
-    const FACEBOOK_GRAPH_URL = 'https://graph.facebook.com/v19.0';
+    const { GRAPH_URL: FACEBOOK_GRAPH_URL } = require('./src/config/facebook');
     let output = {};
     try {
         const { data: accounts } = await supabase.from('facebook_accounts').select('*');
