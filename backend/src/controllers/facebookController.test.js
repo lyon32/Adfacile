@@ -29,7 +29,9 @@ const BASE_ENV = {
     FACEBOOK_APP_ID: APP_ID,
     FACEBOOK_APP_SECRET: 'secret-de-test',
     FACEBOOK_REDIRECT_URI: REDIRECT_URI,
-    FACEBOOK_GRAPH_VERSION: 'v23.0'
+    FACEBOOK_GRAPH_VERSION: 'v23.0',
+    // Requis depuis que le state OAuth est signé (voir utils/oauthState.js)
+    JWT_SECRET: 'secret-de-test-pour-le-state-oauth'
 };
 
 /**
@@ -94,12 +96,25 @@ describe('getAuthUrl', () => {
         expect(scopes).toEqual(SCOPES_ATTENDUS);
     });
 
-    it('encode le userId de l\'appelant dans un state décodable', async () => {
+    it('transporte le userId de l\'appelant dans un state signé', async () => {
         const url = await genererUrl();
-        const state = JSON.parse(Buffer.from(url.searchParams.get('state'), 'base64url').toString());
+        const state = url.searchParams.get('state');
+        const [payloadEncode, signature] = state.split('.');
+        const payload = JSON.parse(Buffer.from(payloadEncode, 'base64url').toString());
 
-        expect(state.userId).toBe(USER_ID);
-        expect(state.csrf).toMatch(/^[0-9a-f]{32}$/);
+        expect(payload.userId).toBe(USER_ID);
+        expect(payload.nonce).toMatch(/^[0-9a-f]{32}$/);
+        expect(payload.exp).toBeGreaterThan(Date.now());
+        expect(signature).toBeTruthy();
+    });
+
+    it('produit un state que le vérificateur accepte', async () => {
+        const url = await genererUrl();
+        const { verifyOAuthState } = require('../utils/oauthState');
+
+        expect(verifyOAuthState(url.searchParams.get('state'))).toEqual({
+            valid: true, userId: USER_ID, reason: null
+        });
     });
 
     it('produit un state différent à chaque appel', async () => {

@@ -3,10 +3,10 @@
  * AdsFacile Backend
  */
 
-const crypto = require('crypto');
 const { supabase } = require('../config/supabase');
 const logger = require('../utils/logger');
 const { OAUTH_DIALOG_URL, validateFacebookConfig } = require('../config/facebook');
+const { createOAuthState, verifyOAuthState } = require('../utils/oauthState');
 const {
     exchangeCodeForToken,
     getLongLivedToken,
@@ -108,14 +108,8 @@ const getAuthUrl = async (req, res) => {
             });
         }
 
-        const state = crypto.randomBytes(16).toString('hex');
-
-        // Stocker le state en session côté serveur via un token temporaire
-        // On encode le user_id + state dans le state param pour le récupérer au callback
-        const statePayload = Buffer.from(JSON.stringify({
-            csrf: state,
-            userId: req.user.id
-        })).toString('base64url');
+        // State signé, daté et à usage unique : voir utils/oauthState.js
+        const statePayload = createOAuthState(req.user.id);
 
         const params = new URLSearchParams({
             client_id: process.env.FACEBOOK_APP_ID,
@@ -169,22 +163,18 @@ const handleCallback = async (req, res) => {
             return res.redirect(`${frontendUrl}/dashboard?fb_error=missing_params`);
         }
 
-        // Décoder le state pour récupérer le userId
-        let statePayload;
-        try {
-            statePayload = JSON.parse(Buffer.from(state, 'base64url').toString());
-        } catch {
-            logger.warn('⚠️ State OAuth invalide');
+        // Vérifier la signature, l'expiration et l'unicité du state avant de
+        // faire quoi que ce soit du userId qu'il transporte. Sans ce contrôle,
+        // un state forgé permettrait de rattacher un compte Facebook au compte
+        // AdsFacile d'un autre utilisateur.
+        const stateVerifie = verifyOAuthState(state);
+        if (!stateVerifie.valid) {
+            logger.warn(`⚠️ State OAuth rejeté : ${stateVerifie.reason}`);
             const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
             return res.redirect(`${frontendUrl}/dashboard?fb_error=invalid_state`);
         }
 
-        const userId = statePayload.userId;
-        if (!userId) {
-            logger.warn('⚠️ userId absent du state OAuth');
-            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-            return res.redirect(`${frontendUrl}/dashboard?fb_error=invalid_state`);
-        }
+        const userId = stateVerifie.userId;
 
         // 1. Échanger le code contre un short-lived token
         const tokenData = await exchangeCodeForToken(code);
