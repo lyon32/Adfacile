@@ -38,6 +38,60 @@ const FACEBOOK_SCOPES = [
 ].join(',');
 
 /**
+ * Récupère le compte Facebook actif d'un utilisateur.
+ *
+ * Remplace le .single() utilisé auparavant : celui-ci échoue dès qu'il existe
+ * plus d'une ligne active, et l'erreur était interprétée comme « aucun compte
+ * connecté ». Un utilisateur avec deux lignes actives voyait donc son compte
+ * signalé comme déconnecté alors que la connexion était valide.
+ * On prend ici la ligne la plus récente et on laisse passer le cas « aucune ».
+ *
+ * @param {string} userId
+ * @param {string} columns - colonnes à sélectionner
+ * @returns {Promise<{ account: object|null, error: object|null }>}
+ */
+const getActiveAccount = async (userId, columns) => {
+    const { data, error } = await supabase
+        .from('facebook_accounts')
+        .select(columns)
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    return { account: data || null, error: error || null };
+};
+
+/**
+ * Garantit qu'une seule ligne reste active pour l'utilisateur.
+ *
+ * Le callback supprimait les anciennes lignes avant de réinsérer, mais sans
+ * vérifier que la suppression avait bien eu lieu. Deux lignes actives
+ * pouvaient coexister et mettre en défaut toutes les lectures suivantes.
+ *
+ * @param {string} userId
+ * @param {string} pageIdActive - la page qui doit rester active
+ */
+const enforceSingleActivePage = async (userId, pageIdActive) => {
+    const { data, error } = await supabase
+        .from('facebook_accounts')
+        .update({ is_active: false })
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .neq('fb_page_id', pageIdActive)
+        .select('fb_page_id, fb_page_name');
+
+    if (error) {
+        logger.error('❌ Impossible de désactiver les anciennes pages:', error.message);
+        return;
+    }
+    if (data?.length) {
+        logger.warn(`⚠️ ${data.length} page(s) active(s) résiduelle(s) désactivée(s) : ${data.map(p => p.fb_page_name || p.fb_page_id).join(', ')}`);
+    }
+};
+
+/**
  * GET /api/facebook/auth/url
  * Génère l'URL OAuth Facebook avec protection CSRF
  */
@@ -163,7 +217,23 @@ const handleCallback = async (req, res) => {
         // Handle no pages case
         if (pages.length === 0) {
             logger.warn(`⚠️ Aucune page trouvée pour user ${userId}`);
-            // Still save the account but without a page
+
+            // Facebook renvoie parfois une liste vide dans les secondes qui suivent
+            // le consentement, le temps que l'accès aux Pages se propage. Écraser
+            // la connexion existante dans ce cas détruit une configuration valide :
+            // on la conserve et on signale simplement le retard.
+            const { account: existant } = await getActiveAccount(userId, 'fb_page_id, fb_page_name');
+
+            if (existant?.fb_page_id) {
+                logger.warn(
+                    `⚠️ Connexion existante conservée (page « ${existant.fb_page_name} ») : ` +
+                    `Facebook n'a renvoyé aucune page, probablement un délai de propagation.`
+                );
+                return res.redirect(`${frontendUrl}/dashboard?connected=true&pages_pending=true`);
+            }
+
+            // Première connexion sans aucune page : on enregistre le compte publicitaire
+            // pour ne pas perdre le jeton, mais sans page associée.
             const encryptedToken = encryptToken(longToken);
 
             await supabase
@@ -252,6 +322,11 @@ const handleCallback = async (req, res) => {
             }
         }
 
+        // Filet de sécurité : si la suppression des anciennes lignes n'a rien
+        // supprimé (politique RLS, ligne orpheline…), plusieurs pages pourraient
+        // rester actives et mettre en défaut toutes les lectures suivantes.
+        await enforceSingleActivePage(userId, pages[0].id);
+
         logger.info(`\n${'='.repeat(80)}`);
         logger.info(`✅ CALLBACK COMPLETE — ${pages.length} page(s) saved for user ${userId}`);
         logger.info(`${'='.repeat(80)}`);
@@ -278,12 +353,10 @@ const getStatus = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        const { data: fbAccount, error: fbError } = await supabase
-            .from('facebook_accounts')
-            .select('fb_user_id, fb_page_id, fb_page_name, is_active, created_at, updated_at')
-            .eq('user_id', userId)
-            .eq('is_active', true)
-            .single();
+        const { account: fbAccount, error: fbError } = await getActiveAccount(
+            userId,
+            'fb_user_id, fb_page_id, fb_page_name, is_active, created_at, updated_at'
+        );
 
         if (fbError || !fbAccount) {
             return res.json({
@@ -355,12 +428,10 @@ const getConnectionStatus = async (req, res) => {
         const userId = req.user.id;
 
         // Obtenir le compte Facebook actif depuis Supabase
-        const { data: fbAccount, error: fbError } = await supabase
-            .from('facebook_accounts')
-            .select('fb_page_id, fb_page_name, fb_access_token, fb_user_access_token, fb_business_id, instagram_connected, instagram_username, instagram_account_id, whatsapp_connected, whatsapp_number, whatsapp_business_id')
-            .eq('user_id', userId)
-            .eq('is_active', true)
-            .single();
+        const { account: fbAccount, error: fbError } = await getActiveAccount(
+            userId,
+            'fb_page_id, fb_page_name, fb_access_token, fb_user_access_token, fb_business_id, instagram_connected, instagram_username, instagram_account_id, whatsapp_connected, whatsapp_number, whatsapp_business_id'
+        );
 
         if (fbError || !fbAccount) {
             logger.info('No active Facebook account found');
@@ -495,12 +566,7 @@ const getPermissions = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        const { data: fbAccount, error: fbError } = await supabase
-            .from('facebook_accounts')
-            .select('fb_access_token')
-            .eq('user_id', userId)
-            .eq('is_active', true)
-            .single();
+        const { account: fbAccount, error: fbError } = await getActiveAccount(userId, 'fb_access_token');
 
         if (fbError || !fbAccount) {
             return res.json({ success: true, permissions: [] });
@@ -580,7 +646,8 @@ const switchActivePage = async (req, res) => {
             .select('fb_page_name')
             .eq('user_id', userId)
             .eq('fb_page_id', page_id)
-            .single();
+            .limit(1)
+            .maybeSingle();
 
         if (checkError || !pageCheck) {
             logger.error(`⚠️ User ${userId} tried to access page ${page_id} they don't own`);
@@ -622,12 +689,10 @@ const refreshConnections = async (req, res) => {
         const userId = req.user.id;
 
         // Get active page
-        const { data: fbAccount, error: fbError } = await supabase
-            .from('facebook_accounts')
-            .select('fb_page_id, fb_page_name, fb_access_token')
-            .eq('user_id', userId)
-            .eq('is_active', true)
-            .single();
+        const { account: fbAccount, error: fbError } = await getActiveAccount(
+            userId,
+            'fb_page_id, fb_page_name, fb_access_token'
+        );
 
         if (fbError || !fbAccount) {
             return res.status(404).json({ success: false, message: 'Aucune page active trouvée' });
@@ -691,6 +756,8 @@ const refreshConnections = async (req, res) => {
 };
 
 module.exports = {
+    getActiveAccount,
+    enforceSingleActivePage,
     getAuthUrl,
     handleCallback,
     getStatus,
