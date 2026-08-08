@@ -988,3 +988,72 @@
 .currency-hint.below-min .currency-hint-rate {
     color: #ef4444;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   APPLICATIONS DE MESSAGERIE
+   Cases à cocher multiples ; reprend le vocabulaire visuel des boutons de
+   destination pour que le passage de l'un à l'autre ne surprenne pas.
+═══════════════════════════════════════════════════════════════════════════ */
+
+.messaging-apps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.messaging-app {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    border: 2px solid #E5E7EB;
+    border-radius: 10px;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.messaging-app:hover:not(.disabled) {
+    border-color: #10B981;
+    background: #F0FDF4;
+}
+
+.messaging-app.active {
+    border-color: #10B981;
+    background: #ECFDF5;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.messaging-app.disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background: #F9FAFB;
+}
+
+.messaging-app-checkbox {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: #10B981;
+    flex-shrink: 0;
+    cursor: inherit;
+}
+
+/* Le focus clavier doit rester visible : la case est le seul point d'entrée
+   au clavier de toute la ligne. */
+.messaging-app:focus-within {
+    outline: 2px solid #10B981;
+    outline-offset: 2px;
+}
+
+.messaging-app-missing {
+    font-size: 12px;
+    color: #B45309;
+    margin: 6px 0 0 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .messaging-app {
+        transition: none;
+    }
+}

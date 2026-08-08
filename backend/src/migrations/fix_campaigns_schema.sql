@@ -42,6 +42,14 @@ ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS fb_creative_id VARCHAR(64);
 ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS targeting JSONB;
 ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS creative  JSONB;
 
+-- 3 bis. Destination
+--    destination_type est le type calculé envoyé à Meta ; messaging_destinations
+--    garde les cases cochées par l'utilisateur, seule information permettant de
+--    réafficher son choix à l'identique (MESSAGING_MESSENGER_WHATSAPP ne dit pas
+--    dans quel ordre ni pourquoi les deux ont été retenues).
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS destination_type       VARCHAR(64);
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS messaging_destinations TEXT[];
+
 -- 4. Contrainte sur objective
 --    La contrainte n'acceptait que ('traffic', 'engagement', 'conversions'),
 --    alors que l'application envoie les objectifs ODAX de Meta

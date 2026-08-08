@@ -7,6 +7,8 @@
 
 const { supabase } = require('../config/supabase');
 const facebookAdsService = require('../services/facebookAdsService');
+const { isMessagingDestination, normalizeApps } = require('../services/messagingDestinations');
+const { translateFacebookError } = require('../utils/facebookErrors');
 const logger = require('../utils/logger');
 const fs = require('fs');
 const path = require('path');
@@ -79,6 +81,12 @@ function validateCampaignData(data) {
         errors.push('Le budget minimum est de 1000 FCFA');
     }
 
+    // Une publicité qui ouvre une conversation n'a pas d'URL de destination :
+    // c'est Facebook qui redirige vers Messenger, Instagram ou WhatsApp.
+    const messagingApps = normalizeApps(data.messaging_destinations);
+    const goesToMessaging = messagingApps.length > 0
+        || isMessagingDestination(data.destination_type);
+
     // Ad level
     if (!data.creative) {
         errors.push('Les données créatives sont requises');
@@ -89,7 +97,7 @@ function validateCampaignData(data) {
         if (!data.creative.headline || data.creative.headline.trim().length === 0) {
             errors.push('Le titre est requis');
         }
-        if (!data.creative.link) {
+        if (!goesToMessaging && !data.creative.link) {
             errors.push('L\'URL de destination est requise');
         }
     }
@@ -150,16 +158,28 @@ const createCampaign = async (req, res) => {
     } catch (error) {
         logger.error('❌ Campaign creation error:', error);
 
-        // Erreur Facebook API
+        // Incohérence détectée par AdsFacile avant même d'appeler Facebook
+        // (destination de messagerie non reliée, visuel manquant…).
+        if (error.userFacing) {
+            return res.status(400).json({
+                success: false,
+                error: 'validation_error',
+                message: error.message,
+                details: error.validationErrors || [error.message]
+            });
+        }
+
+        // Erreur Facebook API, traduite en message actionnable
         if (error.response?.error) {
-            const fbError = error.response.error;
+            const translated = translateFacebookError(error.response.error);
             return res.status(400).json({
                 success: false,
                 error: 'facebook_api_error',
-                message: fbError.error_user_msg || fbError.message || 'Erreur Facebook API',
-                title: fbError.error_user_title,
-                code: fbError.code,
-                fb_error_subcode: fbError.error_subcode
+                message: translated.message,
+                title: translated.title,
+                fix: translated.fix,
+                code: translated.code,
+                fb_error_subcode: translated.subcode
             });
         }
 
