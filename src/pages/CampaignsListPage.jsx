@@ -74,29 +74,8 @@ const CampaignsListPage = () => {
 
                 {/* FB Connection Alert */}
                 {!fbLoading && !fbConnected && (
-                    <div className="campaigns-fb-alert" style={{
-                        backgroundColor: '#FEF2F2',
-                        border: '1px solid #FCA5A5',
-                        borderRadius: '0.5rem',
-                        padding: '1.25rem',
-                        marginBottom: '1.5rem',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '1rem',
-                        alignItems: 'flex-start'
-                    }}>
-                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                            <AlertTriangle size={24} color="#EF4444" />
-                            <div>
-                                <h3 style={{ margin: 0, color: '#991B1B', fontSize: '1.125rem' }}>Connexion Facebook requise</h3>
-                                <p style={{ margin: '0.25rem 0 0 0', color: '#B91C1C', fontSize: '0.875rem' }}>
-                                    Vous devez connecter votre compte Facebook Business pour pouvoir créer et diffuser des campagnes publicitaires.
-                                </p>
-                            </div>
-                        </div>
-                        <div style={{ width: '100%', maxWidth: '350px' }}>
-                            <ConnectFacebookButton />
-                        </div>
+                    <div className="campaigns-fb-alert" style={{ marginBottom: '1.5rem' }}>
+                        <ConnectFacebookButton />
                     </div>
                 )}
 
