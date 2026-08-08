@@ -61,18 +61,18 @@ export function FacebookPreConnectionChecklist({ onReady, isRedirecting }) {
                                 )}
                             </button>
 
-                            <div className="flex-1">
-                                <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-3">
                                     <h3 className={`text-lg sm:text-xl font-bold leading-tight transition-colors ${hasPage || isPageAlreadyCreated ? 'text-emerald-900' : 'text-slate-800 group-hover:text-indigo-900'}`}>
                                         1. Page Facebook Pro
                                     </h3>
-                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${hasPage || isPageAlreadyCreated ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                                    <span className={`shrink-0 whitespace-nowrap text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full leading-none ${hasPage || isPageAlreadyCreated ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                                         {hasPage || isPageAlreadyCreated ? 'Validé' : 'Requis'}
                                     </span>
                                 </div>
                                 <p className="text-sm text-slate-500 leading-relaxed mb-5">
                                     Votre marque doit exister officiellement sur le réseau.
-                                    <span className="block mt-1 font-semibold text-indigo-500/90">C'est la vitrine de toutes vos annonces.</span>
+                                    <span className="block mt-1.5 font-semibold text-indigo-500/90">C'est la vitrine de toutes vos annonces.</span>
                                 </p>
 
                                 {/* Detailed options only shown if not completed */}
@@ -159,12 +159,12 @@ export function FacebookPreConnectionChecklist({ onReady, isRedirecting }) {
                                 )}
                             </button>
 
-                            <div className="flex-1">
-                                <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-3">
                                     <h3 className={`text-lg sm:text-xl font-bold leading-tight transition-colors ${hasIgWa ? 'text-emerald-900' : 'text-slate-800 group-hover:text-violet-900'}`}>
                                         2. Comptes Instagram & WhatsApp
                                     </h3>
-                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${hasIgWa ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                                    <span className={`shrink-0 whitespace-nowrap text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full leading-none ${hasIgWa ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                                         {hasIgWa ? 'Validé' : 'Requis'}
                                     </span>
                                 </div>
