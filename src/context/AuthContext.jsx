@@ -6,6 +6,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import { resetFacebookStatus } from '../hooks/useFacebook';
 
 const AuthContext = createContext(null);
 
@@ -114,6 +115,9 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    // Le statut Facebook est mis en cache dans un store de module : sans ce
+    // reset, le compte suivant hériterait de la connexion du précédent.
+    resetFacebookStatus();
   }, []);
 
   /**
