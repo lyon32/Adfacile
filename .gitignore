@@ -26,3 +26,8 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+.env*.local
+
+# Claude Code
+.mcp.json
+.claude/settings.local.json

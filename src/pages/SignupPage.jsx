@@ -436,7 +436,8 @@ const SignupPage = () => {
                     onBlur={handleBlur}
                   />
                   <span className="checkbox-text">
-                    J'accepte les <a href="#">CGU</a> et la <a href="#">Politique de confidentialité</a> *
+                    J'accepte les <a href="#">CGU</a> et la <a href="#">Politique de confidentialité</a>{' '}
+                    <span className="required">*</span>
                   </span>
                 </label>
                 {errors.accept_terms && <span className="error-message">{errors.accept_terms}</span>}
