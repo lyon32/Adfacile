@@ -66,6 +66,10 @@ const TRAFFIC_PERFORMANCE_GOAL_GROUPS = [
 // À plat, pour retrouver facilement le label/description d'une valeur sélectionnée.
 const TRAFFIC_PERFORMANCE_GOALS = TRAFFIC_PERFORMANCE_GOAL_GROUPS.flatMap(g => g.options);
 
+// Valeur proposée par défaut, comme dans Ads Manager. Elle est écrite dans
+// l'état du formulaire pour que l'affichage et l'envoi ne divergent jamais.
+const TRAFFIC_DEFAULT_PERFORMANCE_GOAL = 'LANDING_PAGE_VIEWS';
+
 // -------------------------------------------------------------------
 // Debounce hook
 // -------------------------------------------------------------------
@@ -126,6 +130,17 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
     const updateField = (field, value) => {
         setCampaignData(prev => ({ ...prev, [field]: value }));
     };
+
+    // Le sélecteur d'objectif de performance affiche LANDING_PAGE_VIEWS par
+    // défaut ; on l'inscrit dans l'état, sinon le backend retombe sur
+    // LINK_CLICKS et la campagne serait optimisée autrement que ce qui est
+    // affiché à l'utilisateur.
+    useEffect(() => {
+        if (objective === 'LINK_CLICKS' && !campaignData.optimization_goal) {
+            updateField('optimization_goal', TRAFFIC_DEFAULT_PERFORMANCE_GOAL);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [objective, campaignData.optimization_goal]);
 
     // -------------------------------------------------------------------
     // Location API search
@@ -378,7 +393,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                     <label className="adset-label">Objectif de performance</label>
                                     {(() => {
                                         const selectedGoal = TRAFFIC_PERFORMANCE_GOALS.find(
-                                            opt => opt.value === (campaignData.optimization_goal || 'LANDING_PAGE_VIEWS')
+                                            opt => opt.value === (campaignData.optimization_goal || TRAFFIC_DEFAULT_PERFORMANCE_GOAL)
                                         );
                                         return (
                                             <button
@@ -410,7 +425,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                                 <div key={grp.group} style={{ marginBottom: 8 }}>
                                                     <p style={{ fontWeight: 700, fontSize: 14, margin: '4px 16px 6px' }}>{grp.group}</p>
                                                     {grp.options.map(opt => {
-                                                        const isSelected = (campaignData.optimization_goal || 'LANDING_PAGE_VIEWS') === opt.value;
+                                                        const isSelected = (campaignData.optimization_goal || TRAFFIC_DEFAULT_PERFORMANCE_GOAL) === opt.value;
                                                         return (
                                                             <label
                                                                 key={opt.value}

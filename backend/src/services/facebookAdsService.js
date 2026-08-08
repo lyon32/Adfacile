@@ -77,8 +77,10 @@ function buildTargeting(targeting) {
         if (geoMarkets.length > 0) geoLocations.geo_markets = geoMarkets;
     }
 
-    // Fallback: if no locations, target Cameroon
-    if (!geoLocations.countries && !geoLocations.cities && !geoLocations.regions) {
+    // Fallback: if no locations, target Cameroon.
+    // Doit couvrir TOUS les types gérés au-dessus : oublier geo_markets
+    // ajouterait le Cameroun entier à un ciblage volontairement restreint.
+    if (Object.keys(geoLocations).length === 0) {
         geoLocations.countries = ['CM'];
     }
 
