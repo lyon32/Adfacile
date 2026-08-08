@@ -9,6 +9,7 @@ import { Eye, EyeOff, Check, AlertCircle, CheckCircle, ArrowLeft, Zap, Shield, C
 import { resetPassword as apiResetPassword } from '../services/api';
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 import { validatePassword, passwordsMatch } from '../utils/signupValidation';
+import AuthBackground from '../components/auth/AuthBackground';
 import './AuthPages.css';
 
 const ResetPasswordPage = () => {
@@ -110,6 +111,7 @@ const ResetPasswordPage = () => {
   if (!token) {
     return (
       <div className="auth-page">
+        <AuthBackground />
         <div className="auth-form-side">
           <div className="auth-container">
             <div className="auth-card">
@@ -129,6 +131,8 @@ const ResetPasswordPage = () => {
 
   return (
     <div className="auth-page">
+      <AuthBackground />
+
       {/* Left - Branding (Desktop) */}
       <div className="auth-branding">
         <div className="auth-branding-content">

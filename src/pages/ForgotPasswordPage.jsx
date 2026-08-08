@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Mail, AlertCircle, CheckCircle, Zap, Shield, Clock } from 'lucide-react';
 import { forgotPassword as apiForgotPassword } from '../services/api';
 import { isValidEmail } from '../utils/signupValidation';
+import AuthBackground from '../components/auth/AuthBackground';
 import './AuthPages.css';
 
 const ForgotPasswordPage = () => {
@@ -72,6 +73,8 @@ const ForgotPasswordPage = () => {
 
   return (
     <div className="auth-page">
+      <AuthBackground />
+
       {/* Left - Branding (Desktop) */}
       <div className="auth-branding">
         <div className="auth-branding-content">
