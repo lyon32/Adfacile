@@ -9,6 +9,7 @@ import { ArrowRight, Eye, EyeOff, AlertCircle, AlertTriangle, Zap, Shield, Clock
 import { login as apiLogin } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { isValidEmail } from '../utils/signupValidation';
+import AuthBackground from '../components/auth/AuthBackground';
 import './AuthPages.css';
 
 const LoginPage = () => {
@@ -108,6 +109,8 @@ const LoginPage = () => {
 
   return (
     <div className="auth-page">
+      <AuthBackground />
+
       {/* Left - Branding (Desktop) */}
       <div className="auth-branding">
         <div className="auth-branding-content">
@@ -118,6 +121,9 @@ const LoginPage = () => {
           <h2 className="auth-branding-headline">
             Gérez vos campagnes Facebook <span>en toute simplicité</span>
           </h2>
+          <p className="auth-branding-subline">
+            Retrouvez vos campagnes, vos résultats et votre budget au même endroit.
+          </p>
           <div className="auth-branding-features">
             <div className="auth-feature-item">
               <Zap size={20} />
@@ -151,60 +157,18 @@ const LoginPage = () => {
           <div className="auth-card">
             {/* API Error & Action Links */}
             {apiError && (
-              <div
-                className="auth-error-alert"
-                style={{
-                  backgroundColor: '#FEF2F2',
-                  border: '1px solid #FECACA',
-                  borderRadius: '0.5rem',
-                  padding: '1rem',
-                  marginBottom: '1.25rem',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '0.75rem',
-                  color: '#991B1B',
-                  fontSize: '0.875rem',
-                  lineHeight: '1.5'
-                }}
-              >
-                <AlertTriangle
-                  size={20}
-                  style={{
-                    color: '#DC2626',
-                    flexShrink: 0,
-                    marginTop: '0.125rem'
-                  }}
-                />
-                <div style={{ flex: 1 }}>
+              <div className="auth-error-alert" role="alert">
+                <AlertTriangle size={19} />
+                <div>
                   {apiError === 'user_not_found' ? (
                     <>
-                      Aucun compte associé à cet email/téléphone.{' '}
-                      <Link
-                        to="/signup"
-                        style={{
-                          color: '#059669',
-                          fontWeight: '600',
-                          textDecoration: 'none',
-                          marginLeft: '0.25rem'
-                        }}
-                      >
-                        Créer un compte &rarr;
-                      </Link>
+                      Aucun compte associé à cet email ou téléphone.{' '}
+                      <Link to="/signup">Créer un compte &rarr;</Link>
                     </>
                   ) : apiError === 'invalid_password' ? (
                     <>
                       Mot de passe incorrect.{' '}
-                      <Link
-                        to="/forgot-password"
-                        style={{
-                          color: '#059669',
-                          fontWeight: '600',
-                          textDecoration: 'none',
-                          marginLeft: '0.25rem'
-                        }}
-                      >
-                        Réinitialiser &rarr;
-                      </Link>
+                      <Link to="/forgot-password">Réinitialiser &rarr;</Link>
                     </>
                   ) : (
                     apiError
