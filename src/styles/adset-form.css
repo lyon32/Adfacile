@@ -955,3 +955,36 @@
     color: #6B7280;
     margin-top: 6px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONVERSION FCFA → USD sous les champs de budget
+   L'utilisateur saisit en FCFA ; le compte publicitaire est en dollars.
+═══════════════════════════════════════════════════════════════════════════ */
+
+.currency-hint {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin: 6px 0 0;
+    line-height: 1.35;
+}
+
+.currency-hint-amount {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #059669;
+    font-variant-numeric: tabular-nums;
+}
+
+.currency-hint-rate {
+    font-size: 0.72rem;
+    color: #94a3b8;
+}
+
+.currency-hint.below-min .currency-hint-amount {
+    color: #ef4444;
+}
+
+.currency-hint.below-min .currency-hint-rate {
+    color: #ef4444;
+}

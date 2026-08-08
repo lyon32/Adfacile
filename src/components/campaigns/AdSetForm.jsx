@@ -12,6 +12,7 @@ import {
     X, Plus, Sparkles, Info, Users, Target
 } from 'lucide-react';
 import AITargetingHelper from '../ai/AITargetingHelper';
+import CurrencyHint from './CurrencyHint';
 import '../../styles/adset-form.css';
 
 const OPTIMIZATION_LABELS = {
@@ -474,6 +475,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                         placeholder="FCFA"
                                         className="adset-input"
                                     />
+                                    <CurrencyHint amount={campaignData.cost_per_result_goal} suffix=" par résultat" />
                                     <p className="adset-hint">💡 Laissez vide pour le coût le plus bas sans plafond</p>
                                 </div>
                             </div>
@@ -786,6 +788,11 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                 </div>
                                 <span className="adset-budget-per">/ {budget_type === 'daily' ? 'jour' : 'total'}</span>
                             </div>
+
+                            <CurrencyHint
+                                amount={daily_budget}
+                                suffix={budget_type === 'daily' ? ' / jour' : ' au total'}
+                            />
 
                             {/* Slider */}
                             <input

@@ -9,6 +9,13 @@
 const axios = require('axios');
 const { supabase } = require('../config/supabase');
 const { decryptToken } = require('./facebookService');
+const {
+    fcfaToUsdCents,
+    minDailyBudgetFcfa,
+    getRate,
+    FB_MIN_DAILY_BUDGET_CENTS,
+    ACCOUNT_CURRENCY
+} = require('../utils/currency');
 const logger = require('../utils/logger');
 
 const FACEBOOK_GRAPH_URL = 'https://graph.facebook.com/v21.0';
@@ -237,23 +244,21 @@ async function createFullCampaign(userId, data) {
         // 3. Créer l'Ad Set
         logger.info('📢 Étape 2/4 : Création Ad Set...');
 
-        // VALIDATE required fields
-        if (!data.daily_budget || data.daily_budget < 1000) {
-            throw new Error('Budget minimum : 1000 FCFA/jour');
-        }
-
         if (!data.targeting || !data.targeting.locations || data.targeting.locations.length === 0) {
             throw new Error('Au moins une localisation est requise');
         }
 
-        const dailyBudgetInCents = Math.round(data.daily_budget * 100);
+        // L'utilisateur saisit des FCFA ; le compte publicitaire est en USD et
+        // Meta attend des cents. Le minimum est celui de Meta (1 $/jour),
+        // exprimé en FCFA pour rester compréhensible.
+        const minFcfa = minDailyBudgetFcfa();
+        const dailyBudgetInCents = fcfaToUsdCents(data.daily_budget);
 
-        // Verify it's a valid number
-        if (isNaN(dailyBudgetInCents) || dailyBudgetInCents < 100000) {
-            throw new Error(`Budget invalide: ${data.daily_budget}. Minimum 1000 FCFA.`);
+        if (!Number.isFinite(dailyBudgetInCents) || dailyBudgetInCents < FB_MIN_DAILY_BUDGET_CENTS) {
+            throw new Error(`Budget quotidien invalide : ${data.daily_budget} FCFA. Minimum ${minFcfa} FCFA/jour.`);
         }
 
-        logger.info(`💰 Budget validé: ${data.daily_budget} FCFA = ${dailyBudgetInCents} centimes`);
+        logger.info(`💰 Budget validé : ${data.daily_budget} FCFA = ${dailyBudgetInCents} cents ${ACCOUNT_CURRENCY} (taux ${getRate()} FCFA/USD)`);
 
         const adSetPayload = {
             name: data.adset_name || `${data.campaign_name} - AdSet`,
@@ -282,17 +287,19 @@ async function createFullCampaign(userId, data) {
 
         // Objectif de coût par résultat (optionnel) — bascule en stratégie "coût maîtrisé"
         if (data.cost_per_result_goal && Number(data.cost_per_result_goal) > 0) {
-            adSetPayload.bid_strategy = 'COST_CAP';
-            adSetPayload.bid_amount = Math.round(Number(data.cost_per_result_goal) * 100);
+            const bidAmount = fcfaToUsdCents(data.cost_per_result_goal);
+            if (Number.isFinite(bidAmount) && bidAmount > 0) {
+                adSetPayload.bid_strategy = 'COST_CAP';
+                adSetPayload.bid_amount = bidAmount;
+            }
         }
-
 
         if (data.budget_type === 'lifetime' && data.end_date) {
             delete adSetPayload.daily_budget;
-            const lifetimeBudgetInCents = Math.round((data.lifetime_budget || data.daily_budget) * 100);
+            const lifetimeBudgetInCents = fcfaToUsdCents(data.lifetime_budget || data.daily_budget);
 
-            if (isNaN(lifetimeBudgetInCents) || lifetimeBudgetInCents < 100000) {
-                throw new Error('Budget lifetime minimum : 1000 FCFA');
+            if (!Number.isFinite(lifetimeBudgetInCents) || lifetimeBudgetInCents < FB_MIN_DAILY_BUDGET_CENTS) {
+                throw new Error(`Budget total invalide. Minimum ${minFcfa} FCFA.`);
             }
 
             adSetPayload.lifetime_budget = lifetimeBudgetInCents;

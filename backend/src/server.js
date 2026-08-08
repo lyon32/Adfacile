@@ -21,6 +21,7 @@ const billingRoutes = require('./routes/billing');
 const facebookRoutes = require('./routes/facebook');
 const facebookTargetingRoutes = require('./routes/facebookTargeting');
 const campaignRoutes = require('./routes/campaigns');
+const configRoutes = require('./routes/config');
 const analyticsRoutes = require('./routes/analytics');
 
 // Initialisation de l'application
@@ -135,6 +136,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/facebook', facebookRoutes);
 app.use('/api/facebook/targeting', facebookTargetingRoutes);
+app.use('/api/config', configRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
