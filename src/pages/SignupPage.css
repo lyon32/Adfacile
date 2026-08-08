@@ -391,60 +391,16 @@
   color: var(--red);
 }
 
-/* ─── Jauge de mot de passe ─── */
+/* ─── Concordance des mots de passe ─── */
+/* La jauge elle-même vient de <PasswordStrengthIndicator />. */
 
-.password-meter {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
+.match-message {
+  font-size: 0.73rem;
+  color: var(--slate-500);
 }
 
-.meter-bars {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-}
-
-.meter-bars i {
-  height: 4px;
-  border-radius: 99px;
-  background: var(--line);
-  transition: background 0.25s ease;
-}
-
-.meter-criteria {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 0.9rem;
-}
-
-.meter-criteria span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.72rem;
-  color: var(--slate-400);
-  transition: color 0.2s ease;
-}
-
-.meter-criteria span.ok {
+.match-message.ok {
   color: var(--emerald-600);
-}
-
-.meter-criteria i {
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  border: 1.5px solid currentColor;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-
-.meter-criteria span.ok i {
-  background: var(--emerald);
-  border-color: var(--emerald);
-  color: #fff;
 }
 
 /* ─── Cases à cocher ─── */

@@ -88,6 +88,20 @@ export const calculatePasswordStrength = (password) => {
 };
 
 /**
+ * Détaille le respect de chaque critère du mot de passe.
+ * Source unique partagée par l'affichage (jauge) et la validation, pour que
+ * l'utilisateur ne puisse jamais voir tous les critères au vert et être bloqué.
+ * @param {string} password - Le mot de passe
+ * @returns {Array<{key: string, label: string, met: boolean}>}
+ */
+export const getPasswordCriteria = (password = '') => [
+  { key: 'length', label: '8 caractères', met: password.length >= 8 },
+  { key: 'upper', label: 'Une majuscule', met: /[A-Z]/.test(password) },
+  { key: 'lower', label: 'Une minuscule', met: /[a-z]/.test(password) },
+  { key: 'digit', label: 'Un chiffre', met: /\d/.test(password) }
+];
+
+/**
  * Valide un mot de passe selon les critères requis
  * @param {string} password - Le mot de passe
  * @returns {Object} - { isValid, errors }

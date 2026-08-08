@@ -1,42 +1,46 @@
 /**
  * Composant Indicateur de Force du Mot de Passe
+ * Jauge segmentée + liste des critères, alignée sur validatePassword().
  * AdsFacile Frontend
  */
 
-import { calculatePasswordStrength } from '../utils/signupValidation';
+import { Check } from 'lucide-react';
+import { getPasswordCriteria } from '../utils/signupValidation';
 import './PasswordStrengthIndicator.css';
+
+// Un segment par critère rempli ; la couleur suit le nombre de critères atteints
+const SEGMENT_COLORS = ['#e2e8f0', '#EF4444', '#F97316', '#3b82f6', '#10b981'];
 
 /**
  * PasswordStrengthIndicator
- * Affiche une barre de progression colorée selon la force du mot de passe
- * 
+ *
  * @param {Object} props
  * @param {string} props.password - Le mot de passe à évaluer
  */
-const PasswordStrengthIndicator = ({ password }) => {
-  const { score, label, color } = calculatePasswordStrength(password);
-
-  if (!password) {
-    return null;
-  }
+const PasswordStrengthIndicator = ({ password = '' }) => {
+  const criteria = getPasswordCriteria(password);
+  const metCount = criteria.filter((c) => c.met).length;
+  const color = SEGMENT_COLORS[metCount];
 
   return (
     <div className="password-strength">
-      {/* Barre de progression */}
-      <div className="strength-bar">
-        <div
-          className="strength-fill"
-          style={{
-            width: `${score}%`,
-            backgroundColor: color
-          }}
-        />
+      <div className="strength-bars">
+        {criteria.map((criterion, index) => (
+          <i
+            key={criterion.key}
+            style={{ background: index < metCount ? color : '#e2e8f0' }}
+          />
+        ))}
       </div>
-      
-      {/* Label textuel */}
-      <p className="strength-label" style={{ color }}>
-        Force du mot de passe : {label}
-      </p>
+
+      <ul className="strength-criteria">
+        {criteria.map((criterion) => (
+          <li key={criterion.key} className={criterion.met ? 'ok' : ''}>
+            <i><Check size={9} /></i>
+            {criterion.label}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };

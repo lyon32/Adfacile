@@ -9,6 +9,7 @@ import { ArrowRight, ArrowLeft, Eye, EyeOff, Check, AlertCircle, Zap, Shield, Cl
 import { signup } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import AuthBackground from '../components/auth/AuthBackground';
+import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 import {
   isValidEmail,
   isValidPhone,
@@ -74,15 +75,7 @@ const SignupPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Critères du mot de passe, affichés en direct
-  const criteria = {
-    length: formData.password.length >= 8,
-    upper: /[A-Z]/.test(formData.password),
-    digit: /\d/.test(formData.password),
-    match: passwordsMatch(formData.password, formData.confirmPassword)
-  };
-  const criteriaMet = Object.values(criteria).filter(Boolean).length;
-  const METER_COLORS = ['#e2e8f0', '#EF4444', '#F97316', '#3b82f6', '#10b981'];
+  const passwordsAreIdentical = passwordsMatch(formData.password, formData.confirmPassword);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -427,27 +420,16 @@ const SignupPage = () => {
                     {errors.confirmPassword && (
                       <span className="error-message">{errors.confirmPassword}</span>
                     )}
+                    {!errors.confirmPassword && formData.confirmPassword && (
+                      <span className={passwordsAreIdentical ? 'match-message ok' : 'match-message'}>
+                        {passwordsAreIdentical
+                          ? 'Les deux mots de passe sont identiques'
+                          : 'Les deux mots de passe diffèrent'}
+                      </span>
+                    )}
                   </div>
 
-                  {/* Jauge segmentée + critères */}
-                  <div className="password-meter">
-                    <div className="meter-bars">
-                      {[0, 1, 2, 3].map((i) => (
-                        <i
-                          key={i}
-                          style={{
-                            background: i < criteriaMet ? METER_COLORS[criteriaMet] : '#e2e8f0'
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <div className="meter-criteria">
-                      <span className={criteria.length ? 'ok' : ''}><i><Check size={9} /></i> 8 caractères</span>
-                      <span className={criteria.upper ? 'ok' : ''}><i><Check size={9} /></i> Une majuscule</span>
-                      <span className={criteria.digit ? 'ok' : ''}><i><Check size={9} /></i> Un chiffre</span>
-                      <span className={criteria.match ? 'ok' : ''}><i><Check size={9} /></i> Identiques</span>
-                    </div>
-                  </div>
+                  <PasswordStrengthIndicator password={formData.password} />
                 </div>
               )}
 
