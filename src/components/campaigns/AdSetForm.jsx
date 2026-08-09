@@ -198,6 +198,30 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
         [tousObjectifs, objective]
     );
 
+    /**
+     * Destinations que le référentiel autorise pour l'objectif choisi.
+     *
+     * La liste affichée était figée : elle proposait les mêmes six choix quel
+     * que soit l'objectif. Une campagne Ventes laissait ainsi choisir
+     * « Appels », qui ne propose aucun objectif de performance — l'étape se
+     * bloquait sans expliquer pourquoi.
+     */
+    const destinationsValides = useMemo(() => {
+        if (!referentiel) return null;
+        return new Set(Object.values(referentiel.goals_by_destination || {}).flat());
+    }, [referentiel]);
+
+    /** Vrai si le bouton d'interface mène à une destination acceptée. */
+    const destinationUtilisable = (valeur) => {
+        if (!destinationsValides) return true;   // avant chargement, ne rien griser
+        if (valeur === MESSAGING_UI_VALUE) {
+            return ['MESSENGER', 'WHATSAPP', 'INSTAGRAM_DIRECT']
+                .some(d => destinationsValides.has(d))
+                || [...destinationsValides].some(d => d.startsWith('MESSAGING_'));
+        }
+        return destinationsValides.has(valeur);
+    };
+
     /** Objectifs de performance acceptés pour l'objectif ET la destination. */
     const goalsDisponibles = useMemo(() => {
         if (!referentiel) return [];
@@ -449,26 +473,33 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                     <div className="adset-destination-group">
                                         {[
                                             { value: 'WEBSITE', label: 'Site Web', icon: '🌐', desc: 'Envoyez le trafic vers votre site Web', disabled: false },
-                                            { value: 'APP', label: 'Application', icon: '📲', desc: 'Envoyez le trafic vers votre application', disabled: true },
+                                            { value: 'APP', label: 'Application', icon: '📲', desc: 'Envoyez le trafic vers votre application', disabled: true, raison: 'Requiert une application mobile déclarée dans votre compte Meta.' },
                                             { value: 'MESSENGER', label: 'Applications de messagerie', icon: '💬', desc: 'Ouvrez une conversation sur Messenger, Instagram ou WhatsApp', disabled: false },
                                             { value: 'INSTAGRAM_PROFILE', label: 'Instagram ou Facebook', icon: '📷', desc: 'Envoyez le trafic vers un profil Instagram ou une Page Facebook', disabled: false },
-                                            { value: 'PHONE_CALL', label: 'Appels', icon: '📞', desc: 'Incitez les personnes à appeler votre entreprise', disabled: true },
-                                            { value: 'WEBSITE_AND_PHONE_CALL', label: 'Site Web et appels', icon: '🌐📞', desc: 'Redirigez vers votre site et incitez aux appels', disabled: true }
+                                            { value: 'PHONE_CALL', label: 'Appels', icon: '📞', desc: 'Incitez les personnes à appeler votre entreprise', disabled: false },
+                                            { value: 'WEBSITE_AND_PHONE_CALL', label: 'Site Web et appels', icon: '🌐📞', desc: 'Redirigez vers votre site et incitez aux appels', disabled: true, raison: 'Pas encore pris en charge par AdsFacile.' }
                                         ].map(opt => {
                                             const isSelected = (campaignData.destination_type || 'WEBSITE') === opt.value;
+                                            // Une destination est proposée si le référentiel
+                                            // l'accepte pour cet objectif. Plus de liste figée.
+                                            const indispo = opt.disabled || !destinationUtilisable(opt.value);
                                             return (
                                                 <button
                                                     key={opt.value}
                                                     type="button"
-                                                    disabled={opt.disabled}
-                                                    title={opt.disabled ? 'Bientôt disponible' : undefined}
+                                                    disabled={indispo}
+                                                    title={indispo
+                                                        ? (opt.disabled
+                                                            ? opt.raison
+                                                            : `Non disponible pour l'objectif ${referentiel?.label || ''}`)
+                                                        : undefined}
                                                     onClick={() => selectionnerDestination(opt.value)}
                                                     className={`adset-destination-btn ${isSelected ? 'active' : ''}`}
-                                                    style={opt.disabled ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
+                                                    style={indispo ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
                                                 >
                                                     <span className="dest-icon">{opt.icon}</span>
                                                     <div className="dest-content">
-                                                        <span className="dest-label">{opt.label}{opt.disabled ? ' (bientôt)' : ''}</span>
+                                                        <span className="dest-label">{opt.label}</span>
                                                         <span className="dest-desc">{opt.desc}</span>
                                                     </div>
                                                 </button>
