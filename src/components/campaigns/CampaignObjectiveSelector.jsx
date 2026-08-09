@@ -3,60 +3,69 @@
  * Sélection de l'objectif marketing (6 objectifs Facebook)
  */
 
-import { useState } from 'react';
-import { Eye, MousePointer, Heart, Users, Smartphone, ShoppingCart, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Eye, MousePointer, Heart, Users, Smartphone, ShoppingCart, ChevronRight, Lock } from 'lucide-react';
+import api from '../../services/api';
 
-const OBJECTIVES = [
-    {
-        id: 'OUTCOME_AWARENESS',
-        icon: Eye,
-        title: 'Awareness',
-        subtitle: 'Notoriété',
-        description: 'Touchez un maximum de personnes et augmentez la notoriété de votre marque'
-    },
-    {
-        id: 'LINK_CLICKS',
-        icon: MousePointer,
-        title: 'Traffic',
-        subtitle: 'Trafic',
-        description: 'Envoyez des gens vers votre site web, application ou événement'
-    },
-    {
-        id: 'OUTCOME_ENGAGEMENT',
-        icon: Heart,
-        title: 'Engagement',
-        subtitle: 'Engagement',
-        description: "Obtenez plus de j'aime, commentaires, partages ou vues"
-    },
-    {
-        id: 'OUTCOME_LEADS',
-        icon: Users,
-        title: 'Leads',
-        subtitle: 'Prospects',
-        description: 'Collectez des prospects pour votre entreprise'
-    },
-    {
-        id: 'APP_INSTALLS',
-        icon: Smartphone,
-        title: 'App promotion',
-        subtitle: 'Application',
-        description: "Générez plus d'installations dans votre application"
-    },
-    {
-        id: 'OUTCOME_SALES',
-        icon: ShoppingCart,
-        title: 'Sales',
-        subtitle: 'Ventes',
-        description: 'Trouvez des personnes susceptibles d\'acheter votre produit'
-    }
+/**
+ * Icônes, dans l'ordre d'affichage. Le reste — libellé, description,
+ * disponibilité — vient de /api/config/objectives, pour que le formulaire et
+ * le backend lisent la même table. Entretenir une seconde liste ici, c'est
+ * garantir qu'elles divergeront.
+ */
+const ICONES = {
+    OUTCOME_AWARENESS: Eye,
+    OUTCOME_TRAFFIC: MousePointer,
+    OUTCOME_ENGAGEMENT: Heart,
+    OUTCOME_LEADS: Users,
+    OUTCOME_APP_PROMOTION: Smartphone,
+    OUTCOME_SALES: ShoppingCart
+};
+
+const ORDRE = [
+    'OUTCOME_AWARENESS', 'OUTCOME_TRAFFIC', 'OUTCOME_ENGAGEMENT',
+    'OUTCOME_LEADS', 'OUTCOME_SALES', 'OUTCOME_APP_PROMOTION'
 ];
 
 const CampaignObjectiveSelector = ({ campaignData, setCampaignData, onNext }) => {
     const selectedObjective = campaignData.objective;
     const campaignName = campaignData.campaign_name;
 
+    const [objectifs, setObjectifs] = useState([]);
+    const [chargement, setChargement] = useState(true);
+
+    useEffect(() => {
+        let annule = false;
+        api.get('/config/objectives')
+            .then(res => {
+                if (annule) return;
+                const liste = res.data?.data?.objectives || [];
+                setObjectifs(
+                    [...liste].sort((a, b) => ORDRE.indexOf(a.value) - ORDRE.indexOf(b.value))
+                );
+            })
+            .catch(() => { if (!annule) setObjectifs([]); })
+            .finally(() => { if (!annule) setChargement(false); });
+        return () => { annule = true; };
+    }, []);
+
+    /**
+     * Change l'objectif ET remet à zéro tout ce qui en dépend.
+     *
+     * Sans cette remise à zéro, choisir Trafic (qui inscrit
+     * LANDING_PAGE_VIEWS) puis revenir choisir Notoriété laissait cet objectif
+     * de performance en place — Meta le refuse pour Notoriété, mais seulement
+     * après avoir créé la campagne.
+     */
     const selectObjective = (objectiveId) => {
-        setCampaignData(prev => ({ ...prev, objective: objectiveId }));
+        setCampaignData(prev => ({
+            ...prev,
+            objective: objectiveId,
+            optimization_goal: '',
+            destination_type: 'WEBSITE',
+            messaging_destinations: [],
+            cost_per_result_goal: ''
+        }));
     };
 
     const updateName = (name) => {
@@ -75,26 +84,37 @@ const CampaignObjectiveSelector = ({ campaignData, setCampaignData, onNext }) =>
                     Choisissez un objectif de campagne
                 </h2>
                 <p className="mt-2 text-gray-500 text-sm leading-relaxed max-w-2xl">
-                    L'objectif de votre campagne est le but commercial que vous souhaitez atteindre
-                    avec vos publicités. Survolez chaque option pour plus d'informations.
+                    Ce que vous voulez obtenir de vos publicités. Ce choix détermine
+                    les réglages proposés aux étapes suivantes.
                 </p>
             </div>
 
             {/* Objectives Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {OBJECTIVES.map((obj) => {
-                    const Icon = obj.icon;
-                    const isSelected = selectedObjective === obj.id;
+                {chargement && [0, 1, 2, 3].map(i => (
+                    <div key={i} className="h-28 rounded-xl bg-gray-100 animate-pulse" />
+                ))}
+
+                {!chargement && objectifs.map((obj) => {
+                    const Icon = ICONES[obj.value] || MousePointer;
+                    const isSelected = selectedObjective === obj.value;
+                    const indisponible = !obj.available;
 
                     return (
                         <button
-                            key={obj.id}
-                            onClick={() => selectObjective(obj.id)}
+                            key={obj.value}
+                            type="button"
+                            disabled={indisponible}
+                            onClick={() => selectObjective(obj.value)}
+                            aria-pressed={isSelected}
                             className={`
                 relative flex items-start gap-4 p-5 rounded-xl text-left transition-all duration-200
-                ${isSelected
-                                    ? 'bg-emerald-50 border-2 border-emerald-500 shadow-md shadow-emerald-100'
-                                    : 'bg-white border border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500
+                ${indisponible
+                                    ? 'bg-gray-50 border border-gray-200 cursor-not-allowed'
+                                    : isSelected
+                                        ? 'bg-emerald-50 border-2 border-emerald-500 shadow-md shadow-emerald-100'
+                                        : 'bg-white border border-gray-200 hover:border-gray-300 hover:shadow-sm'
                                 }
               `}
                         >
@@ -106,26 +126,38 @@ const CampaignObjectiveSelector = ({ campaignData, setCampaignData, onNext }) =>
                                     </svg>
                                 </div>
                             )}
+                            {indisponible && (
+                                <div className="absolute top-3 right-3 text-gray-400">
+                                    <Lock size={16} />
+                                </div>
+                            )}
 
                             {/* Icon */}
                             <div className={`
                 flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center
-                ${isSelected ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-500'}
+                ${indisponible
+                                    ? 'bg-gray-100 text-gray-400'
+                                    : isSelected ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-500'}
               `}>
                                 <Icon size={24} />
                             </div>
 
                             {/* Text */}
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                    <h3 className={`font-semibold ${isSelected ? 'text-emerald-700' : 'text-gray-900'}`}>
-                                        {obj.title}
-                                    </h3>
-                                    <span className="text-xs text-gray-400">({obj.subtitle})</span>
-                                </div>
+                                <h3 className={`font-semibold ${indisponible ? 'text-gray-500'
+                                    : isSelected ? 'text-emerald-700' : 'text-gray-900'}`}>
+                                    {obj.label}
+                                </h3>
                                 <p className="mt-1 text-sm text-gray-500 leading-relaxed">
                                     {obj.description}
                                 </p>
+                                {/* Un objectif indisponible dit pourquoi, plutôt qu'un
+                                    « bientôt » qui laisse l'utilisateur sans recours. */}
+                                {indisponible && obj.unavailable_reason && (
+                                    <p className="mt-2 text-xs text-amber-700 leading-relaxed">
+                                        {obj.unavailable_reason}
+                                    </p>
+                                )}
                             </div>
                         </button>
                     );

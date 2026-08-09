@@ -14,6 +14,7 @@ import {
 import AITargetingHelper from '../ai/AITargetingHelper';
 import CurrencyHint from './CurrencyHint';
 import MessagingDestinationPicker from './MessagingDestinationPicker';
+import api from '../../services/api';
 import '../../styles/adset-form.css';
 
 const OPTIMIZATION_LABELS = {
@@ -67,6 +68,61 @@ const TRAFFIC_PERFORMANCE_GOAL_GROUPS = [
 
 // À plat, pour retrouver facilement le label/description d'une valeur sélectionnée.
 const TRAFFIC_PERFORMANCE_GOALS = TRAFFIC_PERFORMANCE_GOAL_GROUPS.flatMap(g => g.options);
+
+/**
+ * Libellés de tous les objectifs de performance, quel que soit l'objectif de
+ * campagne. Ce dictionnaire ne décide de rien : ce sont les valeurs servies par
+ * /api/config/objectives qui déterminent lesquels sont proposés. Il ne fait que
+ * les nommer en français courant plutôt qu'en jargon publicitaire.
+ */
+const LIBELLES_GOALS = {
+    LINK_CLICKS: {
+        label: 'Obtenir un maximum de clics',
+        description: 'Vos publicités iront vers les personnes les plus enclines à cliquer.'
+    },
+    LANDING_PAGE_VIEWS: {
+        label: 'Obtenir un maximum de visites',
+        description: 'Vos publicités iront vers les personnes qui chargeront vraiment votre page, pas seulement celles qui cliquent.'
+    },
+    REACH: {
+        label: 'Toucher le plus de personnes différentes',
+        description: 'Chaque personne verra votre publicité environ une fois par jour.'
+    },
+    IMPRESSIONS: {
+        label: 'Être vu le plus souvent possible',
+        description: 'Vos publicités seront montrées autant de fois que le budget le permet, même aux mêmes personnes.'
+    },
+    CONVERSATIONS: {
+        label: 'Obtenir un maximum de conversations',
+        description: 'Vos publicités iront vers les personnes les plus enclines à vous écrire.'
+    },
+    POST_ENGAGEMENT: {
+        label: 'Obtenir des réactions et des commentaires',
+        description: 'Vos publicités iront vers les personnes les plus enclines à interagir avec votre publication.'
+    },
+    THRUPLAY: {
+        label: 'Faire regarder votre vidéo en entier',
+        description: 'Vos publicités iront vers les personnes qui regardent les vidéos jusqu’au bout.'
+    },
+    AD_RECALL_LIFT: {
+        label: 'Marquer les esprits',
+        description: 'Vos publicités iront vers les personnes les plus susceptibles de se souvenir de vous.'
+    },
+    QUALITY_CALL: {
+        label: 'Recevoir des appels utiles',
+        description: 'Vos publicités iront vers les personnes les plus enclines à vous appeler pour de bon.'
+    },
+    LEAD_GENERATION: {
+        label: 'Recueillir des coordonnées',
+        description: 'Vos publicités iront vers les personnes les plus enclines à laisser leurs coordonnées.'
+    },
+    OFFSITE_CONVERSIONS: {
+        label: 'Obtenir des achats sur votre site',
+        description: 'Vos publicités iront vers les personnes les plus enclines à acheter. Nécessite un pixel installé sur votre site.'
+    }
+};
+
+const decrireGoal = (valeur) => LIBELLES_GOALS[valeur] || { label: valeur, description: '' };
 
 // Valeur proposée par défaut, comme dans Ads Manager. Elle est écrite dans
 // l'état du formulaire pour que l'affichage et l'envoi ne divergent jamais.
@@ -148,16 +204,59 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
         }));
     };
 
-    // Le sélecteur d'objectif de performance affiche LANDING_PAGE_VIEWS par
-    // défaut ; on l'inscrit dans l'état, sinon le backend retombe sur
-    // LINK_CLICKS et la campagne serait optimisée autrement que ce qui est
-    // affiché à l'utilisateur.
+    // ───────────────────────────────────────────────────────────────────
+    // Référentiel des objectifs — servi par le backend
+    //
+    // Le formulaire n'entretient plus sa propre liste : il lit celle que le
+    // backend applique. C'est ce qui empêche de proposer une combinaison que
+    // la création rejettera ensuite.
+    // ───────────────────────────────────────────────────────────────────
+    const [tousObjectifs, setTousObjectifs] = useState(null);
+
     useEffect(() => {
-        if (objective === 'LINK_CLICKS' && !campaignData.optimization_goal) {
-            updateField('optimization_goal', TRAFFIC_DEFAULT_PERFORMANCE_GOAL);
+        let annule = false;
+        api.get('/config/objectives')
+            .then(res => { if (!annule) setTousObjectifs(res.data?.data?.objectives || []); })
+            .catch(() => { if (!annule) setTousObjectifs([]); });
+        return () => { annule = true; };
+    }, []);
+
+    const referentiel = useMemo(
+        () => (tousObjectifs || []).find(o => o.value === objective) || null,
+        [tousObjectifs, objective]
+    );
+
+    /** Objectifs de performance acceptés pour l'objectif ET la destination. */
+    const goalsDisponibles = useMemo(() => {
+        if (!referentiel) return [];
+        const dest = campaignData.destination_type === 'MESSENGER'
+            ? (campaignData.messaging_destinations?.length > 1
+                ? 'MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP'
+                : 'MESSENGER')
+            : (campaignData.destination_type || 'WEBSITE');
+
+        return Object.entries(referentiel.goals_by_destination || {})
+            .filter(([, destinations]) => destinations.includes(dest))
+            .map(([goal]) => goal);
+    }, [referentiel, campaignData.destination_type, campaignData.messaging_destinations]);
+
+    useEffect(() => {
+        // L'objectif de performance par défaut dépend de l'objectif de campagne
+        // ET de la destination : Ventes vers un site web n'accepte pas ce que
+        // Ventes par messagerie accepte. Le référentiel serveur tranche.
+        if (!objective || !referentiel) return;
+
+        const acceptables = goalsDisponibles;
+        if (acceptables.length === 0) return;
+
+        if (!campaignData.optimization_goal || !acceptables.includes(campaignData.optimization_goal)) {
+            const defaut = acceptables.includes(referentiel.default_goal)
+                ? referentiel.default_goal
+                : acceptables[0];
+            updateField('optimization_goal', defaut);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [objective, campaignData.optimization_goal]);
+    }, [objective, referentiel, goalsDisponibles, campaignData.optimization_goal]);
 
     // -------------------------------------------------------------------
     // Location API search
@@ -336,8 +435,12 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                 {/* LEFT — Form */}
                 <div className="adset-left">
 
-                    {objective === 'LINK_CLICKS' ? (
-                        <>
+                    {/* La carte Conversion est désormais commune à tous les
+                     * objectifs. Elle n'existait que pour Trafic : les cinq
+                     * autres partageaient un bloc réduit, intitulé « Destination
+                     * du trafic » même pour une campagne Notoriété, sans nom
+                     * d'ensemble ni objectif de performance. */}
+                    <>
                             {/* === NOM DE L'ENSEMBLE DE PUBLICITÉS (spécifique Trafic) === */}
                             <div className="adset-card">
                                 <div className="adset-field-group">
@@ -425,9 +528,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                 <div className="adset-field-group adset-relative">
                                     <label className="adset-label">Objectif de performance</label>
                                     {(() => {
-                                        const selectedGoal = TRAFFIC_PERFORMANCE_GOALS.find(
-                                            opt => opt.value === (campaignData.optimization_goal || TRAFFIC_DEFAULT_PERFORMANCE_GOAL)
-                                        );
+                                        const selectedGoal = decrireGoal(campaignData.optimization_goal);
                                         return (
                                             <button
                                                 type="button"
@@ -454,11 +555,15 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                             className="adset-dropdown"
                                             style={{ maxHeight: 360, overflowY: 'auto', padding: '10px 0' }}
                                         >
-                                            {TRAFFIC_PERFORMANCE_GOAL_GROUPS.map(grp => (
-                                                <div key={grp.group} style={{ marginBottom: 8 }}>
-                                                    <p style={{ fontWeight: 700, fontSize: 14, margin: '4px 16px 6px' }}>{grp.group}</p>
+                                            {[{ group: null, options: goalsDisponibles.map(v => ({ value: v, ...decrireGoal(v) })) }].map(grp => (
+                                                <div key={grp.group || 'tous'} style={{ marginBottom: 8 }}>
+                                                    {grp.options.length === 0 && (
+                                                        <p style={{ fontSize: 13, margin: '4px 16px', color: 'var(--color-text-light)' }}>
+                                                            Choisissez d’abord un lieu de conversion.
+                                                        </p>
+                                                    )}
                                                     {grp.options.map(opt => {
-                                                        const isSelected = (campaignData.optimization_goal || TRAFFIC_DEFAULT_PERFORMANCE_GOAL) === opt.value;
+                                                        const isSelected = campaignData.optimization_goal === opt.value;
                                                         return (
                                                             <label
                                                                 key={opt.value}
@@ -511,75 +616,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                     <p className="adset-hint">💡 Laissez vide pour le coût le plus bas sans plafond</p>
                                 </div>
                             </div>
-                        </>
-                    ) : (
-                        /* === SECTION 0: DESTINATION (autres objectifs) === */
-                        <div className="adset-card">
-                            <div className="adset-section-header">
-                                <div className="adset-section-icon audience">
-                                    <Target size={22} />
-                                </div>
-                                <div>
-                                    <h3 className="adset-section-title">Destination du trafic</h3>
-                                    <p className="adset-section-subtitle">Où voulez-vous envoyer les visiteurs ?</p>
-                                </div>
-                            </div>
-
-                            <div className="adset-field-group">
-                                <label className="adset-label">Type de destination <span className="required">*</span></label>
-                                <div className="adset-destination-group">
-                                    {[
-                                        { value: 'WEBSITE', label: 'Site web', icon: '🌐', desc: 'Rediriger vers votre site' },
-                                        // Une seule entrée pour la messagerie : le choix des
-                                        // applications se fait juste en dessous, en cases à cocher.
-                                        { value: 'MESSENGER', label: 'Applications de messagerie', icon: '💬', desc: 'Messenger, Instagram ou WhatsApp' },
-                                        { value: 'INSTAGRAM_PROFILE', label: 'Profil Instagram', icon: '📷', desc: 'Visiter votre Instagram' }
-                                    ].map(opt => {
-                                        const isSelected = (campaignData.destination_type || 'WEBSITE') === opt.value;
-                                        return (
-                                            <button
-                                                key={opt.value}
-                                                type="button"
-                                                onClick={() => selectionnerDestination(opt.value)}
-                                                className={`adset-destination-btn ${isSelected ? 'active' : ''}`}
-                                            >
-                                                <span className="dest-icon">{opt.icon}</span>
-                                                <div className="dest-content">
-                                                    <span className="dest-label">{opt.label}</span>
-                                                    <span className="dest-desc">{opt.desc}</span>
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {(campaignData.destination_type === 'WEBSITE' || !campaignData.destination_type) && (
-                                <div className="adset-field-group">
-                                    <label className="adset-label">
-                                        URL du site web <span className="required">*</span>
-                                    </label>
-                                    <input
-                                        type="url"
-                                        value={campaignData.website_url || ''}
-                                        onChange={(e) => updateField('website_url', e.target.value)}
-                                        placeholder="https://votre-site.com"
-                                        className={`adset-input ${campaignData.website_url && !campaignData.website_url.startsWith('http') ? 'error' : ''}`}
-                                    />
-                                    <p className="adset-hint">💡 Les visiteurs seront redirigés vers cette URL</p>
-                                </div>
-                            )}
-
-                            {campaignData.destination_type === MESSAGING_UI_VALUE && (
-                                <MessagingDestinationPicker
-                                    selected={campaignData.messaging_destinations || ['messenger']}
-                                    onChange={(apps) => updateField('messaging_destinations', apps)}
-                                        whatsappNumberId={campaignData.whatsapp_phone_number_id || ''}
-                                        onWhatsappNumberIdChange={(v) => updateField('whatsapp_phone_number_id', v)}
-                                />
-                            )}
-                        </div>
-                    )}
+                    </>
 
                     {/* === SECTION A: AUDIENCE === */}
                     <div className="adset-card">
@@ -903,18 +940,12 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                             </label>
                         </div>
 
-                        {/* Optimization — pour Trafic, ces réglages sont déjà dans la carte "Conversion" plus haut */}
-                        {objective !== 'LINK_CLICKS' && (
-                            <div className="adset-field-group">
-                                <label className="adset-label">Optimisation de la diffusion</label>
-                                <div className="adset-opt-pill">
-                                    <Sparkles size={16} className="opt-icon" />
-                                    <span className="opt-text">
-                                        {OPTIMIZATION_LABELS[objective] || 'Portée maximale'}
-                                    </span>
-                                </div>
-                            </div>
-                        )}
+                        {/* La pastille « Optimisation de la diffusion » a été retirée :
+                            elle affichait un libellé sans jamais renseigner
+                            optimization_goal, laissant croire à un réglage qui
+                            n'était pas transmis. Le véritable sélecteur, dans la
+                            carte Conversion, s'applique désormais à tous les
+                            objectifs. */}
 
                         {/* Total estimate (dark bar) */}
                         <div className="adset-total-bar">
