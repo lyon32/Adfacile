@@ -7,6 +7,8 @@
 
 const { supabase } = require('../config/supabase');
 const facebookAdsService = require('../services/facebookAdsService');
+const { isMessagingDestination, normalizeApps } = require('../services/messagingDestinations');
+const { translateFacebookError } = require('../utils/facebookErrors');
 const logger = require('../utils/logger');
 const fs = require('fs');
 const path = require('path');
@@ -79,6 +81,12 @@ function validateCampaignData(data) {
         errors.push('Le budget minimum est de 1000 FCFA');
     }
 
+    // Une publicité qui ouvre une conversation n'a pas d'URL de destination :
+    // c'est Facebook qui redirige vers Messenger, Instagram ou WhatsApp.
+    const messagingApps = normalizeApps(data.messaging_destinations);
+    const goesToMessaging = messagingApps.length > 0
+        || isMessagingDestination(data.destination_type);
+
     // Ad level
     if (!data.creative) {
         errors.push('Les données créatives sont requises');
@@ -89,7 +97,7 @@ function validateCampaignData(data) {
         if (!data.creative.headline || data.creative.headline.trim().length === 0) {
             errors.push('Le titre est requis');
         }
-        if (!data.creative.link) {
+        if (!goesToMessaging && !data.creative.link) {
             errors.push('L\'URL de destination est requise');
         }
     }
@@ -150,16 +158,28 @@ const createCampaign = async (req, res) => {
     } catch (error) {
         logger.error('❌ Campaign creation error:', error);
 
-        // Erreur Facebook API
+        // Incohérence détectée par AdsFacile avant même d'appeler Facebook
+        // (destination de messagerie non reliée, visuel manquant…).
+        if (error.userFacing) {
+            return res.status(400).json({
+                success: false,
+                error: 'validation_error',
+                message: error.message,
+                details: error.validationErrors || [error.message]
+            });
+        }
+
+        // Erreur Facebook API, traduite en message actionnable
         if (error.response?.error) {
-            const fbError = error.response.error;
+            const translated = translateFacebookError(error.response.error);
             return res.status(400).json({
                 success: false,
                 error: 'facebook_api_error',
-                message: fbError.error_user_msg || fbError.message || 'Erreur Facebook API',
-                title: fbError.error_user_title,
-                code: fbError.code,
-                fb_error_subcode: fbError.error_subcode
+                message: translated.message,
+                title: translated.title,
+                fix: translated.fix,
+                code: translated.code,
+                fb_error_subcode: translated.subcode
             });
         }
 
@@ -261,13 +281,33 @@ const updateStatus = async (req, res) => {
         // Vérifier que la campagne appartient à l'utilisateur
         const { data: campaign, error: fetchError } = await supabase
             .from('campaigns')
-            .select('id, fb_campaign_id')
+            .select('id, fb_campaign_id, fb_adset_id, fb_ad_id')
             .eq('id', id)
             .eq('user_id', userId)
             .single();
 
         if (fetchError || !campaign) {
             return res.status(404).json({ success: false, message: 'Campagne non trouvée' });
+        }
+
+        // Appliquer le statut chez Facebook AVANT la base : sans cela, AdsFacile
+        // afficherait « active » pendant que la campagne reste en pause côté
+        // Meta, et l'utilisateur croirait diffuser sans rien diffuser.
+        try {
+            await facebookAdsService.updateCampaignStatus(userId, campaign, status);
+        } catch (fbErr) {
+            logger.error('❌ Statut non appliqué chez Facebook:', fbErr.response?.data || fbErr.message);
+            const translated = fbErr.response?.data?.error
+                ? translateFacebookError(fbErr.response.data.error)
+                : { title: 'Erreur Facebook', message: fbErr.message, fix: null };
+
+            return res.status(400).json({
+                success: false,
+                error: 'facebook_api_error',
+                title: translated.title,
+                message: `Le statut n'a pas pu être modifié sur Facebook. ${translated.message}`,
+                fix: translated.fix
+            });
         }
 
         // Mettre à jour en base

@@ -88,9 +88,12 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
                 updateCreative('media_url', response.data.url);
             }
         } catch (err) {
-            const localUrl = URL.createObjectURL(file);
-            updateCreative('media_url', localUrl);
-            console.warn('Upload failed, using local preview:', err);
+            // Surtout pas de repli sur URL.createObjectURL : l'aperçu local
+            // produit une URL blob: que Facebook ne peut pas atteindre. La
+            // publicité partait alors sans visuel, sans que personne ne le voie.
+            console.error('Échec du téléversement:', err);
+            alert('Le téléversement du visuel a échoué. Vérifiez votre connexion et réessayez.');
+            updateCreative('media_url', '');
         } finally {
             setUploading(false);
         }

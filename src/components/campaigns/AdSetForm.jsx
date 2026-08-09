@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import AITargetingHelper from '../ai/AITargetingHelper';
 import CurrencyHint from './CurrencyHint';
+import MessagingDestinationPicker from './MessagingDestinationPicker';
 import '../../styles/adset-form.css';
 
 const OPTIMIZATION_LABELS = {
@@ -130,6 +131,21 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
 
     const updateField = (field, value) => {
         setCampaignData(prev => ({ ...prev, [field]: value }));
+    };
+
+    // Destinations de messagerie : MESSENGER sert de repère d'interface pour
+    // « Applications de messagerie » ; c'est messaging_destinations qui décide
+    // réellement de la destination envoyée à Facebook.
+    const MESSAGING_UI_VALUE = 'MESSENGER';
+
+    const selectionnerDestination = (value) => {
+        setCampaignData(prev => ({
+            ...prev,
+            destination_type: value,
+            messaging_destinations: value === MESSAGING_UI_VALUE
+                ? (prev.messaging_destinations?.length ? prev.messaging_destinations : ['messenger'])
+                : []
+        }));
     };
 
     // Le sélecteur d'objectif de performance affiche LANDING_PAGE_VIEWS par
@@ -299,7 +315,14 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
         targeting.age_min >= 18 &&
         targeting.age_max <= 65 &&
         daily_budget >= 1000 &&
-        (destType !== 'WEBSITE' || (campaignData.website_url && campaignData.website_url.startsWith('http')));
+        (destType !== 'WEBSITE' || (campaignData.website_url && campaignData.website_url.startsWith('http'))) &&
+        // Un ensemble de publicités de messagerie sans application cochée est
+        // refusé par Facebook : on l'interdit dès le formulaire.
+        (destType !== 'MESSENGER' || (campaignData.messaging_destinations?.length > 0)) &&
+        // WhatsApp coché sans numéro produit une publicité sans destinataire :
+        // Facebook l'accepte, mais elle ne peut pas être diffusée.
+        (!campaignData.messaging_destinations?.includes('whatsapp')
+            || /^\d+$/.test((campaignData.whatsapp_phone_number_id || '').trim()));
 
     const rangePct = Math.round(((daily_budget - 1000) / (50000 - 1000)) * 100);
 
@@ -347,7 +370,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                         {[
                                             { value: 'WEBSITE', label: 'Site Web', icon: '🌐', desc: 'Envoyez le trafic vers votre site Web', disabled: false },
                                             { value: 'APP', label: 'Application', icon: '📲', desc: 'Envoyez le trafic vers votre application', disabled: true },
-                                            { value: 'MESSENGER', label: 'Applications de messagerie', icon: '💬', desc: 'Envoyez le trafic vers Messenger ou WhatsApp', disabled: false },
+                                            { value: 'MESSENGER', label: 'Applications de messagerie', icon: '💬', desc: 'Ouvrez une conversation sur Messenger, Instagram ou WhatsApp', disabled: false },
                                             { value: 'INSTAGRAM_PROFILE', label: 'Instagram ou Facebook', icon: '📷', desc: 'Envoyez le trafic vers un profil Instagram ou une Page Facebook', disabled: false },
                                             { value: 'PHONE_CALL', label: 'Appels', icon: '📞', desc: 'Incitez les personnes à appeler votre entreprise', disabled: true },
                                             { value: 'WEBSITE_AND_PHONE_CALL', label: 'Site Web et appels', icon: '🌐📞', desc: 'Redirigez vers votre site et incitez aux appels', disabled: true }
@@ -359,7 +382,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                                     type="button"
                                                     disabled={opt.disabled}
                                                     title={opt.disabled ? 'Bientôt disponible' : undefined}
-                                                    onClick={() => updateField('destination_type', opt.value)}
+                                                    onClick={() => selectionnerDestination(opt.value)}
                                                     className={`adset-destination-btn ${isSelected ? 'active' : ''}`}
                                                     style={opt.disabled ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
                                                 >
@@ -388,6 +411,15 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                         />
                                         <p className="adset-hint">💡 Les visiteurs seront redirigés vers cette URL</p>
                                     </div>
+                                )}
+
+                                {campaignData.destination_type === MESSAGING_UI_VALUE && (
+                                    <MessagingDestinationPicker
+                                        selected={campaignData.messaging_destinations || ['messenger']}
+                                        onChange={(apps) => updateField('messaging_destinations', apps)}
+                                        whatsappNumberId={campaignData.whatsapp_phone_number_id || ''}
+                                        onWhatsappNumberIdChange={(v) => updateField('whatsapp_phone_number_id', v)}
+                                    />
                                 )}
 
                                 <div className="adset-field-group adset-relative">
@@ -498,16 +530,17 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                 <div className="adset-destination-group">
                                     {[
                                         { value: 'WEBSITE', label: 'Site web', icon: '🌐', desc: 'Rediriger vers votre site' },
-                                        { value: 'MESSENGER', label: 'Messenger', icon: '💬', desc: 'Discuter via Messenger' },
-                                        { value: 'WHATSAPP', label: 'WhatsApp', icon: '📱', desc: 'Contacter via WhatsApp' },
-                                        { value: 'INSTAGRAM_PROFILE', label: 'Instagram', icon: '📷', desc: 'Visiter votre Instagram' }
+                                        // Une seule entrée pour la messagerie : le choix des
+                                        // applications se fait juste en dessous, en cases à cocher.
+                                        { value: 'MESSENGER', label: 'Applications de messagerie', icon: '💬', desc: 'Messenger, Instagram ou WhatsApp' },
+                                        { value: 'INSTAGRAM_PROFILE', label: 'Profil Instagram', icon: '📷', desc: 'Visiter votre Instagram' }
                                     ].map(opt => {
                                         const isSelected = (campaignData.destination_type || 'WEBSITE') === opt.value;
                                         return (
                                             <button
                                                 key={opt.value}
                                                 type="button"
-                                                onClick={() => updateField('destination_type', opt.value)}
+                                                onClick={() => selectionnerDestination(opt.value)}
                                                 className={`adset-destination-btn ${isSelected ? 'active' : ''}`}
                                             >
                                                 <span className="dest-icon">{opt.icon}</span>
@@ -535,6 +568,15 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                     />
                                     <p className="adset-hint">💡 Les visiteurs seront redirigés vers cette URL</p>
                                 </div>
+                            )}
+
+                            {campaignData.destination_type === MESSAGING_UI_VALUE && (
+                                <MessagingDestinationPicker
+                                    selected={campaignData.messaging_destinations || ['messenger']}
+                                    onChange={(apps) => updateField('messaging_destinations', apps)}
+                                        whatsappNumberId={campaignData.whatsapp_phone_number_id || ''}
+                                        onWhatsappNumberIdChange={(v) => updateField('whatsapp_phone_number_id', v)}
+                                />
                             )}
                         </div>
                     )}

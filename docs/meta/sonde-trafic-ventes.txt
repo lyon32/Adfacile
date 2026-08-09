@@ -1,0 +1,234 @@
+OK|OUTCOME_TRAFFIC|LINK_CLICKS|WEBSITE
+OK|OUTCOME_TRAFFIC|LINK_CLICKS|UNDEFINED
+OK|OUTCOME_TRAFFIC|LINK_CLICKS|MESSENGER
+KO|OUTCOME_TRAFFIC|LINK_CLICKS|WHATSAPP|La Page est manquante dans l’objet promu
+OK|OUTCOME_TRAFFIC|LINK_CLICKS|INSTAGRAM_DIRECT
+OK|OUTCOME_TRAFFIC|LINK_CLICKS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+OK|OUTCOME_TRAFFIC|LINK_CLICKS|PHONE_CALL
+OK|OUTCOME_TRAFFIC|LINK_CLICKS|ON_AD
+KO|OUTCOME_TRAFFIC|LINK_CLICKS|APP|L’application est manquante dans l’objet promu
+OK|OUTCOME_TRAFFIC|LANDING_PAGE_VIEWS|WEBSITE
+OK|OUTCOME_TRAFFIC|LANDING_PAGE_VIEWS|UNDEFINED
+OK|OUTCOME_TRAFFIC|LANDING_PAGE_VIEWS|MESSENGER
+KO|OUTCOME_TRAFFIC|LANDING_PAGE_VIEWS|WHATSAPP|La Page est manquante dans l’objet promu
+OK|OUTCOME_TRAFFIC|LANDING_PAGE_VIEWS|INSTAGRAM_DIRECT
+OK|OUTCOME_TRAFFIC|LANDING_PAGE_VIEWS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+OK|OUTCOME_TRAFFIC|LANDING_PAGE_VIEWS|PHONE_CALL
+OK|OUTCOME_TRAFFIC|LANDING_PAGE_VIEWS|ON_AD
+KO|OUTCOME_TRAFFIC|LANDING_PAGE_VIEWS|APP|L’application est manquante dans l’objet promu
+OK|OUTCOME_TRAFFIC|REACH|WEBSITE
+OK|OUTCOME_TRAFFIC|REACH|UNDEFINED
+OK|OUTCOME_TRAFFIC|REACH|MESSENGER
+KO|OUTCOME_TRAFFIC|REACH|WHATSAPP|La Page est manquante dans l’objet promu
+OK|OUTCOME_TRAFFIC|REACH|INSTAGRAM_DIRECT
+OK|OUTCOME_TRAFFIC|REACH|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+OK|OUTCOME_TRAFFIC|REACH|PHONE_CALL
+OK|OUTCOME_TRAFFIC|REACH|ON_AD
+KO|OUTCOME_TRAFFIC|REACH|APP|L’application est manquante dans l’objet promu
+OK|OUTCOME_TRAFFIC|IMPRESSIONS|WEBSITE
+OK|OUTCOME_TRAFFIC|IMPRESSIONS|UNDEFINED
+OK|OUTCOME_TRAFFIC|IMPRESSIONS|MESSENGER
+KO|OUTCOME_TRAFFIC|IMPRESSIONS|WHATSAPP|La Page est manquante dans l’objet promu
+OK|OUTCOME_TRAFFIC|IMPRESSIONS|INSTAGRAM_DIRECT
+OK|OUTCOME_TRAFFIC|IMPRESSIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+OK|OUTCOME_TRAFFIC|IMPRESSIONS|PHONE_CALL
+OK|OUTCOME_TRAFFIC|IMPRESSIONS|ON_AD
+KO|OUTCOME_TRAFFIC|IMPRESSIONS|APP|L’application est manquante dans l’objet promu
+KO|OUTCOME_TRAFFIC|CONVERSATIONS|WEBSITE|Vous ne pouvez utiliser l’optimisation Réponses uniquement avec la des
+OK|OUTCOME_TRAFFIC|CONVERSATIONS|UNDEFINED
+OK|OUTCOME_TRAFFIC|CONVERSATIONS|MESSENGER
+KO|OUTCOME_TRAFFIC|CONVERSATIONS|WHATSAPP|La Page est manquante dans l’objet promu
+OK|OUTCOME_TRAFFIC|CONVERSATIONS|INSTAGRAM_DIRECT
+OK|OUTCOME_TRAFFIC|CONVERSATIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+KO|OUTCOME_TRAFFIC|CONVERSATIONS|PHONE_CALL|Vous ne pouvez utiliser l’optimisation Réponses uniquement avec la des
+KO|OUTCOME_TRAFFIC|CONVERSATIONS|ON_AD|Vous ne pouvez utiliser l’optimisation Réponses uniquement avec la des
+KO|OUTCOME_TRAFFIC|CONVERSATIONS|APP|L’application est manquante dans l’objet promu
+KO|OUTCOME_TRAFFIC|OFFSITE_CONVERSIONS|WEBSITE|Sélectionnez un objet promu pour votre ensemble de publicités.
+KO|OUTCOME_TRAFFIC|OFFSITE_CONVERSIONS|UNDEFINED|Sélectionnez un objet promu pour votre ensemble de publicités.
+KO|OUTCOME_TRAFFIC|OFFSITE_CONVERSIONS|MESSENGER|Sélectionnez un objet promu pour votre ensemble de publicités.
+KO|OUTCOME_TRAFFIC|OFFSITE_CONVERSIONS|WHATSAPP|Sélectionnez un objet promu pour votre ensemble de publicités.
+KO|OUTCOME_TRAFFIC|OFFSITE_CONVERSIONS|INSTAGRAM_DIRECT|Sélectionnez un objet promu pour votre ensemble de publicités.
+KO|OUTCOME_TRAFFIC|OFFSITE_CONVERSIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|Sélectionnez un objet promu pour votre ensemble de publicités.
+KO|OUTCOME_TRAFFIC|OFFSITE_CONVERSIONS|PHONE_CALL|Sélectionnez un objet promu pour votre ensemble de publicités.
+KO|OUTCOME_TRAFFIC|OFFSITE_CONVERSIONS|ON_AD|Sélectionnez un objet promu pour votre ensemble de publicités.
+KO|OUTCOME_TRAFFIC|OFFSITE_CONVERSIONS|APP|Sélectionnez un objet promu pour votre ensemble de publicités.
+OK|OUTCOME_TRAFFIC|POST_ENGAGEMENT|WEBSITE
+OK|OUTCOME_TRAFFIC|POST_ENGAGEMENT|UNDEFINED
+OK|OUTCOME_TRAFFIC|POST_ENGAGEMENT|MESSENGER
+KO|OUTCOME_TRAFFIC|POST_ENGAGEMENT|WHATSAPP|La Page est manquante dans l’objet promu
+OK|OUTCOME_TRAFFIC|POST_ENGAGEMENT|INSTAGRAM_DIRECT
+OK|OUTCOME_TRAFFIC|POST_ENGAGEMENT|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+OK|OUTCOME_TRAFFIC|POST_ENGAGEMENT|PHONE_CALL
+OK|OUTCOME_TRAFFIC|POST_ENGAGEMENT|ON_AD
+KO|OUTCOME_TRAFFIC|POST_ENGAGEMENT|APP|L’application est manquante dans l’objet promu
+KO|OUTCOME_TRAFFIC|LEAD_GENERATION|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|LEAD_GENERATION|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|LEAD_GENERATION|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|LEAD_GENERATION|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|LEAD_GENERATION|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|LEAD_GENERATION|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|LEAD_GENERATION|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|LEAD_GENERATION|ON_AD|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|LEAD_GENERATION|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|APP_INSTALLS|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|APP_INSTALLS|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|APP_INSTALLS|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|APP_INSTALLS|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|APP_INSTALLS|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|APP_INSTALLS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|APP_INSTALLS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|APP_INSTALLS|ON_AD|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|APP_INSTALLS|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|AD_RECALL_LIFT|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|AD_RECALL_LIFT|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|AD_RECALL_LIFT|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|AD_RECALL_LIFT|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|AD_RECALL_LIFT|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|AD_RECALL_LIFT|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|AD_RECALL_LIFT|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|AD_RECALL_LIFT|ON_AD|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|AD_RECALL_LIFT|APP|L’objectif de performance n’est pas disponible
+OK|OUTCOME_TRAFFIC|THRUPLAY|WEBSITE
+OK|OUTCOME_TRAFFIC|THRUPLAY|UNDEFINED
+OK|OUTCOME_TRAFFIC|THRUPLAY|MESSENGER
+KO|OUTCOME_TRAFFIC|THRUPLAY|WHATSAPP|La Page est manquante dans l’objet promu
+OK|OUTCOME_TRAFFIC|THRUPLAY|INSTAGRAM_DIRECT
+OK|OUTCOME_TRAFFIC|THRUPLAY|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+OK|OUTCOME_TRAFFIC|THRUPLAY|PHONE_CALL
+OK|OUTCOME_TRAFFIC|THRUPLAY|ON_AD
+KO|OUTCOME_TRAFFIC|THRUPLAY|APP|L’application est manquante dans l’objet promu
+OK|OUTCOME_TRAFFIC|QUALITY_CALL|WEBSITE
+OK|OUTCOME_TRAFFIC|QUALITY_CALL|UNDEFINED
+OK|OUTCOME_TRAFFIC|QUALITY_CALL|MESSENGER
+KO|OUTCOME_TRAFFIC|QUALITY_CALL|WHATSAPP|La Page est manquante dans l’objet promu
+OK|OUTCOME_TRAFFIC|QUALITY_CALL|INSTAGRAM_DIRECT
+OK|OUTCOME_TRAFFIC|QUALITY_CALL|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+OK|OUTCOME_TRAFFIC|QUALITY_CALL|PHONE_CALL
+OK|OUTCOME_TRAFFIC|QUALITY_CALL|ON_AD
+KO|OUTCOME_TRAFFIC|QUALITY_CALL|APP|L’application est manquante dans l’objet promu
+KO|OUTCOME_TRAFFIC|VALUE|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|VALUE|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|VALUE|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|VALUE|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|VALUE|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|VALUE|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|VALUE|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|VALUE|ON_AD|L’objectif de performance n’est pas disponible
+KO|OUTCOME_TRAFFIC|VALUE|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LINK_CLICKS|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LINK_CLICKS|UNDEFINED|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|LINK_CLICKS|MESSENGER|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|LINK_CLICKS|WHATSAPP|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|LINK_CLICKS|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LINK_CLICKS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|LINK_CLICKS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LINK_CLICKS|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet o
+KO|OUTCOME_SALES|LINK_CLICKS|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|UNDEFINED|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet o
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|REACH|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|REACH|UNDEFINED|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|REACH|MESSENGER|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|REACH|WHATSAPP|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|REACH|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|REACH|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|REACH|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|REACH|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet o
+KO|OUTCOME_SALES|REACH|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|IMPRESSIONS|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|IMPRESSIONS|UNDEFINED|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|IMPRESSIONS|MESSENGER|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|IMPRESSIONS|WHATSAPP|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|IMPRESSIONS|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|IMPRESSIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|IMPRESSIONS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|IMPRESSIONS|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet o
+KO|OUTCOME_SALES|IMPRESSIONS|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|CONVERSATIONS|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|CONVERSATIONS|UNDEFINED|Impossible de configurer à la fois un budget d’ensemble de publicités 
+KO|OUTCOME_SALES|CONVERSATIONS|MESSENGER|Impossible de configurer à la fois un budget d’ensemble de publicités 
+KO|OUTCOME_SALES|CONVERSATIONS|WHATSAPP|Impossible de configurer à la fois un budget d’ensemble de publicités 
+KO|OUTCOME_SALES|CONVERSATIONS|INSTAGRAM_DIRECT|Impossible de configurer à la fois un budget d’ensemble de publicités 
+KO|OUTCOME_SALES|CONVERSATIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|Impossible de configurer à la fois un budget d’ensemble de publicités 
+KO|OUTCOME_SALES|CONVERSATIONS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|CONVERSATIONS|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet o
+KO|OUTCOME_SALES|CONVERSATIONS|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|UNDEFINED|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|MESSENGER|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|WHATSAPP|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet o
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|POST_ENGAGEMENT|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|POST_ENGAGEMENT|UNDEFINED|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|POST_ENGAGEMENT|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|POST_ENGAGEMENT|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|POST_ENGAGEMENT|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|POST_ENGAGEMENT|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|POST_ENGAGEMENT|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|POST_ENGAGEMENT|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet o
+KO|OUTCOME_SALES|POST_ENGAGEMENT|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LEAD_GENERATION|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LEAD_GENERATION|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LEAD_GENERATION|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LEAD_GENERATION|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LEAD_GENERATION|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LEAD_GENERATION|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LEAD_GENERATION|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|LEAD_GENERATION|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet o
+KO|OUTCOME_SALES|LEAD_GENERATION|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|APP_INSTALLS|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|APP_INSTALLS|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|APP_INSTALLS|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|APP_INSTALLS|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|APP_INSTALLS|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|APP_INSTALLS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|APP_INSTALLS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|APP_INSTALLS|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet o
+KO|OUTCOME_SALES|APP_INSTALLS|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|AD_RECALL_LIFT|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|AD_RECALL_LIFT|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|AD_RECALL_LIFT|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|AD_RECALL_LIFT|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|AD_RECALL_LIFT|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|AD_RECALL_LIFT|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|AD_RECALL_LIFT|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|AD_RECALL_LIFT|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet o
+KO|OUTCOME_SALES|AD_RECALL_LIFT|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|THRUPLAY|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|THRUPLAY|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|THRUPLAY|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|THRUPLAY|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|THRUPLAY|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|THRUPLAY|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|THRUPLAY|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|THRUPLAY|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet o
+KO|OUTCOME_SALES|THRUPLAY|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|QUALITY_CALL|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|QUALITY_CALL|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|QUALITY_CALL|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|QUALITY_CALL|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|QUALITY_CALL|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|QUALITY_CALL|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|QUALITY_CALL|PHONE_CALL|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|QUALITY_CALL|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet o
+KO|OUTCOME_SALES|QUALITY_CALL|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|VALUE|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|VALUE|UNDEFINED|L’objectif d’optimisation pour la diffusion des publicités doit être l
+KO|OUTCOME_SALES|VALUE|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|VALUE|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|VALUE|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|VALUE|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|VALUE|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_SALES|VALUE|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet o
+KO|OUTCOME_SALES|VALUE|APP|L’objectif de performance n’est pas disponible

@@ -9,6 +9,16 @@ export default defineConfig({
     watch: {
       usePolling: true,
     },
+    // En production, nginx proxifie /api/ vers le backend (voir nginx.conf), et
+    // les composants appellent donc des chemins relatifs. Sans le même relais
+    // ici, ces appels atteignent le serveur de dev, qui répond index.html : le
+    // navigateur signale alors « Unexpected token '<' » au lieu du JSON attendu.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
   },
 })
 

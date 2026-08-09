@@ -7,8 +7,15 @@
  */
 
 const axios = require('axios');
+const FormData = require('form-data');
 const { supabase } = require('../config/supabase');
 const { decryptToken } = require('./facebookService');
+const {
+    isMessagingDestination,
+    validateMessagingApps,
+    buildMessagingDestination,
+    normalizeWhatsAppNumber
+} = require('./messagingDestinations');
 const {
     fcfaToUsdCents,
     minDailyBudgetFcfa,
@@ -16,9 +23,32 @@ const {
     FB_MIN_DAILY_BUDGET_CENTS,
     ACCOUNT_CURRENCY
 } = require('../utils/currency');
+const { debutDeJournee, finDeJournee } = require('../utils/adAccountTime');
 const logger = require('../utils/logger');
 
 const FACEBOOK_GRAPH_URL = 'https://graph.facebook.com/v21.0';
+
+/** Fuseau retenu si Meta ne renvoie pas celui du compte. */
+const FUSEAU_PAR_DEFAUT = 'America/Los_Angeles';
+
+/**
+ * Récupère le fuseau horaire du compte publicitaire.
+ *
+ * Meta interprète les dates de diffusion dans ce fuseau, jamais en UTC : sans
+ * lui, une date de fin recule d'un jour pour tout compte à l'ouest de Greenwich.
+ */
+async function getAdAccountTimezone(adAccountId, accessToken) {
+    try {
+        const response = await axios.get(`${FACEBOOK_GRAPH_URL}/${adAccountId}`, {
+            params: { access_token: accessToken, fields: 'timezone_name' }
+        });
+        return response.data.timezone_name || FUSEAU_PAR_DEFAUT;
+    } catch (err) {
+        logger.warn('⚠️ Fuseau du compte publicitaire indisponible, repli sur '
+            + `${FUSEAU_PAR_DEFAUT}: ${err.response?.data?.error?.message || err.message}`);
+        return FUSEAU_PAR_DEFAUT;
+    }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // HELPERS
@@ -117,13 +147,21 @@ function buildTargeting(targeting) {
 
 /**
  * Récupère les credentials Facebook d'un utilisateur depuis la DB
+ *
+ * Les colonnes instagram_connected et whatsapp_connected font partie des
+ * credentials : la validation des destinations de messagerie s'appuie dessus.
+ * Les omettre les rendait `undefined`, ce que la validation lisait comme « non
+ * relié » — le compte Instagram et le numéro WhatsApp étaient donc refusés
+ * alors qu'ils étaient bien rattachés à la Page.
  */
 async function getFacebookAccount(userId) {
     logger.info(`🔍 getFacebookAccount: Looking for facebook_accounts with user_id=${userId}, is_active=true`);
 
     const { data, error } = await supabase
         .from('facebook_accounts')
-        .select('fb_user_id, fb_access_token, fb_account_id, fb_page_id, fb_page_name')
+        .select('fb_user_id, fb_access_token, fb_account_id, fb_page_id, fb_page_name, '
+            + 'instagram_connected, instagram_account_id, whatsapp_connected, whatsapp_number, '
+            + 'whatsapp_phone_number_id')
         .eq('user_id', userId)
         .eq('is_active', true)
         .single();
@@ -148,19 +186,182 @@ async function getFacebookAccount(userId) {
 /**
  * Construit le promoted_object selon le type de destination
  */
-function buildPromotedObject(data, fb) {
-    const destType = data.destination_type || 'WEBSITE';
+function buildPromotedObject(destinationType, fb, whatsappNumber = null, whatsappNumberId = null) {
+    if (isMessagingDestination(destinationType) || destinationType === 'INSTAGRAM_PROFILE') {
+        const promoted = { page_id: fb.fb_page_id };
 
-    switch (destType) {
-        case 'MESSENGER':
-        case 'INSTAGRAM_PROFILE':
-        case 'WHATSAPP':
-            return { page_id: fb.fb_page_id };
-        case 'WEBSITE':
-        default:
-            // Pour WEBSITE, pas de promoted_object requis (pixel_id optionnel)
-            return undefined;
+        // Une Page peut relier jusqu'à cinquante numéros WhatsApp : sans
+        // désignation explicite, Meta n'en promeut aucun et le sélecteur de
+        // numéro reste vide au niveau de la publicité.
+        //
+        // L'identifiant est préféré au numéro : Meta le rattache au compte
+        // WhatsApp Business, et en déduit lui-même le numéro. Le numéro seul
+        // est accepté mais reste une chaîne, sans lien vers le compte.
+        //
+        // Les deux ensemble sont refusés — « (#200) Permissions error » — donc
+        // ce choix est exclusif.
+        const id = String(whatsappNumberId || fb.whatsapp_phone_number_id || '').trim();
+        const numero = normalizeWhatsAppNumber(whatsappNumber || fb.whatsapp_number);
+
+        if (/^\d+$/.test(id)) {
+            promoted.whats_app_business_phone_number_id = id;
+        } else if (numero) {
+            promoted.whatsapp_phone_number = numero;
+        }
+
+        return promoted;
     }
+    // Pour WEBSITE, pas de promoted_object requis (pixel_id optionnel)
+    return undefined;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RÉSOLUTION DE LA DESTINATION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Détermine, à partir du wizard, le triplet destination / optimisation / bouton.
+ *
+ * Meta refuse toute publicité dont le bouton ne correspond pas à la destination
+ * de son ensemble (erreur #1815675). Faire ce choix ici, en un seul endroit,
+ * garantit que l'ensemble de publicités et la création ne peuvent pas diverger.
+ *
+ * @param {Object} data  données du wizard
+ * @param {Object} fb    ligne facebook_accounts de l'utilisateur
+ */
+function resolveDestination(data, fb) {
+    // Nouveau format : cases à cocher multiples.
+    let apps = data.messaging_destinations;
+
+    // Ancien format : un destination_type unique de messagerie.
+    if (!apps && isMessagingDestination(data.destination_type)) {
+        apps = [data.destination_type];
+    }
+
+    if (!apps || apps.length === 0) {
+        const destinationType = data.destination_type || 'WEBSITE';
+        return {
+            is_messaging: false,
+            destination_type: destinationType,
+            optimization_goal: data.optimization_goal || getOptimizationGoal(data.objective)
+        };
+    }
+
+    // Vérifier le rattachement AVANT d'appeler Meta : un compte Instagram ou un
+    // numéro WhatsApp non relié produit un rejet à la relecture, donc après
+    // que la campagne a déjà été créée.
+    const validation = validateMessagingApps(apps, fb, {
+        whatsapp_phone_number: data.whatsapp_phone_number,
+        whatsapp_phone_number_id: data.whatsapp_phone_number_id
+    });
+    if (!validation.valid) {
+        const err = new Error(validation.errors.join(' '));
+        err.userFacing = true;
+        err.validationErrors = validation.errors;
+        throw err;
+    }
+
+    return {
+        is_messaging: true,
+        whatsapp_phone_number: normalizeWhatsAppNumber(
+            data.whatsapp_phone_number || fb.whatsapp_number
+        ),
+        whatsapp_phone_number_id: data.whatsapp_phone_number_id || fb.whatsapp_phone_number_id || null,
+        ...buildMessagingDestination(apps)
+    };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ANNULATION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Supprime chez Meta les objets déjà créés quand la suite échoue.
+ *
+ * Supprimer la campagne suffit en principe — Meta supprime l'arborescence — mais
+ * on parcourt les niveaux du plus fin au plus large pour couvrir le cas où la
+ * suppression de la campagne serait refusée.
+ *
+ * Une erreur d'annulation n'est jamais propagée : elle masquerait l'erreur
+ * d'origine, seule utile à l'utilisateur.
+ */
+async function rollbackFacebookObjects(created, accessToken) {
+    const targets = [
+        ['publicité', created.ad],
+        ['création', created.creative],
+        ['ensemble de publicités', created.adset],
+        ['campagne', created.campaign]
+    ].filter(([, id]) => Boolean(id));
+
+    for (const [label, id] of targets) {
+        try {
+            await axios.delete(`${FACEBOOK_GRAPH_URL}/${id}`, {
+                params: { access_token: accessToken }
+            });
+            logger.info(`↩️ Annulation : ${label} ${id} supprimée`);
+        } catch (err) {
+            logger.warn(`⚠️ Annulation impossible pour ${label} ${id}: `
+                + JSON.stringify(err.response?.data?.error || err.message));
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UPLOAD DU VISUEL VERS META
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Envoie le visuel à Meta et renvoie son hash.
+ *
+ * Le visuel doit être transmis en multipart : passer une URL distante à
+ * /adimages échoue avec « (#3) Application does not have the capability to make
+ * this API call », l'envoi par URL étant une capacité réservée. On télécharge
+ * donc l'image depuis Supabase Storage puis on envoie les octets.
+ *
+ * L'échec est bloquant : une publicité sans visuel est inéligible à la plupart
+ * des placements, la laisser passer silencieusement produit une campagne qui ne
+ * sera jamais diffusée.
+ */
+async function uploadAdImage(adAccountId, accessToken, mediaUrl) {
+    if (!/^https?:\/\//i.test(mediaUrl)) {
+        // Notamment les URL blob: laissées par un aperçu local du navigateur,
+        // que Meta ne peut évidemment pas atteindre.
+        const err = new Error('Le visuel n\'a pas été correctement téléversé. Ajoutez-le à nouveau.');
+        err.userFacing = true;
+        throw err;
+    }
+
+    const download = await axios.get(mediaUrl, {
+        responseType: 'arraybuffer',
+        timeout: 30000
+    });
+
+    const form = new FormData();
+    form.append('source', Buffer.from(download.data), {
+        filename: mediaUrl.split('/').pop().split('?')[0] || 'creative',
+        contentType: download.headers['content-type'] || 'image/jpeg'
+    });
+
+    const response = await axios.post(
+        `${FACEBOOK_GRAPH_URL}/${adAccountId}/adimages`,
+        form,
+        {
+            params: { access_token: accessToken },
+            headers: form.getHeaders(),
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity
+        }
+    );
+
+    const images = response.data.images || {};
+    const firstKey = Object.keys(images)[0];
+    const hash = firstKey && images[firstKey]?.hash;
+
+    if (!hash) {
+        throw new Error('Facebook n\'a pas renvoyé d\'identifiant pour le visuel.');
+    }
+
+    return hash;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -218,6 +419,19 @@ async function createFullCampaign(userId, data) {
 
     logger.info(`📢 Création campagne FB pour user ${userId}, account ${adAccountId}`);
 
+    // Résoudre la destination avant tout appel réseau : si la combinaison est
+    // invalide, mieux vaut le dire tout de suite que laisser des objets
+    // orphelins chez Meta.
+    const destination = resolveDestination(data, fb);
+    logger.info(`🎯 Destination : ${destination.destination_type} `
+        + `(optimisation ${destination.optimization_goal})`);
+
+    const timezone = await getAdAccountTimezone(adAccountId, accessToken);
+    logger.info(`🕐 Fuseau du compte publicitaire : ${timezone}`);
+
+    // Identifiants des objets créés, pour pouvoir revenir en arrière.
+    const created = { campaign: null, adset: null, creative: null, ad: null };
+
     try {
         // 2. Créer la Campaign
         logger.info('📢 Étape 1/4 : Création Campaign...');
@@ -239,6 +453,7 @@ async function createFullCampaign(userId, data) {
             { params: { access_token: accessToken } }
         );
         const fbCampaignId = campaignResponse.data.id;
+        created.campaign = fbCampaignId;
         logger.info(`✅ Campaign créée : ${fbCampaignId}`);
 
         // 3. Créer l'Ad Set
@@ -265,22 +480,25 @@ async function createFullCampaign(userId, data) {
             campaign_id: fbCampaignId,
             daily_budget: dailyBudgetInCents,
             billing_event: 'IMPRESSIONS',
-            optimization_goal: data.optimization_goal || getOptimizationGoal(data.objective),
+            optimization_goal: destination.optimization_goal,
             bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
             targeting: buildTargeting(data.targeting),
             targeting_automation: {
                 advantage_audience: 0
             },
-            destination_type: data.destination_type || 'WEBSITE',
+            destination_type: destination.destination_type,
             status: 'PAUSED',
-            start_time: data.start_date ? new Date(data.start_date).toISOString() : new Date().toISOString(),
+            start_time: debutDeJournee(data.start_date, timezone),
             // DSA (Digital Services Act) — required by Facebook for all ad sets
             dsa_beneficiary: fb.fb_page_name || data.campaign_name || 'Advertiser',
             dsa_payor: fb.fb_page_name || data.campaign_name || 'Advertiser'
         };
 
         // Ajouter promoted_object seulement si nécessaire (Messenger, WhatsApp, Instagram)
-        const promotedObject = buildPromotedObject(data, fb);
+        const promotedObject = buildPromotedObject(
+            destination.destination_type, fb,
+            destination.whatsapp_phone_number, destination.whatsapp_phone_number_id
+        );
         if (promotedObject) {
             adSetPayload.promoted_object = promotedObject;
         }
@@ -306,7 +524,10 @@ async function createFullCampaign(userId, data) {
         }
 
         if (data.end_date) {
-            adSetPayload.end_time = new Date(data.end_date).toISOString();
+            // Fin de la journée choisie dans le fuseau du compte : minuit UTC
+            // ferait s'arrêter la campagne la veille au soir pour un compte
+            // situé à l'ouest de Greenwich.
+            adSetPayload.end_time = finDeJournee(data.end_date, timezone);
         }
 
         // Log complete Ad Set payload BEFORE sending
@@ -318,6 +539,7 @@ async function createFullCampaign(userId, data) {
             { params: { access_token: accessToken } }
         );
         const fbAdSetId = adSetResponse.data.id;
+        created.adset = fbAdSetId;
         logger.info(`✅ Ad Set créé : ${fbAdSetId}`);
 
         // 4. Upload image et créer Ad Creative
@@ -325,54 +547,57 @@ async function createFullCampaign(userId, data) {
 
         let imageHash = null;
         if (data.creative.media_type === 'image' && data.creative.media_url) {
-            // Upload l'image depuis l'URL (Supabase Storage)
-            try {
-                const imageResponse = await axios.post(
-                    `${FACEBOOK_GRAPH_URL}/${adAccountId}/adimages`,
-                    { url: data.creative.media_url },
-                    { params: { access_token: accessToken } }
-                );
-                const images = imageResponse.data.images;
-                if (images) {
-                    const firstKey = Object.keys(images)[0];
-                    imageHash = images[firstKey]?.hash;
-                }
-                logger.info(`✅ Image uploadée, hash : ${imageHash}`);
-            } catch (imgErr) {
-                logger.warn('⚠️ Erreur upload image, continuation sans image:', imgErr.response?.data || imgErr.message);
-            }
+            imageHash = await uploadAdImage(adAccountId, accessToken, data.creative.media_url);
+            logger.info(`✅ Image uploadée, hash : ${imageHash}`);
         }
 
-        // Object story spec pour le creative
+        // Le lien et le bouton viennent de la destination résolue : c'est ce qui
+        // garantit qu'une création de messagerie ne se retrouve pas dans un
+        // ensemble de publicités de messagerie avec un bouton de site web.
+        const creativeLink = destination.is_messaging
+            ? destination.link
+            : (data.creative.link || data.website_url);
+
+        const callToAction = destination.is_messaging
+            ? destination.call_to_action
+            : {
+                type: data.creative.call_to_action || 'LEARN_MORE',
+                value: { link: creativeLink }
+            };
+
         const objectStorySpec = {
             page_id: fb.fb_page_id,
             link_data: {
                 message: data.creative.message || '',
-                link: data.creative.link || 'https://example.com',
+                link: creativeLink,
                 name: data.creative.headline || '',
                 description: data.creative.description || '',
-                call_to_action: {
-                    type: data.creative.call_to_action || 'LEARN_MORE',
-                    value: { link: data.creative.link || 'https://example.com' }
-                }
+                call_to_action: callToAction
             }
         };
 
         if (imageHash) {
             objectStorySpec.link_data.image_hash = imageHash;
-        } else if (data.creative.media_url) {
-            objectStorySpec.link_data.picture = data.creative.media_url;
+        }
+
+        const creativePayload = {
+            name: data.ad_name || `${data.campaign_name} - Creative`,
+            object_story_spec: objectStorySpec
+        };
+
+        // Exigé par Meta dès que la publicité vise plusieurs applications de
+        // messagerie : sans lui, la création est refusée (sous-code 2446493).
+        if (destination.asset_feed_spec) {
+            creativePayload.asset_feed_spec = destination.asset_feed_spec;
         }
 
         const creativeResponse = await axios.post(
             `${FACEBOOK_GRAPH_URL}/${adAccountId}/adcreatives`,
-            {
-                name: data.ad_name || `${data.campaign_name} - Creative`,
-                object_story_spec: objectStorySpec
-            },
+            creativePayload,
             { params: { access_token: accessToken } }
         );
         const fbCreativeId = creativeResponse.data.id;
+        created.creative = fbCreativeId;
         logger.info(`✅ Ad Creative créé : ${fbCreativeId}`);
 
         // 5. Créer l'Ad
@@ -388,6 +613,7 @@ async function createFullCampaign(userId, data) {
             { params: { access_token: accessToken } }
         );
         const fbAdId = adResponse.data.id;
+        created.ad = fbAdId;
         logger.info(`✅ Ad créée : ${fbAdId}`);
 
         // 6. Sauvegarder en base locale
@@ -405,6 +631,8 @@ async function createFullCampaign(userId, data) {
                 daily_budget: data.daily_budget,
                 targeting: data.targeting,
                 creative: data.creative,
+                destination_type: destination.destination_type,
+                messaging_destinations: destination.apps || null,
                 start_date: data.start_date,
                 end_date: data.end_date || null
             })
@@ -412,14 +640,14 @@ async function createFullCampaign(userId, data) {
             .single();
 
         if (dbError) {
-            logger.error('❌ Erreur sauvegarde DB (campagne créée sur FB):', dbError);
-            // La campagne existe sur FB même si la DB échoue
-            return {
-                success: true,
-                campaign_id: null,
-                fb_campaign_id: fbCampaignId,
-                warning: 'Campagne créée sur Facebook mais erreur base locale'
-            };
+            // Ne pas annoncer un succès : sans ligne en base, la campagne est
+            // invisible dans AdsFacile et impossible à mettre en pause ou à
+            // supprimer, alors qu'elle existe bel et bien chez Meta. On revient
+            // en arrière pour ne pas laisser d'objets orphelins.
+            logger.error('❌ Erreur sauvegarde DB, annulation côté Facebook:', dbError);
+            throw new Error(
+                `Impossible d'enregistrer la campagne (${dbError.message}). Aucune campagne n'a été créée.`
+            );
         }
 
         // 7. Logger dans audit_logs
@@ -454,15 +682,20 @@ async function createFullCampaign(userId, data) {
         }
 
         let stepContext = '';
-        if (typeof fbCampaignId !== 'undefined' && typeof fbAdSetId === 'undefined') {
+        if (created.campaign && !created.adset) {
             stepContext = ' (Campaign créée, échec Ad Set)';
-        } else if (typeof fbAdSetId !== 'undefined' && typeof fbCreativeId === 'undefined') {
+        } else if (created.adset && !created.creative) {
             stepContext = ' (Campaign+AdSet créés, échec Creative)';
-        } else if (typeof fbCreativeId !== 'undefined' && typeof fbAdId === 'undefined') {
+        } else if (created.creative && !created.ad) {
             stepContext = ' (Campaign+AdSet+Creative créés, échec Ad)';
         }
 
         logger.error(`❌ Erreur création campagne Facebook${stepContext}:`, error.response?.data || error.message);
+
+        // Supprimer ce qui a déjà été créé chez Meta. Sans cela, chaque échec
+        // laisse une campagne inaccessible depuis AdsFacile — c'est ainsi que
+        // la campagne « ad1 » s'était retrouvée orpheline.
+        await rollbackFacebookObjects(created, accessToken);
 
         // Remonter l'erreur Facebook avec plus de détails
         if (error.response?.data?.error) {
@@ -488,9 +721,64 @@ async function createFullCampaign(userId, data) {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// CHANGEMENT DE STATUT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Applique un statut chez Meta sur les trois niveaux de la campagne.
+ *
+ * Les trois doivent bouger ensemble. Activer la seule campagne ne diffuse rien,
+ * parce que l'ensemble de publicités et la publicité restent en pause depuis
+ * leur création : l'utilisateur voit « active » dans AdsFacile pendant que
+ * Facebook n'affiche aucune diffusion.
+ *
+ * Ordre : du plus large au plus fin à l'activation, l'inverse à la mise en
+ * pause, pour ne jamais laisser un niveau actif sous un parent en pause.
+ *
+ * @param {Object} campaign  ligne campaigns (fb_campaign_id, fb_adset_id, fb_ad_id)
+ * @param {'active'|'paused'} status
+ */
+async function updateCampaignStatus(userId, campaign, status) {
+    const fb = await getFacebookAccount(userId);
+    if (!fb) {
+        const err = new Error('Compte Facebook non connecté.');
+        err.userFacing = true;
+        throw err;
+    }
+
+    const accessToken = decryptToken(fb.fb_access_token);
+    const fbStatus = status === 'active' ? 'ACTIVE' : 'PAUSED';
+
+    const niveaux = [
+        ['campagne', campaign.fb_campaign_id],
+        ['ensemble de publicités', campaign.fb_adset_id],
+        ['publicité', campaign.fb_ad_id]
+    ].filter(([, id]) => Boolean(id));
+
+    const ordonnes = fbStatus === 'ACTIVE' ? niveaux : [...niveaux].reverse();
+
+    for (const [label, id] of ordonnes) {
+        await axios.post(
+            `${FACEBOOK_GRAPH_URL}/${id}`,
+            { status: fbStatus },
+            { params: { access_token: accessToken } }
+        );
+        logger.info(`🔁 ${label} ${id} → ${fbStatus}`);
+    }
+
+    return { status: fbStatus, levels: ordonnes.length };
+}
+
 module.exports = {
     createFullCampaign,
+    updateCampaignStatus,
+    getAdAccountTimezone,
     getFacebookAccount,
     buildTargeting,
-    getOptimizationGoal
+    getOptimizationGoal,
+    resolveDestination,
+    buildPromotedObject,
+    uploadAdImage,
+    rollbackFacebookObjects
 };
