@@ -322,7 +322,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
         // WhatsApp coché sans numéro produit une publicité sans destinataire :
         // Facebook l'accepte, mais elle ne peut pas être diffusée.
         (!campaignData.messaging_destinations?.includes('whatsapp')
-            || (campaignData.whatsapp_phone_number || '').replace(/\D/g, '').length >= 8);
+            || /^\d+$/.test((campaignData.whatsapp_phone_number_id || '').trim()));
 
     const rangePct = Math.round(((daily_budget - 1000) / (50000 - 1000)) * 100);
 
@@ -417,8 +417,6 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                     <MessagingDestinationPicker
                                         selected={campaignData.messaging_destinations || ['messenger']}
                                         onChange={(apps) => updateField('messaging_destinations', apps)}
-                                        whatsappNumber={campaignData.whatsapp_phone_number || ''}
-                                        onWhatsappNumberChange={(n) => updateField('whatsapp_phone_number', n)}
                                         whatsappNumberId={campaignData.whatsapp_phone_number_id || ''}
                                         onWhatsappNumberIdChange={(v) => updateField('whatsapp_phone_number_id', v)}
                                     />
@@ -576,8 +574,6 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                 <MessagingDestinationPicker
                                     selected={campaignData.messaging_destinations || ['messenger']}
                                     onChange={(apps) => updateField('messaging_destinations', apps)}
-                                    whatsappNumber={campaignData.whatsapp_phone_number || ''}
-                                    onWhatsappNumberChange={(n) => updateField('whatsapp_phone_number', n)}
                                         whatsappNumberId={campaignData.whatsapp_phone_number_id || ''}
                                         onWhatsappNumberIdChange={(v) => updateField('whatsapp_phone_number_id', v)}
                                 />

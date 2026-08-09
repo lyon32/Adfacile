@@ -58,7 +58,6 @@ const CreateCampaignPage = () => {
         cost_per_result_goal: '',
         destination_type: 'WEBSITE',
         messaging_destinations: [],
-        whatsapp_phone_number: '',
         whatsapp_phone_number_id: '',
         website_url: '',
 
@@ -265,7 +264,6 @@ const CreateCampaignPage = () => {
                                             cost_per_result_goal: '',
                                             destination_type: 'WEBSITE',
                                             messaging_destinations: [],
-                                            whatsapp_phone_number: '',
                                             website_url: '',
                                             ad_name: '',
                                             creative: {

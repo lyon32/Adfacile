@@ -167,7 +167,7 @@ function validateMessagingApps(apps, fbAccount = {}, options = {}) {
         ).trim();
 
         if (!numero && !/^\d+$/.test(identifiant)) {
-            errors.push('Indiquez le numéro WhatsApp Business à afficher dans la publicité.');
+            errors.push('Indiquez l\'identifiant du numéro WhatsApp Business à promouvoir.');
         }
     }
 

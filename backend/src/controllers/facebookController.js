@@ -420,7 +420,7 @@ const getConnectionStatus = async (req, res) => {
         // Obtenir le compte Facebook actif depuis Supabase
         const { account: fbAccount, error: fbError } = await getActiveAccount(
             userId,
-            'fb_page_id, fb_page_name, fb_access_token, fb_user_access_token, fb_business_id, instagram_connected, instagram_username, instagram_account_id, whatsapp_connected, whatsapp_number, whatsapp_business_id'
+            'fb_page_id, fb_page_name, fb_access_token, fb_user_access_token, fb_business_id, instagram_connected, instagram_username, instagram_account_id, whatsapp_connected, whatsapp_number, whatsapp_business_id, whatsapp_phone_number_id'
         );
 
         if (fbError || !fbAccount) {
@@ -528,6 +528,9 @@ const getConnectionStatus = async (req, res) => {
                 whatsapp: fbAccount.whatsapp_connected ? {
                     connected: true,
                     phoneNumber: whatsapp.phone_number,
+                    // Identifiant du numéro : c'est lui que les publicités
+                    // promeuvent, le numéro seul ne rattache rien.
+                    phoneNumberId: fbAccount.whatsapp_phone_number_id || null,
                     id: whatsapp.id
                 } : { connected: false, business_id: whatsapp.business_id }
             },

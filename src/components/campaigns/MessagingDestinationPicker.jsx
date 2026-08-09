@@ -40,8 +40,6 @@ const APPS = [
 export default function MessagingDestinationPicker({
     selected = [],
     onChange,
-    whatsappNumber = '',
-    onWhatsappNumberChange,
     whatsappNumberId = '',
     onWhatsappNumberIdChange
 }) {
@@ -57,10 +55,11 @@ export default function MessagingDestinationPicker({
                 const conn = res.data.connections || {};
                 setConnections(conn);
 
-                // Pré-remplir avec le numéro déjà relié à la Page, s'il est connu.
-                const connu = conn.whatsapp?.phone_number;
-                if (connu && !whatsappNumber) {
-                    onWhatsappNumberChange?.(connu);
+                // Reprendre l'identifiant déjà enregistré : il ne change pas
+                // d'une campagne à l'autre, inutile de le redemander.
+                const connu = conn.whatsapp?.phoneNumberId;
+                if (connu && !whatsappNumberId) {
+                    onWhatsappNumberIdChange?.(String(connu));
                 }
             })
             .catch(() => { if (!annule) setConnections({}); })
@@ -69,6 +68,8 @@ export default function MessagingDestinationPicker({
         return () => { annule = true; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const numeroLie = connections?.whatsapp?.phoneNumber;
 
     const estDisponible = (app) => {
         if (!app.requires) return true;
@@ -121,26 +122,14 @@ export default function MessagingDestinationPicker({
                             )}
 
                             {/* Une Page peut relier jusqu'à cinquante numéros :
-                                Facebook a besoin de savoir lequel afficher. */}
+                                Facebook a besoin de savoir lequel promouvoir.
+                                L'identifiant seul suffit — Facebook en déduit le
+                                numéro — et c'est lui qui rattache la publicité au
+                                compte WhatsApp Business. */}
                             {app.value === 'whatsapp' && coche && disponible && (
                                 <div className="messaging-app-detail">
-                                    <label className="adset-label" htmlFor="numero-whatsapp">
-                                        Numéro WhatsApp Business <span className="required">*</span>
-                                    </label>
-                                    <input
-                                        id="numero-whatsapp"
-                                        type="tel"
-                                        value={whatsappNumber}
-                                        onChange={(e) => onWhatsappNumberChange?.(e.target.value)}
-                                        placeholder="+237 6 XX XX XX XX"
-                                        className="adset-input"
-                                    />
-                                    <p className="adset-hint">
-                                        Le numéro qui recevra les conversations, avec l’indicatif du pays.
-                                    </p>
-
                                     <label className="adset-label" htmlFor="id-numero-whatsapp">
-                                        Identifiant du numéro <span className="optional">(recommandé)</span>
+                                        Identifiant du numéro WhatsApp <span className="required">*</span>
                                     </label>
                                     <input
                                         id="id-numero-whatsapp"
@@ -152,9 +141,9 @@ export default function MessagingDestinationPicker({
                                         className="adset-input"
                                     />
                                     <p className="adset-hint">
-                                        Gestionnaire WhatsApp → Numéros de téléphone → « ID de numéro de
-                                        téléphone ». Facebook relie ainsi la publicité à votre compte
-                                        WhatsApp Business plutôt qu’à un simple numéro.
+                                        {numeroLie
+                                            ? `Numéro associé : ${numeroLie}`
+                                            : 'Gestionnaire WhatsApp → Numéros de téléphone → « ID de numéro de téléphone ».'}
                                     </p>
                                 </div>
                             )}

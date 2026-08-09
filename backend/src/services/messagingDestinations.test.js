@@ -172,14 +172,23 @@ describe('validateMessagingApps — contraintes de rattachement', () => {
             fb_page_id: '1', whatsapp_connected: true, whatsapp_number: null
         });
         expect(result.valid).toBe(false);
-        expect(result.errors.join(' ')).toMatch(/numéro WhatsApp Business à afficher/);
+        expect(result.errors.join(' ')).toMatch(/identifiant du numéro WhatsApp Business/);
     });
 
-    it('accepte un numéro fourni au moment de la campagne', () => {
+    it('accepte l\'identifiant fourni au moment de la campagne', () => {
+        // C'est le seul champ demandé : Meta en déduit le numéro.
         const result = validateMessagingApps(
             ['whatsapp'],
             { fb_page_id: '1', whatsapp_connected: true, whatsapp_number: null },
-            { whatsapp_phone_number: '+237 6 50 19 81 96' }
+            { whatsapp_phone_number_id: '344188022113673' }
+        );
+        expect(result.valid).toBe(true);
+    });
+
+    it('accepte encore un numéro seul, pour les comptes déjà enregistrés', () => {
+        const result = validateMessagingApps(
+            ['whatsapp'],
+            { fb_page_id: '1', whatsapp_connected: true, whatsapp_number: '+237650198196' }
         );
         expect(result.valid).toBe(true);
     });
