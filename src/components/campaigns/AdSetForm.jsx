@@ -156,14 +156,42 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
     // la création rejettera ensuite.
     // ───────────────────────────────────────────────────────────────────
     const [tousObjectifs, setTousObjectifs] = useState(null);
+    const [typesMessagerie, setTypesMessagerie] = useState({});
 
     useEffect(() => {
         let annule = false;
         api.get('/config/objectives')
-            .then(res => { if (!annule) setTousObjectifs(res.data?.data?.objectives || []); })
+            .then(res => {
+                if (annule) return;
+                setTousObjectifs(res.data?.data?.objectives || []);
+                setTypesMessagerie(res.data?.data?.messaging_destination_types || {});
+            })
             .catch(() => { if (!annule) setTousObjectifs([]); });
         return () => { annule = true; };
     }, []);
+
+    // Minimum de budget : le formulaire imposait 1000 FCFA en dur alors que le
+    // backend applique minDailyBudgetFcfa(), calcule depuis le taux de change.
+    // Les deux pouvaient diverger sans que rien ne le signale.
+    const [minBudget, setMinBudget] = useState(1000);
+
+    useEffect(() => {
+        let annule = false;
+        api.get('/config/currency')
+            .then(res => {
+                const v = res.data?.data?.min_daily_budget_xaf;
+                if (!annule && v) setMinBudget(v);
+            })
+            .catch(() => { });
+        return () => { annule = true; };
+    }, []);
+
+    // Le champ de budget ecrivait toujours dans daily_budget : choisir « Total »
+    // ne changeait que l'etiquette, et le service recevait un budget total egal
+    // au budget journalier saisi.
+    const champBudget = budget_type === 'lifetime' ? 'lifetime_budget' : 'daily_budget';
+    const montantBudget = campaignData[champBudget] ?? daily_budget ?? minBudget;
+    const definirBudget = (valeur) => updateField(champBudget, valeur);
 
     const referentiel = useMemo(
         () => (tousObjectifs || []).find(o => o.value === objective) || null,
@@ -173,16 +201,20 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
     /** Objectifs de performance acceptés pour l'objectif ET la destination. */
     const goalsDisponibles = useMemo(() => {
         if (!referentiel) return [];
-        const dest = campaignData.destination_type === 'MESSENGER'
-            ? (campaignData.messaging_destinations?.length > 1
-                ? 'MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP'
-                : 'MESSENGER')
+        // La destination réellement envoyée à Meta dépend des applications
+        // cochées, pas du bouton d'interface. Déduire « Messenger » de toute
+        // sélection unique faisait proposer les objectifs de Messenger à une
+        // campagne WhatsApp — l'écran affichait alors autre chose que ce qui
+        // partait chez Meta.
+        const apps = [...(campaignData.messaging_destinations || [])].sort();
+        const dest = campaignData.destination_type === MESSAGING_UI_VALUE
+            ? (typesMessagerie[apps.join('+')] || 'MESSENGER')
             : (campaignData.destination_type || 'WEBSITE');
 
         return Object.entries(referentiel.goals_by_destination || {})
             .filter(([, destinations]) => destinations.includes(dest))
             .map(([goal]) => goal);
-    }, [referentiel, campaignData.destination_type, campaignData.messaging_destinations]);
+    }, [referentiel, typesMessagerie, campaignData.destination_type, campaignData.messaging_destinations]);
 
     useEffect(() => {
         // L'objectif de performance par défaut dépend de l'objectif de campagne
@@ -357,7 +389,8 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
     const isValid = targeting.locations.length > 0 &&
         targeting.age_min >= 18 &&
         targeting.age_max <= 65 &&
-        daily_budget >= 1000 &&
+        montantBudget >= minBudget &&
+        (budget_type !== 'lifetime' || !!end_date) &&
         (destType !== 'WEBSITE' || (campaignData.website_url && campaignData.website_url.startsWith('http'))) &&
         // Un ensemble de publicités de messagerie sans application cochée est
         // refusé par Facebook : on l'interdit dès le formulaire.
@@ -801,9 +834,11 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                 <div className="adset-budget-input-wrapper">
                                     <input
                                         type="number"
-                                        value={daily_budget}
-                                        onChange={(e) => updateField('daily_budget', Math.max(1000, parseInt(e.target.value) || 1000))}
-                                        min={1000}
+                                        value={montantBudget}
+                                        onChange={(e) => definirBudget(
+                                            Math.max(minBudget, parseInt(e.target.value) || minBudget)
+                                        )}
+                                        min={minBudget}
                                         step={500}
                                         className="adset-budget-input"
                                     />
@@ -813,18 +848,18 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                             </div>
 
                             <CurrencyHint
-                                amount={daily_budget}
+                                amount={montantBudget}
                                 suffix={budget_type === 'daily' ? ' / jour' : ' au total'}
                             />
 
                             {/* Slider */}
                             <input
                                 type="range"
-                                min={1000}
+                                min={minBudget}
                                 max={50000}
                                 step={500}
-                                value={daily_budget}
-                                onChange={(e) => updateField('daily_budget', parseInt(e.target.value))}
+                                value={montantBudget}
+                                onChange={(e) => definirBudget(parseInt(e.target.value))}
                                 className="adset-range"
                                 style={{ '--range-pct': `${rangePct}%` }}
                             />
@@ -882,6 +917,12 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                 />
                                 <span className="adset-checkbox-label">Diffusion continue (pas de date de fin)</span>
                             </label>
+                            {budget_type === 'lifetime' && !end_date && (
+                                <p className="messaging-app-missing" style={{ marginLeft: 0 }}>
+                                    Un budget total demande une date de fin : Facebook a besoin de
+                                    savoir sur combien de temps le répartir.
+                                </p>
+                            )}
                         </div>
 
                         {/* La pastille « Optimisation de la diffusion » a été retirée :

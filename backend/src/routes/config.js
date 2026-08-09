@@ -6,6 +6,7 @@
 const express = require('express');
 const { getRate, minDailyBudgetFcfa, ACCOUNT_CURRENCY } = require('../utils/currency');
 const { listObjectives, OBJECTIVES } = require('../services/campaignObjectives');
+const { DESTINATION_TYPE_BY_COMBO } = require('../services/messagingDestinations');
 
 const router = express.Router();
 
@@ -45,7 +46,14 @@ router.get('/objectives', (req, res) => {
             objectives: listObjectives().map(o => ({
                 ...o,
                 goals_by_destination: OBJECTIVES[o.value].goals
-            }))
+            })),
+
+            // Correspondance applications cochées → destination_type de Meta.
+            // Le formulaire en a besoin pour savoir quels objectifs de
+            // performance proposer : WhatsApp seul et Messenger seul n'ouvrent
+            // pas les mêmes. La déduire côté formulaire reviendrait à
+            // entretenir une seconde table, vouée à diverger de celle-ci.
+            messaging_destination_types: DESTINATION_TYPE_BY_COMBO
         }
     });
 });
