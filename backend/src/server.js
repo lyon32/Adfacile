@@ -47,9 +47,21 @@ app.set('trust proxy', 1);
 // CORS — DOIT être avant tout autre middleware
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173,http://localhost:3000,http://localhost:4000')
+// FRONTEND_URL sert aussi à bâtir les liens de redirection (OAuth Facebook,
+// réinitialisation de mot de passe) : elle doit rester une adresse unique. Les
+// origines autorisées, elles, sont plusieurs — l'application est jointe tantôt
+// par le serveur de développement, tantôt par Nginx sur un autre port.
+// CORS_ORIGINS les liste donc à part, sans quoi ajouter une origine casserait
+// les redirections.
+const allowedOrigins = (
+  process.env.CORS_ORIGINS
+  || [process.env.FRONTEND_URL, 'http://localhost', 'http://localhost:5173'].filter(Boolean).join(',')
+)
   .split(',')
-  .map(url => url.trim());
+  .map(url => url.trim())
+  .filter(Boolean);
+
+logger.info(`🔓 Origines autorisées : ${allowedOrigins.join(', ')}`);
 
 app.use(cors({
   origin: function (origin, callback) {
