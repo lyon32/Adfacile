@@ -28,7 +28,11 @@ beforeEach(() => jest.clearAllMocks());
 describe('resolveDestination — site web', () => {
     it('conserve la destination site web et son objectif', () => {
         const result = resolveDestination(
-            { destination_type: 'WEBSITE', optimization_goal: 'LANDING_PAGE_VIEWS' },
+            {
+                objective: 'OUTCOME_TRAFFIC',
+                destination_type: 'WEBSITE',
+                optimization_goal: 'LANDING_PAGE_VIEWS'
+            },
             PAGE
         );
         expect(result.is_messaging).toBe(false);
@@ -40,6 +44,34 @@ describe('resolveDestination — site web', () => {
         const result = resolveDestination({ objective: 'OUTCOME_TRAFFIC' }, PAGE);
         expect(result.destination_type).toBe('WEBSITE');
         expect(result.optimization_goal).toBe('LINK_CLICKS');
+    });
+
+    it('refuse un objectif absent au lieu de retomber sur LINK_CLICKS', () => {
+        // Auparavant, un objectif absent ou mal orthographié produisait un
+        // ensemble optimisé pour les clics, quelle que soit la campagne.
+        expect(() => resolveDestination({ destination_type: 'WEBSITE' }, PAGE))
+            .toThrow(/inconnu/i);
+    });
+
+    it('refuse un objectif de performance incompatible avec l\'objectif', () => {
+        // Le parcours réel : Trafic écrit LANDING_PAGE_VIEWS, l'utilisateur
+        // revient en arrière et choisit Notoriété. Meta rejetait l'ensemble
+        // APRÈS la création de la campagne.
+        expect(() => resolveDestination(
+            {
+                objective: 'OUTCOME_AWARENESS',
+                destination_type: 'WEBSITE',
+                optimization_goal: 'LANDING_PAGE_VIEWS'
+            },
+            PAGE
+        )).toThrow(/n'est pas disponible/i);
+    });
+
+    it('refuse une campagne Ventes vers un site web sans pixel', () => {
+        expect(() => resolveDestination(
+            { objective: 'OUTCOME_SALES', destination_type: 'WEBSITE' },
+            PAGE
+        )).toThrow(/pixel/i);
     });
 });
 

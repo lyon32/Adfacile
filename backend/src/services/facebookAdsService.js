@@ -23,6 +23,11 @@ const {
     FB_MIN_DAILY_BUDGET_CENTS,
     ACCOUNT_CURRENCY
 } = require('../utils/currency');
+const {
+    validateCombination,
+    getDefaultGoal,
+    getBillingEvent
+} = require('./campaignObjectives');
 const { debutDeJournee, finDeJournee } = require('../utils/adAccountTime');
 const logger = require('../utils/logger');
 
@@ -229,6 +234,20 @@ function buildPromotedObject(destinationType, fb, whatsappNumber = null, whatsap
  * @param {Object} data  données du wizard
  * @param {Object} fb    ligne facebook_accounts de l'utilisateur
  */
+/**
+ * Refuse une combinaison que Meta rejetterait, avant tout appel réseau.
+ * L'erreur est marquée `userFacing` pour être affichée telle quelle.
+ */
+function assertCombinaisonValide({ objective, goal, destination, promoted_object }) {
+    const verdict = validateCombination({ objective, goal, destination, promoted_object });
+    if (verdict.valid) return;
+
+    const err = new Error(verdict.errors.join(' '));
+    err.userFacing = true;
+    err.validationErrors = verdict.errors;
+    throw err;
+}
+
 function resolveDestination(data, fb) {
     // Nouveau format : cases à cocher multiples.
     let apps = data.messaging_destinations;
@@ -240,10 +259,26 @@ function resolveDestination(data, fb) {
 
     if (!apps || apps.length === 0) {
         const destinationType = data.destination_type || 'WEBSITE';
+
+        // L'objectif de performance venu du formulaire n'était repris que sur
+        // parole. Il survivait notamment à un changement d'objectif : passer de
+        // Trafic à Notoriété conservait LANDING_PAGE_VIEWS, que Meta refuse
+        // pour Notoriété — après avoir créé la campagne.
+        const goal = data.optimization_goal
+            || getDefaultGoal(data.objective, destinationType)
+            || getOptimizationGoal(data.objective);
+
+        assertCombinaisonValide({
+            objective: data.objective,
+            goal,
+            destination: destinationType,
+            promoted_object: buildPromotedObject(destinationType, fb) || {}
+        });
+
         return {
             is_messaging: false,
             destination_type: destinationType,
-            optimization_goal: data.optimization_goal || getOptimizationGoal(data.objective)
+            optimization_goal: goal
         };
     }
 
@@ -479,7 +514,7 @@ async function createFullCampaign(userId, data) {
             name: data.adset_name || `${data.campaign_name} - AdSet`,
             campaign_id: fbCampaignId,
             daily_budget: dailyBudgetInCents,
-            billing_event: 'IMPRESSIONS',
+            billing_event: getBillingEvent(destination.optimization_goal),
             optimization_goal: destination.optimization_goal,
             bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
             targeting: buildTargeting(data.targeting),
