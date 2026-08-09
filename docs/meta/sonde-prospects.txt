@@ -1,0 +1,66 @@
+CAMP OK 120255666377280583
+KO|LEAD_GENERATION|ON_AD|Conditions de service refusées
+OK|LEAD_GENERATION|WEBSITE
+OK|LEAD_GENERATION|UNDEFINED
+OK|LEAD_GENERATION|MESSENGER
+OK|LEAD_GENERATION|INSTAGRAM_DIRECT
+KO|LEAD_GENERATION|WHATSAPP|Conditions de service refusées
+KO|LEAD_GENERATION|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|Conditions de service refusées
+KO|LEAD_GENERATION|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|QUALITY_LEAD|ON_AD|Conditions de service refusées
+KO|QUALITY_LEAD|WEBSITE|L’objectif de performance n’est pas disponible
+KO|QUALITY_LEAD|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|QUALITY_LEAD|MESSENGER|L’objectif de performance n’est pas disponible
+KO|QUALITY_LEAD|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|QUALITY_LEAD|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|QUALITY_LEAD|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|QUALITY_LEAD|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|LINK_CLICKS|ON_AD|Conditions de service refusées
+OK|LINK_CLICKS|WEBSITE
+OK|LINK_CLICKS|UNDEFINED
+KO|LINK_CLICKS|MESSENGER|L’objectif de performance n’est pas disponible
+OK|LINK_CLICKS|INSTAGRAM_DIRECT
+KO|LINK_CLICKS|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|LINK_CLICKS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|LINK_CLICKS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OFFSITE_CONVERSIONS|ON_AD|Conditions de service refusées
+KO|OFFSITE_CONVERSIONS|WEBSITE|Champs d’objet promu manquants pour l’optimisation des 
+KO|OFFSITE_CONVERSIONS|UNDEFINED|Champs d’objet promu manquants pour l’optimisation des 
+KO|OFFSITE_CONVERSIONS|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OFFSITE_CONVERSIONS|INSTAGRAM_DIRECT|Champs d’objet promu manquants pour l’optimisation des 
+KO|OFFSITE_CONVERSIONS|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OFFSITE_CONVERSIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OFFSITE_CONVERSIONS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|IMPRESSIONS|ON_AD|Conditions de service refusées
+OK|IMPRESSIONS|WEBSITE
+OK|IMPRESSIONS|UNDEFINED
+KO|IMPRESSIONS|MESSENGER|L’objectif de performance n’est pas disponible
+OK|IMPRESSIONS|INSTAGRAM_DIRECT
+KO|IMPRESSIONS|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|IMPRESSIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|IMPRESSIONS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|REACH|ON_AD|Conditions de service refusées
+OK|REACH|WEBSITE
+OK|REACH|UNDEFINED
+KO|REACH|MESSENGER|L’objectif de performance n’est pas disponible
+OK|REACH|INSTAGRAM_DIRECT
+KO|REACH|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|REACH|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|REACH|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|CONVERSATIONS|ON_AD|Conditions de service refusées
+KO|CONVERSATIONS|WEBSITE|L’objectif de performance n’est pas disponible
+KO|CONVERSATIONS|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|CONVERSATIONS|MESSENGER|L’objectif de performance n’est pas disponible
+KO|CONVERSATIONS|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+OK|CONVERSATIONS|WHATSAPP
+OK|CONVERSATIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+KO|CONVERSATIONS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|LANDING_PAGE_VIEWS|ON_AD|Conditions de service refusées
+OK|LANDING_PAGE_VIEWS|WEBSITE
+OK|LANDING_PAGE_VIEWS|UNDEFINED
+KO|LANDING_PAGE_VIEWS|MESSENGER|L’objectif de performance n’est pas disponible
+OK|LANDING_PAGE_VIEWS|INSTAGRAM_DIRECT
+KO|LANDING_PAGE_VIEWS|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|LANDING_PAGE_VIEWS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|LANDING_PAGE_VIEWS|PHONE_CALL|L’objectif de performance n’est pas disponible
+NETTOYAGE ok
