@@ -95,18 +95,24 @@ export default function MessagingDestinationPicker({
 
             <div className="messaging-apps">
                 {APPS.map(app => {
-                    const disponible = loading ? app.value === 'messenger' : estDisponible(app);
+                    // Tant que les comptes reliés ne sont pas connus, aucune
+                    // application n'est déclarée indisponible : les griser
+                    // reviendrait à annoncer une absence qu'on n'a pas vérifiée,
+                    // et l'utilisateur les verrait passer de « non relié » à
+                    // cochable sans rien avoir fait.
+                    const indisponible = !loading && !estDisponible(app);
                     const coche = selected.includes(app.value);
 
                     return (
                         <div key={app.value}>
                             <label
-                                className={`messaging-app ${coche ? 'active' : ''} ${disponible ? '' : 'disabled'}`}
+                                className={`messaging-app ${coche ? 'active' : ''}`
+                                    + `${indisponible ? ' disabled' : ''}${loading ? ' loading' : ''}`}
                             >
                                 <input
                                     type="checkbox"
                                     checked={coche}
-                                    disabled={!disponible}
+                                    disabled={indisponible || loading}
                                     onChange={() => basculer(app.value)}
                                     className="messaging-app-checkbox"
                                 />
@@ -117,7 +123,7 @@ export default function MessagingDestinationPicker({
                                 </span>
                             </label>
 
-                            {!disponible && !loading && (
+                            {indisponible && (
                                 <p className="messaging-app-missing">{app.missing}</p>
                             )}
 
@@ -126,7 +132,7 @@ export default function MessagingDestinationPicker({
                                 L'identifiant seul suffit — Facebook en déduit le
                                 numéro — et c'est lui qui rattache la publicité au
                                 compte WhatsApp Business. */}
-                            {app.value === 'whatsapp' && coche && disponible && (
+                            {app.value === 'whatsapp' && coche && !indisponible && !loading && (
                                 <div className="messaging-app-detail">
                                     <label className="adset-label" htmlFor="id-numero-whatsapp">
                                         Identifiant du numéro WhatsApp <span className="required">*</span>
@@ -153,9 +159,11 @@ export default function MessagingDestinationPicker({
             </div>
 
             <p className="adset-hint">
-                {selected.length > 1
-                    ? '💡 Facebook dirigera chaque personne vers l’application où elle répond le plus volontiers.'
-                    : '💡 Cochez plusieurs applications pour laisser Facebook choisir la plus adaptée à chaque personne.'}
+                {loading
+                    ? 'Vérification des comptes reliés à votre Page…'
+                    : selected.length > 1
+                        ? '💡 Facebook dirigera chaque personne vers l’application où elle répond le plus volontiers.'
+                        : '💡 Cochez plusieurs applications pour laisser Facebook choisir la plus adaptée à chaque personne.'}
             </p>
         </div>
     );

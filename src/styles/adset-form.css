@@ -1064,3 +1064,14 @@
     padding-left: 12px;
     border-left: 2px solid #D1FAE5;
 }
+
+/* Pendant la vérification des comptes reliés : apparence normale, mais non
+   cliquable. Griser reviendrait à annoncer une indisponibilité non vérifiée. */
+.messaging-app.loading {
+    cursor: progress;
+    opacity: 1;
+}
+
+.messaging-app.loading .messaging-app-checkbox {
+    cursor: progress;
+}
