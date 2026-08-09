@@ -30,6 +30,20 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// PROXY
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Un seul intermédiaire : Nginx, qui renseigne X-Forwarded-For (voir nginx.conf).
+// Sans cette ligne, Express garde l'IP du conteneur Nginx pour toutes les
+// requêtes : la limite de débit compterait alors l'ensemble des utilisateurs
+// comme un seul, et express-rate-limit lève une erreur en le constatant.
+//
+// La valeur 1 est délibérée. `true` ferait confiance à l'en-tête entier, qu'un
+// client peut forger pour se faire passer pour une autre adresse et échapper à
+// la limite de débit.
+app.set('trust proxy', 1);
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // CORS — DOIT être avant tout autre middleware
 // ═══════════════════════════════════════════════════════════════════════════════
 
