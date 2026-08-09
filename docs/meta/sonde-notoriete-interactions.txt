@@ -1,0 +1,683 @@
+INV|PIXELS|0|[]
+INV|APPS|3|["Ads Live","Adsfacile","Adsfacile"]
+INV|LEADFORMS|ERR|(#200) Requires pages_manage_ads permission to manage the ob
+CAMP|OUTCOME_AWARENESS|OK|120255662574230583
+CAMP|OUTCOME_ENGAGEMENT|OK|120255662574270583
+CAMP|OUTCOME_LEADS|OK|120255662574320583
+CAMP|OUTCOME_APP_PROMOTION|OK|120255662574360583
+KO|OUTCOME_AWARENESS|LINK_CLICKS|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LINK_CLICKS|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LINK_CLICKS|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LINK_CLICKS|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LINK_CLICKS|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LINK_CLICKS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LINK_CLICKS|PHONE_CALL|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LINK_CLICKS|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LINK_CLICKS|APP|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LINK_CLICKS|ON_POST|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LINK_CLICKS|ON_PAGE|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LINK_CLICKS|ON_VIDEO|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LANDING_PAGE_VIEWS|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LANDING_PAGE_VIEWS|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LANDING_PAGE_VIEWS|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LANDING_PAGE_VIEWS|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LANDING_PAGE_VIEWS|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LANDING_PAGE_VIEWS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LANDING_PAGE_VIEWS|PHONE_CALL|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LANDING_PAGE_VIEWS|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LANDING_PAGE_VIEWS|APP|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LANDING_PAGE_VIEWS|ON_POST|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LANDING_PAGE_VIEWS|ON_PAGE|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LANDING_PAGE_VIEWS|ON_VIDEO|Le type de destination sélectionné n’est pas pris en charge 
+OK|OUTCOME_AWARENESS|REACH|WEBSITE
+OK|OUTCOME_AWARENESS|REACH|UNDEFINED
+OK|OUTCOME_AWARENESS|REACH|MESSENGER
+KO|OUTCOME_AWARENESS|REACH|WHATSAPP|La Page est manquante dans l’objet promu
+OK|OUTCOME_AWARENESS|REACH|INSTAGRAM_DIRECT
+OK|OUTCOME_AWARENESS|REACH|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+KO|OUTCOME_AWARENESS|REACH|PHONE_CALL|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|REACH|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|REACH|APP|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|REACH|ON_POST|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|REACH|ON_PAGE|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|REACH|ON_VIDEO|Le type de destination sélectionné n’est pas pris en charge 
+OK|OUTCOME_AWARENESS|IMPRESSIONS|WEBSITE
+OK|OUTCOME_AWARENESS|IMPRESSIONS|UNDEFINED
+OK|OUTCOME_AWARENESS|IMPRESSIONS|MESSENGER
+KO|OUTCOME_AWARENESS|IMPRESSIONS|WHATSAPP|La Page est manquante dans l’objet promu
+OK|OUTCOME_AWARENESS|IMPRESSIONS|INSTAGRAM_DIRECT
+OK|OUTCOME_AWARENESS|IMPRESSIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+KO|OUTCOME_AWARENESS|IMPRESSIONS|PHONE_CALL|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|IMPRESSIONS|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|IMPRESSIONS|APP|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|IMPRESSIONS|ON_POST|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|IMPRESSIONS|ON_PAGE|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|IMPRESSIONS|ON_VIDEO|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|CONVERSATIONS|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|CONVERSATIONS|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|CONVERSATIONS|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|CONVERSATIONS|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|CONVERSATIONS|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|CONVERSATIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|CONVERSATIONS|PHONE_CALL|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|CONVERSATIONS|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|CONVERSATIONS|APP|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|CONVERSATIONS|ON_POST|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|CONVERSATIONS|ON_PAGE|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|CONVERSATIONS|ON_VIDEO|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|OFFSITE_CONVERSIONS|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|OFFSITE_CONVERSIONS|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|OFFSITE_CONVERSIONS|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|OFFSITE_CONVERSIONS|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|OFFSITE_CONVERSIONS|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|OFFSITE_CONVERSIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|OFFSITE_CONVERSIONS|PHONE_CALL|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|OFFSITE_CONVERSIONS|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|OFFSITE_CONVERSIONS|APP|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|OFFSITE_CONVERSIONS|ON_POST|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|OFFSITE_CONVERSIONS|ON_PAGE|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|OFFSITE_CONVERSIONS|ON_VIDEO|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|POST_ENGAGEMENT|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|POST_ENGAGEMENT|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|POST_ENGAGEMENT|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|POST_ENGAGEMENT|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|POST_ENGAGEMENT|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|POST_ENGAGEMENT|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|POST_ENGAGEMENT|PHONE_CALL|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|POST_ENGAGEMENT|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|POST_ENGAGEMENT|APP|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|POST_ENGAGEMENT|ON_POST|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|POST_ENGAGEMENT|ON_PAGE|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|POST_ENGAGEMENT|ON_VIDEO|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LEAD_GENERATION|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LEAD_GENERATION|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LEAD_GENERATION|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LEAD_GENERATION|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LEAD_GENERATION|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LEAD_GENERATION|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|LEAD_GENERATION|PHONE_CALL|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LEAD_GENERATION|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LEAD_GENERATION|APP|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LEAD_GENERATION|ON_POST|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LEAD_GENERATION|ON_PAGE|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|LEAD_GENERATION|ON_VIDEO|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|APP_INSTALLS|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|APP_INSTALLS|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|APP_INSTALLS|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|APP_INSTALLS|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|APP_INSTALLS|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|APP_INSTALLS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|APP_INSTALLS|PHONE_CALL|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|APP_INSTALLS|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|APP_INSTALLS|APP|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|APP_INSTALLS|ON_POST|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|APP_INSTALLS|ON_PAGE|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|APP_INSTALLS|ON_VIDEO|Le type de destination sélectionné n’est pas pris en charge 
+OK|OUTCOME_AWARENESS|AD_RECALL_LIFT|WEBSITE
+OK|OUTCOME_AWARENESS|AD_RECALL_LIFT|UNDEFINED
+OK|OUTCOME_AWARENESS|AD_RECALL_LIFT|MESSENGER
+KO|OUTCOME_AWARENESS|AD_RECALL_LIFT|WHATSAPP|La Page est manquante dans l’objet promu
+OK|OUTCOME_AWARENESS|AD_RECALL_LIFT|INSTAGRAM_DIRECT
+OK|OUTCOME_AWARENESS|AD_RECALL_LIFT|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+KO|OUTCOME_AWARENESS|AD_RECALL_LIFT|PHONE_CALL|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|AD_RECALL_LIFT|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|AD_RECALL_LIFT|APP|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|AD_RECALL_LIFT|ON_POST|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|AD_RECALL_LIFT|ON_PAGE|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|AD_RECALL_LIFT|ON_VIDEO|Le type de destination sélectionné n’est pas pris en charge 
+OK|OUTCOME_AWARENESS|THRUPLAY|WEBSITE
+OK|OUTCOME_AWARENESS|THRUPLAY|UNDEFINED
+OK|OUTCOME_AWARENESS|THRUPLAY|MESSENGER
+KO|OUTCOME_AWARENESS|THRUPLAY|WHATSAPP|La Page est manquante dans l’objet promu
+OK|OUTCOME_AWARENESS|THRUPLAY|INSTAGRAM_DIRECT
+OK|OUTCOME_AWARENESS|THRUPLAY|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+KO|OUTCOME_AWARENESS|THRUPLAY|PHONE_CALL|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|THRUPLAY|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|THRUPLAY|APP|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|THRUPLAY|ON_POST|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|THRUPLAY|ON_PAGE|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|THRUPLAY|ON_VIDEO|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|QUALITY_CALL|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|QUALITY_CALL|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|QUALITY_CALL|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|QUALITY_CALL|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|QUALITY_CALL|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|QUALITY_CALL|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|QUALITY_CALL|PHONE_CALL|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|QUALITY_CALL|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|QUALITY_CALL|APP|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|QUALITY_CALL|ON_POST|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|QUALITY_CALL|ON_PAGE|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|QUALITY_CALL|ON_VIDEO|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|PAGE_LIKES|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|PAGE_LIKES|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|PAGE_LIKES|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|PAGE_LIKES|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|PAGE_LIKES|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|PAGE_LIKES|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|PAGE_LIKES|PHONE_CALL|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|PAGE_LIKES|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|PAGE_LIKES|APP|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|PAGE_LIKES|ON_POST|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|PAGE_LIKES|ON_PAGE|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|PAGE_LIKES|ON_VIDEO|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|EVENT_RESPONSES|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|EVENT_RESPONSES|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|EVENT_RESPONSES|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|EVENT_RESPONSES|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|EVENT_RESPONSES|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|EVENT_RESPONSES|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_AWARENESS|EVENT_RESPONSES|PHONE_CALL|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|EVENT_RESPONSES|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|EVENT_RESPONSES|APP|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|EVENT_RESPONSES|ON_POST|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|EVENT_RESPONSES|ON_PAGE|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_AWARENESS|EVENT_RESPONSES|ON_VIDEO|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_ENGAGEMENT|LINK_CLICKS|WEBSITE|L’objectif de performance n’est pas disponible
+OK|OUTCOME_ENGAGEMENT|LINK_CLICKS|UNDEFINED
+OK|OUTCOME_ENGAGEMENT|LINK_CLICKS|MESSENGER
+KO|OUTCOME_ENGAGEMENT|LINK_CLICKS|WHATSAPP|La Page est manquante dans l’objet promu
+OK|OUTCOME_ENGAGEMENT|LINK_CLICKS|INSTAGRAM_DIRECT
+OK|OUTCOME_ENGAGEMENT|LINK_CLICKS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+KO|OUTCOME_ENGAGEMENT|LINK_CLICKS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LINK_CLICKS|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_ENGAGEMENT|LINK_CLICKS|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LINK_CLICKS|ON_POST|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LINK_CLICKS|ON_PAGE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LINK_CLICKS|ON_VIDEO|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LANDING_PAGE_VIEWS|WEBSITE|L’objectif de performance n’est pas disponible
+OK|OUTCOME_ENGAGEMENT|LANDING_PAGE_VIEWS|UNDEFINED
+KO|OUTCOME_ENGAGEMENT|LANDING_PAGE_VIEWS|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LANDING_PAGE_VIEWS|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LANDING_PAGE_VIEWS|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LANDING_PAGE_VIEWS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LANDING_PAGE_VIEWS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LANDING_PAGE_VIEWS|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_ENGAGEMENT|LANDING_PAGE_VIEWS|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LANDING_PAGE_VIEWS|ON_POST|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LANDING_PAGE_VIEWS|ON_PAGE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LANDING_PAGE_VIEWS|ON_VIDEO|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|REACH|WEBSITE|L’objectif de performance n’est pas disponible
+OK|OUTCOME_ENGAGEMENT|REACH|UNDEFINED
+KO|OUTCOME_ENGAGEMENT|REACH|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|REACH|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|REACH|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|REACH|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|REACH|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|REACH|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_ENGAGEMENT|REACH|APP|L’objectif de performance n’est pas disponible
+OK|OUTCOME_ENGAGEMENT|REACH|ON_POST
+KO|OUTCOME_ENGAGEMENT|REACH|ON_PAGE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|REACH|ON_VIDEO|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|IMPRESSIONS|WEBSITE|L’objectif de performance n’est pas disponible
+OK|OUTCOME_ENGAGEMENT|IMPRESSIONS|UNDEFINED
+OK|OUTCOME_ENGAGEMENT|IMPRESSIONS|MESSENGER
+KO|OUTCOME_ENGAGEMENT|IMPRESSIONS|WHATSAPP|La Page est manquante dans l’objet promu
+OK|OUTCOME_ENGAGEMENT|IMPRESSIONS|INSTAGRAM_DIRECT
+OK|OUTCOME_ENGAGEMENT|IMPRESSIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+KO|OUTCOME_ENGAGEMENT|IMPRESSIONS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|IMPRESSIONS|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_ENGAGEMENT|IMPRESSIONS|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|IMPRESSIONS|ON_POST|L’objectif d’impressions n’est plus disponible
+KO|OUTCOME_ENGAGEMENT|IMPRESSIONS|ON_PAGE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|IMPRESSIONS|ON_VIDEO|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|CONVERSATIONS|WEBSITE|L’objectif de performance n’est pas disponible
+OK|OUTCOME_ENGAGEMENT|CONVERSATIONS|UNDEFINED
+OK|OUTCOME_ENGAGEMENT|CONVERSATIONS|MESSENGER
+KO|OUTCOME_ENGAGEMENT|CONVERSATIONS|WHATSAPP|La Page est manquante dans l’objet promu
+OK|OUTCOME_ENGAGEMENT|CONVERSATIONS|INSTAGRAM_DIRECT
+OK|OUTCOME_ENGAGEMENT|CONVERSATIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+KO|OUTCOME_ENGAGEMENT|CONVERSATIONS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|CONVERSATIONS|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_ENGAGEMENT|CONVERSATIONS|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|CONVERSATIONS|ON_POST|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|CONVERSATIONS|ON_PAGE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|CONVERSATIONS|ON_VIDEO|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|OFFSITE_CONVERSIONS|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|OFFSITE_CONVERSIONS|UNDEFINED|Sélectionnez un objet promu pour votre ensemble de publicité
+KO|OUTCOME_ENGAGEMENT|OFFSITE_CONVERSIONS|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|OFFSITE_CONVERSIONS|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|OFFSITE_CONVERSIONS|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|OFFSITE_CONVERSIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|OFFSITE_CONVERSIONS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|OFFSITE_CONVERSIONS|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_ENGAGEMENT|OFFSITE_CONVERSIONS|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|OFFSITE_CONVERSIONS|ON_POST|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|OFFSITE_CONVERSIONS|ON_PAGE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|OFFSITE_CONVERSIONS|ON_VIDEO|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|POST_ENGAGEMENT|WEBSITE|L’objectif de performance n’est pas disponible
+OK|OUTCOME_ENGAGEMENT|POST_ENGAGEMENT|UNDEFINED
+KO|OUTCOME_ENGAGEMENT|POST_ENGAGEMENT|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|POST_ENGAGEMENT|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|POST_ENGAGEMENT|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|POST_ENGAGEMENT|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|POST_ENGAGEMENT|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|POST_ENGAGEMENT|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_ENGAGEMENT|POST_ENGAGEMENT|APP|L’objectif de performance n’est pas disponible
+OK|OUTCOME_ENGAGEMENT|POST_ENGAGEMENT|ON_POST
+KO|OUTCOME_ENGAGEMENT|POST_ENGAGEMENT|ON_PAGE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|POST_ENGAGEMENT|ON_VIDEO|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LEAD_GENERATION|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LEAD_GENERATION|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LEAD_GENERATION|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LEAD_GENERATION|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LEAD_GENERATION|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LEAD_GENERATION|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LEAD_GENERATION|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LEAD_GENERATION|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_ENGAGEMENT|LEAD_GENERATION|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LEAD_GENERATION|ON_POST|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LEAD_GENERATION|ON_PAGE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|LEAD_GENERATION|ON_VIDEO|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|APP_INSTALLS|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|APP_INSTALLS|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|APP_INSTALLS|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|APP_INSTALLS|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|APP_INSTALLS|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|APP_INSTALLS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|APP_INSTALLS|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|APP_INSTALLS|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_ENGAGEMENT|APP_INSTALLS|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|APP_INSTALLS|ON_POST|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|APP_INSTALLS|ON_PAGE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|APP_INSTALLS|ON_VIDEO|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|AD_RECALL_LIFT|WEBSITE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|AD_RECALL_LIFT|UNDEFINED|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|AD_RECALL_LIFT|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|AD_RECALL_LIFT|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|AD_RECALL_LIFT|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|AD_RECALL_LIFT|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|AD_RECALL_LIFT|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|AD_RECALL_LIFT|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_ENGAGEMENT|AD_RECALL_LIFT|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|AD_RECALL_LIFT|ON_POST|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|AD_RECALL_LIFT|ON_PAGE|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|AD_RECALL_LIFT|ON_VIDEO|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|THRUPLAY|WEBSITE|L’objectif de performance n’est pas disponible
+OK|OUTCOME_ENGAGEMENT|THRUPLAY|UNDEFINED
+KO|OUTCOME_ENGAGEMENT|THRUPLAY|MESSENGER|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|THRUPLAY|WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|THRUPLAY|INSTAGRAM_DIRECT|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|THRUPLAY|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|THRUPLAY|PHONE_CALL|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|THRUPLAY|ON_AD|Le type de destination sélectionné n’est pas pris en charge 
+KO|OUTCOME_ENGAGEMENT|THRUPLAY|APP|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|THRUPLAY|ON_POST|L’objectif de performance n’est pas disponible
+KO|OUTCOME_ENGAGEMENT|THRUPLAY|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|THRUPLAY|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|QUALITY_CALL|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|QUALITY_CALL|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|QUALITY_CALL|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|QUALITY_CALL|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|QUALITY_CALL|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|QUALITY_CALL|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|QUALITY_CALL|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|QUALITY_CALL|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|QUALITY_CALL|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|QUALITY_CALL|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|QUALITY_CALL|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|QUALITY_CALL|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|PAGE_LIKES|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|PAGE_LIKES|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|PAGE_LIKES|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|PAGE_LIKES|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|PAGE_LIKES|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|PAGE_LIKES|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|PAGE_LIKES|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|PAGE_LIKES|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|PAGE_LIKES|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|PAGE_LIKES|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|PAGE_LIKES|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|PAGE_LIKES|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|EVENT_RESPONSES|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|EVENT_RESPONSES|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|EVENT_RESPONSES|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|EVENT_RESPONSES|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|EVENT_RESPONSES|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|EVENT_RESPONSES|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|EVENT_RESPONSES|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|EVENT_RESPONSES|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|EVENT_RESPONSES|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|EVENT_RESPONSES|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|EVENT_RESPONSES|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_ENGAGEMENT|EVENT_RESPONSES|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LINK_CLICKS|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LINK_CLICKS|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LINK_CLICKS|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LINK_CLICKS|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LINK_CLICKS|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LINK_CLICKS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LINK_CLICKS|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LINK_CLICKS|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LINK_CLICKS|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LINK_CLICKS|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LINK_CLICKS|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LINK_CLICKS|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LANDING_PAGE_VIEWS|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LANDING_PAGE_VIEWS|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LANDING_PAGE_VIEWS|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LANDING_PAGE_VIEWS|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LANDING_PAGE_VIEWS|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LANDING_PAGE_VIEWS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LANDING_PAGE_VIEWS|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LANDING_PAGE_VIEWS|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LANDING_PAGE_VIEWS|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LANDING_PAGE_VIEWS|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LANDING_PAGE_VIEWS|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LANDING_PAGE_VIEWS|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|REACH|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|REACH|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|REACH|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|REACH|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|REACH|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|REACH|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|REACH|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|REACH|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|REACH|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|REACH|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|REACH|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|REACH|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|IMPRESSIONS|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|IMPRESSIONS|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|IMPRESSIONS|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|IMPRESSIONS|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|IMPRESSIONS|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|IMPRESSIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|IMPRESSIONS|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|IMPRESSIONS|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|IMPRESSIONS|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|IMPRESSIONS|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|IMPRESSIONS|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|IMPRESSIONS|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|CONVERSATIONS|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|CONVERSATIONS|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|CONVERSATIONS|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|CONVERSATIONS|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|CONVERSATIONS|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|CONVERSATIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|CONVERSATIONS|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|CONVERSATIONS|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|CONVERSATIONS|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|CONVERSATIONS|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|CONVERSATIONS|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|CONVERSATIONS|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|OFFSITE_CONVERSIONS|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|OFFSITE_CONVERSIONS|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|OFFSITE_CONVERSIONS|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|OFFSITE_CONVERSIONS|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|OFFSITE_CONVERSIONS|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|OFFSITE_CONVERSIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|OFFSITE_CONVERSIONS|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|OFFSITE_CONVERSIONS|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|OFFSITE_CONVERSIONS|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|OFFSITE_CONVERSIONS|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|OFFSITE_CONVERSIONS|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|OFFSITE_CONVERSIONS|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|POST_ENGAGEMENT|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|POST_ENGAGEMENT|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|POST_ENGAGEMENT|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|POST_ENGAGEMENT|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|POST_ENGAGEMENT|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|POST_ENGAGEMENT|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|POST_ENGAGEMENT|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|POST_ENGAGEMENT|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|POST_ENGAGEMENT|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|POST_ENGAGEMENT|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|POST_ENGAGEMENT|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|POST_ENGAGEMENT|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LEAD_GENERATION|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LEAD_GENERATION|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LEAD_GENERATION|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LEAD_GENERATION|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LEAD_GENERATION|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LEAD_GENERATION|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LEAD_GENERATION|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LEAD_GENERATION|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LEAD_GENERATION|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LEAD_GENERATION|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LEAD_GENERATION|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|LEAD_GENERATION|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|APP_INSTALLS|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|APP_INSTALLS|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|APP_INSTALLS|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|APP_INSTALLS|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|APP_INSTALLS|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|APP_INSTALLS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|APP_INSTALLS|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|APP_INSTALLS|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|APP_INSTALLS|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|APP_INSTALLS|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|APP_INSTALLS|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|APP_INSTALLS|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|AD_RECALL_LIFT|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|AD_RECALL_LIFT|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|AD_RECALL_LIFT|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|AD_RECALL_LIFT|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|AD_RECALL_LIFT|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|AD_RECALL_LIFT|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|AD_RECALL_LIFT|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|AD_RECALL_LIFT|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|AD_RECALL_LIFT|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|AD_RECALL_LIFT|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|AD_RECALL_LIFT|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|AD_RECALL_LIFT|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|THRUPLAY|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|THRUPLAY|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|THRUPLAY|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|THRUPLAY|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|THRUPLAY|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|THRUPLAY|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|THRUPLAY|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|THRUPLAY|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|THRUPLAY|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|THRUPLAY|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|THRUPLAY|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|THRUPLAY|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|QUALITY_CALL|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|QUALITY_CALL|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|QUALITY_CALL|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|QUALITY_CALL|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|QUALITY_CALL|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|QUALITY_CALL|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|QUALITY_CALL|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|QUALITY_CALL|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|QUALITY_CALL|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|QUALITY_CALL|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|QUALITY_CALL|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|QUALITY_CALL|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|PAGE_LIKES|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|PAGE_LIKES|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|PAGE_LIKES|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|PAGE_LIKES|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|PAGE_LIKES|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|PAGE_LIKES|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|PAGE_LIKES|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|PAGE_LIKES|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|PAGE_LIKES|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|PAGE_LIKES|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|PAGE_LIKES|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|PAGE_LIKES|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|EVENT_RESPONSES|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|EVENT_RESPONSES|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|EVENT_RESPONSES|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|EVENT_RESPONSES|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|EVENT_RESPONSES|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|EVENT_RESPONSES|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|EVENT_RESPONSES|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|EVENT_RESPONSES|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|EVENT_RESPONSES|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|EVENT_RESPONSES|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|EVENT_RESPONSES|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_LEADS|EVENT_RESPONSES|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LINK_CLICKS|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LINK_CLICKS|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LINK_CLICKS|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LINK_CLICKS|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LINK_CLICKS|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LINK_CLICKS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LINK_CLICKS|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LINK_CLICKS|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LINK_CLICKS|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LINK_CLICKS|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LINK_CLICKS|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LINK_CLICKS|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LANDING_PAGE_VIEWS|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LANDING_PAGE_VIEWS|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LANDING_PAGE_VIEWS|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LANDING_PAGE_VIEWS|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LANDING_PAGE_VIEWS|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LANDING_PAGE_VIEWS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LANDING_PAGE_VIEWS|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LANDING_PAGE_VIEWS|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LANDING_PAGE_VIEWS|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LANDING_PAGE_VIEWS|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LANDING_PAGE_VIEWS|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LANDING_PAGE_VIEWS|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|REACH|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|REACH|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|REACH|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|REACH|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|REACH|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|REACH|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|REACH|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|REACH|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|REACH|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|REACH|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|REACH|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|REACH|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|IMPRESSIONS|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|IMPRESSIONS|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|IMPRESSIONS|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|IMPRESSIONS|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|IMPRESSIONS|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|IMPRESSIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|IMPRESSIONS|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|IMPRESSIONS|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|IMPRESSIONS|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|IMPRESSIONS|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|IMPRESSIONS|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|IMPRESSIONS|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|CONVERSATIONS|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|CONVERSATIONS|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|CONVERSATIONS|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|CONVERSATIONS|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|CONVERSATIONS|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|CONVERSATIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|CONVERSATIONS|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|CONVERSATIONS|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|CONVERSATIONS|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|CONVERSATIONS|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|CONVERSATIONS|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|CONVERSATIONS|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|OFFSITE_CONVERSIONS|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|OFFSITE_CONVERSIONS|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|OFFSITE_CONVERSIONS|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|OFFSITE_CONVERSIONS|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|OFFSITE_CONVERSIONS|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|OFFSITE_CONVERSIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|OFFSITE_CONVERSIONS|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|OFFSITE_CONVERSIONS|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|OFFSITE_CONVERSIONS|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|OFFSITE_CONVERSIONS|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|OFFSITE_CONVERSIONS|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|OFFSITE_CONVERSIONS|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|POST_ENGAGEMENT|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|POST_ENGAGEMENT|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|POST_ENGAGEMENT|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|POST_ENGAGEMENT|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|POST_ENGAGEMENT|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|POST_ENGAGEMENT|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|POST_ENGAGEMENT|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|POST_ENGAGEMENT|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|POST_ENGAGEMENT|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|POST_ENGAGEMENT|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|POST_ENGAGEMENT|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|POST_ENGAGEMENT|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LEAD_GENERATION|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LEAD_GENERATION|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LEAD_GENERATION|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LEAD_GENERATION|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LEAD_GENERATION|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LEAD_GENERATION|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LEAD_GENERATION|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LEAD_GENERATION|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LEAD_GENERATION|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LEAD_GENERATION|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LEAD_GENERATION|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|LEAD_GENERATION|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|APP_INSTALLS|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|APP_INSTALLS|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|APP_INSTALLS|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|APP_INSTALLS|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|APP_INSTALLS|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|APP_INSTALLS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|APP_INSTALLS|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|APP_INSTALLS|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|APP_INSTALLS|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|APP_INSTALLS|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|APP_INSTALLS|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|APP_INSTALLS|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|AD_RECALL_LIFT|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|AD_RECALL_LIFT|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|AD_RECALL_LIFT|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|AD_RECALL_LIFT|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|AD_RECALL_LIFT|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|AD_RECALL_LIFT|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|AD_RECALL_LIFT|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|AD_RECALL_LIFT|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|AD_RECALL_LIFT|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|AD_RECALL_LIFT|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|AD_RECALL_LIFT|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|AD_RECALL_LIFT|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|THRUPLAY|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|THRUPLAY|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|THRUPLAY|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|THRUPLAY|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|THRUPLAY|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|THRUPLAY|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|THRUPLAY|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|THRUPLAY|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|THRUPLAY|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|THRUPLAY|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|THRUPLAY|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|THRUPLAY|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|QUALITY_CALL|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|QUALITY_CALL|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|QUALITY_CALL|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|QUALITY_CALL|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|QUALITY_CALL|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|QUALITY_CALL|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|QUALITY_CALL|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|QUALITY_CALL|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|QUALITY_CALL|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|QUALITY_CALL|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|QUALITY_CALL|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|QUALITY_CALL|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|PAGE_LIKES|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|PAGE_LIKES|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|PAGE_LIKES|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|PAGE_LIKES|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|PAGE_LIKES|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|PAGE_LIKES|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|PAGE_LIKES|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|PAGE_LIKES|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|PAGE_LIKES|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|PAGE_LIKES|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|PAGE_LIKES|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|PAGE_LIKES|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|EVENT_RESPONSES|WEBSITE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|EVENT_RESPONSES|UNDEFINED|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|EVENT_RESPONSES|MESSENGER|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|EVENT_RESPONSES|WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|EVENT_RESPONSES|INSTAGRAM_DIRECT|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|EVENT_RESPONSES|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|EVENT_RESPONSES|PHONE_CALL|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|EVENT_RESPONSES|ON_AD|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|EVENT_RESPONSES|APP|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|EVENT_RESPONSES|ON_POST|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|EVENT_RESPONSES|ON_PAGE|There have been too many calls to this ad-account. Wait a bi
+KO|OUTCOME_APP_PROMOTION|EVENT_RESPONSES|ON_VIDEO|There have been too many calls to this ad-account. Wait a bi
+CLEAN|120255662574230583|ECHEC
+CLEAN|120255662574270583|ECHEC
+CLEAN|120255662574320583|ECHEC
+CLEAN|120255662574360583|ECHEC
