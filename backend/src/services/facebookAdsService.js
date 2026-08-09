@@ -129,18 +129,47 @@ function buildTargeting(targeting) {
     result.geo_locations = geoLocations;
 
     // ═══════════════════════════════════════════════════════════════════
-    // INTÉRÊTS avec IDs de Facebook
+    // GENRE
     // ═══════════════════════════════════════════════════════════════════
+    // Le formulaire enregistre ['male'] / ['female'] / [] ; Meta attend
+    // [1] / [2], et l'absence du champ pour « tous ». Faute de cette
+    // conversion, le ciblage par genre était saisi puis perdu en silence :
+    // la campagne visait tout le monde sans que rien ne le signale.
+    const GENRES_META = { male: 1, female: 2 };
+    if (Array.isArray(targeting.genders) && targeting.genders.length > 0) {
+        const codes = targeting.genders
+            .map(g => GENRES_META[String(g).toLowerCase()] || (g === 1 || g === 2 ? g : null))
+            .filter(Boolean);
+
+        // Cocher les deux revient à ne pas filtrer : Meta préfère le champ absent.
+        if (codes.length === 1) result.genders = codes;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // INTÉRÊTS ET COMPORTEMENTS avec IDs de Facebook
+    // ═══════════════════════════════════════════════════════════════════
+    // Les deux vivent dans le même flexible_spec. Les comportements étaient
+    // proposés par l'assistant IA mais n'atteignaient jamais Meta.
+    const specs = {};
+
     if (targeting.interests && targeting.interests.length > 0) {
-        // interests is now array of { id, name }
-        result.flexible_spec = [
-            {
-                interests: targeting.interests.map(i => ({
-                    id: i.id,
-                    name: i.name
-                }))
-            }
-        ];
+        specs.interests = targeting.interests
+            .filter(i => i && i.id)
+            .map(i => ({ id: i.id, name: i.name }));
+    }
+
+    if (targeting.behaviors && targeting.behaviors.length > 0) {
+        // L'assistant IA peut renvoyer des libellés seuls, sans identifiant.
+        // Meta exige un id : les entrées sans id sont écartées plutôt que de
+        // faire échouer toute la campagne.
+        const avecId = targeting.behaviors.filter(b => b && b.id);
+        if (avecId.length > 0) {
+            specs.behaviors = avecId.map(b => ({ id: b.id, name: b.name }));
+        }
+    }
+
+    if (Object.keys(specs).length > 0) {
+        result.flexible_spec = [specs];
     }
 
     return result;
@@ -580,6 +609,19 @@ async function createFullCampaign(userId, data) {
         // 4. Upload image et créer Ad Creative
         logger.info('📢 Étape 3/4 : Création Ad Creative...');
 
+        // La vidéo était téléversée par le formulaire puis ignorée ici : la
+        // publicité partait sans aucun visuel, donc inéligible à la plupart des
+        // placements. Refuser explicitement vaut mieux que diffuser une
+        // publicité vide — la prise en charge viendra par /advideos.
+        if (data.creative.media_type === 'video') {
+            const err = new Error(
+                'Les publicités vidéo ne sont pas encore prises en charge. '
+                + 'Choisissez une image pour cette campagne.'
+            );
+            err.userFacing = true;
+            throw err;
+        }
+
         let imageHash = null;
         if (data.creative.media_type === 'image' && data.creative.media_url) {
             imageHash = await uploadAdImage(adAccountId, accessToken, data.creative.media_url);
@@ -611,14 +653,43 @@ async function createFullCampaign(userId, data) {
             }
         };
 
+        // Le lien d'affichage était saisi dans le formulaire, montré dans
+        // l'aperçu, puis jamais transmis. Chez Meta, c'est `caption`.
+        if (data.creative.display_link) {
+            objectStorySpec.link_data.caption = data.creative.display_link;
+        }
+
+        // Message d'accueil de la conversation : la première chose que voit la
+        // personne en ouvrant la discussion. Sans lui, Meta affiche un texte
+        // générique.
+        if (destination.is_messaging && data.creative.welcome_message) {
+            objectStorySpec.link_data.page_welcome_message = data.creative.welcome_message;
+        }
+
         if (imageHash) {
             objectStorySpec.link_data.image_hash = imageHash;
         }
 
         const creativePayload = {
             name: data.ad_name || `${data.campaign_name} - Creative`,
-            object_story_spec: objectStorySpec
+            object_story_spec: objectStorySpec,
+
+            // Publicités multi-annonceurs : la publicité peut apparaître aux
+            // côtés d'autres dans la même unité, et le visuel être recadré.
+            // Depuis le 19 août 2024, Meta y inscrit d'office toute publicité
+            // qui ne précise pas ce champ — nos utilisateurs y étaient donc
+            // tous inscrits sans l'avoir choisi. Le champ est désormais
+            // toujours transmis, avec la valeur décidée par l'utilisateur.
+            contextual_multi_ads: {
+                enroll_status: data.multi_advertiser_ads === false ? 'OPT_OUT' : 'OPT_IN'
+            }
         };
+
+        // Paramètres d'URL (UTM) : sans eux, impossible pour l'utilisateur de
+        // savoir d'où vient son trafic.
+        if (data.creative.url_tags) {
+            creativePayload.url_tags = data.creative.url_tags;
+        }
 
         // Exigé par Meta dès que la publicité vise plusieurs applications de
         // messagerie : sans lui, la création est refusée (sous-code 2446493).

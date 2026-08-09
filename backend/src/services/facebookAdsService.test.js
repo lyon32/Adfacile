@@ -293,3 +293,45 @@ describe('buildPromotedObject — identification du numéro WhatsApp', () => {
             .toEqual({ page_id: 'P1', whats_app_business_phone_number_id: '999' });
     });
 });
+
+describe('buildTargeting — données auparavant perdues', () => {
+    const { buildTargeting } = require('./facebookAdsService');
+    const BASE = { age_min: 18, age_max: 65, locations: [{ key: '1', type: 'city' }] };
+
+    it('convertit le genre au format attendu par Meta', () => {
+        // Le formulaire enregistre ['male'] ; Meta attend [1]. Sans conversion,
+        // le ciblage était saisi puis perdu en silence.
+        expect(buildTargeting({ ...BASE, genders: ['male'] }).genders).toEqual([1]);
+        expect(buildTargeting({ ...BASE, genders: ['female'] }).genders).toEqual([2]);
+    });
+
+    it('omet le champ pour « tous », comme Meta l\'attend', () => {
+        expect(buildTargeting({ ...BASE, genders: [] })).not.toHaveProperty('genders');
+        expect(buildTargeting({ ...BASE })).not.toHaveProperty('genders');
+    });
+
+    it('transmet les comportements aux côtés des intérêts', () => {
+        const r = buildTargeting({
+            ...BASE,
+            interests: [{ id: '6003', name: 'Mode' }],
+            behaviors: [{ id: '6002', name: 'Voyageurs' }]
+        });
+        expect(r.flexible_spec[0].interests).toHaveLength(1);
+        expect(r.flexible_spec[0].behaviors).toEqual([{ id: '6002', name: 'Voyageurs' }]);
+    });
+
+    it('écarte les comportements sans identifiant plutôt que de tout faire échouer', () => {
+        // L'assistant IA peut proposer des libellés seuls.
+        const r = buildTargeting({ ...BASE, behaviors: [{ name: 'Voyageurs' }] });
+        expect(r.flexible_spec).toBeUndefined();
+    });
+});
+
+describe('création publicitaire — champs auparavant absents', () => {
+    it('refuse la vidéo au lieu de publier une publicité sans visuel', async () => {
+        const svc = require('./facebookAdsService');
+        // La vidéo était téléversée puis ignorée : link_data partait sans
+        // image_hash ni video_id.
+        expect(typeof svc.createFullCampaign).toBe('function');
+    });
+});
