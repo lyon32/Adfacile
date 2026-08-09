@@ -9,6 +9,7 @@ const { supabase } = require('../config/supabase');
 const facebookAdsService = require('../services/facebookAdsService');
 const { isMessagingDestination, normalizeApps } = require('../services/messagingDestinations');
 const { translateFacebookError } = require('../utils/facebookErrors');
+const { minDailyBudgetFcfa } = require('../utils/currency');
 const logger = require('../utils/logger');
 const fs = require('fs');
 const path = require('path');
@@ -76,9 +77,32 @@ function validateCampaignData(data) {
         if (data.targeting.age_max && (data.targeting.age_max < 18 || data.targeting.age_max > 65)) {
             errors.push('L\'âge maximum doit être entre 18 et 65');
         }
+        // Chaque borne était vérifiée isolément : un minimum de 60 avec un
+        // maximum de 20 passait, et produisait une audience vide.
+        if (data.targeting.age_min && data.targeting.age_max
+            && Number(data.targeting.age_min) > Number(data.targeting.age_max)) {
+            errors.push('L\'âge minimum ne peut pas dépasser l\'âge maximum');
+        }
     }
-    if (!data.daily_budget || data.daily_budget < 1000) {
-        errors.push('Le budget minimum est de 1000 FCFA');
+    // Le seuil était codé en dur à 1000 FCFA alors que le service applique
+    // minDailyBudgetFcfa(), calculé depuis le taux de change. Les deux
+    // pouvaient diverger : le contrôleur refusait un budget que Meta aurait
+    // accepté, ou laissait passer un budget que le service rejetait ensuite.
+    const minBudget = minDailyBudgetFcfa();
+    if (!data.daily_budget || Number(data.daily_budget) < minBudget) {
+        errors.push(`Le budget minimum est de ${minBudget} FCFA par jour`);
+    }
+
+    // Calendrier
+    if (data.start_date && data.end_date
+        && new Date(data.end_date) <= new Date(data.start_date)) {
+        errors.push('La date de fin doit être postérieure à la date de début');
+    }
+
+    // Meta exige une date de fin avec un budget total : sans elle, le service
+    // échoue après avoir créé la campagne.
+    if (data.budget_type === 'lifetime' && !data.end_date) {
+        errors.push('Un budget total demande une date de fin');
     }
 
     // Une publicité qui ouvre une conversation n'a pas d'URL de destination :
@@ -94,7 +118,8 @@ function validateCampaignData(data) {
         if (!data.creative.message || data.creative.message.trim().length === 0) {
             errors.push('Le texte de la publicité est requis');
         }
-        if (!data.creative.headline || data.creative.headline.trim().length === 0) {
+        if (!goesToMessaging
+            && (!data.creative.headline || data.creative.headline.trim().length === 0)) {
             errors.push('Le titre est requis');
         }
         if (!goesToMessaging && !data.creative.link) {

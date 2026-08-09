@@ -9,65 +9,13 @@
 import { useState, useMemo, useEffect } from 'react';
 import {
     MapPin, Calendar, DollarSign, ChevronLeft, ChevronRight,
-    X, Plus, Sparkles, Info, Users, Target
+    X, Plus, Info, Users, Target
 } from 'lucide-react';
 import AITargetingHelper from '../ai/AITargetingHelper';
 import CurrencyHint from './CurrencyHint';
 import MessagingDestinationPicker from './MessagingDestinationPicker';
 import api from '../../services/api';
 import '../../styles/adset-form.css';
-
-const OPTIMIZATION_LABELS = {
-    'LINK_CLICKS': 'Clics sur le lien',
-    'OUTCOME_ENGAGEMENT': 'Engagement sur la publication',
-    'OUTCOME_LEADS': 'Prospects',
-    'OUTCOME_SALES': 'Conversions',
-    'OUTCOME_AWARENESS': 'Portée maximale',
-    'APP_INSTALLS': "Installations d'application"
-};
-
-// Objectifs de performance disponibles pour une campagne Trafic (OUTCOME_TRAFFIC),
-// groupés comme dans Ads Manager natif : "Objectifs de trafic" puis "Autres objectifs".
-const TRAFFIC_PERFORMANCE_GOAL_GROUPS = [
-    {
-        group: 'Objectifs de trafic',
-        options: [
-            {
-                value: 'LANDING_PAGE_VIEWS',
-                label: 'Maximiser le nombre de vues de la page de destination',
-                description: 'Nous essaierons de montrer vos publicités aux personnes les plus susceptibles de consulter le site Web dont le lien se trouve dans la publicité.'
-            },
-            {
-                value: 'LINK_CLICKS',
-                label: 'Maximiser le nombre de clics sur un lien',
-                description: 'Nous essaierons de montrer vos publicités aux personnes les plus susceptibles de cliquer sur celles-ci.'
-            }
-        ]
-    },
-    {
-        group: 'Autres objectifs',
-        options: [
-            {
-                value: 'REACH',
-                label: 'Optimiser la couverture unique quotidienne',
-                description: 'Nous essaierons de montrer vos publicités aux personnes jusqu’à une fois par jour.'
-            },
-            {
-                value: 'CONVERSATIONS',
-                label: 'Maximiser le nombre de conversations par messages',
-                description: 'Nous essaierons de montrer vos publicités aux personnes les plus susceptibles d’échanger avec vous par message.'
-            },
-            {
-                value: 'IMPRESSIONS',
-                label: "Optimiser le nombre d'impressions",
-                description: 'Nous essaierons de montrer vos publicités aux personnes autant de fois que possible.'
-            }
-        ]
-    }
-];
-
-// À plat, pour retrouver facilement le label/description d'une valeur sélectionnée.
-const TRAFFIC_PERFORMANCE_GOALS = TRAFFIC_PERFORMANCE_GOAL_GROUPS.flatMap(g => g.options);
 
 /**
  * Libellés de tous les objectifs de performance, quel que soit l'objectif de
@@ -123,10 +71,6 @@ const LIBELLES_GOALS = {
 };
 
 const decrireGoal = (valeur) => LIBELLES_GOALS[valeur] || { label: valeur, description: '' };
-
-// Valeur proposée par défaut, comme dans Ads Manager. Elle est écrite dans
-// l'état du formulaire pour que l'affichage et l'envoi ne divergent jamais.
-const TRAFFIC_DEFAULT_PERFORMANCE_GOAL = 'LANDING_PAGE_VIEWS';
 
 // -------------------------------------------------------------------
 // Debounce hook

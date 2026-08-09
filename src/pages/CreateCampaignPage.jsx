@@ -58,6 +58,7 @@ const CreateCampaignPage = () => {
         cost_per_result_goal: '',
         destination_type: 'WEBSITE',
         messaging_destinations: [],
+        multi_advertiser_ads: true,
         whatsapp_phone_number_id: '',
         website_url: '',
 
@@ -70,9 +71,10 @@ const CreateCampaignPage = () => {
             call_to_action: 'LEARN_MORE',
             media_type: 'image',
             media_url: '',
-            media_hash: '',
             link: '',
-            display_link: ''
+            display_link: '',
+            welcome_message: '',
+            url_tags: ''
         }
     });
 
@@ -264,12 +266,18 @@ const CreateCampaignPage = () => {
                                             cost_per_result_goal: '',
                                             destination_type: 'WEBSITE',
                                             messaging_destinations: [],
+                                            // Ces deux-là survivaient d'une campagne à
+                                            // l'autre : l'identifiant WhatsApp de la
+                                            // précédente était réutilisé en silence.
+                                            whatsapp_phone_number_id: '',
+                                            multi_advertiser_ads: true,
                                             website_url: '',
                                             ad_name: '',
                                             creative: {
                                                 message: '', headline: '', description: '',
                                                 call_to_action: 'LEARN_MORE', media_type: 'image',
-                                                media_url: '', media_hash: '', link: '', display_link: ''
+                                                media_url: '', link: '', display_link: '',
+                                                welcome_message: '', url_tags: ''
                                             }
                                         });
                                     }}

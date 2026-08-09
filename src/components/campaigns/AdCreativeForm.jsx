@@ -4,7 +4,7 @@
  * Layout 2 colonnes : gauche = formulaire, droite = preview live
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
     Image, Video, Upload, Link, ChevronLeft, Check, Loader2,
     Sparkles, X, Palette
@@ -14,6 +14,10 @@ import CampaignPreview from './CampaignPreview';
 import api from '../../services/api';
 import '../../styles/ad-creative-form.css';
 
+// Boutons proposés pour une destination site web. SEND_MESSAGE en est exclu :
+// associé à une destination site web, il reproduit exactement l'erreur #1815675
+// (« publicité non-Messenger dans un ensemble Messenger »). En messagerie, le
+// bouton est imposé par la destination et n'est pas choisi ici.
 const CTA_OPTIONS = [
     { value: 'LEARN_MORE', label: 'En savoir plus' },
     { value: 'SHOP_NOW', label: 'Acheter maintenant' },
@@ -21,7 +25,6 @@ const CTA_OPTIONS = [
     { value: 'CONTACT_US', label: 'Nous contacter' },
     { value: 'DOWNLOAD', label: 'Télécharger' },
     { value: 'BOOK_NOW', label: 'Réserver' },
-    { value: 'SEND_MESSAGE', label: 'Envoyer un message' }
 ];
 
 function mapCTAtoFacebook(cta) {
@@ -120,12 +123,31 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
         }
     };
 
-    // Validation
+    // ───────────────────────────────────────────────────────────────────
+    // La publicité dépend de la destination choisie à l'étape 2
+    //
+    // Cette étape ignorait totalement l'objectif et la destination : elle
+    // exigeait une URL même pour une conversation — URL que le backend jette
+    // ensuite — et un titre que Meta ne réclame pas en messagerie.
+    // ───────────────────────────────────────────────────────────────────
+    const versMessagerie = (campaignData.messaging_destinations?.length > 0)
+        || ['MESSENGER', 'WHATSAPP', 'INSTAGRAM_DIRECT'].includes(campaignData.destination_type);
+
+    // L'URL est saisie une seule fois, à l'étape 2. On la reprend ici plutôt
+    // que de la redemander : deux champs pour la même chose finissaient par
+    // diverger, et c'est celui-ci qui l'emportait en silence.
+    useEffect(() => {
+        if (!versMessagerie && !creative.link && campaignData.website_url) {
+            updateCreative('link', campaignData.website_url);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [versMessagerie, campaignData.website_url]);
+
+    // Validation — alignée sur la règle que le backend applique déjà.
     const isValid = creative.media_url &&
         creative.message.length > 0 &&
-        creative.headline.length > 0 &&
-        creative.link &&
-        isValidURL(creative.link);
+        (versMessagerie || creative.headline.length > 0) &&
+        (versMessagerie || (creative.link && isValidURL(creative.link)));
 
     return (
         <div>
@@ -299,7 +321,9 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
 
                         <div className="creative-field-group">
                             <label className="creative-label">
-                                Titre <span className="required">*</span>
+                                Titre {versMessagerie
+                                    ? <span className="optional">(optionnel)</span>
+                                    : <span className="required">*</span>}
                             </label>
                             <input
                                 type="text"
@@ -330,18 +354,55 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
                         {/* CTA */}
                         <div className="creative-field-group">
                             <label className="creative-label">Bouton d'action</label>
-                            <select
-                                value={creative.call_to_action}
-                                onChange={(e) => updateCreative('call_to_action', e.target.value)}
-                                className="creative-select"
-                            >
-                                {CTA_OPTIONS.map(opt => (
-                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                ))}
-                            </select>
+                            {versMessagerie ? (
+                                /* Le bouton est imposé par la destination. Laisser le
+                                   choix ouvert affichait dans l'aperçu un bouton qui
+                                   n'était pas celui diffusé. */
+                                <>
+                                    <div className="creative-input" style={{ background: 'var(--color-bg-alt)' }}>
+                                        Envoyer un message
+                                    </div>
+                                    <p className="creative-hint">
+                                        Déterminé par la messagerie choisie à l'étape précédente.
+                                    </p>
+                                </>
+                            ) : (
+                                <select
+                                    value={creative.call_to_action}
+                                    onChange={(e) => updateCreative('call_to_action', e.target.value)}
+                                    className="creative-select"
+                                >
+                                    {CTA_OPTIONS.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                </select>
+                            )}
                         </div>
 
-                        {/* URL */}
+                        {/* Message d'accueil de la conversation */}
+                        {versMessagerie && (
+                            <div className="creative-field-group">
+                                <label className="creative-label">
+                                    Message d'accueil <span className="optional">(optionnel)</span>
+                                </label>
+                                <textarea
+                                    rows={2}
+                                    maxLength={160}
+                                    value={creative.welcome_message || ''}
+                                    onChange={(e) => updateCreative('welcome_message', e.target.value)}
+                                    placeholder="Bonjour ! Dites-nous comment nous pouvons vous aider."
+                                    className="creative-input"
+                                />
+                                <p className="creative-hint">
+                                    La première chose que verra la personne en ouvrant la conversation.
+                                    Sans message, Facebook en affiche un générique.
+                                </p>
+                            </div>
+                        )}
+
+                        {/* URL — sans objet en messagerie : Facebook redirige vers la
+                            conversation, et le backend ignore ce champ. */}
+                        {!versMessagerie && (
                         <div className="creative-field-group">
                             <label className="creative-label">
                                 🔗 Lien de destination <span className="required">*</span>
@@ -354,11 +415,16 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
                                 className={`creative-input ${creative.link && !isValidURL(creative.link) ? 'error' : ''}`}
                             />
                             {creative.link && !isValidURL(creative.link) && (
-                                <p className="creative-error-msg">L'URL doit commencer par https://</p>
+                                <p className="creative-error-msg">
+                                    L'adresse doit commencer par http:// ou https://
+                                </p>
                             )}
+                            <p className="creative-hint">Repris de l'étape précédente, modifiable ici.</p>
                         </div>
+                        )}
 
                         {/* Display link */}
+                        {!versMessagerie && (
                         <div className="creative-field-group">
                             <label className="creative-label">
                                 Lien d'affichage <span className="optional">(optionnel)</span>
@@ -371,6 +437,47 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
                                 className="creative-input"
                             />
                             <p className="creative-hint">Affiché sous le titre dans la publicité</p>
+                        </div>
+                        )}
+
+                        {/* Paramètres d'URL — pour mesurer d'où vient le trafic */}
+                        {!versMessagerie && (
+                            <div className="creative-field-group">
+                                <label className="creative-label">
+                                    Paramètres de suivi <span className="optional">(optionnel)</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={creative.url_tags || ''}
+                                    onChange={(e) => updateCreative('url_tags', e.target.value)}
+                                    placeholder="utm_source=facebook&utm_medium=cpc"
+                                    className="creative-input"
+                                />
+                                <p className="creative-hint">
+                                    Ajoutés à votre lien pour reconnaître ces visiteurs dans vos statistiques.
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Publicités multi-annonceurs — Meta y inscrit d'office toute
+                            publicité qui ne précise rien. Le choix devient visible. */}
+                        <div className="creative-field-group">
+                            <label className="messaging-app" style={{ alignItems: 'flex-start' }}>
+                                <input
+                                    type="checkbox"
+                                    className="messaging-app-checkbox"
+                                    checked={campaignData.multi_advertiser_ads !== false}
+                                    onChange={(e) => updateField('multi_advertiser_ads', e.target.checked)}
+                                />
+                                <span className="dest-content">
+                                    <span className="dest-label">Publicités multi-annonceurs</span>
+                                    <span className="dest-desc">
+                                        Votre publicité peut apparaître avec d'autres dans la même unité
+                                        publicitaire afin d'améliorer sa visibilité. Le contenu publicitaire
+                                        peut être redimensionné ou recadré.
+                                    </span>
+                                </span>
+                            </label>
                         </div>
                     </div>
 
