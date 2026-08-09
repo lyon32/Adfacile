@@ -146,13 +146,20 @@ function buildTargeting(targeting) {
 
 /**
  * Récupère les credentials Facebook d'un utilisateur depuis la DB
+ *
+ * Les colonnes instagram_connected et whatsapp_connected font partie des
+ * credentials : la validation des destinations de messagerie s'appuie dessus.
+ * Les omettre les rendait `undefined`, ce que la validation lisait comme « non
+ * relié » — le compte Instagram et le numéro WhatsApp étaient donc refusés
+ * alors qu'ils étaient bien rattachés à la Page.
  */
 async function getFacebookAccount(userId) {
     logger.info(`🔍 getFacebookAccount: Looking for facebook_accounts with user_id=${userId}, is_active=true`);
 
     const { data, error } = await supabase
         .from('facebook_accounts')
-        .select('fb_user_id, fb_access_token, fb_account_id, fb_page_id, fb_page_name')
+        .select('fb_user_id, fb_access_token, fb_account_id, fb_page_id, fb_page_name, '
+            + 'instagram_connected, instagram_account_id, whatsapp_connected, whatsapp_number')
         .eq('user_id', userId)
         .eq('is_active', true)
         .single();
@@ -537,12 +544,20 @@ async function createFullCampaign(userId, data) {
             objectStorySpec.link_data.image_hash = imageHash;
         }
 
+        const creativePayload = {
+            name: data.ad_name || `${data.campaign_name} - Creative`,
+            object_story_spec: objectStorySpec
+        };
+
+        // Exigé par Meta dès que la publicité vise plusieurs applications de
+        // messagerie : sans lui, la création est refusée (sous-code 2446493).
+        if (destination.asset_feed_spec) {
+            creativePayload.asset_feed_spec = destination.asset_feed_spec;
+        }
+
         const creativeResponse = await axios.post(
             `${FACEBOOK_GRAPH_URL}/${adAccountId}/adcreatives`,
-            {
-                name: data.ad_name || `${data.campaign_name} - Creative`,
-                object_story_spec: objectStorySpec
-            },
+            creativePayload,
             { params: { access_token: accessToken } }
         );
         const fbCreativeId = creativeResponse.data.id;

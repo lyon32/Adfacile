@@ -6,11 +6,13 @@ jest.mock('../utils/logger', () => ({
 jest.mock('axios');
 
 const axios = require('axios');
+const { supabase } = require('../config/supabase');
 const {
     resolveDestination,
     buildPromotedObject,
     uploadAdImage,
-    rollbackFacebookObjects
+    rollbackFacebookObjects,
+    getFacebookAccount
 } = require('./facebookAdsService');
 
 const PAGE = {
@@ -92,6 +94,40 @@ describe('resolveDestination — messagerie', () => {
             expect(err.userFacing).toBe(true);
             expect(err.validationErrors).toHaveLength(1);
         }
+    });
+});
+
+describe('getFacebookAccount', () => {
+    it('lit les colonnes de rattachement Instagram et WhatsApp', async () => {
+        // Sans elles, resolveDestination voit `undefined` et refuse un compte
+        // Instagram ou un numéro WhatsApp pourtant bien reliés à la Page.
+        let selection = '';
+        supabase.from = jest.fn(() => ({
+            select: (colonnes) => {
+                selection = colonnes;
+                return {
+                    eq: () => ({
+                        eq: () => ({
+                            single: () => Promise.resolve({
+                                data: { fb_page_id: 'P1', instagram_connected: true },
+                                error: null
+                            })
+                        })
+                    })
+                };
+            }
+        }));
+
+        await getFacebookAccount('user-1');
+
+        expect(selection).toMatch(/instagram_connected/);
+        expect(selection).toMatch(/whatsapp_connected/);
+    });
+
+    it('transmet ces colonnes à la validation des destinations', async () => {
+        const compte = await getFacebookAccount('user-1');
+        // Le compte remonté doit permettre la validation sans requête de plus.
+        expect(compte.instagram_connected).toBe(true);
     });
 });
 

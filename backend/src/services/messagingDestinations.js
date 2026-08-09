@@ -171,9 +171,30 @@ function buildMessagingDestination(apps) {
     const primary = CALL_TO_ACTION_PRIORITY.find(app => selected.includes(app));
     const cta = CALL_TO_ACTION_BY_APP[primary];
 
+    // Au-delà d'une application, Meta doit pouvoir choisir la destination pour
+    // chaque personne : c'est le rôle de asset_feed_spec, qui liste un bouton
+    // par application. Sans lui, la publicité est refusée (sous-code 2446493,
+    // « le contenu publicitaire doit inclure la spécification degrees_of_freedom
+    // pour les publicités multi-destination » — DOF y désigne ce champ, pas
+    // degrees_of_freedom_spec, qui ne résout rien ici).
+    const multiDestination = selected.length > 1;
+
     return {
         apps: selected,
         destination_type: destinationType,
+        is_multi_destination: multiDestination,
+        asset_feed_spec: multiDestination ? {
+            optimization_type: 'DOF_MESSAGING_DESTINATION',
+            call_to_actions: CALL_TO_ACTION_PRIORITY
+                .filter(app => selected.includes(app))
+                .map(app => {
+                    const c = CALL_TO_ACTION_BY_APP[app];
+                    return {
+                        type: c.type,
+                        value: { app_destination: c.app_destination, link: c.link }
+                    };
+                })
+        } : null,
         // Meta n'accepte que CONVERSATIONS pour ces ensembles de publicités.
         // LANDING_PAGE_VIEWS ou LINK_CLICKS y sont refusés.
         optimization_goal: 'CONVERSATIONS',

@@ -81,6 +81,33 @@ describe('buildMessagingDestination — cohérence exigée par Meta', () => {
     it('refuse une sélection vide', () => {
         expect(() => buildMessagingDestination([])).toThrow(/au moins une application/i);
     });
+
+    it('n\'ajoute pas asset_feed_spec pour une destination unique', () => {
+        const result = buildMessagingDestination(['messenger']);
+        expect(result.is_multi_destination).toBe(false);
+        expect(result.asset_feed_spec).toBeNull();
+    });
+
+    it('décrit un bouton par application au-delà d\'une destination', () => {
+        // Sans asset_feed_spec, Meta refuse la publicité multi-destination
+        // (sous-code 2446493) : c'est ce champ qui lui permet de choisir la
+        // messagerie la plus adaptée à chaque personne.
+        const result = buildMessagingDestination(['messenger', 'instagram', 'whatsapp']);
+
+        expect(result.is_multi_destination).toBe(true);
+        expect(result.asset_feed_spec.optimization_type).toBe('DOF_MESSAGING_DESTINATION');
+        expect(result.asset_feed_spec.call_to_actions).toEqual([
+            { type: 'MESSAGE_PAGE', value: { app_destination: 'MESSENGER', link: 'https://fb.com/messenger_doc/' } },
+            { type: 'WHATSAPP_MESSAGE', value: { app_destination: 'WHATSAPP', link: 'https://api.whatsapp.com/send' } },
+            { type: 'INSTAGRAM_MESSAGE', value: { app_destination: 'INSTAGRAM_DIRECT', link: 'https://www.instagram.com' } }
+        ]);
+    });
+
+    it('ne liste que les applications cochées', () => {
+        const result = buildMessagingDestination(['messenger', 'whatsapp']);
+        expect(result.asset_feed_spec.call_to_actions.map(c => c.type))
+            .toEqual(['MESSAGE_PAGE', 'WHATSAPP_MESSAGE']);
+    });
 });
 
 describe('isMessagingDestination', () => {
