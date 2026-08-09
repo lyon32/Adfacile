@@ -318,7 +318,11 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
         (destType !== 'WEBSITE' || (campaignData.website_url && campaignData.website_url.startsWith('http'))) &&
         // Un ensemble de publicités de messagerie sans application cochée est
         // refusé par Facebook : on l'interdit dès le formulaire.
-        (destType !== 'MESSENGER' || (campaignData.messaging_destinations?.length > 0));
+        (destType !== 'MESSENGER' || (campaignData.messaging_destinations?.length > 0)) &&
+        // WhatsApp coché sans numéro produit une publicité sans destinataire :
+        // Facebook l'accepte, mais elle ne peut pas être diffusée.
+        (!campaignData.messaging_destinations?.includes('whatsapp')
+            || (campaignData.whatsapp_phone_number || '').replace(/\D/g, '').length >= 8);
 
     const rangePct = Math.round(((daily_budget - 1000) / (50000 - 1000)) * 100);
 
@@ -413,6 +417,8 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                     <MessagingDestinationPicker
                                         selected={campaignData.messaging_destinations || ['messenger']}
                                         onChange={(apps) => updateField('messaging_destinations', apps)}
+                                        whatsappNumber={campaignData.whatsapp_phone_number || ''}
+                                        onWhatsappNumberChange={(n) => updateField('whatsapp_phone_number', n)}
                                     />
                                 )}
 
@@ -568,6 +574,8 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                 <MessagingDestinationPicker
                                     selected={campaignData.messaging_destinations || ['messenger']}
                                     onChange={(apps) => updateField('messaging_destinations', apps)}
+                                    whatsappNumber={campaignData.whatsapp_phone_number || ''}
+                                    onWhatsappNumberChange={(n) => updateField('whatsapp_phone_number', n)}
                                 />
                             )}
                         </div>

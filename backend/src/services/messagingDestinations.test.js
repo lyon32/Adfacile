@@ -2,14 +2,16 @@ const {
     isMessagingDestination,
     normalizeApps,
     validateMessagingApps,
-    buildMessagingDestination
+    buildMessagingDestination,
+    normalizeWhatsAppNumber
 } = require('./messagingDestinations');
 
 // Une Page avec Instagram et WhatsApp reliés : tout est permis.
 const PAGE_COMPLETE = {
     fb_page_id: '799671609906273',
     instagram_connected: true,
-    whatsapp_connected: true
+    whatsapp_connected: true,
+    whatsapp_number: '+237650198196'
 };
 
 describe('buildMessagingDestination — destination_type par combinaison', () => {
@@ -162,6 +164,33 @@ describe('validateMessagingApps — contraintes de rattachement', () => {
         expect(result.errors.join(' ')).toMatch(/WhatsApp Business/);
     });
 
+    it('refuse WhatsApp coché sans numéro à promouvoir', () => {
+        // Meta accepte l'ensemble de publicités, mais la publicité reste sans
+        // numéro : le sélecteur du gestionnaire s'affiche vide et rien ne peut
+        // être diffusé. Mieux vaut bloquer ici.
+        const result = validateMessagingApps(['whatsapp'], {
+            fb_page_id: '1', whatsapp_connected: true, whatsapp_number: null
+        });
+        expect(result.valid).toBe(false);
+        expect(result.errors.join(' ')).toMatch(/numéro WhatsApp Business à afficher/);
+    });
+
+    it('accepte un numéro fourni au moment de la campagne', () => {
+        const result = validateMessagingApps(
+            ['whatsapp'],
+            { fb_page_id: '1', whatsapp_connected: true, whatsapp_number: null },
+            { whatsapp_phone_number: '+237 6 50 19 81 96' }
+        );
+        expect(result.valid).toBe(true);
+    });
+
+    it('n\'exige aucun numéro quand WhatsApp n\'est pas coché', () => {
+        const result = validateMessagingApps(['messenger'], {
+            fb_page_id: '1', whatsapp_number: null
+        });
+        expect(result.valid).toBe(true);
+    });
+
     it('refuse Instagram sans compte professionnel relié', () => {
         const result = validateMessagingApps(['instagram'], {
             fb_page_id: '1', instagram_connected: false
@@ -170,9 +199,13 @@ describe('validateMessagingApps — contraintes de rattachement', () => {
         expect(result.errors.join(' ')).toMatch(/Instagram/);
     });
 
-    it('signale chaque application manquante séparément', () => {
+    it('signale chaque manque séparément, pour que tout soit corrigeable d\'un coup', () => {
         const result = validateMessagingApps(['instagram', 'whatsapp'], { fb_page_id: '1' });
-        expect(result.errors).toHaveLength(2);
+
+        // Instagram non relié, WhatsApp non relié, et numéro absent.
+        expect(result.errors).toHaveLength(3);
+        expect(result.errors.join(' ')).toMatch(/Instagram/);
+        expect(result.errors.join(' ')).toMatch(/WhatsApp Business/);
     });
 
     it('accepte les trois destinations quand tout est relié', () => {
@@ -182,5 +215,21 @@ describe('validateMessagingApps — contraintes de rattachement', () => {
 
     it('refuse une sélection vide', () => {
         expect(validateMessagingApps([], PAGE_COMPLETE).valid).toBe(false);
+    });
+});
+
+describe('normalizeWhatsAppNumber', () => {
+    it('réduit le numéro à ses chiffres, comme Meta le stocke', () => {
+        // Meta renvoie « 237650198196 » pour « +237 6 50 19 81 96 ».
+        expect(normalizeWhatsAppNumber('+237 6 50 19 81 96')).toBe('237650198196');
+        expect(normalizeWhatsAppNumber('+237650198196')).toBe('237650198196');
+        expect(normalizeWhatsAppNumber('237-650-198-196')).toBe('237650198196');
+    });
+
+    it('écarte ce qui ne peut pas être un numéro', () => {
+        expect(normalizeWhatsAppNumber(null)).toBeNull();
+        expect(normalizeWhatsAppNumber('')).toBeNull();
+        expect(normalizeWhatsAppNumber('abc')).toBeNull();
+        expect(normalizeWhatsAppNumber('12345')).toBeNull();
     });
 });

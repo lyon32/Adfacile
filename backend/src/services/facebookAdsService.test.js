@@ -19,7 +19,8 @@ const PAGE = {
     fb_page_id: '799671609906273',
     fb_page_name: 'Lyon Deals',
     instagram_connected: true,
-    whatsapp_connected: true
+    whatsapp_connected: true,
+    whatsapp_number: '+237650198196'
 };
 
 beforeEach(() => jest.clearAllMocks());
@@ -87,13 +88,31 @@ describe('resolveDestination — messagerie', () => {
 
     it('marque l\'erreur comme affichable à l\'utilisateur', () => {
         try {
-            resolveDestination({ messaging_destinations: ['whatsapp'] },
-                { ...PAGE, whatsapp_connected: false });
+            resolveDestination({ messaging_destinations: ['instagram'] },
+                { ...PAGE, instagram_connected: false });
             throw new Error('aurait dû lever');
         } catch (err) {
             expect(err.userFacing).toBe(true);
             expect(err.validationErrors).toHaveLength(1);
         }
+    });
+
+    it('transmet le numéro WhatsApp jusqu\'au promoted_object', () => {
+        // Sans lui, Meta ne sait pas quel numéro promouvoir : le sélecteur de
+        // numéro reste vide au niveau de la publicité.
+        const result = resolveDestination(
+            { messaging_destinations: ['whatsapp'], whatsapp_phone_number: '+237 6 50 19 81 96' },
+            PAGE
+        );
+        expect(result.whatsapp_phone_number).toBe('237650198196');
+
+        expect(buildPromotedObject('WHATSAPP', PAGE, result.whatsapp_phone_number))
+            .toEqual({ page_id: PAGE.fb_page_id, whatsapp_phone_number: '237650198196' });
+    });
+
+    it('n\'ajoute pas de numéro quand WhatsApp n\'est pas visé', () => {
+        expect(buildPromotedObject('MESSENGER', { fb_page_id: '1' }))
+            .toEqual({ page_id: '1' });
     });
 });
 
@@ -133,10 +152,16 @@ describe('getFacebookAccount', () => {
 
 describe('buildPromotedObject', () => {
     it('exige la Page pour toutes les destinations de messagerie', () => {
+        const sansNumero = { ...PAGE, whatsapp_number: null };
         ['MESSENGER', 'WHATSAPP', 'INSTAGRAM_DIRECT', 'MESSAGING_MESSENGER_WHATSAPP']
             .forEach(type => {
-                expect(buildPromotedObject(type, PAGE)).toEqual({ page_id: PAGE.fb_page_id });
+                expect(buildPromotedObject(type, sansNumero)).toEqual({ page_id: PAGE.fb_page_id });
             });
+    });
+
+    it('joint le numéro de la Page quand elle en a un', () => {
+        expect(buildPromotedObject('MESSAGING_MESSENGER_WHATSAPP', PAGE))
+            .toEqual({ page_id: PAGE.fb_page_id, whatsapp_phone_number: '237650198196' });
     });
 
     it('n\'ajoute rien pour une destination site web', () => {

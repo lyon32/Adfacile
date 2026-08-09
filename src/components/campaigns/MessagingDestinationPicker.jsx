@@ -37,7 +37,12 @@ const APPS = [
     }
 ];
 
-export default function MessagingDestinationPicker({ selected = [], onChange }) {
+export default function MessagingDestinationPicker({
+    selected = [],
+    onChange,
+    whatsappNumber = '',
+    onWhatsappNumberChange
+}) {
     const [connections, setConnections] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -45,11 +50,22 @@ export default function MessagingDestinationPicker({ selected = [], onChange }) 
         let annule = false;
 
         api.get('/facebook/connections')
-            .then(res => { if (!annule) setConnections(res.data.connections || {}); })
+            .then(res => {
+                if (annule) return;
+                const conn = res.data.connections || {};
+                setConnections(conn);
+
+                // Pré-remplir avec le numéro déjà relié à la Page, s'il est connu.
+                const connu = conn.whatsapp?.phone_number;
+                if (connu && !whatsappNumber) {
+                    onWhatsappNumberChange?.(connu);
+                }
+            })
             .catch(() => { if (!annule) setConnections({}); })
             .finally(() => { if (!annule) setLoading(false); });
 
         return () => { annule = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const estDisponible = (app) => {
@@ -100,6 +116,27 @@ export default function MessagingDestinationPicker({ selected = [], onChange }) 
 
                             {!disponible && !loading && (
                                 <p className="messaging-app-missing">{app.missing}</p>
+                            )}
+
+                            {/* Une Page peut relier jusqu'à cinquante numéros :
+                                Facebook a besoin de savoir lequel afficher. */}
+                            {app.value === 'whatsapp' && coche && disponible && (
+                                <div className="messaging-app-detail">
+                                    <label className="adset-label" htmlFor="numero-whatsapp">
+                                        Numéro WhatsApp Business <span className="required">*</span>
+                                    </label>
+                                    <input
+                                        id="numero-whatsapp"
+                                        type="tel"
+                                        value={whatsappNumber}
+                                        onChange={(e) => onWhatsappNumberChange?.(e.target.value)}
+                                        placeholder="+237 6 XX XX XX XX"
+                                        className="adset-input"
+                                    />
+                                    <p className="adset-hint">
+                                        Le numéro qui recevra les conversations, avec l’indicatif du pays.
+                                    </p>
+                                </div>
                             )}
                         </div>
                     );

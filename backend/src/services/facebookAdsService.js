@@ -13,7 +13,8 @@ const { decryptToken } = require('./facebookService');
 const {
     isMessagingDestination,
     validateMessagingApps,
-    buildMessagingDestination
+    buildMessagingDestination,
+    normalizeWhatsAppNumber
 } = require('./messagingDestinations');
 const {
     fcfaToUsdCents,
@@ -184,9 +185,19 @@ async function getFacebookAccount(userId) {
 /**
  * Construit le promoted_object selon le type de destination
  */
-function buildPromotedObject(destinationType, fb) {
+function buildPromotedObject(destinationType, fb, whatsappNumber = null) {
     if (isMessagingDestination(destinationType) || destinationType === 'INSTAGRAM_PROFILE') {
-        return { page_id: fb.fb_page_id };
+        const promoted = { page_id: fb.fb_page_id };
+
+        // Une Page peut relier jusqu'à cinquante numéros WhatsApp : sans
+        // désignation explicite, Meta n'en promeut aucun et le sélecteur de
+        // numéro reste vide au niveau de la publicité.
+        const numero = normalizeWhatsAppNumber(whatsappNumber || fb.whatsapp_number);
+        if (numero) {
+            promoted.whatsapp_phone_number = numero;
+        }
+
+        return promoted;
     }
     // Pour WEBSITE, pas de promoted_object requis (pixel_id optionnel)
     return undefined;
@@ -227,7 +238,9 @@ function resolveDestination(data, fb) {
     // Vérifier le rattachement AVANT d'appeler Meta : un compte Instagram ou un
     // numéro WhatsApp non relié produit un rejet à la relecture, donc après
     // que la campagne a déjà été créée.
-    const validation = validateMessagingApps(apps, fb);
+    const validation = validateMessagingApps(apps, fb, {
+        whatsapp_phone_number: data.whatsapp_phone_number
+    });
     if (!validation.valid) {
         const err = new Error(validation.errors.join(' '));
         err.userFacing = true;
@@ -235,7 +248,13 @@ function resolveDestination(data, fb) {
         throw err;
     }
 
-    return { is_messaging: true, ...buildMessagingDestination(apps) };
+    return {
+        is_messaging: true,
+        whatsapp_phone_number: normalizeWhatsAppNumber(
+            data.whatsapp_phone_number || fb.whatsapp_number
+        ),
+        ...buildMessagingDestination(apps)
+    };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -462,7 +481,9 @@ async function createFullCampaign(userId, data) {
         };
 
         // Ajouter promoted_object seulement si nécessaire (Messenger, WhatsApp, Instagram)
-        const promotedObject = buildPromotedObject(destination.destination_type, fb);
+        const promotedObject = buildPromotedObject(
+            destination.destination_type, fb, destination.whatsapp_phone_number
+        );
         if (promotedObject) {
             adSetPayload.promoted_object = promotedObject;
         }

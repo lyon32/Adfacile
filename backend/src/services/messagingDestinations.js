@@ -77,6 +77,19 @@ const CONNECTION_REQUIREMENT = {
 const MESSAGING_DESTINATION_TYPES = new Set(Object.values(DESTINATION_TYPE_BY_COMBO));
 
 /**
+ * Réduit un numéro WhatsApp à ses chiffres, indicatif pays compris.
+ *
+ * Meta stocke le numéro sans « + » ni séparateurs : « +237 6 50 19 81 96 »
+ * devient « 237650198196 ». Normaliser ici évite qu'un même numéro saisi avec
+ * des espaces soit refusé.
+ */
+function normalizeWhatsAppNumber(numero) {
+    if (!numero) return null;
+    const chiffres = String(numero).replace(/\D/g, '');
+    return chiffres.length >= 8 ? chiffres : null;
+}
+
+/**
  * Indique si un destination_type envoie l'utilisateur dans une conversation.
  * Ces ensembles de publicités n'acceptent que des créations de messagerie.
  */
@@ -115,7 +128,7 @@ function normalizeApps(apps) {
  * @param {Object}   fbAccount   ligne facebook_accounts de l'utilisateur
  * @returns {{valid: boolean, errors: string[]}}
  */
-function validateMessagingApps(apps, fbAccount = {}) {
+function validateMessagingApps(apps, fbAccount = {}, options = {}) {
     const errors = [];
     const selected = normalizeApps(apps);
 
@@ -139,6 +152,19 @@ function validateMessagingApps(apps, fbAccount = {}) {
             errors.push(requirement.message);
         }
     });
+
+    // Le numéro doit accompagner la destination WhatsApp. Sans lui, Meta crée
+    // bien l'ensemble de publicités mais la publicité reste sans numéro à
+    // promouvoir : le sélecteur du gestionnaire de publicités s'affiche vide et
+    // la publicité ne peut pas être diffusée.
+    if (selected.includes('whatsapp')) {
+        const numero = normalizeWhatsAppNumber(
+            options.whatsapp_phone_number || fbAccount.whatsapp_number
+        );
+        if (!numero) {
+            errors.push('Indiquez le numéro WhatsApp Business à afficher dans la publicité.');
+        }
+    }
 
     return { valid: errors.length === 0, errors };
 }
@@ -207,6 +233,7 @@ function buildMessagingDestination(apps) {
 }
 
 module.exports = {
+    normalizeWhatsAppNumber,
     MESSAGING_APPS,
     DESTINATION_TYPE_BY_COMBO,
     CALL_TO_ACTION_BY_APP,

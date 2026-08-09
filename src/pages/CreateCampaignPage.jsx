@@ -57,6 +57,8 @@ const CreateCampaignPage = () => {
         optimization_goal: '',
         cost_per_result_goal: '',
         destination_type: 'WEBSITE',
+        messaging_destinations: [],
+        whatsapp_phone_number: '',
         website_url: '',
 
         // Niveau Ad
@@ -262,6 +264,7 @@ const CreateCampaignPage = () => {
                                             cost_per_result_goal: '',
                                             destination_type: 'WEBSITE',
                                             messaging_destinations: [],
+                                            whatsapp_phone_number: '',
                                             website_url: '',
                                             ad_name: '',
                                             creative: {
