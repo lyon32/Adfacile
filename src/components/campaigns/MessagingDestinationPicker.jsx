@@ -41,7 +41,9 @@ export default function MessagingDestinationPicker({
     selected = [],
     onChange,
     whatsappNumber = '',
-    onWhatsappNumberChange
+    onWhatsappNumberChange,
+    whatsappNumberId = '',
+    onWhatsappNumberIdChange
 }) {
     const [connections, setConnections] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -135,6 +137,24 @@ export default function MessagingDestinationPicker({
                                     />
                                     <p className="adset-hint">
                                         Le numéro qui recevra les conversations, avec l’indicatif du pays.
+                                    </p>
+
+                                    <label className="adset-label" htmlFor="id-numero-whatsapp">
+                                        Identifiant du numéro <span className="optional">(recommandé)</span>
+                                    </label>
+                                    <input
+                                        id="id-numero-whatsapp"
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={whatsappNumberId}
+                                        onChange={(e) => onWhatsappNumberIdChange?.(e.target.value)}
+                                        placeholder="344188022113673"
+                                        className="adset-input"
+                                    />
+                                    <p className="adset-hint">
+                                        Gestionnaire WhatsApp → Numéros de téléphone → « ID de numéro de
+                                        téléphone ». Facebook relie ainsi la publicité à votre compte
+                                        WhatsApp Business plutôt qu’à un simple numéro.
                                     </p>
                                 </div>
                             )}

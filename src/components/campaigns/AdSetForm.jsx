@@ -419,6 +419,8 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                         onChange={(apps) => updateField('messaging_destinations', apps)}
                                         whatsappNumber={campaignData.whatsapp_phone_number || ''}
                                         onWhatsappNumberChange={(n) => updateField('whatsapp_phone_number', n)}
+                                        whatsappNumberId={campaignData.whatsapp_phone_number_id || ''}
+                                        onWhatsappNumberIdChange={(v) => updateField('whatsapp_phone_number_id', v)}
                                     />
                                 )}
 
@@ -576,6 +578,8 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                     onChange={(apps) => updateField('messaging_destinations', apps)}
                                     whatsappNumber={campaignData.whatsapp_phone_number || ''}
                                     onWhatsappNumberChange={(n) => updateField('whatsapp_phone_number', n)}
+                                        whatsappNumberId={campaignData.whatsapp_phone_number_id || ''}
+                                        onWhatsappNumberIdChange={(v) => updateField('whatsapp_phone_number_id', v)}
                                 />
                             )}
                         </div>

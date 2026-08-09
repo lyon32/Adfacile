@@ -231,3 +231,33 @@ describe('rollbackFacebookObjects', () => {
         await expect(rollbackFacebookObjects({ campaign: 'C1' }, 'token')).resolves.toBeUndefined();
     });
 });
+
+describe('buildPromotedObject — identification du numéro WhatsApp', () => {
+    const PAGE_WA = { fb_page_id: 'P1', whatsapp_number: '+237650198196' };
+
+    it('préfère l\'identifiant au numéro brut', () => {
+        // Meta rattache alors la publicité au compte WhatsApp Business et
+        // en déduit le numéro lui-même.
+        expect(buildPromotedObject('WHATSAPP', PAGE_WA, null, '344188022113673'))
+            .toEqual({ page_id: 'P1', whats_app_business_phone_number_id: '344188022113673' });
+    });
+
+    it('n\'envoie jamais les deux ensemble', () => {
+        // Meta répond « (#200) Permissions error » si les deux sont fournis.
+        const result = buildPromotedObject('WHATSAPP', PAGE_WA, '+237650198196', '344188022113673');
+        expect(result.whats_app_business_phone_number_id).toBe('344188022113673');
+        expect(result).not.toHaveProperty('whatsapp_phone_number');
+    });
+
+    it('retombe sur le numéro quand l\'identifiant est absent ou invalide', () => {
+        expect(buildPromotedObject('WHATSAPP', PAGE_WA, '+237650198196', ''))
+            .toEqual({ page_id: 'P1', whatsapp_phone_number: '237650198196' });
+        expect(buildPromotedObject('WHATSAPP', PAGE_WA, '+237650198196', 'abc'))
+            .toEqual({ page_id: 'P1', whatsapp_phone_number: '237650198196' });
+    });
+
+    it('lit l\'identifiant enregistré sur le compte', () => {
+        expect(buildPromotedObject('WHATSAPP', { ...PAGE_WA, whatsapp_phone_number_id: '999' }))
+            .toEqual({ page_id: 'P1', whats_app_business_phone_number_id: '999' });
+    });
+});

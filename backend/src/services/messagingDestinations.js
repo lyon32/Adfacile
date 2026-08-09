@@ -161,7 +161,12 @@ function validateMessagingApps(apps, fbAccount = {}, options = {}) {
         const numero = normalizeWhatsAppNumber(
             options.whatsapp_phone_number || fbAccount.whatsapp_number
         );
-        if (!numero) {
+        // L'identifiant suffit : Meta en déduit le numéro.
+        const identifiant = String(
+            options.whatsapp_phone_number_id || fbAccount.whatsapp_phone_number_id || ''
+        ).trim();
+
+        if (!numero && !/^\d+$/.test(identifiant)) {
             errors.push('Indiquez le numéro WhatsApp Business à afficher dans la publicité.');
         }
     }

@@ -160,7 +160,8 @@ async function getFacebookAccount(userId) {
     const { data, error } = await supabase
         .from('facebook_accounts')
         .select('fb_user_id, fb_access_token, fb_account_id, fb_page_id, fb_page_name, '
-            + 'instagram_connected, instagram_account_id, whatsapp_connected, whatsapp_number')
+            + 'instagram_connected, instagram_account_id, whatsapp_connected, whatsapp_number, '
+            + 'whatsapp_phone_number_id')
         .eq('user_id', userId)
         .eq('is_active', true)
         .single();
@@ -185,15 +186,26 @@ async function getFacebookAccount(userId) {
 /**
  * Construit le promoted_object selon le type de destination
  */
-function buildPromotedObject(destinationType, fb, whatsappNumber = null) {
+function buildPromotedObject(destinationType, fb, whatsappNumber = null, whatsappNumberId = null) {
     if (isMessagingDestination(destinationType) || destinationType === 'INSTAGRAM_PROFILE') {
         const promoted = { page_id: fb.fb_page_id };
 
         // Une Page peut relier jusqu'à cinquante numéros WhatsApp : sans
         // désignation explicite, Meta n'en promeut aucun et le sélecteur de
         // numéro reste vide au niveau de la publicité.
+        //
+        // L'identifiant est préféré au numéro : Meta le rattache au compte
+        // WhatsApp Business, et en déduit lui-même le numéro. Le numéro seul
+        // est accepté mais reste une chaîne, sans lien vers le compte.
+        //
+        // Les deux ensemble sont refusés — « (#200) Permissions error » — donc
+        // ce choix est exclusif.
+        const id = String(whatsappNumberId || fb.whatsapp_phone_number_id || '').trim();
         const numero = normalizeWhatsAppNumber(whatsappNumber || fb.whatsapp_number);
-        if (numero) {
+
+        if (/^\d+$/.test(id)) {
+            promoted.whats_app_business_phone_number_id = id;
+        } else if (numero) {
             promoted.whatsapp_phone_number = numero;
         }
 
@@ -239,7 +251,8 @@ function resolveDestination(data, fb) {
     // numéro WhatsApp non relié produit un rejet à la relecture, donc après
     // que la campagne a déjà été créée.
     const validation = validateMessagingApps(apps, fb, {
-        whatsapp_phone_number: data.whatsapp_phone_number
+        whatsapp_phone_number: data.whatsapp_phone_number,
+        whatsapp_phone_number_id: data.whatsapp_phone_number_id
     });
     if (!validation.valid) {
         const err = new Error(validation.errors.join(' '));
@@ -253,6 +266,7 @@ function resolveDestination(data, fb) {
         whatsapp_phone_number: normalizeWhatsAppNumber(
             data.whatsapp_phone_number || fb.whatsapp_number
         ),
+        whatsapp_phone_number_id: data.whatsapp_phone_number_id || fb.whatsapp_phone_number_id || null,
         ...buildMessagingDestination(apps)
     };
 }
@@ -482,7 +496,8 @@ async function createFullCampaign(userId, data) {
 
         // Ajouter promoted_object seulement si nécessaire (Messenger, WhatsApp, Instagram)
         const promotedObject = buildPromotedObject(
-            destination.destination_type, fb, destination.whatsapp_phone_number
+            destination.destination_type, fb,
+            destination.whatsapp_phone_number, destination.whatsapp_phone_number_id
         );
         if (promotedObject) {
             adSetPayload.promoted_object = promotedObject;

@@ -59,6 +59,7 @@ const CreateCampaignPage = () => {
         destination_type: 'WEBSITE',
         messaging_destinations: [],
         whatsapp_phone_number: '',
+        whatsapp_phone_number_id: '',
         website_url: '',
 
         // Niveau Ad
