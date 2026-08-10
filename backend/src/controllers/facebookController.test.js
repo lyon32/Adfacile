@@ -22,7 +22,11 @@ const SCOPES_ATTENDUS = [
     'pages_read_engagement',
     'instagram_basic',
     'instagram_manage_insights',
-    'whatsapp_business_management'
+    'whatsapp_business_management',
+    // Publicités à formulaire : sans elles, /leadgen_forms est refusé et
+    // l'objectif Prospects ne peut pas lister les formulaires.
+    'pages_manage_ads',
+    'leads_retrieval'
 ];
 
 const BASE_ENV = {
@@ -89,7 +93,7 @@ describe('getAuthUrl', () => {
         expect(url.searchParams.get('redirect_uri')).toBe(REDIRECT_URI);
     });
 
-    it('demande les 7 permissions attendues', async () => {
+    it('demande les permissions attendues, sans en omettre', async () => {
         const url = await genererUrl();
         const scopes = url.searchParams.get('scope').split(',');
 
