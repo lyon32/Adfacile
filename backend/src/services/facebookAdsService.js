@@ -83,7 +83,20 @@ function getOptimizationGoal(objective) {
 function buildTargeting(targeting) {
     const result = {
         age_min: targeting.age_min || 18,
-        age_max: targeting.age_max || 65
+        age_max: targeting.age_max || 65,
+
+        // Meta exige un choix explicite sur l'audience Advantage, et refuse la
+        // création sans lui (sous-code 1870227). Le champ vit **dans** la
+        // spécification de ciblage : le placer à côté, au niveau de l'ensemble
+        // de publicités, revient à ne pas le fournir du tout.
+        //
+        // 0 par défaut : le ciblage composé par l'utilisateur est respecté tel
+        // quel. À 1, Meta s'autorise à élargir l'audience au-delà de ce qui a
+        // été demandé, ce qui ne doit pas arriver sans que l'utilisateur l'ait
+        // choisi.
+        targeting_automation: {
+            advantage_audience: targeting.advantage_audience === 1 ? 1 : 0
+        }
     };
 
     // ═══════════════════════════════════════════════════════════════════
@@ -547,9 +560,6 @@ async function createFullCampaign(userId, data) {
             optimization_goal: destination.optimization_goal,
             bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
             targeting: buildTargeting(data.targeting),
-            targeting_automation: {
-                advantage_audience: 0
-            },
             destination_type: destination.destination_type,
             status: 'PAUSED',
             start_time: debutDeJournee(data.start_date, timezone),

@@ -335,3 +335,33 @@ describe('création publicitaire — champs auparavant absents', () => {
         expect(typeof svc.createFullCampaign).toBe('function');
     });
 });
+
+describe('buildTargeting — audience Advantage', () => {
+    const { buildTargeting } = require('./facebookAdsService');
+    const BASE = { age_min: 18, age_max: 65, locations: [{ key: '1', type: 'city' }] };
+
+    it('place targeting_automation DANS le ciblage, pas à côté', () => {
+        // Meta refuse la création sans ce champ (sous-code 1870227), et le
+        // veut dans la spécification de ciblage. L'envoyer au niveau de
+        // l'ensemble de publicités revient à ne pas le fournir.
+        const r = buildTargeting(BASE);
+        expect(r.targeting_automation).toEqual({ advantage_audience: 0 });
+    });
+
+    it('refuse l\'élargissement automatique par défaut', () => {
+        // À 1, Meta s'autorise à dépasser le ciblage demandé.
+        expect(buildTargeting(BASE).targeting_automation.advantage_audience).toBe(0);
+    });
+
+    it('accepte l\'élargissement s\'il est demandé explicitement', () => {
+        expect(buildTargeting({ ...BASE, advantage_audience: 1 })
+            .targeting_automation.advantage_audience).toBe(1);
+    });
+
+    it('n\'accepte que 0 ou 1, jamais une valeur approchante', () => {
+        [true, '1', 2, null].forEach(v => {
+            expect(buildTargeting({ ...BASE, advantage_audience: v })
+                .targeting_automation.advantage_audience).toBe(0);
+        });
+    });
+});
