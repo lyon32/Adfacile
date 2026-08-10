@@ -32,3 +32,6 @@ dist-ssr
 # Claude Code
 .mcp.json
 .claude/settings.local.json
+
+# Binaires de developpement telecharges a la demande (cloudflared)
+.tools/

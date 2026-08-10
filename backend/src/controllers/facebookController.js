@@ -249,6 +249,26 @@ const handleCallback = async (req, res) => {
         }
 
         // 6. Delete old connections for this user
+        // L'identifiant du numéro WhatsApp est saisi par l'utilisateur : l'API
+        // ne l'expose pas quand le numéro vit dans un portefeuille auquel
+        // l'application n'a pas accès. Comme la reconnexion supprime puis
+        // réinsère les lignes, il était perdu à chaque fois, sans que rien ne
+        // le signale — et la publicité repartait sans numéro à promouvoir.
+        const { data: ancien } = await supabase
+            .from('facebook_accounts')
+            .select('fb_page_id, whatsapp_phone_number_id')
+            .eq('user_id', userId);
+
+        const idsWhatsAppParPage = Object.fromEntries(
+            (ancien || [])
+                .filter(l => l.whatsapp_phone_number_id)
+                .map(l => [l.fb_page_id, l.whatsapp_phone_number_id])
+        );
+
+        if (Object.keys(idsWhatsAppParPage).length > 0) {
+            logger.info(`💾 Identifiants WhatsApp conservés pour ${Object.keys(idsWhatsAppParPage).length} page(s)`);
+        }
+
         const { error: deleteError } = await supabase
             .from('facebook_accounts')
             .delete()
@@ -305,6 +325,7 @@ const handleCallback = async (req, res) => {
                     whatsapp_number: (whatsapp && !whatsapp._fallback_business_id) ? whatsapp.phone_number : null,
                     whatsapp_business_id: (whatsapp && !whatsapp._fallback_business_id) ? whatsapp.id : null,
                     fb_business_id: (whatsapp && whatsapp._fallback_business_id) ? whatsapp._fallback_business_id : (whatsapp ? whatsapp.id : null), // Fallback to store business ID for OAuth link
+                    whatsapp_phone_number_id: idsWhatsAppParPage[page.id] || null,
                     is_active: i === 0 // First page active by default
                 });
 
