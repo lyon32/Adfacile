@@ -348,11 +348,18 @@ const updateStatus = async (req, res) => {
         }
 
         // Audit log
-        await supabase.from('audit_logs').insert({
-            user_id: userId,
-            action: `campaign_${status}`,
-            details: { campaign_id: id }
-        }).catch(() => { });
+        // Même défaut que dans deleteCampaign : .catch n'existe pas sur le
+        // constructeur Supabase, et l'exception remontait en erreur 500 alors
+        // que le statut avait bien été changé.
+        try {
+            await supabase.from('audit_logs').insert({
+                user_id: userId,
+                action: `campaign_${status}`,
+                details: { campaign_id: id }
+            });
+        } catch (auditErr) {
+            logger.warn('⚠️ Journal d\'audit non écrit:', auditErr.message);
+        }
 
         return res.json({ success: true, data: updated });
     } catch (error) {
@@ -370,6 +377,35 @@ const deleteCampaign = async (req, res) => {
         const { id } = req.params;
         const userId = req.user.id;
 
+        const { data: campaign } = await supabase
+            .from('campaigns')
+            .select('id, fb_campaign_id, fb_adset_id, fb_ad_id')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .single();
+
+        // Supprimer chez Facebook AVANT la base. L'inverse effacerait la seule
+        // trace de la campagne tout en la laissant vivre chez Meta : elle
+        // disparaîtrait du tableau de bord en continuant de dépenser, sans plus
+        // aucun moyen de la retrouver depuis AdsFacile.
+        if (campaign?.fb_campaign_id) {
+            try {
+                await facebookAdsService.deleteCampaignOnFacebook(userId, campaign);
+            } catch (fbErr) {
+                logger.error('❌ Suppression refusée par Facebook:', fbErr.response?.data || fbErr.message);
+                const translated = fbErr.response?.data?.error
+                    ? translateFacebookError(fbErr.response.data.error)
+                    : { title: 'Erreur Facebook', message: fbErr.message };
+
+                return res.status(400).json({
+                    success: false,
+                    error: 'facebook_api_error',
+                    title: translated.title,
+                    message: `La campagne n'a pas pu être supprimée sur Facebook. ${translated.message}`
+                });
+            }
+        }
+
         const { error } = await supabase
             .from('campaigns')
             .delete()
@@ -380,12 +416,18 @@ const deleteCampaign = async (req, res) => {
             return res.status(500).json({ success: false, message: 'Erreur suppression' });
         }
 
-        // Audit log
-        await supabase.from('audit_logs').insert({
-            user_id: userId,
-            action: 'campaign_deleted',
-            details: { campaign_id: id }
-        }).catch(() => { });
+        // Le constructeur Supabase est « thenable » mais n'expose pas .catch :
+        // l'appeler ainsi levait « .catch is not a function », renvoyant une
+        // erreur 500 alors que la suppression avait déjà eu lieu.
+        try {
+            await supabase.from('audit_logs').insert({
+                user_id: userId,
+                action: 'campaign_deleted',
+                details: { campaign_id: id }
+            });
+        } catch (auditErr) {
+            logger.warn('⚠️ Journal d\'audit non écrit:', auditErr.message);
+        }
 
         return res.json({ success: true, message: 'Campagne supprimée' });
     } catch (error) {

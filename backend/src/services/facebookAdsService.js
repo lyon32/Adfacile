@@ -886,9 +886,40 @@ async function updateCampaignStatus(userId, campaign, status) {
     return { status: fbStatus, levels: ordonnes.length };
 }
 
+/**
+ * Supprime une campagne chez Meta.
+ *
+ * Supprimer la seule ligne locale ne suffit pas : la campagne disparaît du
+ * tableau de bord mais continue d'exister chez Facebook — et de dépenser si
+ * elle diffuse. L'utilisateur croit l'avoir arrêtée sans l'avoir fait.
+ *
+ * Supprimer la campagne emporte l'ensemble de publicités et la publicité :
+ * Meta supprime l'arborescence.
+ */
+async function deleteCampaignOnFacebook(userId, campaign) {
+    if (!campaign?.fb_campaign_id) return { deleted: false, reason: 'aucun identifiant Facebook' };
+
+    const fb = await getFacebookAccount(userId);
+    if (!fb) {
+        const err = new Error('Compte Facebook non connecté.');
+        err.userFacing = true;
+        throw err;
+    }
+
+    const accessToken = decryptToken(fb.fb_access_token);
+
+    await axios.delete(`${FACEBOOK_GRAPH_URL}/${campaign.fb_campaign_id}`, {
+        params: { access_token: accessToken }
+    });
+
+    logger.info(`🗑️ Campagne ${campaign.fb_campaign_id} supprimée chez Facebook`);
+    return { deleted: true };
+}
+
 module.exports = {
     createFullCampaign,
     updateCampaignStatus,
+    deleteCampaignOnFacebook,
     getAdAccountTimezone,
     getFacebookAccount,
     buildTargeting,
