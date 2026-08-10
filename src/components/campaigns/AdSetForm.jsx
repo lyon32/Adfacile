@@ -524,6 +524,55 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                     </div>
                                 )}
 
+                                {/* Bandeau de messagerie sur une publicité web.
+                                    Le visiteur arrive bien sur le site ; un bouton
+                                    lui propose d'écrire à l'entreprise. Sans cela,
+                                    le numéro relié à la Page n'apparaît nulle part
+                                    dans la publicité. */}
+                                {(campaignData.destination_type === 'WEBSITE' || !campaignData.destination_type) && (
+                                    <div className="adset-field-group">
+                                        <label className="adset-label">
+                                            Bouton pour vous écrire <span className="optional">(optionnel)</span>
+                                        </label>
+                                        <div className="messaging-apps">
+                                            {[
+                                                { value: 'whatsapp', label: 'WhatsApp', icon: '📱' },
+                                                { value: 'messenger', label: 'Messenger', icon: '💬' },
+                                                { value: 'instagram', label: 'Instagram', icon: '📷' }
+                                            ].map(app => {
+                                                const choisies = campaignData.website_message_apps || [];
+                                                const coche = choisies.includes(app.value);
+                                                return (
+                                                    <label
+                                                        key={app.value}
+                                                        className={`messaging-app ${coche ? 'active' : ''}`}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            className="messaging-app-checkbox"
+                                                            checked={coche}
+                                                            onChange={() => updateField(
+                                                                'website_message_apps',
+                                                                coche
+                                                                    ? choisies.filter(v => v !== app.value)
+                                                                    : [...choisies, app.value]
+                                                            )}
+                                                        />
+                                                        <span className="dest-icon">{app.icon}</span>
+                                                        <span className="dest-content">
+                                                            <span className="dest-label">{app.label}</span>
+                                                        </span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                        <p className="adset-hint">
+                                            Les visiteurs arrivent sur votre site, avec un bouton pour
+                                            vous écrire. Laissez vide pour une publicité vers le site seul.
+                                        </p>
+                                    </div>
+                                )}
+
                                 {campaignData.destination_type === MESSAGING_UI_VALUE && (
                                     <MessagingDestinationPicker
                                         selected={campaignData.messaging_destinations || ['messenger']}

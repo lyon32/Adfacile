@@ -59,6 +59,7 @@ const CreateCampaignPage = () => {
         cost_per_result_goal: '',
         destination_type: 'WEBSITE',
         messaging_destinations: [],
+        website_message_apps: [],
         multi_advertiser_ads: true,
         whatsapp_phone_number_id: '',
         website_url: '',
@@ -268,6 +269,7 @@ const CreateCampaignPage = () => {
                                             cost_per_result_goal: '',
                                             destination_type: 'WEBSITE',
                                             messaging_destinations: [],
+                                            website_message_apps: [],
                                             // Ces deux-là survivaient d'une campagne à
                                             // l'autre : l'identifiant WhatsApp de la
                                             // précédente était réutilisé en silence.
