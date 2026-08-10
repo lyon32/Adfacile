@@ -14,7 +14,8 @@ const {
     isMessagingDestination,
     validateMessagingApps,
     buildMessagingDestination,
-    normalizeWhatsAppNumber
+    normalizeWhatsAppNumber,
+    buildMessageExtensions
 } = require('./messagingDestinations');
 const {
     fcfaToUsdCents,
@@ -707,14 +708,36 @@ async function createFullCampaign(userId, data) {
             creativePayload.asset_feed_spec = destination.asset_feed_spec;
         }
 
-        const creativeResponse = await axios.post(
-            `${FACEBOOK_GRAPH_URL}/${adAccountId}/adcreatives`,
-            creativePayload,
-            { params: { access_token: accessToken } }
-        );
-        const fbCreativeId = creativeResponse.data.id;
-        created.creative = fbCreativeId;
-        logger.info(`✅ Ad Creative créé : ${fbCreativeId}`);
+        // Bandeau de messagerie sur une publicité qui mène vers un site web :
+        // la personne arrive bien sur le site, avec un bouton pour écrire à
+        // l'entreprise. Meta impose alors que la création soit passée **en
+        // ligne** dans POST /ads — la déclarer séparément échoue avec
+        // « (#3) Application does not have the capability ».
+        const extensions = destination.is_messaging
+            ? null
+            : buildMessageExtensions(data.website_message_apps);
+
+        if (extensions) {
+            creativePayload.asset_feed_spec = {
+                ...(creativePayload.asset_feed_spec || {}),
+                ...extensions
+            };
+        }
+
+        let fbCreativeId = null;
+
+        if (!extensions) {
+            const creativeResponse = await axios.post(
+                `${FACEBOOK_GRAPH_URL}/${adAccountId}/adcreatives`,
+                creativePayload,
+                { params: { access_token: accessToken } }
+            );
+            fbCreativeId = creativeResponse.data.id;
+            created.creative = fbCreativeId;
+            logger.info(`✅ Ad Creative créé : ${fbCreativeId}`);
+        } else {
+            logger.info('✅ Création passée en ligne (bandeau de messagerie)');
+        }
 
         // 5. Créer l'Ad
         logger.info('📢 Étape 4/4 : Création Ad...');
@@ -723,7 +746,7 @@ async function createFullCampaign(userId, data) {
             {
                 name: data.ad_name || `${data.campaign_name} - Ad`,
                 adset_id: fbAdSetId,
-                creative: { creative_id: fbCreativeId },
+                creative: fbCreativeId ? { creative_id: fbCreativeId } : creativePayload,
                 status: 'PAUSED'
             },
             { params: { access_token: accessToken } }
