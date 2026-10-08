@@ -32,19 +32,16 @@ const tokenHealth = require('../services/facebookTokenHealth');
 const FACEBOOK_SCOPES = [
     'pages_show_list',
     'ads_management',
+    'ads_read',
     'business_management',
     'pages_read_engagement',
-    // Instagram permissions
+    // Instagram : identité Instagram des publicités.
     'instagram_basic',
-    'instagram_manage_insights',
-    // WhatsApp permissions
-    'whatsapp_business_management',
-    // Publicités à formulaire : sans elles, /leadgen_forms répond « Requires
-    // pages_manage_ads permission » et l'objectif Prospects ne peut pas lister
-    // les formulaires. En mode Développement, Meta les accorde sans revue aux
-    // personnes ayant un rôle sur l'application.
-    'pages_manage_ads',
-    'leads_retrieval'
+    // WhatsApp : numéro de la Page pour les destinations WhatsApp.
+    'whatsapp_business_management'
+    // Volontairement absentes : pages_manage_ads et leads_retrieval (aucun
+    // appel /leadgen_forms ni /leads) et instagram_manage_insights (jamais
+    // appelée). Voir docs/meta/dossier-revue-application.md.
 ].join(',');
 
 /**

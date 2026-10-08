@@ -18,15 +18,14 @@ const USER_ID = 'c42ffbf3-e9bf-44af-90cf-044b9feb8e74';
 const SCOPES_ATTENDUS = [
     'pages_show_list',
     'ads_management',
+    'ads_read',
     'business_management',
     'pages_read_engagement',
     'instagram_basic',
-    'instagram_manage_insights',
-    'whatsapp_business_management',
-    // Publicités à formulaire : sans elles, /leadgen_forms est refusé et
-    // l'objectif Prospects ne peut pas lister les formulaires.
-    'pages_manage_ads',
-    'leads_retrieval'
+    'whatsapp_business_management'
+    // Retirées : pages_manage_ads, leads_retrieval (aucun appel /leadgen_forms
+    // ni /leads dans le code) et instagram_manage_insights (jamais appelée).
+    // Demander ce qu'on n'utilise pas est un motif de refus à la revue Meta.
 ];
 
 const BASE_ENV = {
