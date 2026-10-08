@@ -1,14 +1,14 @@
 /**
- * Contrôleur Billing — Plans, Paiements CamPay & Historique
+ * Contrôleur Billing — Plans, Paiements SasPay & Historique
  * AdsFacile Backend
  *
- * Intégration CamPay Mobile Money (MTN & Orange)
- * Mode Sandbox par défaut pour tests
+ * Encaissement Mobile Money multi-pays via SasPay (remplace CamPay, oct. 2026).
+ * Clé sk_test_ = paiements simulés ; sk_live_ = argent réel.
  */
 
 const { supabase, supabaseAdmin } = require('../config/supabase');
-const campayService = require('../services/campayService');
-const campayConfig = require('../config/campay');
+const saspayService = require('../services/saspayService');
+const saspayConfig = require('../config/saspay');
 const logger = require('../utils/logger');
 const { GRAPH_URL } = require('../config/facebook');
 
@@ -35,7 +35,7 @@ const PLANS = [
     {
         id: 'starter',
         name: 'Starter',
-        price: 25, // ⚠️ TEMPORAIRE: 25 XAF pour test CamPay sandbox (prix réel: 5000)
+        price: 5000,
         currency: 'FCFA',
         period: 'mois',
         features: [
@@ -96,7 +96,7 @@ const getPricingPlans = async (req, res) => {
             success: true,
             data: {
                 plans: PLANS,
-                sandbox_mode: campayConfig.env === 'sandbox'
+                sandbox_mode: saspayConfig.isTestMode
             }
         });
     } catch (error) {
@@ -192,19 +192,18 @@ const getCurrentSubscription = async (req, res) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// INITIATE UPGRADE (CamPay Mobile Money)
+// INITIATE UPGRADE (SasPay Mobile Money)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const initiateUpgrade = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { target_plan, payment_method, phone } = req.body;
+        const { target_plan, country, network, phone, otp } = req.body;
 
-        // Validations
-        if (!target_plan || !payment_method) {
+        if (!target_plan || !country || !network) {
             return res.status(400).json({
                 success: false,
-                message: 'Plan cible et méthode de paiement requis'
+                message: 'Plan, pays et réseau de paiement requis'
             });
         }
 
@@ -213,17 +212,34 @@ const initiateUpgrade = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Plan invalide' });
         }
 
-        if (!phone || !phone.match(/^\+237\d{9}$/)) {
+        const telephone = String(phone || '').replace(/[^\d+]/g, '');
+        if (telephone.replace('+', '').length < 8) {
+            return res.status(400).json({ success: false, message: 'Numéro de téléphone invalide' });
+        }
+
+        // Le réseau doit exister et encaisser pour ce compte SasPay : on le
+        // vérifie avant de créer quoi que ce soit.
+        const choix = await saspayService.findNetwork(country, network);
+        if (!choix) {
             return res.status(400).json({
                 success: false,
-                message: 'Numéro invalide (format: +237XXXXXXXXX)'
+                message: "Ce réseau de paiement n'est pas disponible dans ce pays."
             });
         }
 
-        // Vérifier que c'est bien un upgrade
+        const tarif = prixPourDevise(targetPlanObj.price, choix.country.currency);
+
+        if (choix.network.otp_required && !otp) {
+            return res.status(400).json({
+                success: false,
+                code: 'otp_required',
+                message: choix.network.otp_instructions || 'Ce réseau demande un code de paiement préalable.'
+            });
+        }
+
         const { data: user } = await supabase
             .from('users')
-            .select('plan')
+            .select('plan, email, first_name, last_name')
             .eq('id', userId)
             .single();
 
@@ -231,38 +247,29 @@ const initiateUpgrade = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Utilisateur non trouvé' });
         }
 
-        const currentLevel = PLAN_ORDER[user.plan] ?? 0;
-        const targetLevel = PLAN_ORDER[target_plan] ?? 0;
-
-        if (targetLevel <= currentLevel) {
+        if ((PLAN_ORDER[target_plan] ?? 0) <= (PLAN_ORDER[user.plan] ?? 0)) {
             return res.status(400).json({
                 success: false,
                 message: 'Vous ne pouvez pas rétrograder depuis cette page'
             });
         }
 
-        // Calculer montant (en sandbox: max 25 XAF)
-        const realAmount = targetPlanObj.price;
-        const chargeAmount = campayConfig.env === 'sandbox'
-            ? Math.min(realAmount, campayConfig.maxTestAmount)
-            : realAmount;
+        const externalRef = saspayService.generateExternalReference();
+        const frais = tarif.local ? saspayService.computePayinFee(tarif.amount, choix.network.tiers) : null;
 
-        // Générer external reference
-        const externalRef = campayService.generateExternalReference();
-        const operator = campayService.getOperatorFromPhone(phone);
-
-        // Créer enregistrement payment en base (status: pending)
         const { data: payment, error: dbError } = await supabase
             .from('payments')
             .insert({
                 user_id: userId,
-                amount: chargeAmount,
-                real_amount: realAmount,
-                currency: 'XAF',
-                target_plan: target_plan,
-                payment_method: payment_method,
-                phone_number: phone,
-                operator: operator,
+                amount: tarif.amount,
+                real_amount: targetPlanObj.price,
+                currency: tarif.currency,
+                target_plan,
+                payment_method: network,
+                phone_number: telephone,
+                operator: choix.network.name,
+                country,
+                provider: 'saspay',
                 status: 'pending',
                 external_reference: externalRef
             })
@@ -274,60 +281,168 @@ const initiateUpgrade = async (req, res) => {
             return res.status(500).json({ success: false, message: 'Erreur création du paiement' });
         }
 
-        const paymentId = payment.id;
+        let saspay;
+        try {
+            saspay = await saspayService.initiatePayment({
+                amount: tarif.amount,
+                currency: tarif.currency,
+                country,
+                network,
+                phone: telephone,
+                customer: {
+                    email: user.email,
+                    first_name: user.first_name || 'Client',
+                    last_name: user.last_name || 'AdsFacile'
+                },
+                description: `AdsFacile ${targetPlanObj.name} — 1 mois`,
+                externalReference: externalRef,
+                metadata: { payment_id: payment.id, user_id: userId, target_plan },
+                otp
+            });
+        } catch (err) {
+            await supabase.from('payments')
+                .update({ status: 'failed', updated_at: new Date().toISOString() })
+                .eq('id', payment.id);
+            throw err;
+        }
 
-        // Appel CamPay
-        logger.info(`💳 Initiating CamPay payment: ${chargeAmount} XAF → ${phone} (plan: ${target_plan})`);
-
-        const campayResponse = await campayService.initiatePayment({
-            amount: chargeAmount,
-            phone: phone,
-            description: `AdsFacile ${targetPlanObj.name} — 1 mois`,
-            externalReference: externalRef
-        });
-
-        // Mettre à jour avec la référence CamPay
         await supabase
             .from('payments')
-            .update({
-                campay_reference: campayResponse.reference,
-                operator: campayResponse.operator || operator
-            })
-            .eq('id', paymentId);
+            .update({ provider_reference: saspay.id })
+            .eq('id', payment.id);
 
-        logger.info(`✅ CamPay payment initiated: ref=${campayResponse.reference}`);
+        logger.info(`✅ SasPay payment initiated: ${saspay.id} (${tarif.amount} ${tarif.currency}, ${country}/${network})`);
 
         return res.status(200).json({
             success: true,
             data: {
-                payment_id: paymentId,
-                reference: campayResponse.reference,
+                payment_id: payment.id,
+                reference: saspay.id,
                 external_reference: externalRef,
-                amount: chargeAmount,
-                real_amount: realAmount,
-                currency: 'FCFA',
-                target_plan: target_plan,
+                amount: tarif.amount,
+                fee: frais,
+                total: frais === null ? null : tarif.amount + frais,
+                currency: tarif.currency,
+                target_plan,
                 plan_name: targetPlanObj.name,
-                payment_method,
-                operator: campayResponse.operator || operator,
-                ussd_code: campayResponse.ussd_code || null,
+                network,
+                operator: choix.network.name,
+                checkout_url: saspay.checkout_url || null,
                 status: 'pending',
-                sandbox_mode: campayConfig.env === 'sandbox',
-                sandbox_info: campayConfig.env === 'sandbox' ? {
-                    message: `Mode test — Montant facturé: ${chargeAmount} XAF (max sandbox: ${campayConfig.maxTestAmount} XAF)`,
-                    test_numbers: campayConfig.testNumbers
-                } : null
+                sandbox_mode: saspayConfig.isTestMode
             }
         });
 
     } catch (error) {
         logger.error('❌ Erreur initiateUpgrade:', error.message);
-        return res.status(400).json({
+        return res.status(error.status === 401 || error.status >= 500 ? 502 : 400).json({
             success: false,
-            message: error.message || 'Erreur lors de l\'initiation du paiement'
+            message: error.message || "Erreur lors de l'initiation du paiement"
         });
     }
 };
+
+/**
+ * Montant à encaisser pour un pays.
+ * Les plans sont fixés en FCFA : XAF et XOF sont à parité (1 = 1), donc même
+ * montant dans la devise locale. Ailleurs (GHS, KES, CDF…), le prix part en
+ * XAF et SasPay convertit ; s'il refuse, son message est rendu au client.
+ * `local` indique si les frais SasPay (exprimés en devise locale) peuvent être
+ * calculés d'avance.
+ */
+function prixPourDevise(prixFcfa, devise) {
+    if (devise === 'XAF' || devise === 'XOF') return { amount: prixFcfa, currency: devise, local: true };
+    return { amount: prixFcfa, currency: 'XAF', local: false };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PAYMENT NETWORKS (pays et réseaux SasPay disponibles)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const getPaymentNetworks = async (req, res) => {
+    try {
+        const pays = await saspayService.listPaymentNetworks();
+        const plan = PLANS.find(p => p.id === req.query.plan);
+
+        const data = pays
+            .map(p => ({
+                code: p.code,
+                name: p.name,
+                currency: p.currency,
+                networks: p.networks.map(n => {
+                    const tarif = plan ? prixPourDevise(plan.price, p.currency) : null;
+                    const fee = tarif && tarif.local ? saspayService.computePayinFee(tarif.amount, n.tiers) : null;
+                    return {
+                        code: n.code,
+                        name: n.name,
+                        otp_required: n.otp_required,
+                        otp_instructions: n.otp_instructions,
+                        amount: tarif ? tarif.amount : null,
+                        amount_currency: tarif ? tarif.currency : null,
+                        fee,
+                        total: tarif && fee !== null ? tarif.amount + fee : null
+                    };
+                })
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+
+        return res.json({ success: true, data: { countries: data, sandbox_mode: saspayConfig.isTestMode } });
+    } catch (error) {
+        logger.error('❌ Erreur getPaymentNetworks:', error.message);
+        return res.status(502).json({ success: false, message: 'Impossible de charger les moyens de paiement. Réessayez dans un instant.' });
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FINALISATION (idempotente)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Passe un paiement « pending » à son statut final, une seule fois.
+ * La mise à jour est conditionnée à status='pending' : un webhook rejoué ou
+ * un polling concurrent ne réactive jamais le plan une seconde fois.
+ * @returns {Promise<string>} statut final
+ */
+async function finaliserPaiement(payment, nouveauStatut) {
+    if (nouveauStatut === 'pending') return payment.status;
+
+    const { data: modifies } = await supabaseAdmin
+        .from('payments')
+        .update({ status: nouveauStatut, updated_at: new Date().toISOString() })
+        .eq('id', payment.id)
+        .eq('status', 'pending')
+        .select('id');
+
+    if (!modifies || modifies.length === 0) {
+        // Déjà finalisé par un autre canal (webhook ou polling).
+        return nouveauStatut;
+    }
+
+    if (nouveauStatut === 'successful') {
+        try {
+            await activatePlan(payment.user_id, payment.target_plan);
+            logger.info(`🎉 Plan ${payment.target_plan} activé pour user ${payment.user_id}`);
+        } catch (err) {
+            logger.error('❌ Erreur activation plan:', err.message);
+            await supabaseAdmin.from('payments')
+                .update({ status: 'activation_failed', updated_at: new Date().toISOString() })
+                .eq('id', payment.id);
+            return 'activation_failed';
+        }
+    }
+    return nouveauStatut;
+}
+
+/** Retrouve un paiement par référence SasPay (ou CamPay pour l'historique). */
+async function trouverPaiement(reference, userId = null) {
+    for (const colonne of ['provider_reference', 'campay_reference']) {
+        let q = supabaseAdmin.from('payments').select('*').eq(colonne, reference);
+        if (userId) q = q.eq('user_id', userId);
+        const { data } = await q.maybeSingle();
+        if (data) return data;
+    }
+    return null;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CHECK PAYMENT STATUS (Polling from frontend)
@@ -342,147 +457,85 @@ const checkPaymentStatusEndpoint = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Référence requise' });
         }
 
-        // Récupérer le paiement en base
-        const { data: payment, error } = await supabase
-            .from('payments')
-            .select('*')
-            .eq('campay_reference', reference)
-            .eq('user_id', userId)
-            .single();
-
-        if (error || !payment) {
+        const payment = await trouverPaiement(reference, userId);
+        if (!payment) {
             return res.status(404).json({ success: false, message: 'Paiement introuvable' });
         }
 
-        // Si déjà finalisé en base
-        if (payment.status === 'successful' || payment.status === 'failed') {
-            // Safety net: si le paiement est "successful" mais le plan n'a pas changé,
-            // retenter l'activation (cas de race condition)
-            if (payment.status === 'successful') {
-                const { data: user } = await supabase
-                    .from('users')
-                    .select('plan')
-                    .eq('id', userId)
-                    .single();
-
-                if (user && user.plan !== payment.target_plan) {
-                    logger.warn(`⚠️ Plan mismatch detected! Payment successful for ${payment.target_plan} but user still on ${user.plan}. Retrying activation...`);
-                    try {
-                        await activatePlan(userId, payment.target_plan);
-                        logger.info(`🎉 Plan ${payment.target_plan} activé (retry) pour user ${userId}`);
-                    } catch (activateErr) {
-                        logger.error('❌ Retry activation failed:', activateErr.message);
-                    }
-                }
-            }
-
-            return res.json({
-                success: true,
-                data: {
-                    status: payment.status,
-                    payment_id: payment.id,
-                    target_plan: payment.target_plan
-                }
-            });
-        }
-
-        // Appeler CamPay pour statut actuel
-        const campayStatus = await campayService.checkPaymentStatus(reference);
-        const newStatus = campayStatus.status.toLowerCase();
-
-        // Mettre à jour en base si changement
-        if (newStatus !== payment.status) {
-            // Si successful → activer le plan D'ABORD, puis mettre à jour le statut
-            if (newStatus === 'successful') {
-                try {
-                    await activatePlan(userId, payment.target_plan);
-                    logger.info(`🎉 Plan ${payment.target_plan} activé pour user ${userId}`);
-                } catch (activateErr) {
-                    logger.error('❌ Erreur activation plan:', activateErr.message);
-                    // Marquer en erreur pour pouvoir retenter
-                    await supabase
-                        .from('payments')
-                        .update({ status: 'activation_failed', updated_at: new Date().toISOString() })
-                        .eq('id', payment.id);
-                    return res.status(500).json({
-                        success: false,
-                        message: 'Paiement reçu mais erreur activation du plan. Veuillez réessayer.'
-                    });
-                }
-            }
-
-            // Mettre à jour le statut seulement après activation réussie
-            await supabase
-                .from('payments')
-                .update({ status: newStatus, updated_at: new Date().toISOString() })
-                .eq('id', payment.id);
+        let statut = payment.status;
+        if (statut === 'pending' && payment.provider === 'saspay') {
+            const verif = await saspayService.checkPaymentStatus(reference);
+            statut = await finaliserPaiement(payment, verif.status);
         }
 
         return res.json({
             success: true,
-            data: {
-                status: newStatus,
-                payment_id: payment.id,
-                target_plan: payment.target_plan,
-                reason: campayStatus.reason || null
-            }
+            data: { status: statut, payment_id: payment.id, target_plan: payment.target_plan }
         });
 
     } catch (error) {
         logger.error('❌ Erreur check payment status:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
+        return res.status(502).json({ success: false, message: 'Statut du paiement indisponible pour le moment.' });
     }
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// WEBHOOK CAMPAY (callback automatique)
+// CONFIRM OTP (code reçu par SMS après la demande de paiement)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const confirmPaymentOtp = async (req, res) => {
+    try {
+        const { reference, otp } = req.body;
+        if (!reference || !otp) {
+            return res.status(400).json({ success: false, message: 'Référence et code requis' });
+        }
+        const payment = await trouverPaiement(reference, req.user.id);
+        if (!payment) return res.status(404).json({ success: false, message: 'Paiement introuvable' });
+
+        const r = await saspayService.confirmOtp(reference, String(otp).trim());
+        const statut = await finaliserPaiement(payment, r.status);
+        return res.json({ success: true, data: { status: statut, payment_id: payment.id } });
+    } catch (error) {
+        logger.error('❌ Erreur confirmPaymentOtp:', error.message);
+        return res.status(400).json({ success: false, message: error.message || 'Code refusé' });
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// WEBHOOK SASPAY (corps brut, signature HMAC)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const handleWebhook = async (req, res) => {
     try {
-        const signature = req.headers['x-campay-signature'];
-        const payload = req.body;
-
-        logger.info('📬 CamPay webhook received:', JSON.stringify(payload).substring(0, 200));
-
-        // Vérifier signature
-        if (!campayService.verifyWebhookSignature(payload, signature)) {
-            logger.error('❌ Invalid webhook signature');
-            return res.status(401).json({ error: 'invalid_signature' });
+        // Corps brut fourni par express.raw (server.js) : la signature porte
+        // sur les octets reçus, pas sur un JSON re-sérialisé.
+        const brut = Buffer.isBuffer(req.body) ? req.body : Buffer.from('');
+        const valide = saspayService.verifyWebhookSignature(
+            brut,
+            req.headers['x-webhook-signature'],
+            req.headers['x-webhook-timestamp']
+        );
+        if (!valide) {
+            logger.error('❌ Webhook SasPay : signature invalide ou expirée');
+            return res.status(403).json({ error: 'invalid_signature' });
         }
 
-        const { reference, status, external_reference } = payload;
+        const { event, data } = JSON.parse(brut.toString('utf8'));
+        logger.info(`📬 Webhook SasPay ${event} pour ${data?.id}`);
 
-        // Récupérer le paiement
-        const { data: payment, error } = await supabase
-            .from('payments')
-            .select('*')
-            .eq('campay_reference', reference)
-            .single();
-
-        if (error || !payment) {
-            logger.error('❌ Payment not found for webhook:', reference);
-            return res.status(404).json({ error: 'payment_not_found' });
+        if (!['transaction.success', 'transaction.failed', 'transaction.cancelled'].includes(event)) {
+            return res.json({ success: true, ignored: event });
         }
 
-        const newStatus = status.toLowerCase();
-
-        // Mettre à jour statut
-        await supabase
-            .from('payments')
-            .update({ status: newStatus, updated_at: new Date().toISOString() })
-            .eq('id', payment.id);
-
-        // Si successful → activer plan
-        if (newStatus === 'successful') {
-            await activatePlan(payment.user_id, payment.target_plan);
-            logger.info(`🎉 [Webhook] Plan ${payment.target_plan} activé pour user ${payment.user_id}`);
+        const payment = await trouverPaiement(data?.id);
+        if (!payment) {
+            // 200 : pas un abonnement AdsFacile, inutile que SasPay le renvoie.
+            logger.warn(`⚠️ Webhook SasPay : paiement inconnu ${data?.id}`);
+            return res.json({ success: true, ignored: 'unknown_payment' });
         }
 
-        return res.json({ success: true });
+        const statut = await finaliserPaiement(payment, saspayService.normalizeStatus(data.status));
+        return res.json({ success: true, status: statut });
 
     } catch (error) {
         logger.error('❌ Webhook error:', error.message);
@@ -547,7 +600,7 @@ const getPaymentHistory = async (req, res) => {
     try {
         const { data: payments, error } = await supabase
             .from('payments')
-            .select('id, amount, real_amount, currency, target_plan, payment_method, operator, phone_number, status, campay_reference, external_reference, created_at')
+            .select('id, amount, real_amount, currency, target_plan, payment_method, operator, phone_number, status, provider, provider_reference, country, campay_reference, external_reference, created_at')
             .eq('user_id', req.user.id)
             .order('created_at', { ascending: false })
             .limit(50);
@@ -647,6 +700,8 @@ module.exports = {
     getCurrentSubscription,
     initiateUpgrade,
     checkPaymentStatusEndpoint,
+    getPaymentNetworks,
+    confirmPaymentOtp,
     handleWebhook,
     getPaymentHistory,
     getPaymentMethodStatus

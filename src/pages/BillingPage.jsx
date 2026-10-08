@@ -1,5 +1,5 @@
 /**
- * BillingPage — Gestion du plan & Upgrade via CamPay
+ * BillingPage — Gestion du plan & Upgrade via SasPay (Mobile Money multi-pays)
  * AdsFacile Frontend
  */
 
@@ -69,7 +69,8 @@ const BillingPage = () => {
     const STATUS_MAP = {
         successful: { label: 'Payé', class: 'paid' },
         pending: { label: 'En attente', class: 'pending' },
-        failed: { label: 'Échoué', class: 'failed' }
+        failed: { label: 'Échoué', class: 'failed' },
+        activation_failed: { label: 'Payé — activation en attente', class: 'pending' }
     };
 
     if (loading) {
@@ -93,9 +94,9 @@ const BillingPage = () => {
                         <div className="pm-sandbox-info" style={{ marginBottom: '1.5rem' }}>
                             <Info size={16} />
                             <div>
-                                <strong>Mode Sandbox CamPay</strong>
+                                <strong>Mode test SasPay</strong>
                                 <p style={{ margin: '4px 0 0', fontSize: '0.8125rem' }}>
-                                    Paiements de test uniquement (max 25 XAF). Utilisez les numéros de test sandbox.
+                                    Paiements simulés : aucun argent réel n’est débité.
                                 </p>
                             </div>
                         </div>
@@ -266,8 +267,8 @@ const BillingPage = () => {
                                                         </span>
                                                     </td>
                                                     <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#94a3b8' }}>
-                                                        {p.campay_reference
-                                                            ? p.campay_reference.substring(0, 12) + '…'
+                                                        {(p.provider_reference || p.campay_reference)
+                                                            ? (p.provider_reference || p.campay_reference).substring(0, 12) + '…'
                                                             : '—'
                                                         }
                                                     </td>
@@ -283,7 +284,7 @@ const BillingPage = () => {
                     {/* ═══ SECTION 4 : SÉCURITÉ ═══ */}
                     <div className="billing-security-footer">
                         <Shield size={14} />
-                        <span>Paiements sécurisés par CamPay — Mobile Money (MTN & Orange)</span>
+                        <span>Paiements sécurisés par SasPay — Mobile Money dans 20 pays</span>
                     </div>
                 </div>
             </div>

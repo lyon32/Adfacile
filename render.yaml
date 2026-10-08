@@ -57,14 +57,8 @@ services:
       - key: USE_CLAUDE_FOR_PRO
         sync: false
 
-      # ── Paiement Campay ──
-      - key: CAMPAY_API_URL
+      # ── Paiement SasPay (clés : app.saspay.me → Développeur) ──
+      - key: SASPAY_SECRET_KEY
         sync: false
-      - key: CAMPAY_APP_USERNAME
-        sync: false
-      - key: CAMPAY_APP_PASSWORD
-        sync: false
-      - key: CAMPAY_ENV
-        sync: false
-      - key: CAMPAY_WEBHOOK_SECRET
+      - key: SASPAY_WEBHOOK_SECRET
         sync: false

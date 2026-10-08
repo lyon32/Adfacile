@@ -19,6 +19,7 @@ const authRoutes = require('./routes/auth');
 const aiRoutes = require('./routes/ai');
 const userRoutes = require('./routes/users');
 const billingRoutes = require('./routes/billing');
+const { handleWebhook: handleBillingWebhook } = require('./controllers/billingController');
 const facebookRoutes = require('./routes/facebook');
 const facebookTargetingRoutes = require('./routes/facebookTargeting');
 const campaignRoutes = require('./routes/campaigns');
@@ -122,6 +123,10 @@ app.use('/api/ai', aiLimiter);
 // ═══════════════════════════════════════════════════════════════════════════════
 // MIDDLEWARES GÉNÉRAUX
 // ═══════════════════════════════════════════════════════════════════════════════
+
+// Webhook SasPay : la signature HMAC porte sur les octets reçus. La route est
+// montée avant express.json et xss(), qui transformeraient le corps.
+app.post('/api/billing/webhook', express.raw({ type: '*/*', limit: '1mb' }), handleBillingWebhook);
 
 // Parser JSON
 app.use(express.json({ limit: '10mb' }));
