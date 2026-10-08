@@ -5,12 +5,15 @@
  * Flow Facebook : Campaign → Ad Set → Ad
  */
 
-const { supabase } = require('../config/supabase');
+const { supabase, supabaseAdmin, serviceRoleConfigured } = require('../config/supabase');
 const facebookAdsService = require('../services/facebookAdsService');
 const { isMessagingDestination, normalizeApps } = require('../services/messagingDestinations');
 const { translateFacebookError } = require('../utils/facebookErrors');
 const { minDailyBudgetFcfa } = require('../utils/currency');
 const logger = require('../utils/logger');
+const campaignJobs = require('../services/campaignJobs');
+const sharp = require('sharp');
+const { checkImage, checkMediaItems, VIDEO_MAX_BYTES } = require('../utils/mediaSpecs');
 const fs = require('fs');
 const path = require('path');
 
@@ -125,6 +128,13 @@ function validateCampaignData(data) {
         if (!goesToMessaging && !data.creative.link) {
             errors.push('L\'URL de destination est requise');
         }
+
+        // Médias : refuser avant de créer quoi que ce soit chez Meta.
+        const mediaType = data.creative.media_type;
+        if (mediaType === 'video' && !data.creative.media_url) {
+            errors.push('Ajoutez une vidéo pour cette publicité');
+        }
+        errors.push(...checkMediaItems(mediaType, data.creative.media_items));
     }
 
     return {
@@ -140,19 +150,83 @@ function validateCampaignData(data) {
 /**
  * Crée une campagne complète (3 niveaux Facebook)
  */
+/**
+ * Traduit une erreur de création en réponse HTTP (statut + corps), sans
+ * l'envoyer : le suivi de création la garde pour la montrer à l'écran.
+ */
+function describeCreationError(error) {
+    // Incohérence détectée par AdsFacile avant même d'appeler Facebook
+    // (destination de messagerie non reliée, visuel manquant…).
+    if (error.userFacing) {
+        return {
+            status: 400,
+            body: {
+                success: false,
+                error: 'validation_error',
+                message: error.message,
+                details: error.validationErrors || [error.message]
+            }
+        };
+    }
+
+    // Erreur Facebook API, traduite en message actionnable
+    if (error.response?.error) {
+        const translated = translateFacebookError(error.response.error);
+        return {
+            status: 400,
+            body: {
+                success: false,
+                error: 'facebook_api_error',
+                message: translated.message,
+                title: translated.title,
+                fix: translated.fix,
+                code: translated.code,
+                fb_error_subcode: translated.subcode
+            }
+        };
+    }
+
+    return {
+        status: 500,
+        body: {
+            success: false,
+            error: 'server_error',
+            message: error.message || 'Erreur lors de la création de la campagne'
+        }
+    };
+}
+
+/**
+ * POST /api/campaigns — lance la création et répond tout de suite (202).
+ *
+ * La création peut durer plusieurs minutes (Meta traite chaque vidéo) : la tenir
+ * dans une seule requête échouait sur l'hébergement et affichait une erreur
+ * alors que la campagne existait. L'écran suit ensuite l'avancement avec
+ * GET /campaigns/jobs/:id. L'en-tête `Idempotency-Key` empêche qu'un double
+ * clic ou un nouvel essai crée une seconde campagne.
+ */
 const createCampaign = async (req, res) => {
     try {
         const userId = req.user.id;
         const data = req.body;
+        const key = (typeof req.get === 'function' ? req.get('Idempotency-Key') : null) || null;
 
-        // 1. Vérifier limite plan
+        // Même soumission déjà reçue : on renvoie la même création.
+        const deja = campaignJobs.findByKey(userId, key);
+        if (deja) {
+            return res.status(202).json({ success: true, data: { job_id: deja.id } });
+        }
+
+        // 1. Vérifier limite plan — les créations en cours comptent : elles ne
+        // sont enregistrées en base qu'à la toute fin.
         const limit = await checkCampaignLimit(userId, req.user.plan);
-        if (!limit.allowed) {
+        const enCours = campaignJobs.countRunning(userId);
+        if (!limit.allowed || limit.current + enCours >= limit.max) {
             return res.status(403).json({
                 success: false,
                 error: 'limit_reached',
                 message: `Limite de ${limit.max} campagne(s)/mois atteinte`,
-                current_count: limit.current,
+                current_count: limit.current + enCours,
                 max_count: limit.max,
                 upgrade_url: '/billing'
             });
@@ -169,51 +243,55 @@ const createCampaign = async (req, res) => {
             });
         }
 
-        // 3. Créer campagne Facebook (3 niveaux)
-        const result = await facebookAdsService.createFullCampaign(userId, data);
+        // 3. Créer campagne Facebook (3 niveaux) en arrière-plan
+        campaignJobs.purge();
+        const job = campaignJobs.create({ userId, key });
 
-        // 4. Logger dans audit
-        logger.info(`✅ Campagne créée par user ${userId}: ${result.campaign_id}`);
+        Promise.resolve()
+            .then(() => facebookAdsService.createFullCampaign(userId, data, {
+                onStep: (name, detail = {}) => campaignJobs.update(job.id, { step: { name, ...detail } })
+            }))
+            .then((result) => {
+                logger.info(`✅ Campagne créée par user ${userId}: ${result.campaign_id}`);
+                campaignJobs.update(job.id, { status: 'done', result, step: null });
+            })
+            .catch((error) => {
+                logger.error('❌ Campaign creation error:', error);
+                const { status, body } = describeCreationError(error);
+                campaignJobs.update(job.id, { status: 'failed', error: body, httpStatus: status, step: null });
+            });
 
-        return res.status(201).json({
-            success: true,
-            data: result
-        });
+        return res.status(202).json({ success: true, data: { job_id: job.id } });
 
     } catch (error) {
         logger.error('❌ Campaign creation error:', error);
+        const { status, body } = describeCreationError(error);
+        return res.status(status).json(body);
+    }
+};
 
-        // Incohérence détectée par AdsFacile avant même d'appeler Facebook
-        // (destination de messagerie non reliée, visuel manquant…).
-        if (error.userFacing) {
-            return res.status(400).json({
-                success: false,
-                error: 'validation_error',
-                message: error.message,
-                details: error.validationErrors || [error.message]
-            });
-        }
-
-        // Erreur Facebook API, traduite en message actionnable
-        if (error.response?.error) {
-            const translated = translateFacebookError(error.response.error);
-            return res.status(400).json({
-                success: false,
-                error: 'facebook_api_error',
-                message: translated.message,
-                title: translated.title,
-                fix: translated.fix,
-                code: translated.code,
-                fb_error_subcode: translated.subcode
-            });
-        }
-
-        return res.status(500).json({
+/**
+ * GET /api/campaigns/jobs/:id — avancement d'une création (propriétaire seulement).
+ */
+const getCreationJob = async (req, res) => {
+    const job = campaignJobs.get(req.params.id, req.user.id);
+    if (!job) {
+        return res.status(404).json({
             success: false,
-            error: 'server_error',
-            message: error.message || 'Erreur lors de la création de la campagne'
+            message: 'Création introuvable. Elle a peut-être déjà abouti : vérifiez la liste de vos campagnes.'
         });
     }
+
+    return res.json({
+        success: true,
+        data: {
+            status: job.status,
+            step: job.step,
+            result: job.result,
+            error: job.error,
+            http_status: job.httpStatus || null
+        }
+    });
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -447,12 +525,38 @@ const uploadMedia = async (req, res) => {
         }
 
         const file = req.file;
+        const type = file.mimetype.startsWith('video/') ? 'video' : 'image';
+        const mesures = { type };
+
+        // Mesurer l'image ici : un refus de Meta n'arriverait qu'à la toute
+        // fin, après la création de la campagne et de l'ensemble.
+        if (type === 'image') {
+            let meta;
+            try {
+                meta = await sharp(file.buffer).metadata();
+            } catch {
+                return res.status(400).json({ success: false, message: 'Image illisible : utilisez un JPG ou un PNG.' });
+            }
+            const { errors } = checkImage({ width: meta.width, height: meta.height, size: file.size });
+            if (errors.length) {
+                return res.status(400).json({ success: false, message: errors[0], details: errors });
+            }
+            Object.assign(mesures, {
+                width: meta.width,
+                height: meta.height,
+                ratio: Math.round((meta.width / meta.height) * 1000) / 1000
+            });
+        } else if (file.size > VIDEO_MAX_BYTES) {
+            return res.status(400).json({ success: false, message: 'Vidéo trop lourde : 50 Mo maximum.' });
+        }
+
         const fileExt = path.extname(file.originalname);
         const fileName = `${req.user.id}_${Date.now()}${fileExt}`;
         const filePath = `ad-creatives/${fileName}`;
 
-        // Upload to Supabase Storage
-        const { data, error } = await supabase.storage
+        // Dépôt avec le client serveur : la politique du bucket réserve les
+        // insertions au rôle « authenticated », la clé anon est refusée (403).
+        const { data, error } = await supabaseAdmin.storage
             .from('campaign-media')
             .upload(filePath, file.buffer, {
                 contentType: file.mimetype,
@@ -461,17 +565,23 @@ const uploadMedia = async (req, res) => {
 
         if (error) {
             logger.error('Erreur Supabase upload:', error);
-            return res.status(500).json({ success: false, message: 'Erreur lors de l\'upload' });
+            return res.status(500).json({
+                success: false,
+                message: serviceRoleConfigured === false
+                    ? 'Le dépôt des visuels n\'est pas configuré sur le serveur (clé de service absente). Contactez le support.'
+                    : 'Erreur lors de l\'upload'
+            });
         }
 
         // Récupérer le lien public
-        const { data: { publicUrl } } = supabase.storage
+        const { data: { publicUrl } } = supabaseAdmin.storage
             .from('campaign-media')
             .getPublicUrl(filePath);
 
         return res.json({
             success: true,
             url: publicUrl,
+            ...mesures,
             message: 'Fichier uploadé avec succès'
         });
 
@@ -483,6 +593,7 @@ const uploadMedia = async (req, res) => {
 
 module.exports = {
     createCampaign,
+    getCreationJob,
     listCampaigns,
     getCampaignDetails,
     updateStatus,

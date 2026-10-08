@@ -6,12 +6,14 @@
 
 import { useState, useRef, useEffect } from 'react';
 import {
-    Image, Video, Upload, Link, ChevronLeft, Check, Loader2,
+    Upload, ChevronLeft, Check, Loader2,
     Sparkles, X, Palette
 } from 'lucide-react';
 import AITextGenerator from '../ai/AITextGenerator';
 import CampaignPreview from './CampaignPreview';
-import api from '../../services/api';
+import MediaItemsEditor from './MediaItemsEditor';
+import { uploadCreativeMedia } from './uploadCreativeMedia';
+import { ACCEPT, LIMITS, MEDIA_FORMATS, checkMediaItems } from '../../utils/mediaSpecs';
 import '../../styles/ad-creative-form.css';
 
 // Boutons proposés pour une destination site web. SEND_MESSAGE en est exclu :
@@ -37,10 +39,11 @@ function mapCTAtoFacebook(cta) {
     return map[cta] || 'LEARN_MORE';
 }
 
-const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit, isSubmitting }) => {
+const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit, isSubmitting, progressLabel = '' }) => {
     const [showAI, setShowAI] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [dragOver, setDragOver] = useState(false);
+    const [uploadError, setUploadError] = useState('');
     const fileInputRef = useRef(null);
 
     const { creative, ad_name } = campaignData;
@@ -56,50 +59,33 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
         setCampaignData(prev => ({ ...prev, [field]: value }));
     };
 
-    // Handle file upload
+    // Média unique (image ou vidéo) : contrôlé avant l'envoi, refus affiché
+    // sous la zone de dépôt.
     const handleFileUpload = async (file) => {
         if (!file) return;
-
-        const isImage = creative.media_type === 'image';
-        const maxSize = isImage ? 5 * 1024 * 1024 : 50 * 1024 * 1024;
-        const allowedTypes = isImage
-            ? ['image/jpeg', 'image/jpg', 'image/png']
-            : ['video/mp4', 'video/quicktime'];
-
-        if (!allowedTypes.includes(file.type)) {
-            alert(`Format non supporté. ${isImage ? 'Utilisez JPG ou PNG.' : 'Utilisez MP4 ou MOV.'}`);
-            return;
-        }
-
-        if (file.size > maxSize) {
-            alert(`Fichier trop volumineux. Maximum ${isImage ? '5 MB' : '50 MB'}.`);
-            return;
-        }
-
+        setUploadError('');
         setUploading(true);
         try {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('type', creative.media_type);
-
-            const response = await api.post('/campaigns/upload-media', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                timeout: 60000
-            });
-
-            if (response.data.success) {
-                updateCreative('media_url', response.data.url);
-            }
+            const media = await uploadCreativeMedia(file, creative.media_type);
+            updateCreative('media_url', media.url);
         } catch (err) {
-            // Surtout pas de repli sur URL.createObjectURL : l'aperçu local
-            // produit une URL blob: que Facebook ne peut pas atteindre. La
-            // publicité partait alors sans visuel, sans que personne ne le voie.
-            console.error('Échec du téléversement:', err);
-            alert('Le téléversement du visuel a échoué. Vérifiez votre connexion et réessayez.');
+            setUploadError(err.message);
             updateCreative('media_url', '');
         } finally {
             setUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
+    };
+
+    const isMulti = creative.media_type === 'carousel' || creative.media_type === 'flexible';
+    const mediaItems = creative.media_items || [];
+
+    const choisirFormat = (format) => {
+        setUploadError('');
+        setCampaignData(prev => ({
+            ...prev,
+            creative: { ...prev.creative, media_type: format, media_url: '', media_items: [] }
+        }));
     };
 
     const handleDrop = (e) => {
@@ -144,7 +130,10 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
     }, [versMessagerie, campaignData.website_url]);
 
     // Validation — alignée sur la règle que le backend applique déjà.
-    const isValid = creative.media_url &&
+    const mediaOk = isMulti
+        ? checkMediaItems(creative.media_type, mediaItems).length === 0
+        : Boolean(creative.media_url);
+    const isValid = mediaOk &&
         creative.message.length > 0 &&
         (versMessagerie || creative.headline.length > 0) &&
         (versMessagerie || (creative.link && isValidURL(creative.link)));
@@ -222,22 +211,19 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
                             </div>
                         </div>
 
-                        {/* Media type tabs */}
+                        {/* Format */}
                         <div className="creative-field-group">
-                            <label className="creative-label">Format média</label>
-                            <div className="creative-media-tabs">
-                                {[
-                                    { value: 'image', icon: Image, label: '📷 Image' },
-                                    { value: 'video', icon: Video, label: '🎬 Vidéo' }
-                                ].map(opt => {
+                            <span className="creative-label" id="media-format-label">Format</span>
+                            <div className="creative-media-tabs" role="radiogroup" aria-labelledby="media-format-label">
+                                {MEDIA_FORMATS.map(opt => {
                                     const isActive = creative.media_type === opt.value;
                                     return (
                                         <button
+                                            type="button"
                                             key={opt.value}
-                                            onClick={() => {
-                                                updateCreative('media_type', opt.value);
-                                                updateCreative('media_url', '');
-                                            }}
+                                            role="radio"
+                                            aria-checked={isActive}
+                                            onClick={() => choisirFormat(opt.value)}
                                             className={`creative-media-tab ${isActive ? 'active' : ''}`}
                                         >
                                             {opt.label}
@@ -245,9 +231,24 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
                                     );
                                 })}
                             </div>
+                            <p className="creative-hint">
+                                {MEDIA_FORMATS.find(f => f.value === creative.media_type)?.hint}
+                            </p>
                         </div>
 
-                        {/* Upload zone */}
+                        {isMulti ? (
+                            <div className="creative-field-group">
+                                <span className="creative-label">
+                                    {creative.media_type === 'carousel' ? 'Cartes' : 'Visuels'} <span className="required">*</span>
+                                </span>
+                                <MediaItemsEditor
+                                    mediaType={creative.media_type}
+                                    items={mediaItems}
+                                    onChange={(liste) => updateCreative('media_items', liste)}
+                                    defaultLink={creative.link}
+                                />
+                            </div>
+                        ) : (
                         <div className="creative-field-group">
                             <label className="creative-label">
                                 {creative.media_type === 'image' ? 'Image' : 'Vidéo'} <span className="required">*</span>
@@ -255,13 +256,15 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
                             {creative.media_url ? (
                                 <div className="creative-media-preview">
                                     {creative.media_type === 'image' ? (
-                                        <img src={creative.media_url} alt="Preview" />
+                                        <img src={creative.media_url} alt="Visuel de la publicité" />
                                     ) : (
                                         <video src={creative.media_url} controls />
                                     )}
                                     <button
+                                        type="button"
                                         onClick={() => updateCreative('media_url', '')}
                                         className="creative-media-remove"
+                                        aria-label="Retirer le média"
                                     >
                                         <X size={16} />
                                     </button>
@@ -286,8 +289,8 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
                                             </p>
                                             <p className="creative-upload-hint">
                                                 {creative.media_type === 'image'
-                                                    ? 'JPG, PNG • Max 5 MB • Ratio 1:1 ou 4:5 recommandé'
-                                                    : 'MP4, MOV • Max 50 MB • 15-60s recommandé'
+                                                    ? 'JPG, PNG · 600 px de large min. · 30 Mo max. · 4:5 conseillé (1440 × 1800)'
+                                                    : 'MP4, MOV · 1 s min. · 50 Mo max. · H.264 conseillé'
                                                 }
                                             </p>
                                         </>
@@ -297,11 +300,13 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
                             <input
                                 ref={fileInputRef}
                                 type="file"
-                                accept={creative.media_type === 'image' ? '.jpg,.jpeg,.png' : '.mp4,.mov'}
+                                accept={ACCEPT[creative.media_type] || ACCEPT.image}
                                 onChange={(e) => handleFileUpload(e.target.files[0])}
                                 className="creative-hidden"
                             />
+                            {uploadError && <p className="creative-error-msg" role="alert">{uploadError}</p>}
                         </div>
+                        )}
 
                         {/* Text fields */}
                         <div className="creative-field-group">
@@ -335,6 +340,35 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
                             />
                             <p className="creative-char-count">{creative.headline.length}/40</p>
                         </div>
+
+                        {creative.media_type === 'flexible' && (
+                            <div className="creative-field-group">
+                                <label className="creative-label" htmlFor="flexible-bodies">
+                                    Autres textes et titres <span className="optional">(optionnel)</span>
+                                </label>
+                                <textarea
+                                    id="flexible-bodies"
+                                    rows={3}
+                                    value={(creative.bodies || []).join('\n')}
+                                    onChange={(e) => updateCreative('bodies',
+                                        e.target.value.split('\n').slice(0, LIMITS.flexibleTexts - 1))}
+                                    placeholder="Un autre texte principal par ligne"
+                                    className="creative-textarea"
+                                />
+                                <textarea
+                                    rows={2}
+                                    value={(creative.titles || []).join('\n')}
+                                    onChange={(e) => updateCreative('titles',
+                                        e.target.value.split('\n').slice(0, LIMITS.flexibleTexts - 1))}
+                                    placeholder="Un autre titre par ligne"
+                                    className="creative-textarea media-items-titles"
+                                    aria-label="Autres titres"
+                                />
+                                <p className="creative-hint">
+                                    Jusqu’à 5 textes et 5 titres au total : Meta teste les combinaisons.
+                                </p>
+                            </div>
+                        )}
 
                         <div className="creative-field-group">
                             <label className="creative-label">
@@ -530,11 +564,12 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
                     onClick={onSubmit}
                     disabled={!isValid || isSubmitting}
                     className="creative-btn-submit"
+                    aria-live="polite"
                 >
                     {isSubmitting ? (
                         <>
                             <Loader2 size={18} className="spinner" />
-                            Création en cours...
+                            {progressLabel || 'Création en cours…'}
                         </>
                     ) : (
                         <>

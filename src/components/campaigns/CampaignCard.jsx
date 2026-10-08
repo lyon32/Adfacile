@@ -4,9 +4,10 @@
  */
 
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
     MoreVertical, Play, Pause, Trash2, Eye, TrendingUp,
-    MousePointer, DollarSign, Calendar, Loader2
+    MousePointer, DollarSign, Calendar, Loader2, BarChart3
 } from 'lucide-react';
 
 const STATUS_BADGES = {
@@ -159,6 +160,14 @@ const CampaignCard = ({ campaign, onUpdateStatus, onRequestDelete, deleting = fa
                     {campaign.end_date && ` → ${formatDate(campaign.end_date)}`}
                 </span>
                 <div className="flex gap-2">
+                    <Link
+                        to={`/analytics?campaign=${encodeURIComponent(campaign.id)}`}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-gray-700 border border-gray-200 hover:bg-gray-100 transition-colors"
+                        aria-label={`Voir les analytics de ${campaign.name}`}
+                    >
+                        <BarChart3 size={12} />
+                        Analytics
+                    </Link>
                     <button
                         onClick={handleStatusToggle}
                         disabled={actionLoading}

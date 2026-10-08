@@ -281,7 +281,9 @@ const PROMOTED_OBJECT_RULES = [
         // montant de chaque vente.
         when: ({ goal }) => goal === 'OFFSITE_CONVERSIONS' || goal === 'VALUE',
         requires: ['pixel_id', 'custom_event_type'],
-        message: 'Choisissez un pixel et l\'événement de conversion à optimiser.'
+        message: 'Pour optimiser les achats sur un site, Facebook exige un ensemble de données (pixel). '
+            + 'Créez-en un dans le Gestionnaire d’évènements et rattachez-le à votre compte publicitaire, '
+            + 'ou choisissez « Applications de messagerie » comme lieu de conversion.'
     },
     {
         when: ({ destination }) => destination === 'APP',
@@ -320,7 +322,11 @@ function listObjectives() {
         available: Object.keys(o.goals).length > 0,
         unavailable_reason: o.unavailable_reason || null,
         default_goal: o.default_goal,
-        goals: Object.keys(o.goals)
+        goals: Object.keys(o.goals),
+        // Meta refuse d'optimiser des conversions sans ensemble de données
+        // (pixel) : l'écran le signale dès le choix de l'objectif, comme le
+        // font les autres outils (« Configuration de conversion requise »).
+        needs_dataset: ['OFFSITE_CONVERSIONS', 'VALUE'].includes(o.default_goal)
     }));
 }
 

@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Eye, MousePointer, Heart, Users, Smartphone, ShoppingCart, ChevronRight, Lock } from 'lucide-react';
+import { Eye, MousePointer, Heart, Users, Smartphone, ShoppingCart, ChevronRight, Lock, Info } from 'lucide-react';
 import api from '../../services/api';
 
 /**
@@ -151,6 +151,21 @@ const CampaignObjectiveSelector = ({ campaignData, setCampaignData, onNext }) =>
                                 <p className="mt-1 text-sm text-gray-500 leading-relaxed">
                                     {obj.description}
                                 </p>
+                                {/* Meta refuse d'optimiser les achats sans pixel : on le dit
+                                    dès le choix de l'objectif, pas à la dernière étape. Pastille
+                                    non interactive — la carte entière est déjà un bouton. */}
+                                {!indisponible && obj.needs_dataset && (
+                                    <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
+                                        <Info size={12} aria-hidden="true" />
+                                        Configuration de conversion requise
+                                    </p>
+                                )}
+                                {!indisponible && obj.needs_dataset && (
+                                    <p className="mt-1 text-xs text-gray-500 leading-relaxed">
+                                        Un pixel (ensemble de données) est nécessaire pour optimiser les achats.
+                                        Sans pixel, choisissez Trafic.
+                                    </p>
+                                )}
                                 {/* Un objectif indisponible dit pourquoi, plutôt qu'un
                                     « bientôt » qui laisse l'utilisateur sans recours. */}
                                 {indisponible && obj.unavailable_reason && (

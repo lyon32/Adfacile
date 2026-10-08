@@ -130,3 +130,27 @@ KO|OUTCOME_SALES|APP_INSTALLS|ON_AD|Le type de destination sélectionné n’est
 KO|OUTCOME_SALES|APP_INSTALLS|WEBSITE_AND_APP|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
 KO|OUTCOME_SALES|APP_INSTALLS|WEBSITE_AND_STORE_VISIT|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
 KO|OUTCOME_SALES|APP_INSTALLS|WEBSITE_AND_PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+
+# Avec un pixel du business 799678649905569 (1645043837249191)
+OK|OUTCOME_SALES|OFFSITE_CONVERSIONS|WEBSITE|pixel
+OK|OUTCOME_SALES|OFFSITE_CONVERSIONS|UNDEFINED|pixel
+KO|OUTCOME_SALES|VALUE|WEBSITE|pixel|Ad accounts owned by a new business can use value optimization for ad delivery after several weeks o
+KO|OUTCOME_SALES|VALUE|UNDEFINED|pixel|Ad accounts owned by a new business can use value optimization for ad delivery after several weeks o
+OK|OUTCOME_SALES|LANDING_PAGE_VIEWS|WEBSITE|pixel
+OK|OUTCOME_SALES|LANDING_PAGE_VIEWS|UNDEFINED|pixel
+OK|OUTCOME_SALES|LINK_CLICKS|WEBSITE|pixel
+OK|OUTCOME_SALES|LINK_CLICKS|UNDEFINED|pixel
+OK|OUTCOME_SALES|REACH|WEBSITE|pixel
+OK|OUTCOME_SALES|REACH|UNDEFINED|pixel
+OK|OUTCOME_SALES|IMPRESSIONS|WEBSITE|pixel
+OK|OUTCOME_SALES|IMPRESSIONS|UNDEFINED|pixel
+
+# 8 octobre 2026 — création RÉELLE (non validate_only), sans ensemble de données, compte lyon
+OK|OUTCOME_SALES|LINK_CLICKS|UNDEFINED|sans pixel|ensemble créé puis campagne temporaire supprimée
+OK|OUTCOME_SALES|LANDING_PAGE_VIEWS|UNDEFINED|sans pixel|ensemble créé puis campagne temporaire supprimée
+# Avec le pixel « AdsFacile » (1645043837249191, aucun évènement reçu) : OFFSITE_CONVERSIONS, LANDING_PAGE_VIEWS,
+# LINK_CLICKS, REACH, IMPRESSIONS acceptés en WEBSITE ; VALUE refusé (compte d'une nouvelle entreprise).
+# Création réelle Ventes × WEBSITE × OFFSITE_CONVERSIONS avec ce pixel : campagne créée (ESSAI-S1).
+# Création réelle Ventes + format flexible (creative_asset_groups_spec) : créée (ESSAI-S2) après deux refus corrigés :
+#   « Le champ link est requis » puis « le premier média du premier groupe doit correspondre » —
+#   la création porte link_data.link + image_hash (ou video_data) du premier média du groupe.

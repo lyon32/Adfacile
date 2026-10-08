@@ -1,4 +1,4 @@
-jest.mock('../config/supabase', () => ({ supabase: {} }));
+jest.mock('../config/supabase', () => ({ supabase: {}, supabaseAdmin: {} }));
 jest.mock('../services/facebookAdsService', () => ({}));
 jest.mock('../utils/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
 
@@ -99,5 +99,64 @@ describe('validation de campagne — règles auparavant absentes', () => {
         });
         expect(r.code).toBe(400);
         expect(r.corps.details.join(' ')).toMatch(/titre/i);
+    });
+});
+
+describe('validation de campagne — médias multiples', () => {
+    const img = { url: 'https://cdn/1.jpg', type: 'image' };
+
+    it('refuse un carrousel d\'une seule carte avant tout appel à Meta', async () => {
+        const r = await valider({ ...BASE, creative: { ...BASE.creative, media_type: 'carousel', media_items: [img] } });
+        expect(r.code).toBe(400);
+        expect(r.corps.details.join(' ')).toMatch(/2 à 10/);
+    });
+
+    it('refuse une vidéo seule sans fichier', async () => {
+        const r = await valider({ ...BASE, creative: { ...BASE.creative, media_type: 'video' } });
+        expect(r.code).toBe(400);
+        expect(r.corps.details.join(' ')).toMatch(/vidéo/i);
+    });
+});
+
+describe('uploadMedia — contrôle des dimensions', () => {
+    const sharp = require('sharp');
+
+    async function televerser(buffer, mimetype) {
+        // Le dépôt passe par le client serveur : la politique du bucket
+        // n'autorise plus les insertions anonymes.
+        const config = require('../config/supabase');
+        config.supabase.storage = undefined;
+        config.supabaseAdmin.storage = {
+            from: () => ({
+                upload: () => Promise.resolve({ data: {}, error: null }),
+                getPublicUrl: () => ({ data: { publicUrl: 'https://cdn/x.png' } })
+            })
+        };
+        let capture = null;
+        const req = { user: { id: 'u1' }, file: { buffer, mimetype, originalname: 'x.png', size: buffer.length } };
+        const res = {
+            status(code) { this._code = code; return this; },
+            json(corps) { capture = { code: this._code || 200, corps }; return this; }
+        };
+        await controller.uploadMedia(req, res);
+        return capture;
+    }
+
+    const png = (w, h) => sharp({ create: { width: w, height: h, channels: 3, background: '#000' } }).png().toBuffer();
+
+    it('refuse une image de 500 px de large', async () => {
+        const r = await televerser(await png(500, 500), 'image/png');
+        expect(r.code).toBe(400);
+        expect(r.corps.message).toMatch(/600 px/);
+    });
+
+    it('renvoie les dimensions d\'une image valide', async () => {
+        const r = await televerser(await png(1080, 1080), 'image/png');
+        expect(r.corps).toMatchObject({ success: true, type: 'image', width: 1080, height: 1080, ratio: 1 });
+    });
+
+    it('accepte une vidéo sans la mesurer (contrôle côté navigateur et chez Meta)', async () => {
+        const r = await televerser(Buffer.from('mp4'), 'video/mp4');
+        expect(r.corps).toMatchObject({ success: true, type: 'video' });
     });
 });

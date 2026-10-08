@@ -523,6 +523,284 @@ async function uploadAdImage(adAccountId, accessToken, mediaUrl) {
     return hash;
 }
 
+/**
+ * Identité WhatsApp de la Page, pour le champ « Numéro de téléphone WhatsApp »
+ * de l'identité de la publicité.
+ *
+ * Meta la stocke dans `wamo_whatsapp_identity_spec.wamo_whatsapp_identity_id`
+ * (relevé sur les créations faites dans Ads Manager). Cet identifiant n'est
+ * lisible ni sur la Page ni sur le compte publicitaire : la seule source fiable
+ * est une création existante de la même Page. On prend le plus fréquent.
+ *
+ * Non bloquant : sans identité connue, ou si la lecture échoue, la publicité
+ * part sans numéro, comme avant.
+ *
+ * @returns {Promise<string|null>}
+ */
+async function findWhatsAppIdentity(adAccountId, accessToken, pageId) {
+    try {
+        const { data } = await axios.get(`${FACEBOOK_GRAPH_URL}/${adAccountId}/adcreatives`, {
+            params: {
+                access_token: accessToken,
+                fields: 'object_story_spec{page_id},wamo_whatsapp_identity_spec',
+                limit: 100
+            }
+        });
+        const compte = {};
+        for (const c of data?.data || []) {
+            const id = c.wamo_whatsapp_identity_spec?.wamo_whatsapp_identity_id;
+            if (id && c.object_story_spec?.page_id === pageId) compte[id] = (compte[id] || 0) + 1;
+        }
+        const [meilleur] = Object.entries(compte).sort((a, b) => b[1] - a[1]);
+        return meilleur ? meilleur[0] : null;
+    } catch (err) {
+        logger.warn(`⚠️ Identité WhatsApp de la Page illisible : ${err.response?.data?.error?.message || err.message}`);
+        return null;
+    }
+}
+
+/** Fragment de création portant le numéro WhatsApp, ou objet vide. */
+function whatsappIdentity(identityId) {
+    return identityId
+        ? { wamo_whatsapp_identity_spec: { wamo_whatsapp_identity_id: identityId } }
+        : {};
+}
+
+/**
+ * Comment Meta accepte « plusieurs visuels » selon l'objectif.
+ *
+ * - `groups` : le vrai format flexible (`creative_asset_groups_spec`), réservé
+ *   par Meta aux objectifs Ventes et Promotion d'application ;
+ * - `dynamic` : le contenu dynamique (`asset_feed_spec`) pour tous les autres.
+ *   Meta exige alors un ensemble de publicités créé en mode dynamique
+ *   (`is_dynamic_creative`), sinon la publicité est refusée.
+ *
+ * @returns {'groups'|'dynamic'|null} null si le format n'est pas « flexible »
+ */
+function flexibleMode(mediaType, objective) {
+    if (mediaType !== 'flexible') return null;
+    return ['OUTCOME_SALES', 'OUTCOME_APP_PROMOTION'].includes(objective) ? 'groups' : 'dynamic';
+}
+
+const attendre = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Téléverse une vidéo sur le compte publicitaire et attend qu'elle soit prête.
+ *
+ * Comme pour les images, les octets sont envoyés en multipart `source` : l'envoi
+ * par URL échoue avec l'erreur #3. Meta traite ensuite la vidéo de manière
+ * asynchrone ; une création qui la référence avant `ready` est refusée. On
+ * récupère enfin la miniature préférée, exigée par `video_data.image_url` et
+ * par les cartes vidéo d'un carrousel.
+ *
+ * @returns {Promise<{video_id: string, thumbnail_url: string|null}>}
+ */
+async function uploadAdVideo(adAccountId, accessToken, mediaUrl, options = {}) {
+    const { intervalleMs = 3000, delaiMaxMs = 120000, pause = attendre } = options;
+
+    if (!/^https?:\/\//i.test(mediaUrl)) {
+        const err = new Error('La vidéo n\'a pas été correctement téléversée. Ajoutez-la à nouveau.');
+        err.userFacing = true;
+        throw err;
+    }
+
+    const download = await axios.get(mediaUrl, { responseType: 'arraybuffer', timeout: 120000 });
+
+    const form = new FormData();
+    form.append('source', Buffer.from(download.data), {
+        filename: mediaUrl.split('/').pop().split('?')[0] || 'video.mp4',
+        contentType: download.headers?.['content-type'] || 'video/mp4'
+    });
+
+    const response = await axios.post(
+        `${FACEBOOK_GRAPH_URL}/${adAccountId}/advideos`,
+        form,
+        {
+            params: { access_token: accessToken },
+            headers: form.getHeaders(),
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity
+        }
+    );
+    const videoId = response.data.id;
+    if (!videoId) {
+        throw new Error('Facebook n\'a pas renvoyé d\'identifiant pour la vidéo.');
+    }
+
+    // Attendre la fin du traitement.
+    let ecoule = 0;
+    for (;;) {
+        const { data } = await axios.get(`${FACEBOOK_GRAPH_URL}/${videoId}`, {
+            params: { access_token: accessToken, fields: 'status' }
+        });
+        const statut = data?.status?.video_status;
+        if (statut === 'ready') break;
+        if (statut === 'error') {
+            const err = new Error('Facebook n\'a pas pu traiter la vidéo. Vérifiez son format (MP4 ou MOV, H.264).');
+            err.userFacing = true;
+            throw err;
+        }
+        if (ecoule >= delaiMaxMs) {
+            const err = new Error('Le traitement de la vidéo par Facebook prend trop de temps. Réessayez dans quelques minutes.');
+            err.userFacing = true;
+            throw err;
+        }
+        await pause(intervalleMs);
+        ecoule += intervalleMs;
+    }
+
+    const { data: miniatures } = await axios.get(`${FACEBOOK_GRAPH_URL}/${videoId}/thumbnails`, {
+        params: { access_token: accessToken }
+    });
+    const liste = miniatures?.data || [];
+    const preferee = liste.find((m) => m.is_preferred) || liste[0];
+
+    return { video_id: videoId, thumbnail_url: preferee?.uri || null };
+}
+
+/**
+ * Téléverse un média (image ou vidéo) et renvoie ce qu'il faut pour le citer
+ * dans une création : `hash` pour une image, `video_id` + miniature pour une
+ * vidéo.
+ */
+async function uploadMediaItem(adAccountId, accessToken, item, options) {
+    if (item.type === 'video') {
+        return { type: 'video', ...(await uploadAdVideo(adAccountId, accessToken, item.url, options)) };
+    }
+    return { type: 'image', hash: await uploadAdImage(adAccountId, accessToken, item.url) };
+}
+
+/**
+ * Construit la partie visuelle de la création selon le format choisi.
+ *
+ * Fonction pure : elle reçoit les médias déjà téléversés et renvoie
+ * `object_story_spec` et, pour le format flexible, `asset_feed_spec`.
+ *
+ * - image  : link_data classique (image_hash facultatif) ;
+ * - video  : video_data — Meta n'accepte pas de vidéo dans link_data ;
+ * - carousel : link_data.child_attachments, une carte par média ;
+ * - flexible : asset_feed_spec AUTOMATIC_FORMAT, Meta choisit la combinaison.
+ */
+function buildCreativeMedia({
+    mediaType, uploaded = [], items = [], pageId, identity = {},
+    message = '', headline = '', description = '', link, callToAction,
+    bodies = [], titles = [], objective
+}) {
+    const objectStorySpec = { page_id: pageId, ...identity };
+
+    if (mediaType === 'video') {
+        const [video] = uploaded;
+        objectStorySpec.video_data = {
+            video_id: video.video_id,
+            image_url: video.thumbnail_url,
+            message,
+            title: headline,
+            link_description: description,
+            call_to_action: callToAction
+        };
+        return { object_story_spec: objectStorySpec };
+    }
+
+    if (mediaType === 'carousel') {
+        const childAttachments = uploaded.map((media, i) => {
+            const item = items[i] || {};
+            const carteLien = item.link || link;
+            const carte = {
+                link: carteLien,
+                name: item.name || '',
+                description: item.description || ''
+            };
+            if (media.type === 'video') {
+                carte.video_id = media.video_id;
+                carte.picture = media.thumbnail_url;
+            } else {
+                carte.image_hash = media.hash;
+            }
+            if (callToAction) {
+                carte.call_to_action = callToAction.type === 'CALL_NOW' || !callToAction.value?.link
+                    ? callToAction
+                    : { ...callToAction, value: { ...callToAction.value, link: carteLien } };
+            }
+            return carte;
+        });
+        objectStorySpec.link_data = {
+            message,
+            link,
+            child_attachments: childAttachments,
+            multi_share_optimized: true,
+            call_to_action: callToAction
+        };
+        return { object_story_spec: objectStorySpec };
+    }
+
+    if (flexibleMode(mediaType, objective) === 'groups') {
+        const textes = (liste, type) => liste.filter(Boolean).map((text) => ({ text, text_type: type }));
+        const groupe = {
+            images: uploaded.filter((m) => m.type === 'image').map((m) => ({ hash: m.hash })),
+            videos: uploaded.filter((m) => m.type === 'video').map((m) => ({ video_id: m.video_id })),
+            texts: [
+                ...textes([message, ...bodies], 'primary_text'),
+                ...textes([headline, ...titles], 'headline'),
+                ...textes([description], 'description')
+            ],
+            call_to_action: callToAction
+        };
+        for (const cle of ['images', 'videos', 'texts']) {
+            if (groupe[cle].length === 0) delete groupe[cle];
+        }
+        // Les médias et textes sont un paramètre de la publicité, pas de la
+        // création. La création garde un `link_data` minimal : sans lui, Meta
+        // répond « Le champ link est requis » (relevé en réel).
+        //
+        // Meta exige aussi que le PREMIER média du groupe soit celui de la
+        // création (« la première image ou vidéo du premier groupe doit
+        // correspondre ») : image → link_data, vidéo → video_data.
+        const [premier] = uploaded;
+        if (premier?.type === 'video') {
+            objectStorySpec.video_data = {
+                video_id: premier.video_id,
+                image_url: premier.thumbnail_url,
+                call_to_action: callToAction
+            };
+        } else {
+            objectStorySpec.link_data = { link, ...(premier?.hash ? { image_hash: premier.hash } : {}) };
+        }
+        return { object_story_spec: objectStorySpec, creative_asset_groups_spec: { groups: [groupe] } };
+    }
+
+    if (mediaType === 'flexible') {
+        const textes = (liste) => liste.filter(Boolean).map((text) => ({ text }));
+        const assetFeedSpec = {
+            ad_formats: ['AUTOMATIC_FORMAT'],
+            images: uploaded.filter((m) => m.type === 'image').map((m) => ({ hash: m.hash })),
+            videos: uploaded.filter((m) => m.type === 'video')
+                .map((m) => ({ video_id: m.video_id, thumbnail_url: m.thumbnail_url })),
+            bodies: textes([message, ...bodies]),
+            titles: textes([headline, ...titles]),
+            descriptions: textes([description]),
+            link_urls: [{ website_url: link }],
+            call_to_action_types: [callToAction?.type || 'LEARN_MORE']
+        };
+        for (const cle of ['images', 'videos', 'bodies', 'titles', 'descriptions']) {
+            if (assetFeedSpec[cle].length === 0) delete assetFeedSpec[cle];
+        }
+        return { object_story_spec: objectStorySpec, asset_feed_spec: assetFeedSpec };
+    }
+
+    // Image (ou aucun visuel).
+    objectStorySpec.link_data = {
+        message,
+        link,
+        name: headline,
+        description,
+        call_to_action: callToAction
+    };
+    if (uploaded[0]?.hash) {
+        objectStorySpec.link_data.image_hash = uploaded[0].hash;
+    }
+    return { object_story_spec: objectStorySpec };
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // CRÉATION COMPLÈTE DE CAMPAGNE (3 niveaux)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -561,7 +839,13 @@ function normalizeObjective(objective) {
  * @param {Object} data - Données du wizard (campaign, adset, ad)
  * @returns {Object} { success, campaign_id, fb_campaign_id }
  */
-async function createFullCampaign(userId, data) {
+async function createFullCampaign(userId, data, options = {}) {
+    // Avancement pour l'écran (voir services/campaignJobs.js). Ne doit jamais
+    // faire échouer la création.
+    const step = (name, detail) => {
+        try { options.onStep?.(name, detail); } catch { /* sans effet sur la création */ }
+    };
+
     // 0. Normaliser l'objectif (compatibilité ancienne API → v21)
     data.objective = normalizeObjective(data.objective);
 
@@ -598,6 +882,7 @@ async function createFullCampaign(userId, data) {
     try {
         // 2. Créer la Campaign
         logger.info('📢 Étape 1/4 : Création Campaign...');
+        step('campagne');
 
         // Paramètres MINIMAUX pour test
         const campaignParams = {
@@ -621,6 +906,7 @@ async function createFullCampaign(userId, data) {
 
         // 3. Créer l'Ad Set
         logger.info('📢 Étape 2/4 : Création Ad Set...');
+        step('ensemble');
 
         if (!data.targeting || !data.targeting.locations || data.targeting.locations.length === 0) {
             throw new Error('Au moins une localisation est requise');
@@ -665,6 +951,10 @@ async function createFullCampaign(userId, data) {
         }
 
         // Objectif de coût par résultat (optionnel) — bascule en stratégie "coût maîtrisé"
+        if (flexibleMode(data.creative.media_type, data.objective) === 'dynamic') {
+            adSetPayload.is_dynamic_creative = true;
+        }
+
         if (data.cost_per_result_goal && Number(data.cost_per_result_goal) > 0) {
             const bidAmount = fcfaToUsdCents(data.cost_per_result_goal);
             if (Number.isFinite(bidAmount) && bidAmount > 0) {
@@ -706,24 +996,26 @@ async function createFullCampaign(userId, data) {
         // 4. Upload image et créer Ad Creative
         logger.info('📢 Étape 3/4 : Création Ad Creative...');
 
-        // La vidéo était téléversée par le formulaire puis ignorée ici : la
-        // publicité partait sans aucun visuel, donc inéligible à la plupart des
-        // placements. Refuser explicitement vaut mieux que diffuser une
-        // publicité vide — la prise en charge viendra par /advideos.
-        if (data.creative.media_type === 'video') {
-            const err = new Error(
-                'Les publicités vidéo ne sont pas encore prises en charge. '
-                + 'Choisissez une image pour cette campagne.'
-            );
+        // Téléverser les médias : un seul pour image/vidéo, plusieurs pour le
+        // carrousel et le format flexible. Une vidéo est attendue jusqu'à ce
+        // que Meta l'ait traitée.
+        const mediaType = data.creative.media_type;
+        const items = (mediaType === 'carousel' || mediaType === 'flexible')
+            ? (data.creative.media_items || [])
+            : (data.creative.media_url && (mediaType === 'image' || mediaType === 'video')
+                ? [{ url: data.creative.media_url, type: mediaType }]
+                : []);
+        if (mediaType === 'video' && items.length === 0) {
+            const err = new Error('Ajoutez une vidéo pour cette publicité.');
             err.userFacing = true;
             throw err;
         }
-
-        let imageHash = null;
-        if (data.creative.media_type === 'image' && data.creative.media_url) {
-            imageHash = await uploadAdImage(adAccountId, accessToken, data.creative.media_url);
-            logger.info(`✅ Image uploadée, hash : ${imageHash}`);
+        const uploaded = [];
+        for (const [i, item] of items.entries()) {
+            step(item.type === 'video' ? 'video' : 'medias', { current: i + 1, total: items.length });
+            uploaded.push(await uploadMediaItem(adAccountId, accessToken, item));
         }
+        logger.info(`✅ ${uploaded.length} média(s) téléversé(s) (${mediaType || 'aucun'})`);
 
         // Le lien et le bouton viennent de la destination résolue : c'est ce qui
         // garantit qu'une création de messagerie ne se retrouve pas dans un
@@ -739,33 +1031,36 @@ async function createFullCampaign(userId, data) {
                 value: { link: creativeLink }
             };
 
-        const objectStorySpec = {
-            page_id: fb.fb_page_id,
-            ...identiteInstagram,
-            link_data: {
-                message: data.creative.message || '',
-                link: creativeLink,
-                name: data.creative.headline || '',
-                description: data.creative.description || '',
-                call_to_action: callToAction
-            }
-        };
+        const media = buildCreativeMedia({
+            mediaType,
+            uploaded,
+            items,
+            pageId: fb.fb_page_id,
+            identity: identiteInstagram,
+            message: data.creative.message || '',
+            headline: data.creative.headline || '',
+            description: data.creative.description || '',
+            link: creativeLink,
+            callToAction,
+            bodies: data.creative.bodies || [],
+            titles: data.creative.titles || [],
+            objective: data.objective
+        });
+        const objectStorySpec = media.object_story_spec;
+        // Partie « texte » commune à link_data et video_data.
+        const story = objectStorySpec.link_data || objectStorySpec.video_data;
 
         // Le lien d'affichage était saisi dans le formulaire, montré dans
         // l'aperçu, puis jamais transmis. Chez Meta, c'est `caption`.
-        if (data.creative.display_link) {
+        if (data.creative.display_link && objectStorySpec.link_data) {
             objectStorySpec.link_data.caption = data.creative.display_link;
         }
 
         // Message d'accueil de la conversation : la première chose que voit la
         // personne en ouvrant la discussion. Sans lui, Meta affiche un texte
         // générique.
-        if (destination.is_messaging && data.creative.welcome_message) {
-            objectStorySpec.link_data.page_welcome_message = data.creative.welcome_message;
-        }
-
-        if (imageHash) {
-            objectStorySpec.link_data.image_hash = imageHash;
+        if (destination.is_messaging && data.creative.welcome_message && story) {
+            story.page_welcome_message = data.creative.welcome_message;
         }
 
         const creativePayload = {
@@ -780,7 +1075,11 @@ async function createFullCampaign(userId, data) {
             // toujours transmis, avec la valeur décidée par l'utilisateur.
             contextual_multi_ads: {
                 enroll_status: data.multi_advertiser_ads === false ? 'OPT_OUT' : 'OPT_IN'
-            }
+            },
+
+            // Numéro WhatsApp de la Page dans l'identité, pour tous les
+            // objectifs et toutes les destinations.
+            ...whatsappIdentity(await findWhatsAppIdentity(adAccountId, accessToken, fb.fb_page_id))
         };
 
         // Paramètres d'URL (UTM) : sans eux, impossible pour l'utilisateur de
@@ -791,8 +1090,12 @@ async function createFullCampaign(userId, data) {
 
         // Exigé par Meta dès que la publicité vise plusieurs applications de
         // messagerie : sans lui, la création est refusée (sous-code 2446493).
-        if (destination.asset_feed_spec) {
-            creativePayload.asset_feed_spec = destination.asset_feed_spec;
+        // Le format flexible y fusionne ses médias et textes.
+        if (destination.asset_feed_spec || media.asset_feed_spec) {
+            creativePayload.asset_feed_spec = {
+                ...(destination.asset_feed_spec || {}),
+                ...(media.asset_feed_spec || {})
+            };
         }
 
         // Bandeau de messagerie sur une publicité qui mène vers un site web :
@@ -816,7 +1119,11 @@ async function createFullCampaign(userId, data) {
 
         let fbCreativeId = null;
 
-        if (!extensions) {
+        // Le format flexible (Ventes) se déclare avec la publicité : la
+        // création est passée en ligne dans POST /ads.
+        const enLigne = Boolean(extensions || media.creative_asset_groups_spec);
+
+        if (!enLigne) {
             const creativeResponse = await axios.post(
                 `${FACEBOOK_GRAPH_URL}/${adAccountId}/adcreatives`,
                 creativePayload,
@@ -831,12 +1138,16 @@ async function createFullCampaign(userId, data) {
 
         // 5. Créer l'Ad
         logger.info('📢 Étape 4/4 : Création Ad...');
+        step('publicite');
         const adResponse = await axios.post(
             `${FACEBOOK_GRAPH_URL}/${adAccountId}/ads`,
             {
                 name: data.ad_name || `${data.campaign_name} - Ad`,
                 adset_id: fbAdSetId,
                 creative: fbCreativeId ? { creative_id: fbCreativeId } : creativePayload,
+                ...(media.creative_asset_groups_spec
+                    ? { creative_asset_groups_spec: media.creative_asset_groups_spec }
+                    : {}),
                 status: 'PAUSED'
             },
             { params: { access_token: accessToken } }
@@ -846,6 +1157,7 @@ async function createFullCampaign(userId, data) {
         logger.info(`✅ Ad créée : ${fbAdId}`);
 
         // 6. Sauvegarder en base locale
+        step('enregistrement');
         const { data: campaignRecord, error: dbError } = await supabase
             .from('campaigns')
             .insert({
@@ -1057,5 +1369,10 @@ module.exports = {
     phoneCallToAction,
     buildPromotedObject,
     uploadAdImage,
+    uploadAdVideo,
+    findWhatsAppIdentity,
+    flexibleMode,
+    whatsappIdentity,
+    buildCreativeMedia,
     rollbackFacebookObjects
 };

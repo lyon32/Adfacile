@@ -6,6 +6,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const { ALLOWED_HEADERS } = require('./config/cors');
 const helmet = require('helmet');
 const hpp = require('hpp');
 const xss = require('xss-clean');
@@ -75,7 +76,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ALLOWED_HEADERS
 }));
 
 // Répondre immédiatement aux requêtes preflight OPTIONS

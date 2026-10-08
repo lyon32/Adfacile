@@ -6,7 +6,7 @@
  * Flow Facebook Ads Manager complet
  */
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, AlertTriangle, Loader2, Target, Users as UsersIcon, Palette, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +15,7 @@ import CampaignObjectiveSelector from '../components/campaigns/CampaignObjective
 import AdSetForm from '../components/campaigns/AdSetForm';
 import AdCreativeForm from '../components/campaigns/AdCreativeForm';
 import { useCampaigns } from '../hooks/useCampaigns';
+import { detailsUtiles, libelleEtape, nouvelleCle, stockageCreation } from '../utils/campaignCreation';
 
 const STEPS = [
     { id: 1, label: 'Objectif', icon: Target },
@@ -25,10 +26,16 @@ const STEPS = [
 const CreateCampaignPage = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { createCampaign } = useCampaigns();
+    const { createCampaign, reprendreCreation } = useCampaigns();
 
     const [step, setStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [etapeCreation, setEtapeCreation] = useState('');
+    // Une clé par soumission volontaire : elle est conservée tant que la
+    // réponse est incertaine (réseau coupé), pour qu'un nouvel essai ne crée
+    // jamais une seconde campagne.
+    const cleSoumission = useRef(null);
+    const enCours = useRef(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [createdCampaign, setCreatedCampaign] = useState(null);
@@ -77,6 +84,9 @@ const CreateCampaignPage = () => {
             call_to_action: 'LEARN_MORE',
             media_type: 'image',
             media_url: '',
+            media_items: [],
+            bodies: [],
+            titles: [],
             link: '',
             display_link: '',
             welcome_message: '',
@@ -85,22 +95,72 @@ const CreateCampaignPage = () => {
     });
 
     const handleSubmit = async () => {
+        // Garde synchrone : deux clics dans le même tick passaient l'état React.
+        if (enCours.current) return;
+        enCours.current = true;
+
         setIsSubmitting(true);
         setErrorMessage('');
         setErrorDetails(null);
+        setEtapeCreation(libelleEtape(null));
+
+        cleSoumission.current = cleSoumission.current || nouvelleCle();
 
         try {
-            const result = await createCampaign(campaignData);
+            const result = await createCampaign(campaignData, {
+                key: cleSoumission.current,
+                onStep: (etape) => setEtapeCreation(libelleEtape(etape))
+            });
+            cleSoumission.current = null;
             setCreatedCampaign(result);
             setShowSuccessModal(true);
         } catch (err) {
+            // Le serveur a tranché : un nouvel essai est une nouvelle soumission.
+            if (err.definitive) cleSoumission.current = null;
             setErrorMessage(err.message || 'Erreur lors de la création de la campagne');
-            setErrorDetails(err.details || null);
+            setErrorDetails(detailsUtiles(err.message, err.details));
             setShowErrorModal(true);
         } finally {
+            enCours.current = false;
             setIsSubmitting(false);
+            setEtapeCreation('');
         }
     };
+
+    // Rechargement pendant une création : on reprend son suivi au lieu de la
+    // laisser sans réponse (le formulaire, lui, est perdu).
+    useEffect(() => {
+        const reste = stockageCreation.lire();
+        if (!reste?.jobId || enCours.current) return;
+
+        enCours.current = true;
+        setIsSubmitting(true);
+        setEtapeCreation(libelleEtape(null));
+        reprendreCreation(reste.jobId, (etape) => setEtapeCreation(libelleEtape(etape)))
+            .then((result) => {
+                setCreatedCampaign(result);
+                setShowSuccessModal(true);
+            })
+            .catch((err) => {
+                setErrorMessage(err.message);
+                setErrorDetails(detailsUtiles(err.message, err.details));
+                setShowErrorModal(true);
+            })
+            .finally(() => {
+                enCours.current = false;
+                setIsSubmitting(false);
+                setEtapeCreation('');
+            });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Quitter la page pendant une création en interrompt le suivi : prévenir.
+    useEffect(() => {
+        if (!isSubmitting) return undefined;
+        const avertir = (e) => { e.preventDefault(); e.returnValue = ''; };
+        window.addEventListener('beforeunload', avertir);
+        return () => window.removeEventListener('beforeunload', avertir);
+    }, [isSubmitting]);
 
     return (
         <DashboardLayout title="Nouvelle campagne">
@@ -192,6 +252,7 @@ const CreateCampaignPage = () => {
                             onPrev={() => setStep(2)}
                             onSubmit={handleSubmit}
                             isSubmitting={isSubmitting}
+                            progressLabel={etapeCreation}
                         />
                     )}
                 </div>

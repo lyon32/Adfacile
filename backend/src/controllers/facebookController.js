@@ -20,6 +20,7 @@ const {
     getWhatsAppAccounts,
     getUserPermissions,
     getAdAccountPixels,
+    getPixelsOverview,
     describeAdAccountStatus
 } = require('../services/facebookService');
 const tokenHealth = require('../services/facebookTokenHealth');
@@ -833,13 +834,20 @@ const getPixels = async (req, res) => {
             });
         }
 
-        const pixels = await getAdAccountPixels(
-            account.fb_account_id, decryptToken(account.fb_access_token)
+        // `pixels` : rattachés au compte, utilisables tout de suite.
+        // `business_unattached` : possédés par l'entreprise mais pas encore
+        // partagés avec ce compte — l'écran les nomme et explique comment les
+        // partager, au lieu de dire « aucun ensemble de données ».
+        const { attached: pixels, business_unattached } = await getPixelsOverview(
+            account.fb_account_id,
+            decryptToken(account.fb_access_token)
         );
+        // L'entreprise est lue sur le compte publicitaire : la colonne
+        // fb_business_id peut contenir un compte WhatsApp Business.
 
-        logger.info(`📊 ${pixels.length} ensemble(s) de données pour user ${userId}`);
+        logger.info(`📊 ${pixels.length} ensemble(s) rattaché(s), ${business_unattached.length} non partagé(s) pour user ${userId}`);
 
-        return res.json({ success: true, data: { pixels } });
+        return res.json({ success: true, data: { pixels, business_unattached } });
     } catch (error) {
         logger.error('❌ Erreur getPixels:', error.message);
         return res.status(502).json({

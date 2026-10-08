@@ -475,3 +475,44 @@ describe('deleteCampaignOnFacebook — création publicitaire', () => {
             .resolves.toEqual({ deleted: true });
     });
 });
+
+describe('uploadAdVideo', () => {
+    const { uploadAdVideo } = require('./facebookAdsService');
+    const sansPause = { pause: () => Promise.resolve(), intervalleMs: 3000, delaiMaxMs: 9000 };
+
+    function graph(statuts) {
+        const file = [...statuts];
+        axios.get.mockImplementation((url) => {
+            if (url.startsWith('https://cdn.test')) return Promise.resolve({ data: Buffer.from('v'), headers: {} });
+            if (url.endsWith('/thumbnails')) return Promise.resolve({ data: { data: [{ uri: 'https://t/1.jpg', is_preferred: true }] } });
+            return Promise.resolve({ data: { status: { video_status: file.shift() || file[0] } } });
+        });
+        axios.post.mockResolvedValue({ data: { id: 'VID' } });
+    }
+
+    it('envoie les octets en multipart sur /advideos', async () => {
+        graph(['ready']);
+        await uploadAdVideo('act_1', 'token', 'https://cdn.test/v.mp4', sansPause);
+        const [url, body] = axios.post.mock.calls[0];
+        expect(url).toMatch(/act_1\/advideos$/);
+        expect(typeof body.getHeaders).toBe('function');
+    });
+
+    it('attend que la vidéo soit prête puis renvoie la miniature préférée', async () => {
+        graph(['processing', 'processing', 'ready']);
+        const res = await uploadAdVideo('act_1', 'token', 'https://cdn.test/v.mp4', sansPause);
+        expect(res).toEqual({ video_id: 'VID', thumbnail_url: 'https://t/1.jpg' });
+    });
+
+    it('échoue clairement si Meta ne parvient pas à traiter la vidéo', async () => {
+        graph(['error']);
+        await expect(uploadAdVideo('act_1', 'token', 'https://cdn.test/v.mp4', sansPause))
+            .rejects.toThrow(/traiter la vidéo/);
+    });
+
+    it('abandonne après le délai maximal', async () => {
+        graph(['processing', 'processing', 'processing', 'processing', 'processing']);
+        await expect(uploadAdVideo('act_1', 'token', 'https://cdn.test/v.mp4', sansPause))
+            .rejects.toThrow(/trop de temps/);
+    });
+});

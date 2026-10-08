@@ -39,3 +39,4 @@ dist-ssr
 # Captures et jeux de test Playwright (MCP)
 .playwright-mcp/
 .tools/
+tmp/

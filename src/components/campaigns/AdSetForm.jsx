@@ -14,6 +14,7 @@ import {
 import AITargetingHelper from '../ai/AITargetingHelper';
 import CurrencyHint from './CurrencyHint';
 import MessagingDestinationPicker from './MessagingDestinationPicker';
+import InfoTooltip from '../ui/InfoTooltip';
 import api from '../../services/api';
 import '../../styles/adset-form.css';
 
@@ -391,6 +392,23 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
 
     const [pixels, setPixels] = useState(null);      // null = pas encore chargé
     const [erreurPixels, setErreurPixels] = useState('');
+    const [pixelsNonPartages, setPixelsNonPartages] = useState([]);
+    const pixelChoisi = pixels?.find(p => p.id === campaignData.pixel_id) || null;
+
+    // Sortie explicite pour qui n'a pas de pixel : Trafic n'en exige aucun.
+    // L'utilisateur le demande par un clic ; rien n'est changé en cachette, et
+    // le nom, l'adresse du site et l'audience sont conservés.
+    const passerATrafic = () => {
+        setCampaignData(prev => ({
+            ...prev,
+            objective: 'OUTCOME_TRAFFIC',
+            optimization_goal: '',
+            destination_type: 'WEBSITE',
+            messaging_destinations: [],
+            cost_per_result_goal: '',
+            pixel_id: ''
+        }));
+    };
 
     useEffect(() => {
         if (!besoinPixel || pixels !== null) return;
@@ -400,6 +418,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
             .then(res => {
                 if (annule) return;
                 setPixels(res.data?.data?.pixels || []);
+                setPixelsNonPartages(res.data?.data?.business_unattached || []);
                 setErreurPixels('');
             })
             .catch(err => {
@@ -618,7 +637,9 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
         // Facebook l'accepte, mais elle ne peut pas être diffusée.
         (!campaignData.messaging_destinations?.includes('whatsapp')
             || /^\d+$/.test((campaignData.whatsapp_phone_number_id || '').trim())) &&
-        // Optimiser sur les achats sans ensemble de données est refusé par Meta.
+        // Meta refuse d'optimiser les achats d'un site sans ensemble de données
+        // (sonde du 8 octobre 2026). L'exiger ici évite d'échouer à la dernière
+        // étape ; le bloc « Suivi des achats » donne les deux sorties.
         (!besoinPixel || Boolean(campaignData.pixel_id));
 
     const rangePct = Math.round(((daily_budget - 1000) / (50000 - 1000)) * 100);
@@ -919,6 +940,13 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                     <div className="adset-field-group">
                                         <label className="adset-label">
                                             Suivi des achats <span className="required">*</span>
+                                            <InfoTooltip label="À quoi sert un pixel ?">
+                                                Un pixel (ou « ensemble de données ») est un petit code installé
+                                                sur votre site. Il dit à Facebook qui a acheté ou s’est inscrit,
+                                                pour qu’il montre vos publicités à des personnes qui vous
+                                                ressemblent, et pour mesurer vos ventes. Sans lui, Facebook ne
+                                                peut pas optimiser les achats sur un site.
+                                            </InfoTooltip>
                                         </label>
 
                                         {pixels === null && (
@@ -928,7 +956,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                         {pixels?.length === 1 && (
                                             <p className="adset-hint">
                                                 ✅ Achats suivis via <strong>{pixels[0].name}</strong>.
-                                                Rien à faire, il est déjà relié à votre compte publicitaire.
+                                                Il est déjà relié à votre compte publicitaire.
                                             </p>
                                         )}
 
@@ -941,7 +969,9 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                                 >
                                                     <option value="">Choisissez l’ensemble de données</option>
                                                     {pixels.map(p => (
-                                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                                        <option key={p.id} value={p.id}>
+                                                            {p.name}{p.last_fired_time ? '' : ' — aucun évènement reçu'}
+                                                        </option>
                                                     ))}
                                                 </select>
                                                 <p className="adset-hint">
@@ -958,31 +988,62 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                         )}
 
                                         {pixels?.length === 0 && !erreurPixels && (
-                                            <div className="adset-warning">
-                                                <p>
-                                                    Aucun ensemble de données n’est rattaché à ce compte
-                                                    publicitaire. Sans lui, Facebook ne sait pas qui achète sur
-                                                    votre site et ne peut pas chercher des acheteurs.
+                                            <div className="adset-warning adset-pixel-note">
+                                                <p className="adset-pixel-title">
+                                                    Un pixel est nécessaire pour optimiser les achats.
                                                 </p>
                                                 <p>
-                                                    Si vous en avez déjà un dans le{' '}
+                                                    Sans pixel, choisissez Trafic : il fonctionne sans, et vous suivez
+                                                    impressions, clics et CTR.
+                                                </p>
+
+                                                {pixelsNonPartages.length > 0 && (
+                                                    <div className="adset-pixel-found">
+                                                        <p className="adset-pixel-subtitle">
+                                                            Déjà dans votre entreprise, non partagé avec ce compte :
+                                                        </p>
+                                                        <ul className="adset-pixel-list">
+                                                            {pixelsNonPartages.map(p => (
+                                                                <li key={p.id}>{p.name}</li>
+                                                            ))}
+                                                        </ul>
+                                                        <details className="adset-pixel-steps">
+                                                            <summary>Comment le partager ?</summary>
+                                                            <ol>
+                                                                <li>Ouvrez les Paramètres d’entreprise.</li>
+                                                                <li>Sources de données → Ensembles de données.</li>
+                                                                <li>Choisissez l’ensemble → Ajouter des ressources → ce compte publicitaire.</li>
+                                                                <li>Revenez ici.</li>
+                                                            </ol>
+                                                        </details>
+                                                    </div>
+                                                )}
+
+                                                <p className="adset-pixel-action">
                                                     <a
                                                         href="https://business.facebook.com/events_manager2"
                                                         target="_blank"
                                                         rel="noreferrer"
                                                     >
-                                                        Gestionnaire d’évènements
+                                                        Créer un pixel ↗
                                                     </a>
-                                                    , il reste à le partager avec ce compte : Paramètres
-                                                    d’entreprise → Sources de données → Ensembles de données →
-                                                    votre ensemble → Ajouter des ressources → ce compte
-                                                    publicitaire.
-                                                </p>
-                                                <p>
-                                                    Sinon, choisissez une autre optimisation — « Obtenir un
-                                                    maximum de visites » fonctionne sans ensemble de données.
+                                                    <button
+                                                        type="button"
+                                                        className="adset-pixel-switch"
+                                                        onClick={passerATrafic}
+                                                    >
+                                                        Passer à Trafic
+                                                    </button>
                                                 </p>
                                             </div>
+                                        )}
+
+                                        {pixelChoisi && !pixelChoisi.last_fired_time && (
+                                            <p className="adset-hint">
+                                                Ce pixel n’a encore reçu aucun évènement : installez son code sur
+                                                votre site pour mesurer vos ventes. Vous pouvez créer la campagne
+                                                dès maintenant.
+                                            </p>
                                         )}
 
                                         {campaignData.pixel_id && (
@@ -1448,6 +1509,13 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Dit pourquoi « Suivant » est grisé, au lieu de le laisser deviner. */}
+            {besoinPixel && !campaignData.pixel_id && pixels !== null && (
+                <p className="adset-hint" role="status" style={{ textAlign: 'right' }}>
+                    Choisissez un pixel, ou passez à Trafic, pour continuer.
+                </p>
+            )}
 
             {/* Navigation */}
             <div className="adset-nav">

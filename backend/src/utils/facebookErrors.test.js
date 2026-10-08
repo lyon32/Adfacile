@@ -58,4 +58,18 @@ describe('translateFacebookError', () => {
             expect(translateFacebookError({}).message).toBeTruthy();
         });
     });
+
+describe('objectif de performance refusé (Ventes sans pixel)', () => {
+    it('explique le pixel manquant au lieu du message générique de Meta', () => {
+        const r = translateFacebookError({
+            code: 100,
+            error_subcode: 2490408,
+            message: 'Invalid parameter',
+            error_user_msg: 'Vous ne pouvez pas utiliser l’objectif de performance sélectionné.'
+        });
+        expect(r.message).toMatch(/ensemble de données/);
+        expect(r.message).toMatch(/messagerie/);
+        expect(r.fix).toBe('destination');
+    });
+});
 });

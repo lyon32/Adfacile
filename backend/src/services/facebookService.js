@@ -419,6 +419,14 @@ const AD_ACCOUNT_STATUS = {
 const describeAdAccountStatus = (status) =>
     AD_ACCOUNT_STATUS[status] || { usable: false, label: 'Statut inconnu' };
 
+const formaterPixels = (liste) => (liste || [])
+    .filter(pixel => !pixel.is_unavailable)
+    .map(pixel => ({
+        id: pixel.id,
+        name: pixel.name || `Pixel ${pixel.id}`,
+        last_fired_time: pixel.last_fired_time || null
+    }));
+
 const getAdAccountPixels = async (adAccountId, accessToken) => {
     const compte = String(adAccountId).startsWith('act_') ? adAccountId : `act_${adAccountId}`;
 
@@ -430,22 +438,73 @@ const getAdAccountPixels = async (adAccountId, accessToken) => {
             }
         });
 
-        return (response.data.data || [])
-            .filter(pixel => !pixel.is_unavailable)
-            .map(pixel => ({
-                id: pixel.id,
-                name: pixel.name || `Pixel ${pixel.id}`,
-                last_fired_time: pixel.last_fired_time || null
-            }));
+        return formaterPixels(response.data.data);
     } catch (error) {
         logger.error('❌ Erreur récupération pixels:', error.response?.data || error.message);
         throw new Error('Impossible de récupérer les ensembles de données du compte publicitaire');
     }
 };
 
+/**
+ * Ensembles de données que l'entreprise possède (`{entreprise}/owned_pixels`).
+ *
+ * Lecture seule, avec la permission `business_management` que le jeton a déjà.
+ * Jamais bloquant : sans entreprise, sans permission ou si Meta refuse, la
+ * liste est vide — l'écran retombe alors sur ce que le compte a déjà.
+ */
+const getBusinessPixels = async (businessId, accessToken) => {
+    if (!businessId) return [];
+
+    try {
+        const response = await axios.get(`${FACEBOOK_GRAPH_URL}/${businessId}/owned_pixels`, {
+            params: {
+                fields: 'id,name,is_unavailable,last_fired_time',
+                access_token: accessToken
+            }
+        });
+        return formaterPixels(response.data.data);
+    } catch (error) {
+        logger.warn('⚠️ Ensembles de données de l’entreprise illisibles : '
+            + `${error.response?.data?.error?.message || error.message}`);
+        return [];
+    }
+};
+
+/**
+ * Vue d'ensemble pour le wizard : ce qui est rattaché au compte publicitaire
+ * (utilisable tout de suite) et ce que l'entreprise possède sans l'avoir
+ * partagé avec ce compte (à partager, dans Meta, avant de s'en servir).
+ */
+const getPixelsOverview = async (adAccountId, accessToken, businessId = null) => {
+    const attached = await getAdAccountPixels(adAccountId, accessToken);
+
+    let entreprise = businessId;
+    if (!entreprise) {
+        const compte = String(adAccountId).startsWith('act_') ? adAccountId : `act_${adAccountId}`;
+        try {
+            const response = await axios.get(`${FACEBOOK_GRAPH_URL}/${compte}`, {
+                params: { fields: 'business{id}', access_token: accessToken }
+            });
+            entreprise = response.data?.business?.id || null;
+        } catch {
+            entreprise = null;
+        }
+    }
+
+    const dansEntreprise = await getBusinessPixels(entreprise, accessToken);
+    const rattaches = new Set(attached.map(p => p.id));
+
+    return {
+        attached,
+        business_unattached: dansEntreprise.filter(p => !rattaches.has(p.id))
+    };
+};
+
 module.exports = {
     exchangeCodeForToken,
     getAdAccountPixels,
+    getBusinessPixels,
+    getPixelsOverview,
     describeAdAccountStatus,
     getLongLivedToken,
     getUserInfo,

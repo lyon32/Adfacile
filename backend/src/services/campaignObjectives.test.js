@@ -269,3 +269,32 @@ describe('toApiDestination', () => {
         expect(toApiDestination('OUTCOME_TRAFFIC', undefined)).toBeUndefined();
     });
 });
+
+describe('pixel manquant : message d\'erreur actionnable', () => {
+    const { validateCombination } = require('./campaignObjectives');
+
+    it('explique quoi faire quand l\'optimisation sur les achats n\'a pas de pixel', () => {
+        const res = validateCombination({
+            objective: 'OUTCOME_SALES',
+            goal: 'OFFSITE_CONVERSIONS',
+            destination: 'WEBSITE',
+            promoted_object: {}
+        });
+        const texte = JSON.stringify(res);
+        expect(texte).toMatch(/ensemble de données/);
+        expect(texte).toMatch(/Gestionnaire d/);
+        expect(texte).toMatch(/messagerie/);
+    });
+});
+
+describe('listObjectives — configuration de conversion requise', () => {
+    const { listObjectives } = require('./campaignObjectives');
+
+    it('signale que Ventes exige un ensemble de données, pas Trafic', () => {
+        const liste = listObjectives();
+        const trouver = (v) => liste.find(o => o.value === v);
+        expect(trouver('OUTCOME_SALES').needs_dataset).toBe(true);
+        expect(trouver('OUTCOME_TRAFFIC').needs_dataset).toBe(false);
+        expect(trouver('OUTCOME_AWARENESS').needs_dataset).toBe(false);
+    });
+});

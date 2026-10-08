@@ -7,6 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import api from '../services/api';
+import { suivreCreation, stockageCreation } from '../utils/campaignCreation';
 
 export const useCampaigns = () => {
     const [campaigns, setCampaigns] = useState([]);
@@ -46,31 +47,79 @@ export const useCampaigns = () => {
     }, []);
 
     /**
-     * Crée une campagne complète (3 niveaux Facebook)
+     * Enrichit une erreur de création avec ce que l'écran affiche.
+     * `definitive` : le serveur a répondu (refus ou échec) — réessayer demande
+     * une nouvelle soumission. Sinon (réseau coupé), la même clé d'idempotence
+     * peut être réutilisée sans risque de doublon.
      */
-    const createCampaign = useCallback(async (data) => {
+    const erreurCreation = (err) => {
+        const data = err.response?.data || (err.name === 'CreationEchouee' ? {
+            message: err.message, error: err.code, details: err.details, upgrade_url: err.upgradeUrl
+        } : null);
+        const msg = data?.message || err.message || 'Erreur création campagne';
+
+        const error = new Error(msg);
+        error.code = data?.error;
+        error.details = data?.details;
+        error.upgradeUrl = data?.upgrade_url;
+        error.definitive = Boolean(data);
+        return error;
+    };
+
+    const lireCreation = (jobId) => () => api.get(`/campaigns/jobs/${jobId}`).then(r => r.data.data);
+
+    /**
+     * Crée une campagne complète (3 niveaux Facebook).
+     *
+     * Le serveur répond tout de suite (202) et poursuit en arrière-plan : une
+     * création avec vidéos dure plusieurs minutes, trop pour une seule requête
+     * (coupée par l'hébergement, et l'écran affichait une erreur alors que la
+     * campagne existait). La clé d'idempotence évite qu'un nouvel essai crée
+     * une seconde campagne.
+     *
+     * @param {object}   data
+     * @param {object}   [options]
+     * @param {string}   [options.key]    clé d'idempotence de cette soumission
+     * @param {Function} [options.onStep] reçoit l'étape en cours
+     */
+    const createCampaign = useCallback(async (data, { key, onStep } = {}) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await api.post('/campaigns', data);
-            if (response.data.success) {
-                return response.data.data;
-            }
-            throw new Error('Erreur inattendue');
+            const response = await api.post('/campaigns', data, {
+                headers: key ? { 'Idempotency-Key': key } : {}
+            });
+            if (!response.data.success) throw new Error('Erreur inattendue');
+
+            // Serveur sans suivi de création : réponse directe, comme avant.
+            const jobId = response.data.data?.job_id;
+            if (response.status !== 202 || !jobId) return response.data.data;
+
+            stockageCreation.ecrire({ key, jobId });
+            const result = await suivreCreation({ lireJob: lireCreation(jobId), onStep });
+            stockageCreation.effacer();
+            return result;
         } catch (err) {
-            const errorData = err.response?.data;
-            const msg = errorData?.message || 'Erreur création campagne';
-
-            // Enrichir l'erreur avec les détails
-            const error = new Error(msg);
-            error.code = errorData?.error;
-            error.details = errorData?.details;
-            error.upgradeUrl = errorData?.upgrade_url;
-
-            setError(msg);
+            const error = erreurCreation(err);
+            // Échec constaté par le serveur : rien à reprendre.
+            if (error.definitive) stockageCreation.effacer();
+            setError(error.message);
             throw error;
         } finally {
             setLoading(false);
+        }
+    }, []);
+
+    /** Reprend le suivi d'une création lancée avant un rechargement de la page. */
+    const reprendreCreation = useCallback(async (jobId, onStep) => {
+        try {
+            const result = await suivreCreation({ lireJob: lireCreation(jobId), onStep });
+            stockageCreation.effacer();
+            return result;
+        } catch (err) {
+            const error = erreurCreation(err);
+            stockageCreation.effacer();
+            throw error;
         }
     }, []);
 
@@ -108,6 +157,7 @@ export const useCampaigns = () => {
         meta,
         fetchCampaigns,
         createCampaign,
+        reprendreCreation,
         updateStatus,
         deleteCampaign
     };
