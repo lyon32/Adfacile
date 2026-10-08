@@ -39,6 +39,14 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     // Log en dev pour debug
+    // Facebook a invalidé la connexion : on prévient toute l'application
+    // (bannière de reconnexion) au lieu de laisser chaque écran échouer
+    // en silence.
+    if (error.response?.data?.code === 'FACEBOOK_RECONNECT_REQUIRED') {
+      window.dispatchEvent(new CustomEvent('facebook:reconnect-required', {
+        detail: { message: error.response.data.message }
+      }));
+    }
     if (error.response?.status === 401) {
       console.warn(
         `[API] 401 sur ${error.config?.url || 'unknown'} — `,

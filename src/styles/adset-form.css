@@ -956,6 +956,32 @@
     margin-top: 6px;
 }
 
+/* Avertissement bloquant : ce qui manque, et comment le régler. */
+.adset-warning {
+    margin-top: 8px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border-left: 4px solid #eab308;
+    background: #fefce8;
+}
+
+.adset-warning p {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #713f12;
+    margin: 0 0 6px;
+}
+
+.adset-warning p:last-child {
+    margin-bottom: 0;
+}
+
+.adset-warning a {
+    color: #a16207;
+    font-weight: 600;
+    text-decoration: underline;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    CONVERSION FCFA → USD sous les champs de budget
    L'utilisateur saisit en FCFA ; le compte publicitaire est en dollars.

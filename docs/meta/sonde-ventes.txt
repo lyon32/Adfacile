@@ -1,0 +1,132 @@
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|WEBSITE|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|UNDEFINED|Veuillez sélectionner un objet promu pour votre ensemble de publicités.
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|MESSENGER|Quand vous optimisez pour les conversions hors site, vous devez fournir un objet promu ave
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|WHATSAPP|Quand vous optimisez pour les conversions hors site, vous devez fournir un objet promu ave
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|INSTAGRAM_DIRECT|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|Quand vous optimisez pour les conversions hors site, vous devez fournir un objet promu ave
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|APP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet objectif. Les valeurs
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|WEBSITE_AND_APP|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|WEBSITE_AND_STORE_VISIT|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|OFFSITE_CONVERSIONS|WEBSITE_AND_PHONE_CALL|Veuillez sélectionner un objet promu pour votre ensemble de publicités.
+KO|OUTCOME_SALES|VALUE|WEBSITE|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|VALUE|UNDEFINED|Ad accounts owned by a new business can use value optimization for ad delivery after sever
+KO|OUTCOME_SALES|VALUE|MESSENGER|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|VALUE|WHATSAPP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|VALUE|INSTAGRAM_DIRECT|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|VALUE|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|VALUE|PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|VALUE|APP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|VALUE|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet objectif. Les valeurs
+KO|OUTCOME_SALES|VALUE|WEBSITE_AND_APP|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|VALUE|WEBSITE_AND_STORE_VISIT|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|VALUE|WEBSITE_AND_PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|WEBSITE|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+OK|OUTCOME_SALES|LANDING_PAGE_VIEWS|UNDEFINED
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|MESSENGER|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|WHATSAPP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|INSTAGRAM_DIRECT|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|APP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet objectif. Les valeurs
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|WEBSITE_AND_APP|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|WEBSITE_AND_STORE_VISIT|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|LANDING_PAGE_VIEWS|WEBSITE_AND_PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|LINK_CLICKS|WEBSITE|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+OK|OUTCOME_SALES|LINK_CLICKS|UNDEFINED
+OK|OUTCOME_SALES|LINK_CLICKS|MESSENGER
+OK|OUTCOME_SALES|LINK_CLICKS|WHATSAPP
+KO|OUTCOME_SALES|LINK_CLICKS|INSTAGRAM_DIRECT|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+OK|OUTCOME_SALES|LINK_CLICKS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+KO|OUTCOME_SALES|LINK_CLICKS|PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|LINK_CLICKS|APP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|LINK_CLICKS|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet objectif. Les valeurs
+KO|OUTCOME_SALES|LINK_CLICKS|WEBSITE_AND_APP|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|LINK_CLICKS|WEBSITE_AND_STORE_VISIT|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|LINK_CLICKS|WEBSITE_AND_PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|REACH|WEBSITE|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+OK|OUTCOME_SALES|REACH|UNDEFINED
+OK|OUTCOME_SALES|REACH|MESSENGER
+OK|OUTCOME_SALES|REACH|WHATSAPP
+KO|OUTCOME_SALES|REACH|INSTAGRAM_DIRECT|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+OK|OUTCOME_SALES|REACH|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+KO|OUTCOME_SALES|REACH|PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|REACH|APP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|REACH|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet objectif. Les valeurs
+KO|OUTCOME_SALES|REACH|WEBSITE_AND_APP|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|REACH|WEBSITE_AND_STORE_VISIT|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|REACH|WEBSITE_AND_PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|IMPRESSIONS|WEBSITE|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+OK|OUTCOME_SALES|IMPRESSIONS|UNDEFINED
+OK|OUTCOME_SALES|IMPRESSIONS|MESSENGER
+OK|OUTCOME_SALES|IMPRESSIONS|WHATSAPP
+KO|OUTCOME_SALES|IMPRESSIONS|INSTAGRAM_DIRECT|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+OK|OUTCOME_SALES|IMPRESSIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+KO|OUTCOME_SALES|IMPRESSIONS|PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|IMPRESSIONS|APP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|IMPRESSIONS|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet objectif. Les valeurs
+KO|OUTCOME_SALES|IMPRESSIONS|WEBSITE_AND_APP|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|IMPRESSIONS|WEBSITE_AND_STORE_VISIT|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|IMPRESSIONS|WEBSITE_AND_PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|CONVERSATIONS|WEBSITE|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+OK|OUTCOME_SALES|CONVERSATIONS|UNDEFINED
+OK|OUTCOME_SALES|CONVERSATIONS|MESSENGER
+OK|OUTCOME_SALES|CONVERSATIONS|WHATSAPP
+OK|OUTCOME_SALES|CONVERSATIONS|INSTAGRAM_DIRECT
+OK|OUTCOME_SALES|CONVERSATIONS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP
+KO|OUTCOME_SALES|CONVERSATIONS|PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|CONVERSATIONS|APP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|CONVERSATIONS|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet objectif. Les valeurs
+KO|OUTCOME_SALES|CONVERSATIONS|WEBSITE_AND_APP|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|CONVERSATIONS|WEBSITE_AND_STORE_VISIT|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|CONVERSATIONS|WEBSITE_AND_PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|QUALITY_CALL|WEBSITE|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|QUALITY_CALL|UNDEFINED|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|QUALITY_CALL|MESSENGER|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|QUALITY_CALL|WHATSAPP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|QUALITY_CALL|INSTAGRAM_DIRECT|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|QUALITY_CALL|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+OK|OUTCOME_SALES|QUALITY_CALL|PHONE_CALL
+KO|OUTCOME_SALES|QUALITY_CALL|APP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|QUALITY_CALL|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet objectif. Les valeurs
+KO|OUTCOME_SALES|QUALITY_CALL|WEBSITE_AND_APP|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|QUALITY_CALL|WEBSITE_AND_STORE_VISIT|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|QUALITY_CALL|WEBSITE_AND_PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|THRUPLAY|WEBSITE|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|THRUPLAY|UNDEFINED|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|THRUPLAY|MESSENGER|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|THRUPLAY|WHATSAPP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|THRUPLAY|INSTAGRAM_DIRECT|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|THRUPLAY|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|THRUPLAY|PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|THRUPLAY|APP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|THRUPLAY|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet objectif. Les valeurs
+KO|OUTCOME_SALES|THRUPLAY|WEBSITE_AND_APP|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|THRUPLAY|WEBSITE_AND_STORE_VISIT|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|THRUPLAY|WEBSITE_AND_PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|POST_ENGAGEMENT|WEBSITE|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+OK|OUTCOME_SALES|POST_ENGAGEMENT|UNDEFINED
+KO|OUTCOME_SALES|POST_ENGAGEMENT|MESSENGER|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|POST_ENGAGEMENT|WHATSAPP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|POST_ENGAGEMENT|INSTAGRAM_DIRECT|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|POST_ENGAGEMENT|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|POST_ENGAGEMENT|PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|POST_ENGAGEMENT|APP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|POST_ENGAGEMENT|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet objectif. Les valeurs
+KO|OUTCOME_SALES|POST_ENGAGEMENT|WEBSITE_AND_APP|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|POST_ENGAGEMENT|WEBSITE_AND_STORE_VISIT|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|POST_ENGAGEMENT|WEBSITE_AND_PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|APP_INSTALLS|WEBSITE|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|APP_INSTALLS|UNDEFINED|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|APP_INSTALLS|MESSENGER|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|APP_INSTALLS|WHATSAPP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|APP_INSTALLS|INSTAGRAM_DIRECT|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|APP_INSTALLS|MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|APP_INSTALLS|PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|APP_INSTALLS|APP|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c
+KO|OUTCOME_SALES|APP_INSTALLS|ON_AD|Le type de destination sélectionné n’est pas pris en charge pour cet objectif. Les valeurs
+KO|OUTCOME_SALES|APP_INSTALLS|WEBSITE_AND_APP|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|APP_INSTALLS|WEBSITE_AND_STORE_VISIT|(#100) destination_type must be one of the following values: WEBSITE, APP, MESSENGER, APPL
+KO|OUTCOME_SALES|APP_INSTALLS|WEBSITE_AND_PHONE_CALL|Vous ne pouvez pas utiliser l’objectif de performance sélectionné avec votre objectif de c

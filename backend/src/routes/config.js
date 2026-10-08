@@ -5,7 +5,7 @@
 
 const express = require('express');
 const { getRate, minDailyBudgetFcfa, ACCOUNT_CURRENCY } = require('../utils/currency');
-const { listObjectives, OBJECTIVES } = require('../services/campaignObjectives');
+const { listObjectives, listDestinations, OBJECTIVES } = require('../services/campaignObjectives');
 const { DESTINATION_TYPE_BY_COMBO } = require('../services/messagingDestinations');
 
 const router = express.Router();
@@ -45,7 +45,13 @@ router.get('/objectives', (req, res) => {
         data: {
             objectives: listObjectives().map(o => ({
                 ...o,
-                goals_by_destination: OBJECTIVES[o.value].goals
+                goals_by_destination: OBJECTIVES[o.value].goals,
+
+                // Les lieux de conversion propres à cet objectif. Le formulaire
+                // affichait six cartes identiques pour tous les objectifs, en
+                // grisant les inapplicables : Ventes proposait « Instagram ou
+                // Facebook », que Meta n'offre pas sur cet objectif.
+                destinations: listDestinations(o.value)
             })),
 
             // Correspondance applications cochées → destination_type de Meta.

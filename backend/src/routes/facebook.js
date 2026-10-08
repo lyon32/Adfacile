@@ -15,7 +15,10 @@ const {
     getPermissions,
     getUserAllPages,
     switchActivePage,
-    refreshConnections
+    refreshConnections,
+    getPixels,
+    getAdAccountsForUser,
+    switchAdAccount
 } = require('../controllers/facebookController');
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -54,5 +57,16 @@ router.get('/permissions', authenticate, getPermissions);
 router.get('/pages', authenticate, getUserAllPages);
 router.post('/switch-page', authenticate, switchActivePage);
 router.post('/refresh-connections', authenticate, refreshConnections);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GET /api/facebook/pixels — Ensembles de données du compte publicitaire
+// ═══════════════════════════════════════════════════════════════════════════════
+router.get('/pixels', authenticate, getPixels);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Comptes publicitaires — lecture et changement du compte actif
+// ═══════════════════════════════════════════════════════════════════════════════
+router.get('/ad-accounts', authenticate, getAdAccountsForUser);
+router.post('/switch-ad-account', authenticate, switchAdAccount);
 
 module.exports = router;

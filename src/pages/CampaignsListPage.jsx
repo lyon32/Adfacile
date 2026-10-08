@@ -5,7 +5,7 @@
  * Affiche les campagnes avec filtres, empty state, et modal limite plan
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
     Plus, Target, Loader2, AlertTriangle,
@@ -17,13 +17,15 @@ import CampaignCard from '../components/campaigns/CampaignCard';
 import { useCampaigns } from '../hooks/useCampaigns';
 import { useFacebook } from '../hooks/useFacebook';
 import ConnectFacebookButton from '../components/facebook/ConnectFacebookButton';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
+import ToastStack, { useToasts } from '../components/ui/Toast';
 import '../styles/campaigns-list.css';
 
 const FILTERS = [
-    { value: 'all', label: 'Toutes' },
-    { value: 'active', label: '🟢 Actives' },
-    { value: 'paused', label: '⏸️ En pause' },
-    { value: 'completed', label: '✅ Terminées' }
+    { value: 'all', label: 'Toutes', dot: null },
+    { value: 'active', label: 'Actives', dot: 'active' },
+    { value: 'paused', label: 'En pause', dot: 'paused' },
+    { value: 'completed', label: 'Terminées', dot: 'completed' }
 ];
 
 const CampaignsListPage = () => {
@@ -33,14 +35,43 @@ const CampaignsListPage = () => {
     const { connected: fbConnected, loading: fbLoading } = useFacebook();
     const [activeFilter, setActiveFilter] = useState('all');
     const [showLimitModal, setShowLimitModal] = useState(false);
+    const [campaignToDelete, setCampaignToDelete] = useState(null);
+    const [deletingId, setDeletingId] = useState(null);
+    const { toasts, showToast, dismissToast } = useToasts();
 
     useEffect(() => {
         fetchCampaigns(activeFilter);
     }, [activeFilter, fetchCampaigns]);
 
+    const handleStatusChange = useCallback(async (id, status) => {
+        try {
+            await updateStatus(id, status);
+            showToast('success', status === 'active' ? 'Campagne activée' : 'Campagne mise en pause');
+        } catch (err) {
+            showToast('error', err.message || 'Le statut n\'a pas pu être modifié');
+        }
+    }, [updateStatus, showToast]);
+
+    const handleConfirmDelete = async () => {
+        if (!campaignToDelete) return;
+        const { id, name } = campaignToDelete;
+        setDeletingId(id);
+        try {
+            await deleteCampaign(id);
+            setCampaignToDelete(null);
+            showToast('success', `Campagne « ${name} » supprimée`);
+            // Recharge la liste et les compteurs du plan après suppression.
+            fetchCampaigns(activeFilter);
+        } catch (err) {
+            showToast('error', err.message || 'La campagne n\'a pas pu être supprimée');
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
     const handleCreateClick = () => {
         if (!fbConnected) {
-            alert("Vous devez d'abord connecter votre compte Facebook !");
+            showToast('info', 'Connectez votre compte Facebook pour créer une campagne');
             return;
         }
 
@@ -86,7 +117,9 @@ const CampaignsListPage = () => {
                             key={filter.value}
                             onClick={() => handleFilterChange(filter.value)}
                             className={`campaigns-filter-btn ${activeFilter === filter.value ? 'active' : ''}`}
+                            aria-pressed={activeFilter === filter.value}
                         >
+                            {filter.dot && <span className={`campaigns-filter-dot campaigns-filter-dot--${filter.dot}`} />}
                             {filter.label}
                         </button>
                     ))}
@@ -141,8 +174,9 @@ const CampaignsListPage = () => {
                             <CampaignCard
                                 key={campaign.id}
                                 campaign={campaign}
-                                onUpdateStatus={updateStatus}
-                                onDelete={deleteCampaign}
+                                onUpdateStatus={handleStatusChange}
+                                onRequestDelete={setCampaignToDelete}
+                                deleting={deletingId === campaign.id}
                             />
                         ))}
                     </div>
@@ -184,6 +218,25 @@ const CampaignsListPage = () => {
                     </div>
                 </div>
             )}
+
+            {/* Confirmation de suppression */}
+            <ConfirmDialog
+                open={Boolean(campaignToDelete)}
+                title="Supprimer cette campagne ?"
+                message={campaignToDelete
+                    ? `« ${campaignToDelete.name} » sera supprimée d'AdsFacile et de Facebook.`
+                    : ''}
+                hint="Cette action est définitive."
+                confirmLabel="Supprimer"
+                loadingLabel="Suppression…"
+                cancelLabel="Annuler"
+                tone="danger"
+                loading={Boolean(deletingId)}
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setCampaignToDelete(null)}
+            />
+
+            <ToastStack toasts={toasts} onDismiss={dismissToast} />
         </DashboardLayout>
     );
 };

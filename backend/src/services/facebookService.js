@@ -143,8 +143,18 @@ const getUserPages = async (accessToken) => {
         return response.data.data || [];
     } catch (error) {
         logger.error('❌ Erreur récupération pages FB:', error.response?.data || error.message);
-        throw new Error('Impossible de récupérer les pages Facebook');
+        throw avecReponseMeta('Impossible de récupérer les pages Facebook', error);
     }
+};
+
+/**
+ * Erreur lisible qui garde la réponse de Meta : sans elle, l'appelant ne voit
+ * plus le code 190 (jeton révoqué) et ne peut pas demander une reconnexion.
+ */
+const avecReponseMeta = (message, origine) => {
+    const err = new Error(message);
+    err.response = origine?.response;
+    return err;
 };
 
 /**
@@ -163,7 +173,7 @@ const getAdAccounts = async (accessToken) => {
         return response.data.data || [];
     } catch (error) {
         logger.error('❌ Erreur récupération comptes pub FB:', error.response?.data || error.message);
-        throw new Error('Impossible de récupérer les comptes publicitaires');
+        throw avecReponseMeta('Impossible de récupérer les comptes publicitaires', error);
     }
 };
 /**
@@ -374,12 +384,69 @@ const getUserPermissions = async (accessToken) => {
         return response.data.data || [];
     } catch (error) {
         logger.error('❌ Erreur récupération permissions:', error.response?.data || error.message);
-        throw new Error('Impossible de récupérer les permissions Facebook');
+        throw avecReponseMeta('Impossible de récupérer les permissions Facebook', error);
+    }
+};
+
+/**
+ * Liste les ensembles de données (anciennement pixels) du compte publicitaire.
+ *
+ * Meta exige un pixel et un évènement pour optimiser sur les achats d'un site.
+ * On les lit plutôt que de les faire saisir : ils appartiennent déjà au compte,
+ * et le jeton `ads_management` dont on dispose suffit à les nommer.
+ *
+ * `is_unavailable` écarte les pixels auxquels le compte n'a plus accès : les
+ * proposer reviendrait à faire choisir un identifiant que Meta refusera.
+ */
+/**
+ * Statuts de compte publicitaire, en clair.
+ *
+ * Meta ne renvoie qu'un entier. Sans traduction, l'interface ne peut pas dire
+ * pourquoi un compte est inutilisable — et l'utilisateur choisit un compte
+ * désactivé, sur lequel toute création de publicité est refusée.
+ */
+const AD_ACCOUNT_STATUS = {
+    1: { usable: true, label: 'Actif' },
+    2: { usable: false, label: 'Désactivé' },
+    3: { usable: false, label: 'Impayé' },
+    7: { usable: false, label: 'En attente de vérification' },
+    8: { usable: false, label: 'En attente de clôture' },
+    9: { usable: true, label: 'En période de grâce' },
+    100: { usable: false, label: 'Fermé définitivement' },
+    101: { usable: false, label: 'Fermé' }
+};
+
+const describeAdAccountStatus = (status) =>
+    AD_ACCOUNT_STATUS[status] || { usable: false, label: 'Statut inconnu' };
+
+const getAdAccountPixels = async (adAccountId, accessToken) => {
+    const compte = String(adAccountId).startsWith('act_') ? adAccountId : `act_${adAccountId}`;
+
+    try {
+        const response = await axios.get(`${FACEBOOK_GRAPH_URL}/${compte}/adspixels`, {
+            params: {
+                fields: 'id,name,is_unavailable,last_fired_time',
+                access_token: accessToken
+            }
+        });
+
+        return (response.data.data || [])
+            .filter(pixel => !pixel.is_unavailable)
+            .map(pixel => ({
+                id: pixel.id,
+                name: pixel.name || `Pixel ${pixel.id}`,
+                last_fired_time: pixel.last_fired_time || null
+            }));
+    } catch (error) {
+        logger.error('❌ Erreur récupération pixels:', error.response?.data || error.message);
+        throw new Error('Impossible de récupérer les ensembles de données du compte publicitaire');
     }
 };
 
 module.exports = {
     exchangeCodeForToken,
+    getAdAccountPixels,
+    describeAdAccountStatus,
     getLongLivedToken,
     getUserInfo,
     getUserPages,

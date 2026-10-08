@@ -379,7 +379,7 @@ const deleteCampaign = async (req, res) => {
 
         const { data: campaign } = await supabase
             .from('campaigns')
-            .select('id, fb_campaign_id, fb_adset_id, fb_ad_id')
+            .select('id, fb_campaign_id, fb_adset_id, fb_ad_id, fb_creative_id')
             .eq('id', id)
             .eq('user_id', userId)
             .single();

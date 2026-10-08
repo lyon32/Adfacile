@@ -35,3 +35,7 @@ dist-ssr
 
 # Binaires de developpement telecharges a la demande (cloudflared)
 .tools/
+
+# Captures et jeux de test Playwright (MCP)
+.playwright-mcp/
+.tools/

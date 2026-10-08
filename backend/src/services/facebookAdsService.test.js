@@ -73,6 +73,41 @@ describe('resolveDestination — site web', () => {
             PAGE
         )).toThrow(/pixel/i);
     });
+
+    it('accepte Ventes vers un site web dès que le pixel est fourni', () => {
+        // Le wizard ne demandait jamais l'ensemble de données : ce chemin
+        // échouait donc systématiquement, à la dernière étape.
+        const result = resolveDestination(
+            {
+                objective: 'OUTCOME_SALES',
+                destination_type: 'WEBSITE',
+                pixel_id: '1234567890'
+            },
+            PAGE
+        );
+
+        expect(result.optimization_goal).toBe('OFFSITE_CONVERSIONS');
+        expect(result.conversion).toEqual({
+            pixel_id: '1234567890',
+            custom_event_type: 'PURCHASE'
+        });
+    });
+
+    it('porte le pixel et l\'évènement jusqu\'au promoted_object', () => {
+        const promu = buildPromotedObject('WEBSITE', PAGE, null, null, {
+            pixel_id: '1234567890',
+            custom_event_type: 'ADD_TO_CART'
+        });
+
+        expect(promu).toEqual({
+            pixel_id: '1234567890',
+            custom_event_type: 'ADD_TO_CART'
+        });
+    });
+
+    it('ne fabrique aucun objet promu pour un site web sans pixel', () => {
+        expect(buildPromotedObject('WEBSITE', PAGE)).toBeUndefined();
+    });
 });
 
 describe('resolveDestination — messagerie', () => {
@@ -363,5 +398,80 @@ describe('buildTargeting — audience Advantage', () => {
             expect(buildTargeting({ ...BASE, advantage_audience: v })
                 .targeting_automation.advantage_audience).toBe(0);
         });
+    });
+});
+
+describe('instagramIdentity — destination « Instagram ou Facebook »', () => {
+    // Relevé réel (8 oct. 2026, test T3) : Meta refusait la publicité
+    // INSTAGRAM_PROFILE (sous-code 3907008, « doit être associée à un compte
+    // Instagram ») — le compte Instagram relié n'était jamais transmis.
+    const { instagramIdentity } = require('./facebookAdsService');
+
+    it('transmet le compte Instagram relié pour INSTAGRAM_PROFILE', () => {
+        expect(instagramIdentity('INSTAGRAM_PROFILE', { instagram_account_id: '17841400000000000' }))
+            .toEqual({ instagram_user_id: '17841400000000000' });
+    });
+
+    it('refuse avant tout appel Meta si aucun compte Instagram n\'est relié', () => {
+        expect(() => instagramIdentity('INSTAGRAM_PROFILE', { instagram_account_id: null }))
+            .toThrow(/compte Instagram/);
+    });
+
+    it('ne change rien aux autres destinations', () => {
+        expect(instagramIdentity('WEBSITE', { instagram_account_id: '1' })).toEqual({});
+    });
+});
+
+describe('phoneCallToAction — destination « Appels »', () => {
+    // Relevé réel (8 oct. 2026, test T4) : la publicité d'appel partait avec
+    // « En savoir plus » vers le site — personne ne pouvait appeler. Meta
+    // exige CALL_NOW avec un lien tel: (doc « Call Ads »).
+    const { phoneCallToAction } = require('./facebookAdsService');
+
+    it('construit CALL_NOW avec un lien tel: au format international', () => {
+        expect(phoneCallToAction('+237 6 99 00 00 00')).toEqual({
+            type: 'CALL_NOW',
+            value: { link: 'tel:+237699000000' }
+        });
+    });
+
+    it('refuse un numéro sans indicatif pays, avant tout appel Meta', () => {
+        expect(() => phoneCallToAction('699000000')).toThrow(/indicatif/);
+        expect(() => phoneCallToAction('')).toThrow(/numéro/);
+    });
+});
+
+describe('deleteCampaignOnFacebook — création publicitaire', () => {
+    // Relevé réel (8 oct. 2026) : supprimer la campagne laissait la création
+    // publicitaire chez Meta (status ACTIVE) — elle s'accumulait dans la
+    // bibliothèque du compte.
+    const { deleteCampaignOnFacebook } = require('./facebookAdsService');
+
+    beforeEach(() => {
+        supabase.from = jest.fn(() => ({
+            select: () => ({ eq: () => ({ eq: () => ({
+                single: () => Promise.resolve({ data: { fb_access_token: 'jeton' }, error: null })
+            }) }) })
+        }));
+    });
+
+    it('supprime aussi la création publicitaire enregistrée', async () => {
+        axios.delete.mockResolvedValue({ data: { success: true } });
+
+        await deleteCampaignOnFacebook('u1', { fb_campaign_id: 'C1', fb_creative_id: 'CR1' });
+
+        const urls = axios.delete.mock.calls.map(([url]) => url);
+        expect(urls.some(u => u.endsWith('/C1'))).toBe(true);
+        expect(urls.some(u => u.endsWith('/CR1'))).toBe(true);
+    });
+
+    it('un échec sur la création ne fait pas échouer la suppression de la campagne', async () => {
+        axios.delete.mockImplementation(async (url) => {
+            if (url.endsWith('/CR1')) throw new Error('création déjà supprimée');
+            return { data: { success: true } };
+        });
+
+        await expect(deleteCampaignOnFacebook('u1', { fb_campaign_id: 'C1', fb_creative_id: 'CR1' }))
+            .resolves.toEqual({ deleted: true });
     });
 });

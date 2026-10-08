@@ -5,7 +5,9 @@ const {
     getDestinations,
     getDefaultGoal,
     getBillingEvent,
-    validateCombination
+    validateCombination,
+    listDestinations,
+    toApiDestination
 } = require('./campaignObjectives');
 
 const PAGE = { page_id: '799671609906273' };
@@ -54,9 +56,55 @@ describe('référentiel — conformité aux relevés de sonde', () => {
             .toEqual(['POST_ENGAGEMENT', 'REACH']);
     });
 
-    it('offre à Ventes une voie messagerie et une voie site web', () => {
-        expect(getGoals('OUTCOME_SALES', 'MESSENGER')).toEqual(['CONVERSATIONS']);
-        expect(getGoals('OUTCOME_SALES', 'WEBSITE')).toEqual(['OFFSITE_CONVERSIONS']);
+    it('offre à Ventes tous les objectifs relevés par la sonde', () => {
+        // docs/meta/sonde-ventes.txt, 11 août 2026. Ventes ne proposait que
+        // deux optimisations alors que Meta en accepte six sur la messagerie
+        // et en affiche autant sur le site web.
+        expect(getGoals('OUTCOME_SALES', 'MESSENGER').sort())
+            .toEqual(['CONVERSATIONS', 'IMPRESSIONS', 'LINK_CLICKS', 'REACH']);
+
+        expect(getGoals('OUTCOME_SALES', 'WEBSITE'))
+            .toEqual([
+                'OFFSITE_CONVERSIONS', 'VALUE', 'LANDING_PAGE_VIEWS',
+                'LINK_CLICKS', 'REACH', 'IMPRESSIONS'
+            ]);
+
+        // Sondé : seule QUALITY_CALL passe sur une destination Appels.
+        expect(getGoals('OUTCOME_SALES', 'PHONE_CALL')).toEqual(['QUALITY_CALL']);
+
+        // Sondé KO pour tous les objectifs de performance.
+        expect(getDestinations('OUTCOME_SALES')).not.toContain('APP');
+        expect(getDestinations('OUTCOME_SALES')).not.toContain('ON_AD');
+    });
+
+    it('ne propose à Ventes que les lieux de conversion de cet objectif', () => {
+        // Le formulaire affichait six cartes identiques pour tous les
+        // objectifs : Ventes proposait « Instagram ou Facebook », que Meta
+        // n'offre pas ici.
+        const ventes = listDestinations('OUTCOME_SALES').map(d => d.value);
+        expect(ventes).toEqual(['WEBSITE', 'MESSENGER', 'PHONE_CALL']);
+        expect(ventes).not.toContain('INSTAGRAM_PROFILE');
+
+        // Trafic garde les siens : les deux listes ne sont plus la même.
+        expect(listDestinations('OUTCOME_TRAFFIC').map(d => d.value))
+            .toContain('INSTAGRAM_PROFILE');
+    });
+
+    it('décrit les lieux de conversion dans les termes de l\'objectif', () => {
+        // « Envoyez le trafic vers votre site Web » s'affichait jusque dans
+        // une campagne de Ventes.
+        const siteVentes = listDestinations('OUTCOME_SALES').find(d => d.value === 'WEBSITE');
+        expect(siteVentes.description).toMatch(/achètent/i);
+        expect(siteVentes.description).not.toMatch(/trafic/i);
+    });
+
+    it('exige un ensemble de données pour la valeur des conversions', () => {
+        // VALUE optimise sur le montant des achats : sans pixel, Meta refuse.
+        const sans = validateCombination({
+            objective: 'OUTCOME_SALES', goal: 'VALUE', destination: 'WEBSITE'
+        });
+        expect(sans.valid).toBe(false);
+        expect(sans.errors.join(' ')).toMatch(/pixel/i);
     });
 
     it('permet les Prospects par messagerie', () => {
@@ -200,5 +248,24 @@ describe('isKnownObjective', () => {
         expect(isKnownObjective('OUTCOME_TRAFFIC')).toBe(true);
         expect(isKnownObjective('LINK_CLICKS')).toBe(false);
         expect(isKnownObjective(undefined)).toBe(false);
+    });
+});
+
+describe('toApiDestination', () => {
+    // Relevé réel (8 oct. 2026, test T5) : la carte « Votre publication »
+    // envoie ON_POST ; Trafic n'accepte que ON_AD. La création était refusée
+    // par AdsFacile lui-même alors que la carte était proposée à l'écran.
+    it('traduit la carte « Votre publication » en ON_AD pour Trafic', () => {
+        expect(toApiDestination('OUTCOME_TRAFFIC', 'ON_POST')).toBe('ON_AD');
+    });
+
+    it("garde ON_POST là où l'objectif l'accepte (Interactions)", () => {
+        expect(toApiDestination('OUTCOME_ENGAGEMENT', 'ON_POST')).toBe('ON_POST');
+    });
+
+    it('laisse intactes les valeurs déjà acceptées ou inconnues', () => {
+        expect(toApiDestination('OUTCOME_TRAFFIC', 'WEBSITE')).toBe('WEBSITE');
+        expect(toApiDestination('OUTCOME_TRAFFIC', 'INCONNU')).toBe('INCONNU');
+        expect(toApiDestination('OUTCOME_TRAFFIC', undefined)).toBeUndefined();
     });
 });

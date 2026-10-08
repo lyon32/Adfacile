@@ -27,12 +27,14 @@ const {
 const {
     validateCombination,
     getDefaultGoal,
-    getBillingEvent
+    getBillingEvent,
+    toApiDestination
 } = require('./campaignObjectives');
 const { debutDeJournee, finDeJournee } = require('../utils/adAccountTime');
 const logger = require('../utils/logger');
 
-const FACEBOOK_GRAPH_URL = 'https://graph.facebook.com/v21.0';
+// Version de l'API Graph : une seule source, config/facebook.js.
+const { GRAPH_URL: FACEBOOK_GRAPH_URL } = require('../config/facebook');
 
 /** Fuseau retenu si Meta ne renvoie pas celui du compte. */
 const FUSEAU_PAR_DEFAUT = 'America/Los_Angeles';
@@ -234,7 +236,7 @@ async function getFacebookAccount(userId) {
 /**
  * Construit le promoted_object selon le type de destination
  */
-function buildPromotedObject(destinationType, fb, whatsappNumber = null, whatsappNumberId = null) {
+function buildPromotedObject(destinationType, fb, whatsappNumber = null, whatsappNumberId = null, conversion = null) {
     if (isMessagingDestination(destinationType) || destinationType === 'INSTAGRAM_PROFILE') {
         const promoted = { page_id: fb.fb_page_id };
 
@@ -259,7 +261,21 @@ function buildPromotedObject(destinationType, fb, whatsappNumber = null, whatsap
 
         return promoted;
     }
-    // Pour WEBSITE, pas de promoted_object requis (pixel_id optionnel)
+    // Site web : Meta exige l'ensemble de données (anciennement pixel) et
+    // l'évènement à optimiser dès que l'on optimise sur les conversions — le
+    // Gestionnaire de publicités le marque d'une astérisque et refuse de
+    // publier sans lui. Le champ était réputé « optionnel » ici, si bien que
+    // toute campagne Ventes vers un site web échouait à la validation, après
+    // que l'utilisateur avait tout saisi.
+    if (conversion?.pixel_id) {
+        return {
+            pixel_id: String(conversion.pixel_id),
+            custom_event_type: conversion.custom_event_type || 'PURCHASE'
+        };
+    }
+
+    // Sans pixel, on ne fabrique rien : validateCombination() dira lui-même ce
+    // qui manque, dans les termes de l'utilisateur.
     return undefined;
 }
 
@@ -291,6 +307,64 @@ function assertCombinaisonValide({ objective, goal, destination, promoted_object
     throw err;
 }
 
+/**
+ * Compte Instagram à déclarer sur la création publicitaire.
+ *
+ * Une publicité « Instagram ou Facebook » (INSTAGRAM_PROFILE) doit être
+ * associée à un compte Instagram : sans lui, Meta refuse la publicité
+ * (sous-code 3907008), relevé réel du 8 oct. 2026. Le champ est
+ * `object_story_spec.instagram_user_id`, qui remplace instagram_actor_id
+ * (déprécié en v22.0, retiré le 9 sept. 2025).
+ *
+ * @throws {Error} userFacing si aucun compte Instagram n'est relié — levée
+ *   avant toute création chez Meta.
+ */
+function instagramIdentity(destinationType, fb) {
+    if (destinationType !== 'INSTAGRAM_PROFILE') return {};
+
+    const id = String(fb?.instagram_account_id || '').trim();
+    if (!id) {
+        const err = new Error(
+            "Aucun compte Instagram n'est relié à votre Page Facebook. Reliez-en un "
+            + '(Paramètres de la Page → Comptes liés) puis reconnectez Facebook, ou '
+            + 'choisissez une autre destination.'
+        );
+        err.userFacing = true;
+        throw err;
+    }
+    return { instagram_user_id: id };
+}
+
+/**
+ * Bouton d'une publicité « Appels » (destination PHONE_CALL).
+ *
+ * Meta exige CALL_NOW avec un lien `tel:+<indicatif><numéro>` (doc « Call
+ * Ads »). Relevé réel du 8 oct. 2026 : faute de numéro, la publicité partait
+ * avec « En savoir plus » vers le site — personne ne pouvait appeler.
+ *
+ * @param {string} telephone  numéro saisi, avec indicatif pays (+237…)
+ * @throws {Error} userFacing si le numéro manque ou n'a pas d'indicatif
+ */
+function phoneCallToAction(telephone) {
+    const brut = String(telephone || '').trim();
+    if (!brut) {
+        const err = new Error('Indiquez le numéro de téléphone à appeler.');
+        err.userFacing = true;
+        throw err;
+    }
+
+    const chiffres = brut.replace(/[^\d+]/g, '');
+    if (!/^\+\d{8,15}$/.test(chiffres)) {
+        const err = new Error(
+            'Le numéro doit commencer par l’indicatif pays, par exemple +237 6 99 00 00 00.'
+        );
+        err.userFacing = true;
+        throw err;
+    }
+
+    return { type: 'CALL_NOW', value: { link: `tel:${chiffres}` } };
+}
+
 function resolveDestination(data, fb) {
     // Nouveau format : cases à cocher multiples.
     let apps = data.messaging_destinations;
@@ -301,7 +375,9 @@ function resolveDestination(data, fb) {
     }
 
     if (!apps || apps.length === 0) {
-        const destinationType = data.destination_type || 'WEBSITE';
+        // La carte d'interface peut couvrir plusieurs valeurs API : on envoie
+        // celle que l'objectif accepte (« Votre publication » → ON_AD en Trafic).
+        const destinationType = toApiDestination(data.objective, data.destination_type || 'WEBSITE');
 
         // L'objectif de performance venu du formulaire n'était repris que sur
         // parole. Il survivait notamment à un changement d'objectif : passer de
@@ -311,17 +387,22 @@ function resolveDestination(data, fb) {
             || getDefaultGoal(data.objective, destinationType)
             || getOptimizationGoal(data.objective);
 
+        const conversion = data.pixel_id
+            ? { pixel_id: data.pixel_id, custom_event_type: data.custom_event_type || 'PURCHASE' }
+            : null;
+
         assertCombinaisonValide({
             objective: data.objective,
             goal,
             destination: destinationType,
-            promoted_object: buildPromotedObject(destinationType, fb) || {}
+            promoted_object: buildPromotedObject(destinationType, fb, null, null, conversion) || {}
         });
 
         return {
             is_messaging: false,
             destination_type: destinationType,
-            optimization_goal: goal
+            optimization_goal: goal,
+            conversion
         };
     }
 
@@ -501,6 +582,10 @@ async function createFullCampaign(userId, data) {
     // invalide, mieux vaut le dire tout de suite que laisser des objets
     // orphelins chez Meta.
     const destination = resolveDestination(data, fb);
+    const identiteInstagram = instagramIdentity(destination.destination_type, fb);
+    const boutonAppel = destination.destination_type === 'PHONE_CALL'
+        ? phoneCallToAction(data.phone_number)
+        : null;
     logger.info(`🎯 Destination : ${destination.destination_type} `
         + `(optimisation ${destination.optimization_goal})`);
 
@@ -572,7 +657,8 @@ async function createFullCampaign(userId, data) {
         // Ajouter promoted_object seulement si nécessaire (Messenger, WhatsApp, Instagram)
         const promotedObject = buildPromotedObject(
             destination.destination_type, fb,
-            destination.whatsapp_phone_number, destination.whatsapp_phone_number_id
+            destination.whatsapp_phone_number, destination.whatsapp_phone_number_id,
+            destination.conversion
         );
         if (promotedObject) {
             adSetPayload.promoted_object = promotedObject;
@@ -648,13 +734,14 @@ async function createFullCampaign(userId, data) {
 
         const callToAction = destination.is_messaging
             ? destination.call_to_action
-            : {
+            : boutonAppel || {
                 type: data.creative.call_to_action || 'LEARN_MORE',
                 value: { link: creativeLink }
             };
 
         const objectStorySpec = {
             page_id: fb.fb_page_id,
+            ...identiteInstagram,
             link_data: {
                 message: data.creative.message || '',
                 link: creativeLink,
@@ -713,7 +800,10 @@ async function createFullCampaign(userId, data) {
         // l'entreprise. Meta impose alors que la création soit passée **en
         // ligne** dans POST /ads — la déclarer séparément échoue avec
         // « (#3) Application does not have the capability ».
-        const extensions = destination.is_messaging
+        // Ventes en est exclue : Meta ne propose pas ce bandeau sur cet
+        // objectif, et détourner le visiteur vers une conversation contredit
+        // l'optimisation sur les achats du site.
+        const extensions = (destination.is_messaging || data.objective === 'OUTCOME_SALES')
             ? null
             : buildMessageExtensions(data.website_message_apps);
 
@@ -936,6 +1026,21 @@ async function deleteCampaignOnFacebook(userId, campaign) {
     });
 
     logger.info(`🗑️ Campagne ${campaign.fb_campaign_id} supprimée chez Facebook`);
+
+    // Supprimer la campagne emporte l'ensemble et la publicité, pas la
+    // création : relevé du 8 oct. 2026, elle restait ACTIVE dans la
+    // bibliothèque du compte. Un échec ici n'annule pas la suppression faite.
+    if (campaign.fb_creative_id) {
+        try {
+            await axios.delete(`${FACEBOOK_GRAPH_URL}/${campaign.fb_creative_id}`, {
+                params: { access_token: accessToken }
+            });
+        } catch (err) {
+            logger.warn(`⚠️ Création ${campaign.fb_creative_id} non supprimée : `
+                + `${err.response?.data?.error?.message || err.message}`);
+        }
+    }
+
     return { deleted: true };
 }
 
@@ -948,6 +1053,8 @@ module.exports = {
     buildTargeting,
     getOptimizationGoal,
     resolveDestination,
+    instagramIdentity,
+    phoneCallToAction,
     buildPromotedObject,
     uploadAdImage,
     rollbackFacebookObjects

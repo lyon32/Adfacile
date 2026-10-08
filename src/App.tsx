@@ -21,6 +21,7 @@ import FacebookCallback from './pages/FacebookCallback';
 import AnalyticsPage from './pages/AnalyticsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import DataDeletionPage from './pages/DataDeletionPage';
+import TermsPage from './pages/TermsPage';
 import './styles/global.css';
 import './styles/components.css';
 import './styles/tailwind-campaigns.css';
@@ -61,6 +62,7 @@ const AppLayout = () => {
         {/* Legal pages for Facebook App compliance */}
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/data-deletion" element={<DataDeletionPage />} />
+        <Route path="/terms" element={<TermsPage />} />
       </Routes>
       {!hideLayout && <Footer />}
     </div>

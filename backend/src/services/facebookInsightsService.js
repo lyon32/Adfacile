@@ -10,8 +10,10 @@ const axios = require('axios');
 const { supabase } = require('../config/supabase');
 const { decryptToken } = require('./facebookService');
 const logger = require('../utils/logger');
+const { createTtlCache } = require('../utils/ttlCache');
 
-const FACEBOOK_GRAPH_URL = 'https://graph.facebook.com/v21.0';
+// Version de l'API Graph : une seule source, config/facebook.js.
+const { GRAPH_URL: FACEBOOK_GRAPH_URL } = require('../config/facebook');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // HELPERS
@@ -25,7 +27,12 @@ async function getFacebookAccount(userId) {
         .from('facebook_accounts')
         .select('fb_user_id, fb_access_token, fb_account_id, fb_page_id')
         .eq('user_id', userId)
-        .single();
+        // Une ligne par Page connectée : sans ce filtre, plusieurs Pages
+        // faisaient échouer .single() et Analytics croyait Facebook déconnecté.
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
     if (error || !data) {
         logger.warn(`Pas de compte Facebook pour user ${userId}`);
@@ -85,7 +92,7 @@ function calculateEngagementRate(actions, impressions) {
  * @param {{ start: string, end: string }} dateRange
  * @returns {Object} { overview, timeseries, demographics, geography, placements, devices, hourly }
  */
-async function getCampaignInsights(userId, campaignId, dateRange) {
+async function fetchCampaignInsights(userId, campaignId, dateRange) {
     // 1. Récupérer credentials
     const fb = await getFacebookAccount(userId);
     if (!fb) throw new Error('Compte Facebook non connecté');
@@ -379,7 +386,7 @@ function parseHourlyData(insights) {
 /**
  * Récupère les insights agrégés de toutes les campagnes d'un utilisateur
  */
-async function getAllCampaignsInsights(userId, dateRange) {
+async function fetchAllCampaignsInsights(userId, dateRange) {
     const fb = await getFacebookAccount(userId);
     if (!fb) throw new Error('Compte Facebook non connecté');
 
@@ -490,7 +497,44 @@ function aggregateCampaignsData(campaignsList) {
     return { overview: totals, timeseries: [], demographics: { byAge: [], byGender: [] }, geography: [], placements: [], devices: [], hourly: [] };
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// CACHE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Plafond de l'app : 240 appels Graph/heure (relevé MCP Meta, 8 oct. 2026).
+// Une ouverture de la page Analytics en coûtait jusqu'à 7 par campagne.
+const cacheInsights = createTtlCache({ maxEntries: 500 });
+
+const DIX_MINUTES = 10 * 60 * 1000;
+const SIX_HEURES = 6 * 60 * 60 * 1000;
+
+/**
+ * Durée de validité des statistiques d'une période.
+ * Meta les met à jour environ toutes les 15 minutes : 10 minutes si la période
+ * inclut aujourd'hui, 6 heures pour une période close, qui ne bouge plus.
+ */
+function insightsTtl(dateRange, today = getTodayDate()) {
+    return dateRange.end >= today ? DIX_MINUTES : SIX_HEURES;
+}
+
+function getCampaignInsights(userId, campaignId, dateRange) {
+    return cacheInsights.remember(
+        `campagne:${userId}:${campaignId}:${dateRange.start}:${dateRange.end}`,
+        insightsTtl(dateRange),
+        () => fetchCampaignInsights(userId, campaignId, dateRange)
+    );
+}
+
+function getAllCampaignsInsights(userId, dateRange) {
+    return cacheInsights.remember(
+        `toutes:${userId}:${dateRange.start}:${dateRange.end}`,
+        insightsTtl(dateRange),
+        () => fetchAllCampaignsInsights(userId, dateRange)
+    );
+}
+
 module.exports = {
+    insightsTtl,
     getCampaignInsights,
     getAllCampaignsInsights,
     aggregateCampaignsData,

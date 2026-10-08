@@ -35,7 +35,9 @@ const BASE_ENV = {
     FACEBOOK_REDIRECT_URI: REDIRECT_URI,
     FACEBOOK_GRAPH_VERSION: 'v23.0',
     // Requis depuis que le state OAuth est signé (voir utils/oauthState.js)
-    JWT_SECRET: 'secret-de-test-pour-le-state-oauth'
+    JWT_SECRET: 'secret-de-test-pour-le-state-oauth',
+    // Absent par défaut : les autres tests vérifient le repli sur scope.
+    FACEBOOK_LOGIN_CONFIG_ID: undefined
 };
 
 /**
@@ -79,6 +81,17 @@ afterEach(() => {
 });
 
 describe('getAuthUrl', () => {
+    it('Facebook Login for Business : config_id remplace scope quand il est configuré', async () => {
+        // Relevé réel (8 oct. 2026) : l'app « Entreprise » renvoyait « Feature
+        // Unavailable » au dialogue appelé avec scope, même en mode Développement.
+        const url = await genererUrl({ FACEBOOK_LOGIN_CONFIG_ID: '1588765496066346' });
+
+        expect(url.searchParams.get('config_id')).toBe('1588765496066346');
+        expect(url.searchParams.has('scope')).toBe(false);
+        expect(url.searchParams.get('response_type')).toBe('code');
+        expect(url.searchParams.get('redirect_uri')).toBe(REDIRECT_URI);
+    });
+
     it('cible le dialogue OAuth de la version configurée', async () => {
         const url = await genererUrl();
 

@@ -366,6 +366,18 @@ const AdCreativeForm = ({ campaignData, setCampaignData, user, onPrev, onSubmit,
                                         Déterminé par la messagerie choisie à l'étape précédente.
                                     </p>
                                 </>
+                            ) : campaignData.destination_type === 'PHONE_CALL' ? (
+                                /* Publicité d'appel : Meta impose « Appeler » vers le
+                                   numéro saisi à l'étape 2 ; un autre choix ici
+                                   serait ignoré. */
+                                <>
+                                    <div className="creative-input" style={{ background: 'var(--color-bg-alt)' }}>
+                                        Appeler{campaignData.phone_number ? ` · ${campaignData.phone_number}` : ''}
+                                    </div>
+                                    <p className="creative-hint">
+                                        Compose le numéro indiqué à l’étape précédente.
+                                    </p>
+                                </>
                             ) : (
                                 <select
                                     value={creative.call_to_action}

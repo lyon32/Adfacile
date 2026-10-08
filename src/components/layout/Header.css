@@ -110,7 +110,7 @@
     position: fixed;
     top: 73px; /* 72px header + 1px border */
     left: 0;
-    width: 100vw; /* Explicit width */
+    width: 100%; /* 100vw ajoutait la largeur de la scrollbar et provoquait un débordement horizontal */
     height: calc(100vh - 73px); /* Explicit height because backdrop-filter creates containing block */
     background: white;
     flex-direction: column;

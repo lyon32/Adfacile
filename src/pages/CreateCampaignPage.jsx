@@ -58,6 +58,10 @@ const CreateCampaignPage = () => {
         optimization_goal: '',
         cost_per_result_goal: '',
         destination_type: 'WEBSITE',
+        // Ensemble de données (pixel) et évènement optimisé : exigés par Meta
+        // dès que l'on optimise sur les achats d'un site web.
+        pixel_id: '',
+        custom_event_type: 'PURCHASE',
         messaging_destinations: [],
         website_message_apps: [],
         multi_advertiser_ads: true,
@@ -268,6 +272,8 @@ const CreateCampaignPage = () => {
                                             optimization_goal: '',
                                             cost_per_result_goal: '',
                                             destination_type: 'WEBSITE',
+                                            pixel_id: '',
+                                            custom_event_type: 'PURCHASE',
                                             messaging_destinations: [],
                                             website_message_apps: [],
                                             // Ces deux-là survivaient d'une campagne à

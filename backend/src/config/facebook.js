@@ -7,12 +7,13 @@
  *
  * Meta retire une version environ 2 ans après sa sortie. Le code ciblait v19.0,
  * expirée le 21 mai 2026 — d'où des appels Graph voués à l'échec.
- * v25.0 (sortie le 18 février 2026) est valable jusqu'au 29 juillet 2028.
+ * v26.0 : version la plus récente au 8 oct. 2026 (relevé MCP Meta). Avant elle,
+ * quatre fichiers appelaient encore v21.0 en dur, retirée le 21 janv. 2027.
  * Vérifier avant chaque montée :
  * https://developers.facebook.com/docs/graph-api/changelog
  */
 
-const GRAPH_VERSION = process.env.FACEBOOK_GRAPH_VERSION || 'v25.0';
+const GRAPH_VERSION = process.env.FACEBOOK_GRAPH_VERSION || 'v26.0';
 
 const GRAPH_URL = `https://graph.facebook.com/${GRAPH_VERSION}`;
 const OAUTH_DIALOG_URL = `https://www.facebook.com/${GRAPH_VERSION}/dialog/oauth`;

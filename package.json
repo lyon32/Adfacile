@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "echo \"No frontend tests yet\" && exit 0",
     "type-check": "tsc --noEmit",
-    "tunnel": "node scripts/tunnel-dev.mjs"
+    "tunnel": "node scripts/tunnel-dev.mjs",
+    "audit:ventes": "node scripts/audit-ventes.cjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",

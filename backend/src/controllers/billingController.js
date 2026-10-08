@@ -10,6 +10,7 @@ const { supabase, supabaseAdmin } = require('../config/supabase');
 const campayService = require('../services/campayService');
 const campayConfig = require('../config/campay');
 const logger = require('../utils/logger');
+const { GRAPH_URL } = require('../config/facebook');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PLANS (Hardcodé — pas en DB)
@@ -604,7 +605,7 @@ const getPaymentMethodStatus = async (req, res) => {
         // Query Facebook Graph API for funding source
         const axios = require('axios');
         const fbRes = await axios.get(
-            `https://graph.facebook.com/v21.0/${adAccountId}`,
+            `${GRAPH_URL}/${adAccountId}`,
             {
                 params: {
                     fields: 'funding_source_details,account_status',
