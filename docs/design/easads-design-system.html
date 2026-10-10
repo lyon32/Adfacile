@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EasAds Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap">
+<style>
+:root{
+  --o:#0A0A0A;--g:#1F2421;--lime:#C6F432;--lime-f:#8DB01C;--ard:#8A9088;--craie:#F4F4EF;
+  --c50:#FBFBF8;--c200:#E8E8E1;--c300:#D6D7CF;--g700:#2A302B;--g600:#3A4038;--ard7:#5C625B;
+  --warn:#8A5A0F;--err:#C2410C;
+  --bg:var(--craie);--panel:var(--c50);--line:var(--c200);--fline:var(--c300);--text:var(--o);--muted:var(--ard7);--focus:var(--o);
+  --r-sm:6px;--r-md:12px;--r-lg:20px;--r-app:28px;
+}
+[data-theme="dark"]{--bg:var(--o);--panel:var(--g);--line:var(--g700);--fline:var(--g600);--text:var(--craie);--muted:var(--ard);--focus:var(--lime);--warn:#F2B53A;--err:#FF8A73}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:#E4E4DD;color:var(--o);font-family:Sora,system-ui,sans-serif;font-size:15px;line-height:1.5}
+.num{font-variant-numeric:tabular-nums}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.doc{max-width:1280px;margin:0 auto;padding:40px 16px 96px;display:flex;flex-direction:column;gap:72px}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.eyebrow::before{content:"";width:8px;height:8px;background:var(--lime);border-radius:1px;box-shadow:0 0 0 1px rgba(10,10,10,.15)}
+.doc-h{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
+.doc-h h2{margin:0;font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;line-height:1.1}
+.doc-h p{margin:0;max-width:640px;color:var(--ard7)}
+.ref{font-size:12px;color:var(--ard7)}
+
+/* Couverture */
+.cover{background:var(--o);color:var(--craie);border-radius:var(--r-app);padding:clamp(28px,6vw,72px);display:grid;grid-template-columns:auto 1fr;gap:clamp(24px,5vw,64px);align-items:center;position:relative;overflow:hidden}
+.cover::after{content:"";position:absolute;left:-10%;right:-10%;bottom:-62%;height:80%;border-radius:50%;background:radial-gradient(closest-side,rgba(198,244,50,.28),rgba(198,244,50,0));pointer-events:none}
+.cover h1{margin:0;font-size:clamp(40px,7vw,84px);font-weight:800;letter-spacing:-.04em;line-height:1}
+.cover h1 em{font-style:normal;color:var(--lime)}
+.cover p{color:var(--ard);margin:16px 0 0;max-width:520px}
+.logo{display:grid;gap:6px;width:clamp(96px,14vw,168px)}
+.logo span{display:flex;align-items:center;justify-content:center;aspect-ratio:160/72;border-radius:10px;font-weight:800;font-size:clamp(20px,3vw,34px);letter-spacing:-.02em}
+.logo .t{background:var(--g);color:var(--craie)}.logo .b{background:var(--lime);color:var(--o)}
+
+/* Tokens */
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.sw{border-radius:var(--r-lg);padding:14px;min-height:132px;display:flex;flex-direction:column;justify-content:flex-end;border:1px solid rgba(10,10,10,.08)}
+.sw b{font-size:15px}.sw small{font-size:12px;opacity:.75}
+.sub{margin:28px 0 12px;font-size:13px;font-weight:700;color:var(--ard7)}
+.type-row{display:grid;grid-template-columns:180px 1fr;gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--c300)}
+.type-row small{color:var(--ard7);font-size:12px}
+
+/* Composants */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:20px}
+.box{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:var(--r-lg);padding:24px;display:flex;flex-direction:column;gap:16px}
+.box > .lab{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{font:inherit;font-size:15px;font-weight:700;height:48px;padding:0 22px;border-radius:var(--r-md);border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn-p{background:var(--lime);color:var(--o)}.btn-p:hover{background:var(--lime-f)}
+.btn-s{background:var(--text);color:var(--bg)}
+.btn-d{background:transparent;color:var(--text);border-color:var(--fline)}
+.btn-sm{height:36px;padding:0 14px;font-size:13px}
+.field{position:relative;padding-top:8px}
+.field label{position:absolute;top:0;left:12px;padding:0 6px;background:var(--panel);font-size:11px;font-weight:600;color:var(--muted);border:1px solid var(--fline);border-radius:999px;line-height:16px}
+.field input,.field select{width:100%;height:48px;border:1px solid var(--fline);border-radius:var(--r-md);background:transparent;color:var(--text);font:inherit;padding:0 14px}
+.field input:focus{outline:none;border:2px solid var(--focus);padding:0 13px}
+.field .unit{position:absolute;right:14px;top:22px;font-size:13px;font-weight:600;color:var(--muted)}
+.help{font-size:12px;color:var(--muted);margin-top:6px}
+.set{display:grid;grid-template-columns:24px 1fr auto;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+.set:last-child{border-bottom:0}
+.set b{display:block;font-size:14px;font-weight:600}.set span{font-size:12px;color:var(--muted)}
+.ico{width:20px;height:20px;stroke:var(--muted);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.tog{width:40px;height:24px;border-radius:999px;background:var(--fline);position:relative;border:0;padding:0;cursor:pointer}
+.tog::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}
+.tog[aria-checked="true"]{background:var(--text)}
+[data-theme="dark"] .tog[aria-checked="true"]{background:var(--lime)}
+[data-theme="dark"] .tog::after{background:var(--craie)}
+[data-theme="dark"] .tog[aria-checked="true"]::after{background:var(--o)}
+.tog[aria-checked="true"]::after{transform:translateX(16px)}
+.pill{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--text)}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--dot,var(--ard))}
+.ok{--dot:var(--lime-f)}.wait{--dot:var(--warn)}.ko{--dot:var(--err)}.off{--dot:var(--ard)}
+[data-theme="dark"] .ok{--dot:var(--lime)}
+
+/* Carte chiffre */
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 18px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.kpi .k{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.kpi .v{font-size:clamp(24px,3vw,32px);font-weight:700;letter-spacing:-.02em;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.kpi .d{font-size:12px;color:var(--muted)}.kpi .d b{color:var(--text)}
+.spark{display:flex;gap:3px;align-items:flex-end;height:28px}
+.spark i{display:block;width:3px;background:var(--fline);border-radius:2px}
+.spark i.on{background:var(--text)}
+
+/* Bloc empilé (signature) */
+.stack{display:grid;gap:6px}
+.stack .top{background:var(--g);color:var(--craie);border-radius:var(--r-lg) var(--r-lg) var(--r-sm) var(--r-sm);padding:20px;display:flex;flex-direction:column;gap:14px}
+.stack .bot{background:var(--lime);color:var(--o);border-radius:var(--r-sm) var(--r-sm) var(--r-lg) var(--r-lg);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;border:0;font:inherit;font-weight:700;font-size:16px;cursor:pointer;width:100%;text-align:left}
+.stack .bot:hover{background:var(--lime-f)}
+.prop-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px 20px}
+.prop-grid small{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ard)}
+.prop-grid b{font-size:15px}
+.edit{font-size:12px;color:var(--ard);text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0;font-family:inherit;cursor:pointer}
+
+/* Graphique hachuré */
+.chart{display:grid;grid-template-columns:repeat(12,1fr);gap:8px;align-items:end;height:180px;padding-top:28px;position:relative}
+.chart .bar{position:relative;border-radius:8px 8px 4px 4px;background:repeating-linear-gradient(135deg,var(--c300) 0 2px,transparent 2px 7px);border:1px solid var(--c300)}
+[data-theme="dark"] .chart .bar{background:repeating-linear-gradient(135deg,var(--g600) 0 2px,transparent 2px 7px);border-color:var(--g600)}
+.chart .bar.hl{background:var(--lime);border-color:var(--lime)}
+.chart .tip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--o);color:var(--craie);font-size:11px;padding:6px 9px;border-radius:8px;white-space:nowrap;line-height:1.3}
+.axis{display:grid;grid-template-columns:repeat(12,1fr);gap:8px;font-size:11px;color:var(--muted);text-align:center;margin-top:8px}
+
+/* Coquille d'application */
+.app{background:var(--bg);color:var(--text);border-radius:var(--r-app);border:1px solid var(--line);display:grid;grid-template-columns:248px 1fr;overflow:hidden;min-height:760px}
+.side{padding:16px;display:flex;flex-direction:column;gap:20px;border-right:1px solid var(--line)}
+.biz{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel)}
+.biz .av{width:34px;height:34px;border-radius:8px;background:var(--o);color:var(--lime);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
+.biz small{display:block;font-size:11px;color:var(--muted)}.biz b{font-size:13px}
+.nav h4{margin:0 0 8px 10px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;text-decoration:none;font-size:14px;color:var(--muted);border:1px solid transparent}
+.nav a:hover{color:var(--text)}
+.nav a[aria-current]{background:var(--panel);border-color:var(--line);color:var(--text);font-weight:600}
+.nav a[aria-current] .ico{stroke:var(--text)}
+.nav .cnt{margin-left:auto;font-size:11px;background:var(--lime);color:var(--o);font-weight:700;padding:1px 7px;border-radius:999px}
+.pro{margin-top:auto;background:var(--o);color:var(--craie);border-radius:var(--r-lg);padding:16px;display:flex;flex-direction:column;gap:10px}
+.pro b{font-size:14px}.pro span{font-size:12px;color:var(--ard)}
+.me{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel)}
+.me .av{width:32px;height:32px;border-radius:50%;background:var(--c200);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--o)}
+.me small{display:block;font-size:11px;color:var(--muted)}
+.main{padding:20px 28px 28px;display:flex;flex-direction:column;gap:20px;min-width:0}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.crumb{font-size:13px;color:var(--muted)}.crumb b{color:var(--text);font-weight:600}
+.search{height:38px;min-width:220px;border:1px solid var(--line);border-radius:10px;background:var(--panel);display:flex;align-items:center;gap:8px;padding:0 12px;font-size:13px;color:var(--muted)}
+.hello{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.hello h3{margin:0;font-size:28px;font-weight:700;letter-spacing:-.02em}
+.hello p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.split{display:grid;grid-template-columns:1.6fr 1fr;gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;min-width:0}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.card-h h5{margin:0;font-size:16px;font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.seg button{font:inherit;font-size:12px;border:0;background:none;padding:5px 10px;border-radius:7px;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--bg);color:var(--text);font-weight:600;box-shadow:0 0 0 1px var(--line)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+thead th{text-align:left;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--line);padding:10px 12px}
+thead th:first-child{border-radius:10px 0 0 10px}thead th:last-child{border-radius:0 10px 10px 0}
+tbody td{padding:14px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+td small{display:block;font-size:12px;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+
+/* Réglages */
+.settings{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:var(--r-app);display:grid;grid-template-columns:220px 1fr;overflow:hidden}
+.subnav{padding:24px 16px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.subnav h4{margin:0 0 4px;font-size:20px;font-weight:700}
+.subnav p{margin:0 0 14px;font-size:12px;color:var(--muted)}
+.subnav a{padding:9px 12px;border-radius:999px;text-decoration:none;font-size:14px;color:var(--muted);border:1px solid transparent}
+.subnav a[aria-current]{border-color:var(--text);color:var(--text);font-weight:600}
+.setmain{padding:28px;display:flex;flex-direction:column;gap:24px;max-width:720px}
+.setmain h5{margin:0;font-size:18px;font-weight:700}.setmain .lead{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* Marketing */
+.mk{border-radius:var(--r-app);overflow:hidden;border:1px solid var(--c300)}
+.hero{background:var(--o);color:var(--craie);padding:clamp(40px,7vw,88px) 16px 0;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;left:50%;transform:translateX(-50%);bottom:-340px;width:1400px;height:520px;border-radius:50%;border-top:1px solid rgba(198,244,50,.55);background:radial-gradient(60% 55% at 50% 0%,rgba(198,244,50,.22),rgba(10,10,10,0) 70%)}
+.hnav{position:absolute;top:18px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--ard)}
+.hnav .lk{display:flex;gap:22px}
+.hnav .logo{width:auto;display:flex;gap:4px}.hnav .logo span{aspect-ratio:auto;padding:2px 8px;font-size:14px;border-radius:5px}
+.announce{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--g600);border-radius:999px;padding:4px 12px 4px 4px;font-size:12px;color:var(--ard);margin-top:36px}
+.announce b{background:var(--lime);color:var(--o);padding:2px 8px;border-radius:999px;font-size:11px}
+.hero h2{text-wrap:balance;overflow-wrap:break-word;font-size:clamp(34px,8vw,96px);font-weight:800;letter-spacing:-.045em;line-height:.98;margin:22px auto 0;max-width:980px}
+.hero h2 em{font-style:normal;color:var(--lime)}
+.hero p{max-width:560px;margin:18px auto 0;color:var(--ard);font-size:clamp(15px,1.6vw,18px)}
+.urlbox{margin:30px auto 0;max-width:600px;display:flex;gap:6px;background:var(--g);border:1px solid var(--g600);border-radius:16px;padding:6px;position:relative;z-index:1}
+.urlbox input{flex:1;min-width:0;background:none;border:0;color:var(--craie);font:inherit;padding:0 12px;font-size:15px}
+.urlbox input::placeholder{color:var(--ard)}
+.urlbox input:focus{outline:none}
+.urlbox:focus-within{border-color:var(--lime)}
+.plats{position:relative;z-index:1;margin:18px auto 0;display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.plat{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--g600);border-radius:999px;padding:5px 12px;font-size:12px;color:var(--ard)}
+.plat b{color:var(--craie);font-weight:600}
+.plat::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--lime)}
+.plat.soon::before{background:transparent;border:1px solid var(--ard)}
+.alts{margin-top:12px;font-size:12px;color:var(--ard);position:relative;z-index:1}
+.alts u{color:var(--craie);text-underline-offset:3px}
+.shot{position:relative;z-index:1;margin:48px auto 0;max-width:980px;border-radius:20px 20px 0 0;border:1px solid var(--g600);border-bottom:0;background:var(--craie);height:220px;overflow:hidden;padding:18px;display:grid;grid-template-columns:150px 1fr;gap:14px;text-align:left;color:var(--o)}
+.shot .s1{border-right:1px solid var(--c200);display:flex;flex-direction:column;gap:8px;font-size:11px;color:var(--ard7)}
+.shot .s1 i{display:block;height:8px;border-radius:4px;background:var(--c200)}
+.shot .s1 i.a{background:var(--o);width:70%}
+.platforms{background:var(--o);color:var(--ard);padding:28px 16px 40px;display:flex;flex-wrap:wrap;justify-content:center;gap:12px 32px;font-size:13px;border-top:1px solid var(--g700)}
+.platforms b{color:var(--craie);font-weight:600}
+.light{background:var(--craie);padding:clamp(40px,6vw,80px) clamp(16px,4vw,48px)}
+.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+.bc{background:var(--c50);border:1px solid var(--c200);border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.bc h4{margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em}
+.bc p{margin:0;font-size:14px;color:var(--ard7)}
+.b1{grid-column:span 4}.b2{grid-column:span 2}.b3{grid-column:span 2}.b4{grid-column:span 4}
+.mini{margin-top:auto;background:var(--craie);border:1px solid var(--c200);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--c300);border-radius:999px;padding:4px 10px;font-size:12px;background:var(--c50)}
+.chip.on{background:var(--o);color:var(--craie);border-color:var(--o)}
+.fx{display:flex;gap:8px}
+.fx span{flex:1;border:1px solid var(--c300);border-radius:8px;display:grid;place-items:center;font-size:11px;color:var(--ard7);background:var(--c50)}
+.problems{display:grid;grid-template-columns:1fr 1.3fr;gap:40px;border-top:1px solid var(--c300);padding-top:40px;margin-top:56px}
+.problems h3{margin:12px 0 0;font-size:clamp(26px,3vw,36px);font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.plist div{display:grid;grid-template-columns:48px 1fr;gap:12px;padding:18px 0;border-bottom:1px dashed var(--c300)}
+.plist span{font-size:13px;color:var(--ard7);font-variant-numeric:tabular-nums}
+.plist b{display:block;font-size:17px;font-weight:600}.plist p{margin:4px 0 0;font-size:14px;color:var(--ard7)}
+.pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:stretch;margin-top:32px}
+.plan{border:1px solid var(--c200);background:var(--c50);border-radius:var(--r-lg);padding:24px;display:flex;flex-direction:column;gap:16px}
+.plan.rec{background:var(--o);color:var(--craie);border-color:var(--o)}
+.plan h4{margin:0;font-size:15px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.plan .tag{font-size:11px;border:1px solid var(--lime);color:var(--lime);padding:2px 8px;border-radius:999px}
+.plan .price{font-size:32px;font-weight:800;letter-spacing:-.02em}
+.plan .price small{font-size:13px;font-weight:400;color:var(--ard7)}
+.plan.rec .price small{color:var(--ard)}
+.plan ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;font-size:14px}
+.plan li{display:flex;gap:9px}
+.plan li::before{content:"";flex:none;width:14px;height:14px;margin-top:3px;border-radius:4px;background:var(--o);mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M3 7.5l2.5 2.5L11 4.5' stroke='black' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M3 7.5l2.5 2.5L11 4.5' stroke='black' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat}
+.plan.rec li::before{background:var(--lime)}
+.plan .btn{margin-top:auto;justify-content:center}
+
+/* Mobile */
+.phones{display:flex;gap:28px;flex-wrap:wrap;justify-content:center}
+.phone{width:340px;max-width:100%;background:var(--craie);border:8px solid var(--o);border-radius:44px;padding:18px 14px;display:flex;flex-direction:column;gap:12px;color:var(--o)}
+.ph-top{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.ph-top .logo{width:auto;display:flex;gap:3px}.ph-top .logo span{aspect-ratio:auto;padding:1px 6px;font-size:12px;border-radius:4px}
+.ph-h{font-size:22px;font-weight:700;letter-spacing:-.02em;margin:4px 0 0}
+.ph-h + small{color:var(--ard7);font-size:12px}
+.btn-full{width:100%;justify-content:center;height:52px;border-radius:14px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tiles .kpi{padding:14px;border-radius:18px}
+.mc{background:var(--c50);border:1px solid var(--c200);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.mc .r{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.mc b{font-size:14px}
+.prog{height:6px;border-radius:3px;background:var(--c200);overflow:hidden}.prog i{display:block;height:100%;background:var(--o);border-radius:3px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--c200);padding-top:10px;margin-top:auto;font-size:11px;text-align:center;color:var(--ard7)}
+.tabs b{color:var(--o)}
+
+/* Do / don't */
+.dd{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px}
+.dd div{background:var(--c50);border:1px solid var(--c200);border-radius:var(--r-lg);padding:18px;font-size:14px}
+.dd strong{display:block;margin-bottom:6px;font-size:13px}
+.dd .y strong{color:#3F5A08}.dd .n strong{color:var(--err)}
+
+@media (max-width:980px){
+  .app{grid-template-columns:1fr}.side{display:none}
+  .split{grid-template-columns:1fr}.problems{grid-template-columns:1fr;gap:12px}
+  .pricing{grid-template-columns:1fr}.bento{grid-template-columns:1fr}.b1,.b2,.b3,.b4{grid-column:auto}
+  .settings{grid-template-columns:1fr}.subnav{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:14px}
+  .subnav h4,.subnav p{display:none}.subnav a{white-space:nowrap}
+}
+@media (max-width:640px){
+  .cover{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr}.main{padding:16px}.search{display:none}
+  .f2{grid-template-columns:1fr}.setmain{padding:16px}
+  .type-row{grid-template-columns:1fr;gap:4px}
+  .hnav .lk{display:none}.shot{grid-template-columns:1fr}.shot .s1{display:none}
+  .urlbox{flex-direction:column}.urlbox input{height:44px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-mega" viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1zM17 9a4 4 0 0 1 0 6"/></symbol>
+  <symbol id="i-img" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 13h2M3 10h18"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5v.01"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+  <symbol id="i-wa" viewBox="0 0 24 24"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+</svg>
+
+<main class="doc">
+
+<!-- COUVERTURE -->
+<section class="cover" aria-label="Couverture">
+  <div class="logo" aria-label="Logo EasAds"><span class="t">EAS</span><span class="b">ADS</span></div>
+  <div>
+    <div class="eyebrow" style="color:var(--ard)">Design system · v2 · octobre 2026</div>
+    <h1>Même palette.<br><em>Des écrans</em> de vrai produit.</h1>
+    <p>La v1 posait le logo, les couleurs et Sora. La v2 ajoute ce qui manquait pour construire l'application : nuances de surfaces, composants, gabarits d'écrans, version mobile, thème clair.</p>
+  </div>
+</section>
+
+<!-- 01 COULEURS -->
+<section>
+  <div class="doc-h"><span class="eyebrow">Couleurs</span><h2>Palette v1, rôles précisés</h2><p>Aucune couleur de marque ajoutée. Les nuances dérivées servent aux bordures et aux surfaces ; les deux couleurs d'état servent uniquement aux statuts (refus Meta, paiement échoué).</p></div>
+  <div class="swatches">
+    <div class="sw" style="background:#0A0A0A;color:#F4F4EF"><b>Obsidienne</b><small>#0A0A0A · fond sombre</small></div>
+    <div class="sw" style="background:#1F2421;color:#F4F4EF"><b>Graphite</b><small>#1F2421 · surfaces sombres</small></div>
+    <div class="sw" style="background:#C6F432"><b>Lime</b><small>#C6F432 · une action par écran</small></div>
+    <div class="sw" style="background:#8DB01C"><b>Lime foncé</b><small>#8DB01C · survol, succès</small></div>
+    <div class="sw" style="background:#8A9088"><b>Ardoise</b><small>#8A9088 · texte secondaire sombre</small></div>
+    <div class="sw" style="background:#F4F4EF"><b>Craie</b><small>#F4F4EF · fond de l'application</small></div>
+  </div>
+  <div class="sub">Nuances dérivées et états</div>
+  <div class="swatches">
+    <div class="sw" style="background:#FBFBF8"><b>craie-50</b><small>#FBFBF8 · panneaux</small></div>
+    <div class="sw" style="background:#E8E8E1"><b>craie-200</b><small>#E8E8E1 · bordures</small></div>
+    <div class="sw" style="background:#D6D7CF"><b>craie-300</b><small>#D6D7CF · champs</small></div>
+    <div class="sw" style="background:#5C625B;color:#F4F4EF"><b>ardoise-700</b><small>#5C625B · texte secondaire clair</small></div>
+    <div class="sw" style="background:#8A5A0F;color:#F4F4EF"><b>Attention</b><small>#8A5A0F · sombre #F2B53A</small></div>
+    <div class="sw" style="background:#C2410C;color:#F4F4EF"><b>Erreur</b><small>#C2410C · sombre #FF8A73</small></div>
+  </div>
+</section>
+
+<!-- 02 TYPO -->
+<section>
+  <div class="doc-h"><span class="eyebrow">Typographie</span><h2>Sora, et des chiffres qui ne bougent pas</h2><p>Une seule famille. Les montants utilisent des chiffres à chasse fixe : 45 000 et 11 111 ont la même largeur, le tableau de bord reste stable quand les données se mettent à jour.</p></div>
+  <div class="type-row"><small>Hero · 88/800 · −4,5 %</small><div style="font-size:clamp(36px,6vw,88px);font-weight:800;letter-spacing:-.045em;line-height:1">Ta pub, <span style="background:var(--lime);padding:0 .12em;border-radius:12px">prête.</span></div></div>
+  <div class="type-row"><small>Titre · 28/700</small><div style="font-size:28px;font-weight:700;letter-spacing:-.02em">Bonjour Awa</div></div>
+  <div class="type-row"><small>Sur-titre · 12/700 capitales</small><div><span class="eyebrow">Le problème</span></div></div>
+  <div class="type-row"><small>Chiffre · 32/700 tabulaire</small><div class="num" style="font-size:32px;font-weight:700">45 000 FCFA <span style="font-size:13px;font-weight:400;color:var(--ard7)">≈ 74,30 $</span></div></div>
+  <div class="type-row"><small>Corps · 15/400</small><div>Meta vérifie ta pub avant de la diffuser, en général sous 24 heures.</div></div>
+  <div class="type-row"><small>Libellé · 11/600 capitales</small><div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ard7)">Dépensé ce mois</div></div>
+</section>
+
+<!-- 03 COMPOSANTS (clair + sombre) -->
+<section>
+  <div class="doc-h"><span class="eyebrow">Composants</span><h2>Les mêmes pièces, en clair et en sombre</h2><p>Séparation par bordures fines et différences de fond, pas par ombres. Le thème clair est celui de l'application par défaut.</p></div>
+  <div class="grid2">
+    <div class="box">
+      <span class="lab">Boutons</span>
+      <div class="row"><button class="btn btn-p" type="button">Publier la campagne</button><button class="btn btn-s" type="button">Autre proposition</button><button class="btn btn-d" type="button">Annuler</button></div>
+      <span class="lab">États</span>
+      <div class="row"><span class="pill ok">En diffusion</span><span class="pill wait">Vérification Meta</span><span class="pill ko">Refusée</span><span class="pill off">En pause</span></div>
+    </div>
+    <div class="box" data-theme="dark">
+      <span class="lab">Boutons · sombre</span>
+      <div class="row"><button class="btn btn-p" type="button">Publier la campagne</button><button class="btn btn-s" type="button">Autre proposition</button><button class="btn btn-d" type="button">Annuler</button></div>
+      <span class="lab">États · sombre</span>
+      <div class="row"><span class="pill ok">En diffusion</span><span class="pill wait">Vérification Meta</span><span class="pill ko">Refusée</span><span class="pill off">En pause</span></div>
+    </div>
+    <div class="box">
+      <span class="lab">Champs à étiquette encastrée</span>
+      <div class="field"><label for="f1">Budget par jour</label><input id="f1" class="num" value="3 000"><span class="unit">FCFA</span></div>
+      <div class="help num">≈ 4,95 $ par jour · TVA Meta incluse · minimum 600 FCFA</div>
+      <div class="field"><label for="f2">Lien de ton site</label><input id="f2" placeholder="https://"></div>
+    </div>
+    <div class="box" data-theme="dark">
+      <span class="lab">Lignes de réglage</span>
+      <div>
+        <div class="set"><svg class="ico"><use href="#i-bell"/></svg><div><b>Pub refusée par Meta</b><span>E-mail immédiat avec l'explication et la correction</span></div><button class="tog" role="switch" aria-checked="true" aria-label="Pub refusée par Meta"></button></div>
+        <div class="set"><svg class="ico"><use href="#i-chart"/></svg><div><b>Résumé du lundi</b><span>Dépenses et résultats de la semaine</span></div><button class="tog" role="switch" aria-checked="true" aria-label="Résumé du lundi"></button></div>
+        <div class="set"><svg class="ico"><use href="#i-wallet"/></svg><div><b>Quota presque atteint</b><span>Prévenir à 80 % des campagnes du mois</span></div><button class="tog" role="switch" aria-checked="false" aria-label="Quota presque atteint"></button></div>
+      </div>
+    </div>
+    <div class="box">
+      <span class="lab">Cartes chiffres</span>
+      <div class="kpi"><span class="k">Dépensé ce mois</span><div class="v num">45 000 <div class="spark" aria-hidden="true"><i style="height:30%"></i><i style="height:50%"></i><i style="height:40%"></i><i style="height:70%"></i><i style="height:55%"></i><i style="height:85%"></i><i class="on" style="height:100%"></i></div></div><span class="d num">FCFA · ≈ 74,30 $ · <b>+12 %</b> vs septembre</span></div>
+    </div>
+    <div class="box">
+      <span class="lab">Signature · le bloc empilé</span>
+      <div class="stack">
+        <div class="top">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--ard)">Proposition 1 · par l'IA</span><button class="edit" type="button">Modifier</button></div>
+          <div class="prop-grid">
+            <div><small>Plateforme</small><b>Meta Ads</b></div>
+            <div><small>Objectif</small><b>Messages WhatsApp</b></div>
+            <div><small>Zone</small><b>Douala · 10 km</b></div>
+            <div><small>Budget</small><b class="num">3 000 FCFA / jour</b></div>
+            <div><small>Durée</small><b>7 jours</b></div>
+          </div>
+        </div>
+        <button class="bot" type="button"><span>Publier la campagne</span><span class="num">21 000 FCFA au total</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 TABLEAU DE BORD -->
+<section>
+  <div class="doc-h"><span class="eyebrow">Gabarit · application</span><h2>Tableau de bord</h2><p>Sélecteur de business en haut de la barre latérale, sections titrées, carte utilisateur en bas. Bandeau de trois informations, graphique monochrome avec une seule barre en Lime.</p><span class="ref">Références 11 Modulix · 12 Spark Pixel · 13 Lunor</span></div>
+  <div class="app">
+    <aside class="side">
+      <div class="biz"><span class="av">BA</span><div><b>Boutique Akwa</b><small>Page Facebook liée</small></div></div>
+      <nav class="nav" aria-label="Menu principal">
+        <h4>Menu</h4>
+        <a href="#" aria-current="page"><svg class="ico"><use href="#i-home"/></svg>Accueil</a>
+        <a href="#"><svg class="ico"><use href="#i-mega"/></svg>Campagnes<span class="cnt">2</span></a>
+        <a href="#"><svg class="ico"><use href="#i-img"/></svg>Visuels</a>
+        <a href="#"><svg class="ico"><use href="#i-chart"/></svg>Statistiques</a>
+      </nav>
+      <nav class="nav" aria-label="Compte">
+        <h4>Compte</h4>
+        <a href="#"><svg class="ico"><use href="#i-wallet"/></svg>Abonnement</a>
+        <a href="#"><svg class="ico"><use href="#i-gear"/></svg>Réglages</a>
+        <a href="#"><svg class="ico"><use href="#i-help"/></svg>Aide</a>
+      </nav>
+      <div class="pro"><b>Passer à Pro</b><span>5 campagnes par mois, 40 visuels et l'optimiseur.</span><button class="btn btn-p btn-sm" type="button">Voir les formules</button></div>
+      <div class="me"><span class="av">AN</span><div><b style="font-size:13px">Awa Ndiaye</b><small>Starter · essai</small></div></div>
+    </aside>
+    <div class="main">
+      <div class="top"><div class="crumb">Accueil / <b>Vue d'ensemble</b></div><div class="search"><svg class="ico" style="width:16px"><use href="#i-search"/></svg>Rechercher une campagne</div></div>
+      <div class="hello"><div><h3>Bonjour Awa</h3><p>2 campagnes en diffusion, 1 en vérification chez Meta.</p></div><button class="btn btn-s" type="button">Nouvelle campagne</button></div>
+      <div class="kpis">
+        <div class="kpi"><span class="k">Campagnes actives</span><div class="v num">2 <span class="pill wait" style="font-size:11px">+1 en vérification</span></div><span class="d">sur 2 publiables ce mois</span></div>
+        <div class="kpi"><span class="k">Dépensé ce mois</span><div class="v num">45 000<div class="spark" aria-hidden="true"><i style="height:30%"></i><i style="height:50%"></i><i style="height:40%"></i><i style="height:70%"></i><i style="height:55%"></i><i style="height:85%"></i><i class="on" style="height:100%"></i></div></div><span class="d num">FCFA · ≈ 74,30 $ TVA incluse</span></div>
+        <div class="kpi"><span class="k">Quota restant</span><div class="v num">0 / 2</div><span class="d">campagnes · 6 visuels sur 10</span></div>
+      </div>
+      <div class="split">
+        <div class="card">
+          <div class="card-h"><h5>Messages WhatsApp reçus</h5><div class="seg" role="group" aria-label="Période"><button type="button" aria-pressed="false">Semaine</button><button type="button" aria-pressed="true">Mois</button></div></div>
+          <div class="chart" aria-label="Messages par mois, octobre mis en avant : 128">
+            <div class="bar" style="height:22%"></div><div class="bar" style="height:30%"></div><div class="bar" style="height:26%"></div><div class="bar" style="height:44%"></div><div class="bar" style="height:38%"></div><div class="bar" style="height:52%"></div><div class="bar" style="height:47%"></div><div class="bar" style="height:61%"></div><div class="bar" style="height:58%"></div><div class="bar hl" style="height:86%"><span class="tip num">Octobre<br><b>128 messages</b></span></div><div class="bar" style="height:6%;opacity:.4"></div><div class="bar" style="height:6%;opacity:.4"></div>
+          </div>
+          <div class="axis"><span>Jan</span><span>Fév</span><span>Mar</span><span>Avr</span><span>Mai</span><span>Juin</span><span>Juil</span><span>Août</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Déc</span></div>
+        </div>
+        <div class="stack">
+          <div class="top">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--ard)">Suggestion de l'optimiseur</span></div>
+            <div style="font-size:15px;line-height:1.45">Ta pub 2 coûte 3 fois plus cher par message que la pub 1. Mettre la pub 2 en pause pour garder ton budget sur la meilleure ?</div>
+          </div>
+          <button class="bot" type="button"><span>Mettre la pub 2 en pause</span><span aria-hidden="true">→</span></button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h" style="margin-bottom:12px"><h5>Campagnes</h5><button class="btn btn-d btn-sm" type="button">Filtrer</button></div>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Campagne</th><th>État</th><th>Résultats</th><th>Dépensé</th><th>Coût / résultat</th></tr></thead>
+          <tbody>
+            <tr><td><b>Sacs en cuir · Akwa</b><small>Messages WhatsApp · Douala 10 km</small></td><td><span class="pill ok">En diffusion</span></td><td class="num">86 messages</td><td class="num">27 000 FCFA</td><td class="num">314 FCFA</td></tr>
+            <tr><td><b>Promo rentrée</b><small>Trafic vers le site · Cameroun</small></td><td><span class="pill ok">En diffusion</span></td><td class="num">42 visites</td><td class="num">18 000 FCFA</td><td class="num">429 FCFA</td></tr>
+            <tr><td><b>Nouvelle collection</b><small>Messages WhatsApp · Yaoundé</small></td><td><span class="pill wait">Vérification Meta</span></td><td class="num">—</td><td class="num">0 FCFA</td><td class="num">—</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 REGLAGES -->
+<section>
+  <div class="doc-h"><span class="eyebrow">Gabarit · application</span><h2>Réglages, en sombre</h2><p>Double navigation : la barre latérale de l'application, puis le sous-menu des réglages. Sur mobile, le sous-menu devient une rangée défilante.</p><span class="ref">Références 03 · 04 · 05 Kiska</span></div>
+  <div class="settings" data-theme="dark">
+    <nav class="subnav" aria-label="Réglages">
+      <h4>Réglages</h4><p>Ton compte et ton business</p>
+      <a href="#">Profil</a><a href="#" aria-current="page">Kit de marque</a><a href="#">Comptes Meta</a><a href="#">Notifications</a><a href="#">Abonnement</a><a href="#">Mes données</a>
+    </nav>
+    <div class="setmain">
+      <div><h5>Kit de marque</h5><p class="lead">Utilisé automatiquement sur tous tes visuels et tes textes de pub.</p></div>
+      <div class="f2">
+        <div class="field"><label for="s1" style="background:var(--g)">Nom du business</label><input id="s1" value="Boutique Akwa"></div>
+        <div class="field"><label for="s2" style="background:var(--g)">Numéro WhatsApp</label><input id="s2" class="num" value="+237 690 12 34 56"></div>
+      </div>
+      <div class="field"><label for="s3" style="background:var(--g)">Ton des pubs</label><select id="s3"><option>Vouvoiement · « Écrivez-nous »</option><option>Tutoiement · « Écris-nous »</option></select></div>
+      <div>
+        <div class="set"><svg class="ico"><use href="#i-wa"/></svg><div><b>Afficher le numéro sur les visuels</b><span>Ajouté en bas de chaque visuel généré</span></div><button class="tog" role="switch" aria-checked="true" aria-label="Afficher le numéro sur les visuels"></button></div>
+        <div class="set"><svg class="ico"><use href="#i-globe"/></svg><div><b>Pubs en anglais</b><span>Pour toucher les clients anglophones</span></div><button class="tog" role="switch" aria-checked="false" aria-label="Pubs en anglais"></button></div>
+      </div>
+      <div class="row"><button class="btn btn-p" type="button">Enregistrer</button><button class="btn btn-d" type="button">Annuler</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 MARKETING -->
+<section>
+  <div class="doc-h"><span class="eyebrow">Gabarit · site public</span><h2>Page d'accueil</h2><p>L'action du hero n'est pas « S'inscrire » : c'est le champ où l'on colle le lien de son site. La promesse d'EasAds se démontre dès la première seconde.</p><span class="ref">Références 01 Manila · 02 One Task · 06 Nicepay · 07 Guardbase · 08 Saasify</span></div>
+  <div class="mk">
+    <div class="hero">
+      <div class="hnav"><div class="logo" aria-label="EasAds"><span class="t">EAS</span><span class="b">ADS</span></div><div class="lk"><span>Fonctionnement</span><span>Tarifs</span><span>Aide</span></div><span style="color:var(--craie)">Se connecter</span></div>
+      <div class="announce"><b>Nouveau</b>Les visuels générés par l'IA arrivent</div>
+      <h2>Tes pubs en ligne,<br><em>prêtes</em> en quelques clics.</h2>
+      <p>Colle le lien de ton site. EasAds écrit la campagne, crée le visuel et la publie sur la plateforme de ton choix. Tu valides, c'est tout.</p>
+      <form class="urlbox" onsubmit="return false"><label for="u" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Lien de ton site</label><input id="u" placeholder="https://ta-boutique.com"><button class="btn btn-p" type="submit">Créer ma pub</button></form>
+      <div class="plats" aria-label="Plateformes"><span class="plat"><b>Meta Ads</b>Disponible</span><span class="plat soon"><b>Google Ads</b>Bientôt</span><span class="plat soon"><b>TikTok Ads</b>Bientôt</span><span class="plat soon"><b>Et d'autres</b>À venir</span></div>
+      <div class="alts">Pas de site ? <u>Envoie une photo</u> ou <u>décris ton business</u></div>
+      <div class="shot" aria-hidden="true">
+        <div class="s1"><i class="a"></i><i></i><i></i><i style="width:60%"></i></div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="font-weight:700;font-size:18px">Bonjour Awa</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"><div class="kpi" style="padding:10px"><span class="k">Actives</span><b class="num">2</b></div><div class="kpi" style="padding:10px"><span class="k">Dépensé</span><b class="num">45 000</b></div><div class="kpi" style="padding:10px"><span class="k">Messages</span><b class="num">128</b></div></div>
+          <div style="height:70px;border-radius:12px;background:repeating-linear-gradient(135deg,var(--c300) 0 2px,transparent 2px 7px);border:1px solid var(--c300)"></div>
+        </div>
+      </div>
+    </div>
+    <div class="platforms"><span>Un seul endroit pour</span><b>Meta Ads</b><b>Google Ads</b><b>TikTok Ads</b><span>et les plateformes suivantes, au fur et à mesure</span></div>
+    <div class="light">
+      <div class="doc-h" style="margin:0 0 24px"><span class="eyebrow">Ce que fait EasAds</span><h2 style="font-size:clamp(28px,4vw,44px)">Tout ce qu'une plateforme pub te demande, <span style="background:var(--lime);padding:0 .1em;border-radius:8px">rempli pour toi</span></h2></div>
+      <div class="bento">
+        <div class="bc b1"><h4>Une campagne complète à partir de ton site</h4><p>Objectif, zone, budget, dates et textes. Tout est modifiable avant de publier.</p>
+          <div class="mini"><div class="chips"><span class="chip on">Messages WhatsApp</span><span class="chip">Visites du site</span><span class="chip">Ventes</span><span class="chip">Visibilité</span></div><div class="fx"><span style="height:36px" class="num">Douala · 10 km</span><span style="height:36px" class="num">3 000 FCFA / jour</span><span style="height:36px">7 jours</span></div></div></div>
+        <div class="bc b2"><h4>Visuels de graphiste</h4><p>Ta vraie photo produit, une mise en scène soignée, ton numéro posé proprement.</p><div class="mini"><div class="fx"><span style="aspect-ratio:4/5">4:5</span><span style="aspect-ratio:9/16">9:16</span><span style="aspect-ratio:1">1:1</span></div></div></div>
+        <div class="bc b3"><h4>Les prix en FCFA</h4><p>Budget, TVA Meta et équivalent en dollars, au taux du jour.</p><div class="mini"><b class="num" style="font-size:20px">21 000 FCFA</b><span class="num" style="color:var(--ard7)">≈ 34,70 $ · TVA incluse</span></div></div>
+        <div class="bc b4"><h4>Pub refusée ? On t'explique pourquoi</h4><p>Le motif de la plateforme traduit en phrase simple, avec la correction prête à republier.</p><div class="mini"><span class="pill ko" style="align-self:flex-start">Refusée</span><span>« Tu as de l'acné ? » : Meta interdit de supposer un problème de santé. <b>Texte corrigé proposé.</b></span></div></div>
+      </div>
+      <div class="problems">
+        <div><span class="eyebrow">Le problème</span><h3>Pourquoi tant de commerçants n'osent pas faire de pub</h3></div>
+        <div class="plist">
+          <div><span>01</span><div><b>Chaque plateforme a son outil d'expert</b><p>Meta, Google, TikTok : des dizaines de réglages différents avant de publier une seule pub.</p></div></div>
+          <div><span>02</span><div><b>Un bon visuel coûte un graphiste</b><p>Sans visuel soigné, la pub coûte plus cher pour moins de résultats.</p></div></div>
+          <div><span>03</span><div><b>Tout est en dollars</b><p>Difficile de savoir combien on dépense vraiment en francs CFA.</p></div></div>
+          <div><span>04</span><div><b>Les refus des plateformes sont incompréhensibles</b><p>On ne sait ni pourquoi, ni quoi corriger.</p></div></div>
+        </div>
+      </div>
+      <div class="doc-h" style="margin:72px 0 0"><span class="eyebrow">Tarifs</span><h2 style="font-size:clamp(28px,4vw,40px)">Choisis ta formule</h2><p>Payable par Mobile Money. Le budget des pubs est payé directement à Meta.</p></div>
+      <div class="pricing">
+        <div class="plan"><h4>Starter</h4><div class="price num">[prix] <small>FCFA / mois</small></div><ul><li>2 campagnes par mois</li><li>10 visuels IA</li><li>1 business</li></ul><button class="btn btn-d" type="button">Commencer l'essai</button></div>
+        <div class="plan rec"><h4>Pro <span class="tag">Recommandé</span></h4><div class="price num">[prix] <small>FCFA / mois</small></div><ul><li>5 campagnes par mois</li><li>40 visuels IA</li><li>3 business</li><li>Optimiseur et export PDF</li></ul><button class="btn btn-p" type="button">Commencer l'essai</button></div>
+        <div class="plan"><h4>Business</h4><div class="price num">[prix] <small>FCFA / mois</small></div><ul><li>15 campagnes par mois</li><li>150 visuels IA</li><li>10 business</li><li>Analyse des concurrents</li></ul><button class="btn btn-d" type="button">Commencer l'essai</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 MOBILE -->
+<section>
+  <div class="doc-h"><span class="eyebrow">Gabarit · mobile</span><h2>Sur téléphone</h2><p>Cartes empilées, une action principale pleine largeur, barre d'onglets en bas. C'est la vue la plus utilisée : elle se conçoit en premier.</p><span class="ref">Référence 14 Testora</span></div>
+  <div class="phones">
+    <div class="phone">
+      <div class="ph-top"><div class="logo" aria-label="EasAds"><span class="t">EAS</span><span class="b">ADS</span></div><svg class="ico" style="stroke:var(--o)"><use href="#i-bell"/></svg></div>
+      <div><div class="ph-h">Bonjour Awa</div><small>Vendredi 10 octobre</small></div>
+      <button class="btn btn-p btn-full" type="button">Nouvelle campagne</button>
+      <div class="tiles">
+        <div class="kpi"><span class="k">Actives</span><div class="v num" style="font-size:26px">2</div></div>
+        <div class="kpi"><span class="k">Ce mois</span><div class="v num" style="font-size:22px">45 000</div><span class="d">FCFA</span></div>
+      </div>
+      <div class="mc"><div class="r"><b>Sacs en cuir · Akwa</b><span class="pill ok">En diffusion</span></div><div class="r num" style="font-size:12px;color:var(--ard7)"><span>86 messages</span><span>314 FCFA / message</span></div><div class="prog" aria-label="Budget dépensé 64 %"><i style="width:64%"></i></div></div>
+      <div class="mc"><div class="r"><b>Nouvelle collection</b><span class="pill wait">Vérification</span></div><span style="font-size:12px;color:var(--ard7)">Meta vérifie ta pub, en général sous 24 heures.</span></div>
+      <div class="tabs"><b>Accueil</b><span>Campagnes</span><span>Visuels</span><span>Compte</span></div>
+    </div>
+    <div class="phone">
+      <div class="ph-top"><span style="font-weight:600">← Nouvelle campagne</span><span style="font-size:12px;color:var(--ard7)">3 / 3</span></div>
+      <div><div class="ph-h">Ta campagne est prête</div><small>Vérifie, modifie si besoin, puis publie.</small></div>
+      <div style="aspect-ratio:4/5;border-radius:18px;background:var(--g);display:flex;flex-direction:column;justify-content:flex-end;padding:14px;gap:6px;color:var(--craie)"><span style="align-self:flex-start;background:var(--lime);color:var(--o);font-weight:700;font-size:12px;padding:3px 9px;border-radius:999px" class="num">25 000 F</span><b style="font-size:18px;line-height:1.15">Vos sacs en cuir, livrés à Douala</b><span style="font-size:11px;color:var(--ard)" class="num">Écrivez-nous · +237 690 12 34 56</span></div>
+      <div class="stack">
+        <div class="top"><div class="prop-grid"><div><small>Objectif</small><b>WhatsApp</b></div><div><small>Budget</small><b class="num">3 000 F/j</b></div><div><small>Zone</small><b>Douala</b></div><div><small>Durée</small><b>7 jours</b></div></div></div>
+        <button class="bot" type="button"><span>Publier</span><span class="num">21 000 FCFA</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 REGLES -->
+<section>
+  <div class="doc-h"><span class="eyebrow">Règles</span><h2>À faire, à ne pas faire</h2></div>
+  <div class="dd">
+    <div class="y"><strong>À faire</strong>Une seule action en Lime par écran. Les autres boutons sont noirs ou discrets.</div>
+    <div class="n"><strong>À éviter</strong>Texte en Lime sur fond clair : illisible. Sur Craie, la Lime est un fond, jamais une couleur de texte.</div>
+    <div class="y"><strong>À faire</strong>Montrer la vraie interface dans le site public (captures, mini-écrans), comme les références 01 et 06.</div>
+    <div class="n"><strong>À éviter</strong>Illustrations 3D, dégradés violets, faux logos clients, chiffres inventés (référence 10).</div>
+    <div class="y"><strong>À faire</strong>Montants en FCFA en grand, dollars en petit dessous, chiffres tabulaires.</div>
+    <div class="n"><strong>À éviter</strong>Une couleur seule pour dire un état : toujours un point et un mot (« Refusée »).</div>
+  </div>
+</section>
+
+</main>
+<script>
+document.querySelectorAll('.tog').forEach(function(t){t.addEventListener('click',function(){t.setAttribute('aria-checked',t.getAttribute('aria-checked')==='true'?'false':'true')})});
+document.querySelectorAll('.seg').forEach(function(s){s.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;s.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')})})});
+</script>
+</body>
+</html>

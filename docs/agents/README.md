@@ -31,6 +31,9 @@
 
 L'**orchestrateur** est du code, pas un agent. C'est lui qui appelle les agents, valide les sorties, décompte les quotas et appelle l'API Meta. **Aucun agent n'appelle un autre agent, et aucun agent n'appelle l'API Meta en écriture.**
 
+## Plateformes
+EasAds vise toutes les plateformes publicitaires (PRD §1). L'Analyste, le Designer, le Modérateur et l'Assistant aide sont **indépendants de la plateforme**. Le Stratège et l'Optimiseur parlent la langue de chaque plateforme (objectifs, formats, règles) : leur spécification actuelle couvre **Meta Ads**, la première branchée. Google Ads et TikTok Ads auront chacun leur section de règles et leurs cas de test avant activation.
+
 ## Règles communes (R1 à R12)
 
 | # | Règle |

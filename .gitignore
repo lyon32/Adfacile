@@ -32,3 +32,9 @@ dist-ssr
 # Claude Code
 .mcp.json
 .claude/settings.local.json
+
+# Outils et fichiers locaux
+.playwright-mcp/
+.tools/
+tmp/
+bench/results/images/
