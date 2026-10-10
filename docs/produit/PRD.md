@@ -233,10 +233,12 @@ Conséquences :
 | | Starter | Pro | Business |
 |---|---|---|---|
 | Campagnes publiées / mois | 2 | 5 | 15 |
-| Visuels générés / mois | 10 | 40 | 150 |
+| Crédits inclus / mois (images et vidéos) | 10 | 15 | 30 |
 | Business / Pages | 1 | 3 | 10 |
 | Analyse concurrents, export PDF, Optimiseur, statistiques comparatives | — | ✅ | ✅ |
-| Prix | *À fixer après mesure des coûts IA* | | |
+| Prix / mois | 5 000 XAF | 12 000 XAF | 25 000 XAF |
+
+Détail des crédits, coûts par génération et marges : [plans-et-credits.md](plans-et-credits.md). Crédit supplémentaire : 1 000 XAF (vidéo : 2 crédits minimum).
 
 - **Essai** : 1 campagne, 3 visuels, 7 jours, sans moyen de paiement.
 - **Au-delà du quota** : achat de **crédits** via SasPay (1 campagne = X crédits, 1 visuel = Y crédits, à fixer).
