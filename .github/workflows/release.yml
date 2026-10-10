@@ -1,0 +1,122 @@
+# Mise en production — lancée À LA MAIN (Actions → Mise en production → Run workflow), jamais automatiquement.
+# Le commit doit être sur main ET avoir réussi la préproduction. docs/architecture/CI_CD.md §5.
+# Ordre fixe : vérifications → migrations → Trigger.dev (prod) → Vercel (prod) → tests de fumée → étiquette.
+name: Mise en production
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Commit de main à mettre en production (SHA complet)
+        required: true
+        type: string
+      allow_destructive_migrations:
+        description: J'ai vérifié les migrations destructives (DROP, TRUNCATE, changement de type) et leur sauvegarde
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-production
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Production
+    if: vars.EASADS_PIPELINE_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: write   # étiquette et note de version
+      actions: read     # vérifier la préproduction de ce commit
+    environment:
+      name: easads-production
+      url: https://app.easads.com
+    env:
+      SHA: ${{ inputs.sha }}
+      ALLOW_DESTRUCTIVE: ${{ inputs.allow_destructive_migrations }}
+      GH_TOKEN: ${{ github.token }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Vérifier — le commit est sur main
+        run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$SHA" origin/main || { echo "::error::Ce commit n'est pas sur main."; exit 1; }
+
+      - name: Vérifier — la préproduction de ce commit a réussi
+        run: |
+          n="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-staging.yml/runs?head_sha=${SHA}&status=success" --jq '.total_count')"
+          [ "$n" -gt 0 ] || { echo "::error::Aucune préproduction réussie pour ${SHA}."; exit 1; }
+
+      - name: Vérifier — migrations destructives
+        run: |
+          last="$(git describe --tags --match 'release-*' --abbrev=0 "$SHA" 2>/dev/null || true)"
+          if [ -n "$last" ]; then files="$(git diff --name-only "$last" "$SHA" -- supabase/migrations)"; else files="$(ls supabase/migrations/*.sql)"; fi
+          echo "Migrations depuis ${last:-le début} :"; echo "$files"
+          mapfile -t list <<< "$files"
+          # Instructions destructives seulement (pas le mot « truncate » d'un déclencheur qui l'interdit).
+          pattern='^[[:space:]]*(drop[[:space:]]+(table|type|function|schema|view)|truncate[[:space:]]|delete[[:space:]]+from)|drop[[:space:]]+column|alter[[:space:]]+column[^;]*[[:space:]]type[[:space:]]'
+          if [ -n "$files" ] && grep -Eiq "$pattern" "${list[@]}"; then
+            if [ "$ALLOW_DESTRUCTIVE" != "true" ]; then
+              echo "::error::Migration destructive détectée. Relancer avec la case cochée après vérification (CI_CD.md §6)."
+              exit 1
+            fi
+            echo "::warning::Migration destructive confirmée par la personne qui a lancé la mise en production."
+          fi
+
+      - uses: ./.github/actions/setup
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.118.0
+
+      - name: 1. Migrations — aperçu
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          supabase db push --dry-run
+      - name: 1. Migrations — application
+        run: supabase db push
+
+      - name: 2. Tâches Trigger.dev (prod)
+        run: pnpm --filter @easads/jobs exec trigger.dev deploy --env prod --external-id "$SHA"
+
+      - name: 3. Vercel — construction (variables de production)
+        run: |
+          pnpm exec vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          pnpm exec vercel build --prod --token="$VERCEL_TOKEN"
+      - name: 3. Vercel — mise en production
+        run: pnpm exec vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+
+      - name: 4. Tests de fumée en production (lecture seule)
+        id: smoke
+        env:
+          BASE_URL: https://app.easads.com
+          SITE_URL: https://easads.com
+        run: |
+          pnpm --filter @easads/web exec playwright install --with-deps chromium
+          pnpm e2e:smoke:prod
+
+      - name: Retour arrière de Vercel si les tests de fumée échouent
+        if: failure() && steps.smoke.outcome == 'failure'
+        run: |
+          pnpm exec vercel rollback --yes --token="$VERCEL_TOKEN"
+          echo "::error::Production remise sur la version précédente (site et API). Tâches et base : voir CI_CD.md §7."
+
+      - name: 5. Étiquette et note de version
+        run: |
+          tag="release-$(date -u +%Y.%m.%d)-${GITHUB_RUN_NUMBER}"
+          gh release create "$tag" --target "$SHA" --title "$tag" --generate-notes

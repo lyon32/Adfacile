@@ -1,0 +1,93 @@
+# Contrôles planifiés, une fois par semaine (lundi) sur main — TESTING §7.1, CI_CD §3.3.
+# Hebdomadaire et non quotidien : les minutes GitHub Actions d'un dépôt privé sont limitées (CI_CD §10).
+#  - tous les parcours sur Chromium, Firefox et WebKit ;
+#  - failles de toutes les dépendances ;
+#  - contrôle des VRAIS fournisseurs avec les clés de test (coûte un peu d'argent, TESTING §2.7).
+name: Contrôles planifiés
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'    # chaque lundi, 06:00 UTC (07:00 à Douala)
+  workflow_dispatch:
+    inputs:
+      providers:
+        description: Lancer aussi le contrôle des vrais fournisseurs (coûte un peu d'argent)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  NEXT_PUBLIC_APP_ENV: development
+  NEXT_PUBLIC_SITE_URL: http://localhost:5173
+  NEXT_PUBLIC_APP_URL: http://app.localhost:5173
+  SITE_HOSTS: localhost:5173
+  EASADS_FAKE_PROVIDERS: all
+  EASADS_JOB_DISPATCH: inline
+  NEXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  e2e-full:
+    name: Parcours complets (${{ matrix.browser }})
+    if: vars.EASADS_PIPELINE_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.118.0
+      - run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector
+      - run: pnpm ci:env >> "$GITHUB_ENV"
+      - run: pnpm --filter @easads/web exec playwright install --with-deps "$BROWSER"
+        env:
+          BROWSER: ${{ matrix.browser }}
+      - run: pnpm e2e:full --project="$BROWSER"
+        env:
+          BROWSER: ${{ matrix.browser }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: rapport-playwright-${{ matrix.browser }}
+          path: apps/web/playwright-report
+          retention-days: 14
+
+  audit:
+    name: Failles des dépendances (toutes)
+    if: vars.EASADS_PIPELINE_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm audit --audit-level high
+
+  providers:
+    name: Contrôle des vrais fournisseurs
+    if: vars.EASADS_PIPELINE_ENABLED == 'true' && (github.event_name == 'schedule' || inputs.providers)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: easads-provider-tests
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Une génération Standard par fournisseur, lecture SasPay et Meta (clés de TEST uniquement)
+        env:
+          FAL_KEY: ${{ secrets.FAL_KEY }}
+          HF_KEY: ${{ secrets.HF_KEY }}
+          SASPAY_SECRET_KEY: ${{ secrets.SASPAY_TEST_SECRET_KEY }}
+          META_TEST_ACCESS_TOKEN: ${{ secrets.META_TEST_ACCESS_TOKEN }}
+          META_TEST_AD_ACCOUNT_ID: ${{ vars.META_TEST_AD_ACCOUNT_ID }}
+        run: pnpm test:smoke-providers

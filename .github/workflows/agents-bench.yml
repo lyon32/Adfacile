@@ -1,0 +1,48 @@
+# Banc de test des agents — obligatoire si un prompt ou un modèle d'agent change (TR-AGT-04).
+# Appelle les VRAIS modèles : coûte de l'argent. Actif seulement si la variable EASADS_PIPELINE_ENABLED vaut true.
+name: Banc des agents
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'packages/agents/**/prompts/**'
+      - 'packages/agents/**/models.json'
+      - 'bench/prompts/**'
+      - 'bench/datasets/**'
+      - 'bench/models.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agents-bench-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bench:
+    name: Banc des agents (vrais modèles)
+    if: vars.EASADS_PIPELINE_ENABLED == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.draft)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: easads-agents-bench
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Lancer le banc (échoue sous les seuils de TR-AGT-05)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+        run: node bench/run.mjs
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: resultats-banc
+          path: bench/results
+          retention-days: 30
