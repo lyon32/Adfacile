@@ -1,0 +1,29 @@
+[
+  {
+    "id": "b01",
+    "ms": 993,
+    "cost": 0,
+    "error": "404 {\"error\":{\"code\":404,\"message\":\"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemini-3.1-pro-preview for the latest features and impro",
+    "checks": {
+      "schema": false
+    }
+  },
+  {
+    "id": "b02",
+    "ms": 413,
+    "cost": 0,
+    "error": "404 {\"error\":{\"code\":404,\"message\":\"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemini-3.1-pro-preview for the latest features and impro",
+    "checks": {
+      "schema": false
+    }
+  },
+  {
+    "id": "b03",
+    "ms": 937,
+    "cost": 0,
+    "error": "404 {\"error\":{\"code\":404,\"message\":\"This model models/gemini-2.5-pro is no longer available to new users. Please update your code to use models/gemini-3.1-pro-preview for the latest features and impro",
+    "checks": {
+      "schema": false
+    }
+  }
+]

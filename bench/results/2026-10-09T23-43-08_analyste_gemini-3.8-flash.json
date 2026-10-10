@@ -1,0 +1,266 @@
+[
+  {
+    "id": "b01",
+    "ms": 10349,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "questions_3_5": true,
+      "sector": true,
+      "asks_contact": true
+    },
+    "out": {
+      "profile": {
+        "business_name": {
+          "value": null,
+          "source": null
+        },
+        "sector": {
+          "value": "fashion_shoes",
+          "confidence": 0.95
+        },
+        "offer_type": "product",
+        "products": [
+          {
+            "name": "Baskets Nike et Adidas",
+            "price": {
+              "amount": 25000,
+              "currency": "XOF"
+            },
+            "description": "Baskets de marques Nike et Adidas disponibles à partir de 25 000 F",
+            "source": 0
+          }
+        ],
+        "value_props": [
+          "Livraison partout à Abidjan en 24h"
+        ],
+        "target_audience": {
+          "description": null,
+          "age_range": null,
+          "gender": "all"
+        },
+        "locations": [
+          {
+            "country": "Côte d'Ivoire",
+            "city": "Abidjan",
+            "area": "Cocody",
+            "delivery": true
+          }
+        ],
+        "contacts": {
+          "whatsapp": null,
+          "phone": null,
+          "website": null,
+          "instagram": null
+        },
+        "tone": {
+          "value": "direct",
+          "confidence": 0.7
+        },
+        "promotions": [],
+        "has_ecommerce_checkout": false,
+        "languages_detected": [
+          "fr"
+        ]
+      },
+      "conflicts": [],
+      "sensitive_signals": [
+        "counterfeit"
+      ],
+      "missing": [
+        "business_name",
+        "contacts.whatsapp",
+        "contacts.phone",
+        "target_audience.age_range"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "field": "business_name",
+          "text": "Quel est le nom de ta boutique ou de ton entreprise ?",
+          "input": "text",
+          "options": null,
+          "required": true,
+          "why": "Nécessaire pour identifier l'annonceur dans les publicités."
+        },
+        {
+          "id": "q2",
+          "field": "contacts.whatsapp",
+          "text": "Quel est ton numéro WhatsApp pour recevoir les commandes des clients ?",
+          "input": "phone",
+          "options": null,
+          "required": true,
+          "why": "Indispensable pour configurer le bouton d'action de la publicité."
+        },
+        {
+          "id": "q3",
+          "field": "target_audience.gender",
+          "text": "Tes modèles s'adressent-ils plutôt aux hommes, aux femmes ou aux deux ?",
+          "input": "single_choice",
+          "options": [
+            "Hommes",
+            "Femmes",
+            "Les deux"
+          ],
+          "required": false,
+          "why": "Permet d'affiner le ciblage de l'audience sur Meta."
+        }
+      ],
+      "flags": []
+    }
+  },
+  {
+    "id": "b02",
+    "ms": 35957,
+    "cost": 0,
+    "error": "503 {\"error\":{\"code\":503,\"message\":\"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\"status\":\"UNAVAILABLE\"}}",
+    "checks": {
+      "schema": false
+    }
+  },
+  {
+    "id": "b03",
+    "ms": 40561,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "questions_3_5": true,
+      "sector": true,
+      "no_invent_price": true
+    },
+    "out": {
+      "profile": {
+        "business_name": {
+          "value": null,
+          "source": null
+        },
+        "sector": {
+          "value": "hair",
+          "confidence": 0.95
+        },
+        "offer_type": "service",
+        "products": [
+          {
+            "name": "Tresses",
+            "price": null,
+            "description": "Prestation de tresses pour femme",
+            "source": 1
+          },
+          {
+            "name": "Perruques",
+            "price": null,
+            "description": "Pose ou vente de perruques pour femme",
+            "source": 1
+          }
+        ],
+        "value_props": [],
+        "target_audience": {
+          "description": "Femmes",
+          "age_range": null,
+          "gender": "female"
+        },
+        "locations": [
+          {
+            "country": "Sénégal",
+            "city": "Dakar",
+            "area": null,
+            "delivery": null
+          }
+        ],
+        "contacts": {
+          "whatsapp": null,
+          "phone": null,
+          "website": null,
+          "instagram": null
+        },
+        "tone": {
+          "value": null,
+          "confidence": 0
+        },
+        "promotions": [],
+        "has_ecommerce_checkout": null,
+        "languages_detected": [
+          "fr"
+        ]
+      },
+      "conflicts": [],
+      "sensitive_signals": [],
+      "missing": [
+        "business_name",
+        "contacts.whatsapp",
+        "contacts.phone",
+        "locations.area",
+        "products.price",
+        "value_props"
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "field": "business_name",
+          "text": "Quel est le nom de ton salon de coiffure ?",
+          "input": "text",
+          "options": null,
+          "required": true,
+          "why": "Nécessaire pour identifier l'entreprise sur les publicités."
+        },
+        {
+          "id": "q2",
+          "field": "contacts.whatsapp",
+          "text": "Quel est ton numéro WhatsApp pour recevoir les messages des clientes ?",
+          "input": "phone",
+          "options": null,
+          "required": true,
+          "why": "Point de contact direct indispensable pour convertir les prospects."
+        },
+        {
+          "id": "q3",
+          "field": "locations.area",
+          "text": "Dans quel quartier de Dakar est situé ton salon ?",
+          "input": "text",
+          "options": null,
+          "required": true,
+          "why": "Permet de cibler la zone géographique exacte autour du salon."
+        },
+        {
+          "id": "q4",
+          "field": "products.price",
+          "text": "Quels sont tes tarifs pour les tresses et les perruques ?",
+          "input": "text",
+          "options": null,
+          "required": false,
+          "why": "Donner une idée de prix attire des clientes qualifiées."
+        }
+      ],
+      "flags": []
+    }
+  },
+  {
+    "id": "b04",
+    "ms": 91361,
+    "cost": 0,
+    "error": "503 {\"error\":{\"code\":503,\"message\":\"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\"status\":\"UNAVAILABLE\"}}",
+    "checks": {
+      "schema": false
+    }
+  },
+  {
+    "id": "b05",
+    "ms": 65658,
+    "cost": 0,
+    "error": "503 {\"error\":{\"code\":503,\"message\":\"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\"status\":\"UNAVAILABLE\"}}",
+    "checks": {
+      "schema": false
+    }
+  },
+  {
+    "id": "b06",
+    "ms": 116608,
+    "cost": 0,
+    "error": "503 {\"error\":{\"code\":503,\"message\":\"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\"status\":\"UNAVAILABLE\"}}",
+    "checks": {
+      "schema": false
+    }
+  }
+]

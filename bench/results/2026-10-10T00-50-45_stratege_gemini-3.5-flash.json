@@ -1,0 +1,508 @@
+[
+  {
+    "id": "s01",
+    "ms": 9987,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "objective": true,
+      "destination": true,
+      "budget_min": true,
+      "primary_len": true,
+      "tone": true,
+      "headline_len": true,
+      "desc_len": true,
+      "no_forbidden": true,
+      "no_invented_numbers": true,
+      "dates": true
+    },
+    "out": {
+      "objective": "OUTCOME_ENGAGEMENT",
+      "objective_reason": "Campagne de messagerie WhatsApp pour générer des ventes directes de baskets à Abidjan.",
+      "destination": "WHATSAPP",
+      "optimization_goal": "CONVERSATIONS",
+      "geo": {
+        "countries": [
+          "CI"
+        ],
+        "cities": [
+          {
+            "name": "Abidjan",
+            "radius_km": 10
+          }
+        ],
+        "reason": "Ciblage centré sur Abidjan pour assurer la promesse de livraison locale rapide."
+      },
+      "advanced_targeting": {
+        "age_min": 18,
+        "age_max": 65,
+        "genders": "all",
+        "advantage_plus": true
+      },
+      "budget": {
+        "daily_usd_cents": 400,
+        "reason": "Ce budget de 4,00 $ par jour permet d'initier plusieurs conversations qualifiées par jour sur WhatsApp."
+      },
+      "schedule": {
+        "start_date": "2026-10-11",
+        "end_date": "2026-10-18",
+        "reason": "Une diffusion de 7 jours pour tester l'accueil de l'offre à Abidjan."
+      },
+      "copy": {
+        "primary_text": "Vos baskets Nike et Adidas à 25 000 XOF. ⚡ Livrées chez vous en 24h à Abidjan. Commandez sur WhatsApp ! 📲",
+        "headline": "Baskets Nike & Adidas à 25 000 XOF",
+        "description": "Livraison en 24h à Abidjan",
+        "cta": "SEND_WHATSAPP_MESSAGE",
+        "angle": "speed"
+      },
+      "tracking": null,
+      "warnings": [],
+      "visual_brief": "Une photo nette et lumineuse mettant en valeur une paire de baskets tendance (Nike ou Adidas) posée sur sa boîte d'origine, avec un arrière-plan urbain moderne et épuré.",
+      "flags": []
+    }
+  },
+  {
+    "id": "s02",
+    "ms": 11819,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "destination": true,
+      "warning": true,
+      "budget_min": true,
+      "primary_len": true,
+      "tone": true,
+      "headline_len": true,
+      "desc_len": true,
+      "no_forbidden": true,
+      "no_invented_numbers": true,
+      "dates": true
+    },
+    "out": {
+      "objective": "OUTCOME_ENGAGEMENT",
+      "objective_reason": "Pour un commerce local de baskets à Abidjan, l'objectif d'interaction est idéal pour générer des discussions directes et conclure des ventes rapidement.",
+      "destination": "MESSENGER",
+      "optimization_goal": "CONVERSATIONS",
+      "geo": {
+        "countries": [
+          "CI"
+        ],
+        "cities": [
+          {
+            "name": "Abidjan",
+            "radius_km": 10
+          }
+        ],
+        "reason": "Ciblage concentré sur Abidjan avec un rayon de 10 km pour toucher une clientèle locale et faciliter la livraison."
+      },
+      "advanced_targeting": {
+        "age_min": 18,
+        "age_max": 65,
+        "genders": "all",
+        "advantage_plus": true
+      },
+      "budget": {
+        "daily_usd_cents": 400,
+        "reason": "Un budget de 4,00 USD par jour est optimal pour générer un flux régulier de conversations avec des acheteurs potentiels."
+      },
+      "schedule": {
+        "start_date": "2026-10-11",
+        "end_date": "2026-10-18",
+        "reason": "Une diffusion de 7 jours commençant dès demain permet de tester la réactivité de votre audience locale."
+      },
+      "copy": {
+        "primary_text": "Vos nouvelles baskets sont à Cocody. Style unique et confort au quotidien. Écrivez-nous ! 👟",
+        "headline": "Commandez vos baskets ici",
+        "description": "Sneakers Cocody à Abidjan",
+        "cta": "SEND_MESSAGE",
+        "angle": "convenience"
+      },
+      "tracking": null,
+      "warnings": [
+        "Votre compte WhatsApp n'étant pas lié, la campagne redirigera les clients vers Messenger. Pour de meilleurs résultats, nous vous conseillons de lier un compte WhatsApp Business."
+      ],
+      "visual_brief": "Une photo nette et lumineuse d'une paire de baskets tendance, présentée dans un style urbain et moderne à Abidjan.",
+      "flags": []
+    }
+  },
+  {
+    "id": "s03",
+    "ms": 9394,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "objective": true,
+      "destination": true,
+      "pixel": true,
+      "budget_min": true,
+      "primary_len": true,
+      "headline_len": true,
+      "desc_len": true,
+      "no_forbidden": true,
+      "no_invented_numbers": true,
+      "dates": true
+    },
+    "out": {
+      "objective": "OUTCOME_SALES",
+      "objective_reason": "Since you have an active e-commerce checkout and a Meta pixel installed, a Sales campaign is the most effective way to drive direct online purchases for the iPhone 15.",
+      "destination": "WEBSITE",
+      "optimization_goal": "OFFSITE_CONVERSIONS",
+      "geo": {
+        "countries": [
+          "NG"
+        ],
+        "cities": [
+          {
+            "name": "Lagos",
+            "radius_km": 10
+          }
+        ],
+        "reason": "Targeting Lagos where you offer free delivery to Lagos Island, maximizing conversion likelihood."
+      },
+      "advanced_targeting": {
+        "age_min": 18,
+        "age_max": 65,
+        "genders": "all",
+        "advantage_plus": true
+      },
+      "budget": {
+        "daily_usd_cents": 800,
+        "reason": "A daily budget of $8.00 is recommended for Sales campaigns to give the Meta algorithm enough data to optimize for conversions."
+      },
+      "schedule": {
+        "start_date": "2026-10-11",
+        "end_date": "2026-10-18",
+        "reason": "A standard 7-day campaign starting tomorrow to capture immediate purchase intent."
+      },
+      "copy": {
+        "primary_text": "Get your iPhone 15 at Lagos Gadgets. Free delivery in Lagos Island. Checkout online in 2 minutes. Shop now 📱",
+        "headline": "iPhone 15 - Free Lagos Island Delivery",
+        "description": "Easy 2-minute online checkout",
+        "cta": "SHOP_NOW",
+        "angle": "convenience"
+      },
+      "tracking": {
+        "pixel_id": "111"
+      },
+      "warnings": [],
+      "visual_brief": "A clean, high-quality product shot of the iPhone 15 on a minimalist background, highlighting the sleek design. A small text overlay or icon can indicate 'Free Delivery in Lagos Island' to reinforce the convenience angle.",
+      "flags": []
+    }
+  },
+  {
+    "id": "s04",
+    "ms": 8079,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "objective": true,
+      "budget_min": true,
+      "primary_len": true,
+      "tone": true,
+      "headline_len": true,
+      "desc_len": true,
+      "no_forbidden": true,
+      "no_invented_numbers": true,
+      "dates": true
+    },
+    "out": {
+      "objective": "OUTCOME_ENGAGEMENT",
+      "objective_reason": "Pour un service local à Cotonou, l'objectif d'interaction via messagerie est le plus efficace pour répondre aux questions des prospects et enregistrer les inscriptions.",
+      "destination": "MESSENGER",
+      "optimization_goal": "CONVERSATIONS",
+      "geo": {
+        "countries": [
+          "BJ"
+        ],
+        "cities": [
+          {
+            "name": "Cotonou",
+            "radius_km": 10
+          }
+        ],
+        "reason": "Ciblage concentré sur Cotonou avec un rayon de 10 km pour toucher une audience locale capable de suivre la formation en présentiel."
+      },
+      "advanced_targeting": {
+        "age_min": 18,
+        "age_max": 65,
+        "genders": "all",
+        "advantage_plus": true
+      },
+      "budget": {
+        "daily_usd_cents": 400,
+        "reason": "Un budget de 4,00 USD par jour permet de générer un flux régulier de conversations qualifiées sur Messenger."
+      },
+      "schedule": {
+        "start_date": "2026-10-11",
+        "end_date": "2026-10-18",
+        "reason": "Une campagne test de 7 jours pour évaluer l'intérêt et acquérir les premiers inscrits."
+      },
+      "copy": {
+        "primary_text": "Boostez vos compétences avec notre formation informatique de 3 mois à Cotonou. 💻 Inscrivez-vous !",
+        "headline": "Formation informatique 3 mois",
+        "description": "Tarif : 75 000 XOF",
+        "cta": "SEND_MESSAGE",
+        "angle": "quality"
+      },
+      "tracking": null,
+      "warnings": [
+        "Votre compte WhatsApp n'étant pas lié, la campagne est redirigée vers Messenger. Nous vous conseillons de lier WhatsApp pour de meilleurs résultats en Afrique."
+      ],
+      "visual_brief": "Une photo professionnelle et lumineuse d'un étudiant travaillant sur un ordinateur portable dans un cadre moderne à Cotonou.",
+      "flags": []
+    }
+  },
+  {
+    "id": "s05",
+    "ms": 9997,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "objective": true,
+      "budget_min": true,
+      "primary_len": true,
+      "tone": true,
+      "headline_len": true,
+      "desc_len": true,
+      "no_forbidden": true,
+      "no_invented_numbers": true,
+      "dates": true
+    },
+    "out": {
+      "objective": "OUTCOME_ENGAGEMENT",
+      "objective_reason": "Pour un restaurant local proposant la livraison, WhatsApp est le canal le plus direct et efficace pour prendre les commandes des clients à Douala.",
+      "destination": "WHATSAPP",
+      "optimization_goal": "CONVERSATIONS",
+      "geo": {
+        "countries": [
+          "CM"
+        ],
+        "cities": [
+          {
+            "name": "Douala",
+            "radius_km": 10
+          }
+        ],
+        "reason": "Ciblage restreint à Douala (rayon de 10 km) pour garantir des plats livrés chauds et rapidement."
+      },
+      "advanced_targeting": {
+        "age_min": 18,
+        "age_max": 65,
+        "genders": "all",
+        "advantage_plus": true
+      },
+      "budget": {
+        "daily_usd_cents": 100,
+        "reason": "Le budget a été ajusté à 100 centimes (1 USD) par jour, ce qui correspond au minimum strict requis par Meta pour diffuser une publicité."
+      },
+      "schedule": {
+        "start_date": "2026-10-11",
+        "end_date": "2026-10-18",
+        "reason": "Une campagne test de 7 jours pour évaluer l'intérêt et générer tes premières commandes de Ndolé et poulet DG."
+      },
+      "copy": {
+        "primary_text": "Savoure un bon Ndolé ou poulet DG chez toi. Commande chez Mama Ndolé, on te livre à Douala ! 🍲",
+        "headline": "Commande ton plat sur WhatsApp 📲",
+        "description": "Livraison rapide à Douala",
+        "cta": "SEND_WHATSAPP_MESSAGE",
+        "angle": "convenience"
+      },
+      "tracking": null,
+      "warnings": [
+        "Le budget quotidien a été augmenté à 100 centimes (1 USD) car Meta n'autorise pas de budget inférieur."
+      ],
+      "visual_brief": "Une photo très serrée et lumineuse d'un plat de Ndolé traditionnel bien garni à côté d'un poulet DG fumant, mettant en valeur la fraîcheur et la générosité des portions.",
+      "flags": []
+    }
+  },
+  {
+    "id": "s06",
+    "ms": 15308,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "objective": true,
+      "budget_min": true,
+      "primary_len": true,
+      "tone": true,
+      "headline_len": true,
+      "desc_len": true,
+      "no_forbidden": true,
+      "no_invented_numbers": true,
+      "dates": true
+    },
+    "out": {
+      "objective": "OUTCOME_AWARENESS",
+      "objective_reason": "Conformément à votre demande, l'objectif de notoriété est idéal pour faire découvrir votre festival et maximiser la mémorisation de l'événement auprès du public cible.",
+      "destination": "NONE",
+      "optimization_goal": "REACH",
+      "geo": {
+        "countries": [
+          "SN"
+        ],
+        "cities": [
+          {
+            "name": "Dakar",
+            "radius_km": 10
+          }
+        ],
+        "reason": "Ciblage concentré sur Dakar et sa proche banlieue (rayon de 10 km) pour toucher un public local susceptible de se déplacer au festival."
+      },
+      "advanced_targeting": {
+        "age_min": 18,
+        "age_max": 65,
+        "genders": "all",
+        "advantage_plus": true
+      },
+      "budget": {
+        "daily_usd_cents": 300,
+        "reason": "Un budget de 3,00 USD par jour est optimal pour une campagne de notoriété locale, permettant de diffuser votre annonce de manière répétée auprès de l'audience cible."
+      },
+      "schedule": {
+        "start_date": "2026-10-11",
+        "end_date": "2026-10-18",
+        "reason": "Une première phase de diffusion de 7 jours pour lancer la communication autour de l'événement du 20 décembre."
+      },
+      "copy": {
+        "primary_text": "Le Festival Afro Beats débarque à Dakar le 20 décembre. Vibrez au rythme de la musique 🎶 Infos à venir !",
+        "headline": "Festival Afro Beats Dakar",
+        "description": "Le 20 décembre",
+        "cta": "LEARN_MORE",
+        "angle": "novelty"
+      },
+      "tracking": null,
+      "warnings": [
+        "Aucun pixel Meta n'est configuré sur votre compte. Pour cette campagne de notoriété sans site web, cela n'est pas bloquant."
+      ],
+      "visual_brief": "Un visuel festif et coloré aux influences africaines modernes, mettant en avant le nom du festival et la date du 20 décembre de manière très lisible.",
+      "flags": []
+    }
+  },
+  {
+    "id": "s07",
+    "ms": 10245,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "varied": true,
+      "budget_min": true,
+      "primary_len": true,
+      "tone": true,
+      "headline_len": true,
+      "desc_len": true,
+      "no_forbidden": true,
+      "no_invented_numbers": true,
+      "dates": true
+    },
+    "out": {
+      "objective": "OUTCOME_ENGAGEMENT",
+      "objective_reason": "Le choix de l'objectif d'interaction avec destination WhatsApp est idéal pour un commerce local afin de faciliter les échanges directs et de finaliser les ventes de votre crème.",
+      "destination": "WHATSAPP",
+      "optimization_goal": "CONVERSATIONS",
+      "geo": {
+        "countries": [
+          "CM"
+        ],
+        "cities": [
+          {
+            "name": "Yaoundé",
+            "radius_km": 10
+          }
+        ],
+        "reason": "Ciblage localisé sur Yaoundé pour optimiser les coûts de livraison de votre produit."
+      },
+      "advanced_targeting": {
+        "age_min": 18,
+        "age_max": 65,
+        "genders": "all",
+        "advantage_plus": true
+      },
+      "budget": {
+        "daily_usd_cents": 400,
+        "reason": "Un budget de 4,00 USD par jour est optimal pour générer un flux régulier de conversations qualifiées sur WhatsApp."
+      },
+      "schedule": {
+        "start_date": "2026-10-11",
+        "end_date": "2026-10-18",
+        "reason": "Une campagne de 7 jours commençant dès demain permet de tester l'efficacité de l'audience sur une semaine complète."
+      },
+      "copy": {
+        "primary_text": "Découvrez notre crème hydratante aux ingrédients naturels 🌿 Livraison rapide à Yaoundé. Écrivez-nous !",
+        "headline": "Crème hydratante naturelle",
+        "description": "Disponible à Yaoundé",
+        "cta": "SEND_WHATSAPP_MESSAGE",
+        "angle": "quality"
+      },
+      "tracking": null,
+      "warnings": [],
+      "visual_brief": "Une image lumineuse et épurée mettant en valeur le pot de crème hydratante Belle Peau, entouré de quelques feuilles vertes fraîches pour rappeler les ingrédients naturels.",
+      "flags": []
+    }
+  },
+  {
+    "id": "s08",
+    "ms": 9136,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "objective": true,
+      "destination": true,
+      "budget_min": true,
+      "primary_len": true,
+      "headline_len": true,
+      "desc_len": true,
+      "no_forbidden": true,
+      "no_invented_numbers": true,
+      "dates": true
+    },
+    "out": {
+      "objective": "OUTCOME_TRAFFIC",
+      "objective_reason": "Since your goal is to get users to download your mobile app from the Google Play Store, a Traffic campaign directing users to the store link is the most effective approach.",
+      "destination": "WEBSITE",
+      "optimization_goal": "LINK_CLICKS",
+      "geo": {
+        "countries": [
+          "KE"
+        ],
+        "cities": [],
+        "reason": "Targeting the entire country of Kenya to reach farmers and buyers nationwide who can use the app."
+      },
+      "advanced_targeting": {
+        "age_min": 18,
+        "age_max": 65,
+        "genders": "all",
+        "advantage_plus": true
+      },
+      "budget": {
+        "daily_usd_cents": 400,
+        "reason": "A daily budget of $4.00 is ideal for driving a consistent volume of link clicks to the Google Play Store."
+      },
+      "schedule": {
+        "start_date": "2026-10-11",
+        "end_date": "2026-10-18",
+        "reason": "A standard 7-day campaign starting tomorrow to test initial user acquisition and click-through rates."
+      },
+      "copy": {
+        "primary_text": "Sell maize, beans and avocados directly to buyers. Download the free FarmLink app today 🌽",
+        "headline": "Sell Your Crops Directly",
+        "description": "Free app for Kenyan farmers",
+        "cta": "LEARN_MORE",
+        "angle": "convenience"
+      },
+      "tracking": null,
+      "warnings": [
+        "Without the Meta SDK integrated into your app, we are optimizing for Link Clicks to the Play Store rather than App Installs."
+      ],
+      "visual_brief": "A high-quality, bright photo of a Kenyan farmer smiling while holding fresh avocados and maize, next to a clean smartphone mockup displaying the FarmLink app interface.",
+      "flags": []
+    }
+  }
+]

@@ -1,0 +1,1527 @@
+[
+  {
+    "id": "d01",
+    "ms": 12883,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "count": true,
+      "no_text_in_scene": false,
+      "negative_prompt": true,
+      "exact_copy": true,
+      "no_invented_layer": true,
+      "max_5_layers": true,
+      "max_3_colors": true,
+      "layout_valid": true,
+      "format": true,
+      "product_placed": true,
+      "safe_areas": true,
+      "distinct_concepts": true,
+      "_overlap": "0.48"
+    },
+    "out": {
+      "visuals": [
+        {
+          "concept": "Urban chic in Abidjan: The sneaker is placed on a clean concrete ledge with a modern Cocody architectural background and soft palm shadows.",
+          "references_used": [],
+          "format": "4:5",
+          "layout_id": "hero_top_title",
+          "scene": {
+            "scene_prompt": "Low angle shot of a white sneaker on a clean concrete ledge, modern Abidjan residential architecture in the background, soft morning sunlight with palm leaf shadows, palette of navy blue and bright orange, 35mm lens, urban premium atmosphere, photorealistic commercial photography, empty space at top for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, messy street, trash, blurry background.",
+            "product_placement": {
+              "x": 0.5,
+              "y": 0.6,
+              "scale": 0.55,
+              "shadow": "soft contact shadow on concrete"
+            },
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.1,
+                  0.15,
+                  0.9,
+                  0.35
+                ]
+              },
+              {
+                "role": "price",
+                "box": [
+                  0.6,
+                  0.45,
+                  0.9,
+                  0.55
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.1,
+                  0.8,
+                  0.9,
+                  0.9
+                ]
+              }
+            ],
+            "palette": [
+              "#0F172A",
+              "#F97316",
+              "#FFFFFF"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "Vos baskets livrées en 24 h",
+              "color": "#0F172A",
+              "style": "bold uppercase"
+            },
+            {
+              "role": "price",
+              "text": "25 000 F",
+              "color": "#F97316",
+              "style": "badge"
+            },
+            {
+              "role": "cta",
+              "text": "Écrivez-nous sur WhatsApp",
+              "color": "#FFFFFF",
+              "style": "button_orange"
+            },
+            {
+              "role": "contact",
+              "text": "+225 07 07 07 07 07",
+              "color": "#0F172A",
+              "style": "minimal"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        },
+        {
+          "concept": "Minimalist Studio Sport: High-contrast composition using a dark navy pedestal against an orange geometric background to make the white product pop.",
+          "references_used": [],
+          "format": "4:5",
+          "layout_id": "split_left_product",
+          "scene": {
+            "scene_prompt": "Studio shot of a white sneaker resting on a dark navy blue geometric pedestal, background is a split of clean orange and light grey walls, sharp high-end fashion lighting, palette of #0F172A and #F97316, 85mm lens, minimalist sport vibe, photorealistic commercial photography, empty space at right for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, neon lights, plastic texture.",
+            "product_placement": {
+              "x": 0.3,
+              "y": 0.5,
+              "scale": 0.6,
+              "shadow": "sharp studio shadow"
+            },
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.55,
+                  0.2,
+                  0.95,
+                  0.5
+                ]
+              },
+              {
+                "role": "price",
+                "box": [
+                  0.55,
+                  0.55,
+                  0.8,
+                  0.65
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.55,
+                  0.75,
+                  0.95,
+                  0.85
+                ]
+              }
+            ],
+            "palette": [
+              "#0F172A",
+              "#F97316",
+              "#E2E8F0"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "Vos baskets livrées en 24 h",
+              "color": "#0F172A",
+              "style": "bold"
+            },
+            {
+              "role": "price",
+              "text": "25 000 F",
+              "color": "#F97316",
+              "style": "large"
+            },
+            {
+              "role": "cta",
+              "text": "Écrivez-nous sur WhatsApp",
+              "color": "#FFFFFF",
+              "style": "button_navy"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        },
+        {
+          "concept": "Dynamic Urban Movement: A low-angle perspective on a clean asphalt road with orange traffic lines, suggesting speed and the 24h delivery promise.",
+          "references_used": [],
+          "format": "4:5",
+          "layout_id": "hero_bottom_band",
+          "scene": {
+            "scene_prompt": "Eye-level shot of a white sneaker on a sleek dark asphalt road with vibrant orange painted lines, blurred city lights of Abidjan at dusk in the background, warm golden hour lighting, palette of deep charcoal and orange, 50mm lens, dynamic urban energy, photorealistic commercial photography, empty space at bottom for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, dirt, cars, people.",
+            "product_placement": {
+              "x": 0.5,
+              "y": 0.4,
+              "scale": 0.5,
+              "shadow": "natural outdoor shadow"
+            },
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.1,
+                  0.15,
+                  0.9,
+                  0.3
+                ]
+              },
+              {
+                "role": "promo",
+                "box": [
+                  0.7,
+                  0.35,
+                  0.95,
+                  0.5
+                ]
+              },
+              {
+                "role": "contact",
+                "box": [
+                  0.1,
+                  0.85,
+                  0.9,
+                  0.95
+                ]
+              }
+            ],
+            "palette": [
+              "#0F172A",
+              "#F97316",
+              "#334155"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "Vos baskets livrées en 24 h",
+              "color": "#FFFFFF",
+              "style": "bold shadow"
+            },
+            {
+              "role": "price",
+              "text": "25 000 F",
+              "color": "#F97316",
+              "style": "accent"
+            },
+            {
+              "role": "contact",
+              "text": "+225 07 07 07 07 07",
+              "color": "#FFFFFF",
+              "style": "footer_band"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        }
+      ],
+      "flags": []
+    }
+  },
+  {
+    "id": "d02",
+    "ms": 11317,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "count": true,
+      "no_text_in_scene": true,
+      "negative_prompt": true,
+      "exact_copy": true,
+      "no_invented_layer": true,
+      "max_5_layers": true,
+      "max_3_colors": true,
+      "layout_valid": true,
+      "format": true,
+      "product_placed": true,
+      "safe_areas": true,
+      "distinct_concepts": true,
+      "_overlap": "0.39"
+    },
+    "out": {
+      "visuals": [
+        {
+          "concept": "Focus traditionnel sur le Ndolé fumant dans un bol en terre cuite pour évoquer l'authenticité.",
+          "references_used": [],
+          "format": "4:5",
+          "layout_id": "hero_top_title",
+          "scene": {
+            "scene_prompt": "Eye-level close-up of a traditional Cameroonian Ndolé dish in a rustic clay bowl, steam rising, dark wooden table background, fresh green garnish, warm golden hour sunlight, palette of deep green and yellow, shallow depth of field, photorealistic commercial food photography, empty space at top for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, plastic look, neon",
+            "product_placement": null,
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.1,
+                  0.1,
+                  0.9,
+                  0.25
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.1,
+                  0.75,
+                  0.5,
+                  0.85
+                ]
+              },
+              {
+                "role": "contact",
+                "box": [
+                  0.1,
+                  0.85,
+                  0.9,
+                  0.95
+                ]
+              }
+            ],
+            "palette": [
+              "#14532D",
+              "#FACC15",
+              "#451A03"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "Le goût de la maison",
+              "color": "#14532D",
+              "style": "bold serif"
+            },
+            {
+              "role": "cta",
+              "text": "Commandez sur WhatsApp",
+              "color": "#FACC15",
+              "style": "rounded button"
+            },
+            {
+              "role": "contact",
+              "text": "+237 690 12 34 56",
+              "color": "#FFFFFF",
+              "style": "minimalist"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        },
+        {
+          "concept": "Vue de dessus d'un Poulet DG coloré mettant en avant la générosité et la fraîcheur des ingrédients.",
+          "references_used": [],
+          "format": "4:5",
+          "layout_id": "hero_bottom_band",
+          "scene": {
+            "scene_prompt": "Top-down view of a vibrant Poulet DG with golden fried plantains and colorful peppers, served on a clean white plate, placed on a dark green linen tablecloth, bright natural daylight, palette of yellow and forest green, sharp focus, photorealistic commercial food photography, empty space at bottom for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, blue tones, artificial lighting",
+            "product_placement": null,
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.1,
+                  0.65,
+                  0.9,
+                  0.75
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.1,
+                  0.78,
+                  0.9,
+                  0.85
+                ]
+              },
+              {
+                "role": "contact",
+                "box": [
+                  0.1,
+                  0.88,
+                  0.9,
+                  0.95
+                ]
+              }
+            ],
+            "palette": [
+              "#14532D",
+              "#FACC15",
+              "#FFFFFF"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "Le goût de la maison",
+              "color": "#FFFFFF",
+              "style": "modern sans-serif"
+            },
+            {
+              "role": "cta",
+              "text": "Commandez sur WhatsApp",
+              "color": "#FACC15",
+              "style": "bold"
+            },
+            {
+              "role": "contact",
+              "text": "+237 690 12 34 56",
+              "color": "#FACC15",
+              "style": "regular"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        },
+        {
+          "concept": "Ambiance lifestyle chaleureuse montrant le partage d'un repas en famille à Douala.",
+          "references_used": [],
+          "format": "4:5",
+          "layout_id": "split_left_product",
+          "scene": {
+            "scene_prompt": "Medium shot of a Cameroonian family's hands sharing a meal of Ndolé and Poulet DG, warm home interior in Douala, soft morning light through a window, palette of earthy tones and deep green, soft bokeh background, photorealistic commercial photography, empty space on the right side for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, messy table, dark shadows",
+            "product_placement": null,
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.55,
+                  0.2,
+                  0.95,
+                  0.4
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.55,
+                  0.5,
+                  0.95,
+                  0.6
+                ]
+              },
+              {
+                "role": "contact",
+                "box": [
+                  0.55,
+                  0.65,
+                  0.95,
+                  0.75
+                ]
+              }
+            ],
+            "palette": [
+              "#14532D",
+              "#FACC15",
+              "#E5E7EB"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "Le goût de la maison",
+              "color": "#14532D",
+              "style": "elegant serif"
+            },
+            {
+              "role": "cta",
+              "text": "Commandez sur WhatsApp",
+              "color": "#14532D",
+              "style": "underline"
+            },
+            {
+              "role": "contact",
+              "text": "+237 690 12 34 56",
+              "color": "#4B5563",
+              "style": "small"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        }
+      ],
+      "flags": []
+    }
+  },
+  {
+    "id": "d03",
+    "ms": 10831,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "count": true,
+      "no_text_in_scene": true,
+      "negative_prompt": true,
+      "exact_copy": true,
+      "no_invented_layer": true,
+      "max_5_layers": true,
+      "max_3_colors": true,
+      "layout_valid": true,
+      "format": true,
+      "product_placed": true,
+      "safe_areas": true,
+      "story_safe_zone": false,
+      "distinct_concepts": true,
+      "_overlap": "0.41"
+    },
+    "out": {
+      "visuals": [
+        {
+          "concept": "Focus sur l'artisanat et la précision des tresses en gros plan pour souligner la qualité premium.",
+          "references_used": [],
+          "format": "9:16",
+          "layout_id": "hero_bottom_band",
+          "scene": {
+            "scene_prompt": "Extreme close-up of intricate African braids on a Senegalese woman, focus on hair texture and pattern, warm golden hour sunlight, background in deep terracotta #7C2D12, soft bokeh, photorealistic commercial photography, empty space at bottom for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, plastic skin, neon lights",
+            "product_placement": null,
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.1,
+                  0.65,
+                  0.9,
+                  0.72
+                ]
+              },
+              {
+                "role": "price",
+                "box": [
+                  0.1,
+                  0.73,
+                  0.9,
+                  0.78
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.25,
+                  0.8,
+                  0.75,
+                  0.85
+                ]
+              }
+            ],
+            "palette": [
+              "#7C2D12",
+              "#FDE68A",
+              "#FFFFFF"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "Votre style, nos mains",
+              "color": "#FDE68A",
+              "style": "bold serif"
+            },
+            {
+              "role": "price",
+              "text": "À partir de 10 000 F",
+              "color": "#FFFFFF",
+              "style": "regular"
+            },
+            {
+              "role": "cta",
+              "text": "Réservez maintenant",
+              "color": "#7C2D12",
+              "style": "button_accent"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        },
+        {
+          "concept": "Portrait lifestyle d'une femme confiante dans un intérieur moderne à Dakar, illustrant le résultat final.",
+          "references_used": [],
+          "format": "9:16",
+          "layout_id": "hero_top_title",
+          "scene": {
+            "scene_prompt": "Medium shot of a stylish Senegalese woman with long braids, sitting in a high-end modern Dakar lounge, natural window light, palette of cream and #7C2D12, elegant atmosphere, photorealistic commercial photography, empty space at top for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, messy room, low resolution",
+            "product_placement": null,
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.1,
+                  0.15,
+                  0.9,
+                  0.25
+                ]
+              },
+              {
+                "role": "price",
+                "box": [
+                  0.1,
+                  0.7,
+                  0.9,
+                  0.75
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.25,
+                  0.76,
+                  0.75,
+                  0.81
+                ]
+              }
+            ],
+            "palette": [
+              "#7C2D12",
+              "#FDE68A",
+              "#F3F4F6"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "Votre style, nos mains",
+              "color": "#7C2D12",
+              "style": "elegant script"
+            },
+            {
+              "role": "price",
+              "text": "À partir de 10 000 F",
+              "color": "#7C2D12",
+              "style": "bold"
+            },
+            {
+              "role": "cta",
+              "text": "Réservez maintenant",
+              "color": "#FDE68A",
+              "style": "button_primary"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        },
+        {
+          "concept": "Composition minimaliste type studio avec un éclairage dramatique mettant en valeur une perruque premium.",
+          "references_used": [],
+          "format": "9:16",
+          "layout_id": "lifestyle_full_bleed",
+          "scene": {
+            "scene_prompt": "Side profile portrait of a beautiful woman with a premium wig, minimalist studio setting, soft lighting with golden highlights #FDE68A, deep brown background #7C2D12, high fashion aesthetic, photorealistic commercial photography, empty space on the left side for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, cartoonish, over-saturated",
+            "product_placement": null,
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.05,
+                  0.3,
+                  0.45,
+                  0.45
+                ]
+              },
+              {
+                "role": "price",
+                "box": [
+                  0.05,
+                  0.46,
+                  0.45,
+                  0.52
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.05,
+                  0.55,
+                  0.4,
+                  0.6
+                ]
+              }
+            ],
+            "palette": [
+              "#7C2D12",
+              "#FDE68A",
+              "#000000"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "Votre style, nos mains",
+              "color": "#FFFFFF",
+              "style": "modern sans-serif"
+            },
+            {
+              "role": "price",
+              "text": "À partir de 10 000 F",
+              "color": "#FDE68A",
+              "style": "bold"
+            },
+            {
+              "role": "cta",
+              "text": "Réservez maintenant",
+              "color": "#FFFFFF",
+              "style": "outline"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        }
+      ],
+      "flags": []
+    }
+  },
+  {
+    "id": "d04",
+    "ms": 10833,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "count": true,
+      "no_text_in_scene": true,
+      "negative_prompt": true,
+      "exact_copy": true,
+      "no_invented_layer": true,
+      "max_5_layers": true,
+      "max_3_colors": true,
+      "layout_valid": true,
+      "format": true,
+      "product_placed": true,
+      "safe_areas": true,
+      "distinct_concepts": true,
+      "_overlap": "0.38"
+    },
+    "out": {
+      "visuals": [
+        {
+          "concept": "Minimalist Premium Luxury - Focus on the sleek design against a high-end Lagos Island interior background.",
+          "references_used": [],
+          "format": "1:1",
+          "layout_id": "hero_bottom_band",
+          "scene": {
+            "scene_prompt": "Close-up shot of an iPhone 15 placed on a polished black marble surface, blurred luxury Victoria Island apartment interior in the background, soft cinematic lighting with cyan highlights, palette of deep navy and cyan, 50mm lens, premium atmosphere, photorealistic commercial photography, empty space at bottom for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, messy room, low resolution",
+            "product_placement": {
+              "x": 0.5,
+              "y": 0.4,
+              "scale": 0.55,
+              "shadow": "soft contact shadow on marble"
+            },
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.1,
+                  0.7,
+                  0.9,
+                  0.8
+                ]
+              },
+              {
+                "role": "price",
+                "box": [
+                  0.1,
+                  0.8,
+                  0.5,
+                  0.9
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.6,
+                  0.8,
+                  0.9,
+                  0.9
+                ]
+              }
+            ],
+            "palette": [
+              "#111827",
+              "#22D3EE",
+              "#FFFFFF"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "iPhone 15, delivered free",
+              "color": "#FFFFFF",
+              "style": "bold sans-serif"
+            },
+            {
+              "role": "price",
+              "text": "₦950,000",
+              "color": "#22D3EE",
+              "style": "medium"
+            },
+            {
+              "role": "cta",
+              "text": "Shop now",
+              "color": "#111827",
+              "style": "button cyan background"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        },
+        {
+          "concept": "Dynamic Urban Delivery - Emphasizing the 'Free Delivery' in a modern Lagos street context.",
+          "references_used": [],
+          "format": "1:1",
+          "layout_id": "split_left_product",
+          "scene": {
+            "scene_prompt": "Medium shot of an iPhone 15, modern Lagos street with the Lekki-Ikoyi Link Bridge blurred in the distance, bright midday sun, palette of dark grey and vibrant cyan, wide angle lens with shallow depth of field, energetic urban vibe, photorealistic commercial photography, empty space on the right side for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, traffic jam, trash",
+            "product_placement": {
+              "x": 0.3,
+              "y": 0.5,
+              "scale": 0.6,
+              "shadow": "sharp outdoor sunlight shadow"
+            },
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.55,
+                  0.2,
+                  0.95,
+                  0.4
+                ]
+              },
+              {
+                "role": "price",
+                "box": [
+                  0.55,
+                  0.45,
+                  0.95,
+                  0.55
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.55,
+                  0.65,
+                  0.9,
+                  0.75
+                ]
+              }
+            ],
+            "palette": [
+              "#111827",
+              "#22D3EE",
+              "#E5E7EB"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "iPhone 15, delivered free",
+              "color": "#111827",
+              "style": "heavy sans-serif"
+            },
+            {
+              "role": "price",
+              "text": "₦950,000",
+              "color": "#111827",
+              "style": "bold"
+            },
+            {
+              "role": "cta",
+              "text": "Shop now",
+              "color": "#FFFFFF",
+              "style": "button navy background"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        },
+        {
+          "concept": "Professional Lifestyle - The phone as a tool for the Lagos Island professional.",
+          "references_used": [],
+          "format": "1:1",
+          "layout_id": "hero_top_title",
+          "scene": {
+            "scene_prompt": "Top-down view of an iPhone 15 on a minimalist glass desk, a high-end leather notebook and a cup of coffee nearby, soft natural light from a side window, palette of charcoal and cyan, macro photography, sophisticated professional mood, photorealistic commercial photography, empty space at the top for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, messy desk",
+            "product_placement": {
+              "x": 0.5,
+              "y": 0.65,
+              "scale": 0.5,
+              "shadow": "soft diffused shadow on glass"
+            },
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.1,
+                  0.1,
+                  0.9,
+                  0.25
+                ]
+              },
+              {
+                "role": "price",
+                "box": [
+                  0.1,
+                  0.3,
+                  0.5,
+                  0.4
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.35,
+                  0.85,
+                  0.65,
+                  0.95
+                ]
+              }
+            ],
+            "palette": [
+              "#111827",
+              "#22D3EE",
+              "#9CA3AF"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "iPhone 15, delivered free",
+              "color": "#111827",
+              "style": "elegant sans-serif"
+            },
+            {
+              "role": "price",
+              "text": "₦950,000",
+              "color": "#22D3EE",
+              "style": "bold"
+            },
+            {
+              "role": "cta",
+              "text": "Shop now",
+              "color": "#FFFFFF",
+              "style": "rounded button navy"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        }
+      ],
+      "flags": []
+    }
+  },
+  {
+    "id": "d05",
+    "ms": 11599,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "count": true,
+      "no_text_in_scene": true,
+      "negative_prompt": true,
+      "exact_copy": true,
+      "no_invented_layer": true,
+      "max_5_layers": true,
+      "max_3_colors": true,
+      "layout_valid": true,
+      "format": true,
+      "product_placed": true,
+      "safe_areas": true,
+      "flag_long_headline": true,
+      "distinct_concepts": true,
+      "_overlap": "0.43"
+    },
+    "out": {
+      "visuals": [
+        {
+          "concept": "Modern learning environment in Cotonou focusing on student concentration and high-tech equipment.",
+          "references_used": [],
+          "format": "4:5",
+          "layout_id": "hero_bottom_band",
+          "scene": {
+            "scene_prompt": "Medium shot of a focused young Beninese student using a modern laptop in a bright, minimalist computer lab in Cotonou, natural daylight from large windows, professional atmosphere, subtle blue wall accents, photorealistic commercial photography, empty space at bottom for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, messy desk, low resolution, plastic skin.",
+            "product_placement": null,
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.1,
+                  0.65,
+                  0.9,
+                  0.75
+                ]
+              },
+              {
+                "role": "price",
+                "box": [
+                  0.1,
+                  0.76,
+                  0.5,
+                  0.82
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.6,
+                  0.76,
+                  0.9,
+                  0.85
+                ]
+              }
+            ],
+            "palette": [
+              "#1D4ED8",
+              "#FFFFFF",
+              "#F3F4F6"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "Devenez pro de l'informatique en 3 mois à Cotonou avec nos formateurs certifiés",
+              "color": "#FFFFFF",
+              "style": "bold sans-serif"
+            },
+            {
+              "role": "price",
+              "text": "75 000 FCFA",
+              "color": "#1D4ED8",
+              "style": "bold"
+            },
+            {
+              "role": "cta",
+              "text": "Inscrivez-vous",
+              "color": "#FFFFFF",
+              "style": "button"
+            },
+            {
+              "role": "logo",
+              "text": null,
+              "color": null,
+              "style": null
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        },
+        {
+          "concept": "Professional success portrait highlighting the career transformation after the training.",
+          "references_used": [],
+          "format": "4:5",
+          "layout_id": "split_left_product",
+          "scene": {
+            "scene_prompt": "Eye-level portrait of a smiling, confident young Beninese professional holding a sleek laptop, standing in a modern sunlit office in Benin, blurred corporate background, soft professional lighting, navy and white tones, photorealistic commercial photography, empty space on the left side for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, cartoonish, oversaturated.",
+            "product_placement": null,
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.05,
+                  0.2,
+                  0.45,
+                  0.5
+                ]
+              },
+              {
+                "role": "price",
+                "box": [
+                  0.05,
+                  0.55,
+                  0.4,
+                  0.65
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.05,
+                  0.7,
+                  0.4,
+                  0.8
+                ]
+              }
+            ],
+            "palette": [
+              "#1D4ED8",
+              "#1E293B",
+              "#FFFFFF"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "Devenez pro de l'informatique en 3 mois à Cotonou avec nos formateurs certifiés",
+              "color": "#1D4ED8",
+              "style": "bold sans-serif"
+            },
+            {
+              "role": "price",
+              "text": "75 000 FCFA",
+              "color": "#1E293B",
+              "style": "bold"
+            },
+            {
+              "role": "cta",
+              "text": "Inscrivez-vous",
+              "color": "#FFFFFF",
+              "style": "button"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        },
+        {
+          "concept": "Mentorship and hands-on training showing the interaction between trainer and student.",
+          "references_used": [],
+          "format": "4:5",
+          "layout_id": "hero_top_title",
+          "scene": {
+            "scene_prompt": "Over-the-shoulder shot of a certified male instructor guiding a young Beninese female student on a laptop, showing code on the screen, authentic classroom in Cotonou, warm professional lighting, shallow depth of field, photorealistic commercial photography, empty space at the top for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, messy cables, low quality.",
+            "product_placement": null,
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.1,
+                  0.15,
+                  0.9,
+                  0.35
+                ]
+              },
+              {
+                "role": "price",
+                "box": [
+                  0.1,
+                  0.36,
+                  0.4,
+                  0.42
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.3,
+                  0.8,
+                  0.7,
+                  0.88
+                ]
+              }
+            ],
+            "palette": [
+              "#1D4ED8",
+              "#FFFFFF",
+              "#334155"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "Devenez pro de l'informatique en 3 mois à Cotonou avec nos formateurs certifiés",
+              "color": "#1D4ED8",
+              "style": "bold sans-serif"
+            },
+            {
+              "role": "price",
+              "text": "75 000 FCFA",
+              "color": "#334155",
+              "style": "bold"
+            },
+            {
+              "role": "cta",
+              "text": "Inscrivez-vous",
+              "color": "#FFFFFF",
+              "style": "button"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        }
+      ],
+      "flags": [
+        "HEADLINE_TOO_LONG"
+      ]
+    }
+  },
+  {
+    "id": "d06",
+    "ms": 11563,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "count": true,
+      "no_text_in_scene": true,
+      "negative_prompt": true,
+      "exact_copy": true,
+      "no_invented_layer": true,
+      "max_5_layers": true,
+      "max_3_colors": true,
+      "layout_valid": true,
+      "format": true,
+      "product_placed": true,
+      "safe_areas": true,
+      "distinct_concepts": true,
+      "_overlap": "0.38"
+    },
+    "out": {
+      "visuals": [
+        {
+          "concept": "Minimalist Zen - Product on a stone pedestal with soft morning light to emphasize purity and natural ingredients.",
+          "references_used": [],
+          "format": "4:5",
+          "layout_id": "hero_bottom_band",
+          "scene": {
+            "scene_prompt": "Eye-level studio shot of a cosmetic cream jar on a smooth travertine stone pedestal, soft morning sunlight coming from a window creating gentle shadows, soft pink background, minimalist aesthetic, photorealistic commercial photography, empty space at bottom for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, neon, plastic texture",
+            "product_placement": {
+              "x": 0.5,
+              "y": 0.4,
+              "scale": 0.5,
+              "shadow": "soft_bottom"
+            },
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.1,
+                  0.7,
+                  0.9,
+                  0.8
+                ]
+              },
+              {
+                "role": "price",
+                "box": [
+                  0.1,
+                  0.82,
+                  0.4,
+                  0.9
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.5,
+                  0.82,
+                  0.9,
+                  0.9
+                ]
+              }
+            ],
+            "palette": [
+              "#FDF2F8",
+              "#BE185D",
+              "#D1D5DB"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "Une peau douce, naturellement",
+              "color": "#BE185D",
+              "style": "serif_bold"
+            },
+            {
+              "role": "price",
+              "text": "15 000 F",
+              "color": "#333333",
+              "style": "sans_medium"
+            },
+            {
+              "role": "cta",
+              "text": "Commandez sur WhatsApp",
+              "color": "#FFFFFF",
+              "style": "button_accent"
+            },
+            {
+              "role": "contact",
+              "text": "+237 699 00 00 00",
+              "color": "#BE185D",
+              "style": "small_caps"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        },
+        {
+          "concept": "Lifestyle Radiance - A close-up of a Cameroonian woman with glowing skin to showcase the result of the product.",
+          "references_used": [],
+          "format": "4:5",
+          "layout_id": "split_left_product",
+          "scene": {
+            "scene_prompt": "Close-up of a radiant Cameroonian woman with glowing skin, smiling softly, blurred modern minimalist bathroom background with warm lighting, soft pink accents, photorealistic commercial photography, empty space on the left for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, artificial symmetry, heavy makeup",
+            "product_placement": {
+              "x": 0.75,
+              "y": 0.6,
+              "scale": 0.4,
+              "shadow": "natural_contact"
+            },
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.05,
+                  0.2,
+                  0.45,
+                  0.4
+                ]
+              },
+              {
+                "role": "price",
+                "box": [
+                  0.05,
+                  0.45,
+                  0.4,
+                  0.55
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.05,
+                  0.6,
+                  0.45,
+                  0.7
+                ]
+              }
+            ],
+            "palette": [
+              "#FDF2F8",
+              "#BE185D",
+              "#8B4513"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "Une peau douce, naturellement",
+              "color": "#BE185D",
+              "style": "serif_elegant"
+            },
+            {
+              "role": "price",
+              "text": "15 000 F",
+              "color": "#BE185D",
+              "style": "bold_badge"
+            },
+            {
+              "role": "cta",
+              "text": "Commandez sur WhatsApp",
+              "color": "#FFFFFF",
+              "style": "button_accent"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        },
+        {
+          "concept": "Botanical Freshness - Product placed on a lush tropical leaf to highlight the natural ingredients.",
+          "references_used": [],
+          "format": "4:5",
+          "layout_id": "hero_top_title",
+          "scene": {
+            "scene_prompt": "Top-down view of a cosmetic cream jar placed on a large vibrant green monstera leaf with tiny water droplets, clean light pink surface, natural soft lighting, organic textures, photorealistic commercial photography, empty space at top for text.",
+            "negative_prompt": "text, letters, words, numbers, watermark, logo, extra fingers, distorted product, clutter, plastic leaves, oversaturated",
+            "product_placement": {
+              "x": 0.5,
+              "y": 0.6,
+              "scale": 0.55,
+              "shadow": "soft_leaf_shadow"
+            },
+            "safe_areas": [
+              {
+                "role": "headline",
+                "box": [
+                  0.1,
+                  0.1,
+                  0.9,
+                  0.25
+                ]
+              },
+              {
+                "role": "price",
+                "box": [
+                  0.1,
+                  0.85,
+                  0.4,
+                  0.95
+                ]
+              },
+              {
+                "role": "cta",
+                "box": [
+                  0.5,
+                  0.85,
+                  0.9,
+                  0.95
+                ]
+              }
+            ],
+            "palette": [
+              "#FDF2F8",
+              "#BE185D",
+              "#166534"
+            ]
+          },
+          "layers": [
+            {
+              "role": "headline",
+              "text": "Une peau douce, naturellement",
+              "color": "#BE185D",
+              "style": "modern_sans_bold"
+            },
+            {
+              "role": "price",
+              "text": "15 000 F",
+              "color": "#166534",
+              "style": "clean_text"
+            },
+            {
+              "role": "cta",
+              "text": "Commandez sur WhatsApp",
+              "color": "#FFFFFF",
+              "style": "button_accent"
+            }
+          ],
+          "self_check": {
+            "readability_1s": true,
+            "max_3_colors": true,
+            "no_text_in_scene": true,
+            "product_intact": true,
+            "brand_colors_used": true
+          }
+        }
+      ],
+      "flags": []
+    }
+  }
+]

@@ -1,0 +1,757 @@
+[
+  {
+    "id": "b01",
+    "lang": "fr",
+    "country": "CI",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Je vends des baskets Nike et Adidas à Cocody, à partir de 25 000 F. Livraison partout à Abidjan en 24h."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "fashion_shoes"
+      ],
+      "no_invent": [
+        "whatsapp",
+        "phone"
+      ],
+      "must_ask": [
+        "whatsapp|phone|contact"
+      ]
+    }
+  },
+  {
+    "id": "b02",
+    "lang": "fr",
+    "country": "CM",
+    "sources": [
+      {
+        "type": "website",
+        "url": "https://chez-mama-ndole.cm",
+        "extracted_text": "Chez Mama Ndolé — Restaurant camerounais à Bonapriso, Douala. Ndolé, poulet DG, poisson braisé. Ouvert 11h-23h. Commandez au +237 690 12 34 56 (WhatsApp). Livraison Douala."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "food_restaurant",
+        "food_delivery"
+      ],
+      "whatsapp_contains": "690"
+    }
+  },
+  {
+    "id": "b03",
+    "lang": "fr",
+    "country": "SN",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Salon de coiffure femme, tresses, perruques, à Dakar."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "hair",
+        "beauty_cosmetics"
+      ],
+      "no_invent": [
+        "whatsapp",
+        "phone",
+        "price"
+      ]
+    }
+  },
+  {
+    "id": "b04",
+    "lang": "en",
+    "country": "NG",
+    "sources": [
+      {
+        "type": "website",
+        "url": "https://lagosgadgets.ng",
+        "extracted_text": "Lagos Gadgets. iPhone 15 from ₦950,000, Samsung A55 ₦420,000. Pay online with card or transfer, checkout in 2 minutes. Free delivery in Lagos Island."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "phones_accessories",
+        "electronics"
+      ],
+      "checkout": true
+    }
+  },
+  {
+    "id": "b05",
+    "lang": "fr",
+    "country": "BJ",
+    "sources": [
+      {
+        "type": "document",
+        "filename": "plan.pdf",
+        "extracted_text": "Business plan — EduPlus Cotonou. Centre de formation en informatique et bureautique pour jeunes de 18-30 ans. Formations de 3 mois à 75 000 FCFA. Objectif : 200 inscrits en 2027. Contact : eduplus.bj"
+      }
+    ],
+    "expect": {
+      "sector": [
+        "education_training"
+      ]
+    }
+  },
+  {
+    "id": "b06",
+    "lang": "fr",
+    "country": "CM",
+    "sources": [
+      {
+        "type": "website",
+        "url": "https://belle-peau.cm",
+        "extracted_text": "Belle Peau — crème éclaircissante 15 000 FCFA. Livraison Yaoundé."
+      },
+      {
+        "type": "social_post",
+        "url": "https://facebook.com/p/1",
+        "extracted_text": "Promo ! Crème Belle Peau à 12 000 F seulement cette semaine"
+      }
+    ],
+    "expect": {
+      "sector": [
+        "beauty_cosmetics"
+      ],
+      "conflict": true
+    }
+  },
+  {
+    "id": "b07",
+    "lang": "fr",
+    "country": "CI",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Appartements meublés à louer à la Riviera 3, Abidjan. Nuitée 35 000 F, piscine et wifi."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "real_estate",
+        "travel_tourism"
+      ]
+    }
+  },
+  {
+    "id": "b08",
+    "lang": "en",
+    "country": "KE",
+    "sources": [
+      {
+        "type": "app_link",
+        "url": "https://play.google.com/store/apps/details?id=ke.farmlink",
+        "extracted_text": "FarmLink connects Kenyan smallholder farmers with buyers. Free download. Sell maize, beans and avocados directly."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "agriculture",
+        "app_software"
+      ],
+      "offer_type": "app"
+    }
+  },
+  {
+    "id": "b09",
+    "lang": "fr",
+    "country": "GA",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Je fais des gâteaux d'anniversaire"
+      }
+    ],
+    "expect": {
+      "sector": [
+        "food_restaurant",
+        "food_delivery",
+        "other",
+        "crafts_art",
+        "events"
+      ],
+      "no_invent": [
+        "whatsapp",
+        "phone",
+        "price",
+        "city"
+      ],
+      "min_questions": 3
+    }
+  },
+  {
+    "id": "b10",
+    "lang": "fr",
+    "country": "CD",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Agence de transfert d'argent et bureau de change à Kinshasa Gombe"
+      }
+    ],
+    "expect": {
+      "sector": [
+        "finance_insurance",
+        "services_b2b",
+        "other"
+      ]
+    }
+  },
+  {
+    "id": "b11",
+    "lang": "fr",
+    "country": "CI",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Vente de mèches brésiliennes et perruques lace frontal, Yopougon. Prix à partir de 18 000 F."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "hair",
+        "beauty_cosmetics"
+      ]
+    }
+  },
+  {
+    "id": "b12",
+    "lang": "fr",
+    "country": "CM",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Garage auto à Bonamoussadi : vidange, diagnostic électronique, carrosserie."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "auto",
+        "services_home"
+      ]
+    }
+  },
+  {
+    "id": "b13",
+    "lang": "fr",
+    "country": "SN",
+    "sources": [
+      {
+        "type": "website",
+        "url": "https://dakarimmo.sn",
+        "extracted_text": "Dakar Immo — vente de terrains viabilisés à Diamniadio, 300 m² à partir de 6 500 000 FCFA. Paiement échelonné sur 24 mois. WhatsApp +221 77 123 45 67."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "real_estate"
+      ],
+      "whatsapp_contains": "771234567"
+    }
+  },
+  {
+    "id": "b14",
+    "lang": "en",
+    "country": "GH",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Fresh tilapia and smoked fish delivered in Accra and Tema. Order before 10am for same-day delivery."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "grocery",
+        "food_delivery",
+        "agriculture"
+      ]
+    }
+  },
+  {
+    "id": "b15",
+    "lang": "fr",
+    "country": "TG",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Cours de soutien scolaire à domicile à Lomé, primaire et collège, maths et français."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "education_training"
+      ]
+    }
+  },
+  {
+    "id": "b16",
+    "lang": "fr",
+    "country": "CI",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Salle de sport à Marcory, abonnement mensuel, coaching personnalisé, cours de zumba."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "fitness"
+      ]
+    }
+  },
+  {
+    "id": "b17",
+    "lang": "en",
+    "country": "KE",
+    "sources": [
+      {
+        "type": "website",
+        "url": "https://nairobicakes.co.ke",
+        "extracted_text": "Nairobi Cakes. Custom birthday and wedding cakes. Order online, pay with M-Pesa at checkout. Delivery across Nairobi."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "food_delivery",
+        "food_restaurant",
+        "ecommerce_general"
+      ],
+      "checkout": true
+    }
+  },
+  {
+    "id": "b18",
+    "lang": "fr",
+    "country": "CD",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Vente de groupes électrogènes et panneaux solaires à Lubumbashi, installation incluse."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "electronics",
+        "services_home"
+      ]
+    }
+  },
+  {
+    "id": "b19",
+    "lang": "fr",
+    "country": "BF",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Atelier de couture à Ouagadougou : tenues en Faso Dan Fani sur mesure, hommes et femmes."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "fashion_clothing",
+        "crafts_art"
+      ]
+    }
+  },
+  {
+    "id": "b20",
+    "lang": "fr",
+    "country": "ML",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Agence de voyage à Bamako : billets d avion, réservations d hôtels, visas Omra."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "travel_tourism"
+      ]
+    }
+  },
+  {
+    "id": "b21",
+    "lang": "en",
+    "country": "NG",
+    "sources": [
+      {
+        "type": "text",
+        "content": "We sell original Samsung and Tecno phones with 1 year warranty in Ikeja Computer Village."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "phones_accessories",
+        "electronics"
+      ]
+    }
+  },
+  {
+    "id": "b22",
+    "lang": "fr",
+    "country": "CM",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Location de voitures avec chauffeur à Yaoundé pour mariages et événements."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "auto",
+        "events",
+        "travel_tourism"
+      ]
+    }
+  },
+  {
+    "id": "b23",
+    "lang": "fr",
+    "country": "CI",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Pressing et blanchisserie à Angré, ramassage et livraison à domicile."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "services_home"
+      ]
+    }
+  },
+  {
+    "id": "b24",
+    "lang": "fr",
+    "country": "SN",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Boutique en ligne de tissus wax et bazin, livraison dans tout le Sénégal."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "fashion_clothing",
+        "ecommerce_general"
+      ]
+    }
+  },
+  {
+    "id": "b25",
+    "lang": "fr",
+    "country": "CI",
+    "sources": [
+      {
+        "type": "social_post",
+        "url": "https://instagram.com/p/x",
+        "extracted_text": "🔥 Nouvelle collection de sacs à main dispo ! DM pour commander 📦 Livraison Abidjan",
+        "images": []
+      }
+    ],
+    "expect": {
+      "sector": [
+        "fashion_clothing",
+        "ecommerce_general",
+        "other"
+      ],
+      "no_invent": [
+        "whatsapp",
+        "phone",
+        "price"
+      ]
+    }
+  },
+  {
+    "id": "b26",
+    "lang": "en",
+    "country": "ZA",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Mobile car wash in Johannesburg, we come to your home or office."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "auto",
+        "services_home"
+      ]
+    }
+  },
+  {
+    "id": "b27",
+    "lang": "fr",
+    "country": "GA",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Cabinet comptable à Libreville : création d entreprise, déclarations fiscales, paie."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "services_b2b",
+        "finance_insurance"
+      ]
+    }
+  },
+  {
+    "id": "b28",
+    "lang": "fr",
+    "country": "CM",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Application mobile de livraison de gaz domestique à Douala, commande en 3 clics."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "app_software",
+        "services_home",
+        "food_delivery"
+      ]
+    }
+  },
+  {
+    "id": "b29",
+    "lang": "fr",
+    "country": "BJ",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Vente de jus naturels de bissap, gingembre et baobab, en bouteilles de 1 L à 1 000 F."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "food_delivery",
+        "grocery",
+        "food_restaurant"
+      ]
+    }
+  },
+  {
+    "id": "b30",
+    "lang": "en",
+    "country": "RW",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Photography studio in Kigali: weddings, graduations and corporate portraits."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "events",
+        "services_b2b",
+        "crafts_art"
+      ]
+    }
+  },
+  {
+    "id": "b31",
+    "lang": "fr",
+    "country": "CI",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Clinique dentaire à Cocody : blanchiment, implants, orthodontie. Prise de RDV en ligne."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "health_wellness"
+      ]
+    }
+  },
+  {
+    "id": "b32",
+    "lang": "fr",
+    "country": "MA",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Riad à Marrakech, chambres à partir de 600 MAD la nuit, petit-déjeuner inclus."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "travel_tourism",
+        "real_estate"
+      ]
+    }
+  },
+  {
+    "id": "b33",
+    "lang": "fr",
+    "country": "CM",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Formation en marketing digital en ligne, certificat à la fin, 50 000 FCFA."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "education_training"
+      ]
+    }
+  },
+  {
+    "id": "b34",
+    "lang": "en",
+    "country": "UG",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Poultry farm in Mukono selling day-old chicks and layers feed."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "agriculture"
+      ]
+    }
+  },
+  {
+    "id": "b35",
+    "lang": "fr",
+    "country": "SN",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Traiteur pour mariages et baptêmes à Dakar, menus sénégalais et internationaux."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "food_restaurant",
+        "events"
+      ]
+    }
+  },
+  {
+    "id": "b36",
+    "lang": "fr",
+    "country": "CI",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Agence de nettoyage de bureaux et de maisons à Abidjan, contrats mensuels."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "services_home",
+        "services_b2b"
+      ]
+    }
+  },
+  {
+    "id": "b37",
+    "lang": "fr",
+    "country": "TN",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Vente de pièces détachées auto d origine, Tunis, livraison sous 48h."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "auto",
+        "ecommerce_general"
+      ]
+    }
+  },
+  {
+    "id": "b38",
+    "lang": "en",
+    "country": "NG",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Hair salon and barbershop in Abuja, braids, locs, fades."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "hair"
+      ]
+    }
+  },
+  {
+    "id": "b39",
+    "lang": "fr",
+    "country": "CM",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Magasin d électroménager à Douala : frigos, télés, climatiseurs, paiement en 3 fois."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "electronics"
+      ]
+    }
+  },
+  {
+    "id": "b40",
+    "lang": "fr",
+    "country": "CI",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Organisation de mariages clé en main à Abidjan : déco, traiteur, DJ."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "events"
+      ]
+    }
+  },
+  {
+    "id": "b41",
+    "lang": "fr",
+    "country": "CG",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Épicerie fine à Brazzaville : produits importés d Europe et du Liban."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "grocery"
+      ]
+    }
+  },
+  {
+    "id": "b42",
+    "lang": "fr",
+    "country": "SN",
+    "sources": [
+      {
+        "type": "text",
+        "content": "Coach sportif en ligne, programmes de remise en forme de 8 semaines."
+      }
+    ],
+    "expect": {
+      "sector": [
+        "fitness",
+        "health_wellness",
+        "education_training"
+      ]
+    }
+  }
+]

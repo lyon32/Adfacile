@@ -1,0 +1,29 @@
+[
+  {
+    "id": "d01",
+    "ms": 463,
+    "cost": 0,
+    "error": "429 {\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate",
+    "checks": {
+      "schema": false
+    }
+  },
+  {
+    "id": "d02",
+    "ms": 989,
+    "cost": 0,
+    "error": "429 {\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate",
+    "checks": {
+      "schema": false
+    }
+  },
+  {
+    "id": "d03",
+    "ms": 985,
+    "cost": 0,
+    "error": "429 {\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate",
+    "checks": {
+      "schema": false
+    }
+  }
+]

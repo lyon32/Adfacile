@@ -1,0 +1,29 @@
+[
+  {
+    "id": "b01",
+    "ms": 2070,
+    "cost": 0,
+    "error": "404 {\"error\":{\"code\":404,\"message\":\"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/gemini-3.8-flash for the latest features and improveme",
+    "checks": {
+      "schema": false
+    }
+  },
+  {
+    "id": "b02",
+    "ms": 1000,
+    "cost": 0,
+    "error": "404 {\"error\":{\"code\":404,\"message\":\"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/gemini-3.8-flash for the latest features and improveme",
+    "checks": {
+      "schema": false
+    }
+  },
+  {
+    "id": "b03",
+    "ms": 1339,
+    "cost": 0,
+    "error": "404 {\"error\":{\"code\":404,\"message\":\"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/gemini-3.8-flash for the latest features and improveme",
+    "checks": {
+      "schema": false
+    }
+  }
+]
