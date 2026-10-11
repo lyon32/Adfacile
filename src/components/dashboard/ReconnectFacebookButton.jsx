@@ -2,7 +2,15 @@ import { useState } from 'react';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 import api from '../../services/api';
 
-export function ReconnectFacebookButton({ permissions, reason = 'permissions' }) {
+/**
+ * reason :
+ *  - 'permissions' : permissions Instagram / WhatsApp manquantes ;
+ *  - 'revoked'     : Facebook a invalidé la connexion (mot de passe changé,
+ *                    session réinitialisée) — plus aucun appel ne passe ;
+ *  - 'expiring'    : l'accès aux données accordé à AdsFacile arrive à terme
+ *                    (règle Meta des 90 jours), `expiresAt` en ISO.
+ */
+export function ReconnectFacebookButton({ permissions, reason = 'permissions', message, expiresAt }) {
     const [loading, setLoading] = useState(false);
 
     const missingPermissions = [];
@@ -44,9 +52,13 @@ export function ReconnectFacebookButton({ permissions, reason = 'permissions' })
                             Reconnexion Facebook requise
                         </h3>
                         <p className="text-[11px] text-orange-100/80 mt-0.5 font-medium">
-                            {missingPermissions.length > 0
-                                ? `Permissions manquantes : ${missingPermissions.join(', ')}`
-                                : 'Mettez à jour votre connexion'
+                            {reason === 'revoked'
+                                ? 'Facebook a interrompu la connexion de votre compte'
+                                : reason === 'expiring'
+                                    ? `L'accès à vos données Facebook expire le ${new Date(expiresAt).toLocaleDateString('fr-FR')}`
+                                    : missingPermissions.length > 0
+                                        ? `Permissions manquantes : ${missingPermissions.join(', ')}`
+                                        : 'Mettez à jour votre connexion'
                             }
                         </p>
                     </div>
@@ -54,8 +66,31 @@ export function ReconnectFacebookButton({ permissions, reason = 'permissions' })
             </div>
 
             <div className="p-5 space-y-4">
+                {reason === 'revoked' && (
+                    <div className="bg-orange-50/60 rounded-xl border border-orange-100 p-4">
+                        <p className="text-xs text-gray-700">
+                            {message || 'Facebook a interrompu la connexion de votre compte. Reconnectez Facebook pour continuer.'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">
+                            Cela arrive quand le mot de passe Facebook change, après une déconnexion de tous
+                            les appareils, ou quand Facebook réinitialise la session par sécurité. Tant que
+                            vous n'êtes pas reconnecté, la recherche de lieux et la création de campagnes
+                            ne fonctionnent pas.
+                        </p>
+                    </div>
+                )}
+
+                {reason === 'expiring' && (
+                    <div className="bg-orange-50/60 rounded-xl border border-orange-100 p-4">
+                        <p className="text-xs text-gray-700">
+                            Facebook demande de renouveler l'accès tous les 90 jours. Reconnectez-vous
+                            avant cette date pour que vos campagnes et statistiques restent disponibles.
+                        </p>
+                    </div>
+                )}
+
                 {/* Missing permissions detail */}
-                {missingPermissions.length > 0 && (
+                {reason === 'permissions' && missingPermissions.length > 0 && (
                     <div className="bg-orange-50/60 rounded-xl border border-orange-100 p-4">
                         <p className="text-xs font-bold text-gray-700 mb-2">Permissions manquantes :</p>
                         <ul className="space-y-1.5">
@@ -80,9 +115,9 @@ export function ReconnectFacebookButton({ permissions, reason = 'permissions' })
                     <p className="text-xs font-bold text-gray-700 mb-2">Ce qui va se passer :</p>
                     <ol className="text-xs text-gray-500 space-y-1 list-decimal list-inside">
                         <li>Redirection vers Facebook</li>
-                        <li>Autorisation des nouvelles permissions</li>
-                        <li>Reconnexion automatique à AdsFacile</li>
-                        <li>Détection de vos comptes Instagram et WhatsApp</li>
+                        <li>{reason === 'permissions' ? 'Autorisation des nouvelles permissions' : "Validation de l'accès à votre compte"}</li>
+                        <li>Choix de votre Page et de votre compte publicitaire</li>
+                        <li>Retour automatique sur AdsFacile</li>
                     </ol>
                 </div>
 

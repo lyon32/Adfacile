@@ -8,20 +8,43 @@
   --color-accent: #F59E0B;
   --color-accent-dark: #D97706;
   
+  /* ═══════════════════════════════════════════════════════════════════════
+     Neutres — échelle « slate »
+
+     Deux échelles de gris coexistaient : ces variables déclaraient « gray »
+     (#111827, #6B7280, #E5E7EB…) alors que les feuilles de style employaient
+     « slate » en valeurs codées en dur, sur près de 200 emplacements. Chaque
+     nouvel écran choisissait donc son échelle au hasard.
+
+     Les variables suivent désormais « slate », l'échelle réellement rendue.
+     L'écart visuel est minime — slate est très légèrement plus froid — mais
+     l'échelle devient unique. Toute nouvelle couleur neutre doit venir d'ici,
+     jamais d'une valeur en dur.
+     ═══════════════════════════════════════════════════════════════════════ */
+
   /* Backgrounds */
   --color-bg: #FFFFFF;
-  --color-bg-alt: #F9FAFB;
-  --color-bg-dark: #111827;
-  
+  --color-bg-alt: #F8FAFC;
+  --color-bg-dark: #0F172A;
+
   /* Text */
-  --color-text: #111827;
-  --color-text-light: #6B7280;
+  --color-text: #0F172A;
+  --color-text-light: #64748B;
+  /* Contraste 2,56:1 sur blanc — INSUFFISANT pour du texte (WCAG AA exige
+     4,5:1). Réservé aux icônes décoratives, séparateurs et textes désactivés.
+     Pour du texte lisible, utiliser --color-text-light (4,76:1). */
+  --color-text-muted: #94A3B8;
   --color-text-white: #FFFFFF;
-  
+
   /* Borders */
-  --color-border: #E5E7EB;
-  --color-border-light: #F3F4F6;
-  
+  --color-border: #E2E8F0;
+  --color-border-light: #F1F5F9;
+  --color-border-strong: #CBD5E1;
+
+  /* Neutres intermédiaires — pour éviter de recoder une valeur en dur */
+  --color-neutral-700: #334155;
+  --color-neutral-100: #F1F5F9;
+
   /* Typography */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-size-xs: 0.75rem;

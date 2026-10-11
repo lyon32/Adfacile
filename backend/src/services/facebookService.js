@@ -143,8 +143,18 @@ const getUserPages = async (accessToken) => {
         return response.data.data || [];
     } catch (error) {
         logger.error('❌ Erreur récupération pages FB:', error.response?.data || error.message);
-        throw new Error('Impossible de récupérer les pages Facebook');
+        throw avecReponseMeta('Impossible de récupérer les pages Facebook', error);
     }
+};
+
+/**
+ * Erreur lisible qui garde la réponse de Meta : sans elle, l'appelant ne voit
+ * plus le code 190 (jeton révoqué) et ne peut pas demander une reconnexion.
+ */
+const avecReponseMeta = (message, origine) => {
+    const err = new Error(message);
+    err.response = origine?.response;
+    return err;
 };
 
 /**
@@ -163,7 +173,7 @@ const getAdAccounts = async (accessToken) => {
         return response.data.data || [];
     } catch (error) {
         logger.error('❌ Erreur récupération comptes pub FB:', error.response?.data || error.message);
-        throw new Error('Impossible de récupérer les comptes publicitaires');
+        throw avecReponseMeta('Impossible de récupérer les comptes publicitaires', error);
     }
 };
 /**
@@ -374,12 +384,128 @@ const getUserPermissions = async (accessToken) => {
         return response.data.data || [];
     } catch (error) {
         logger.error('❌ Erreur récupération permissions:', error.response?.data || error.message);
-        throw new Error('Impossible de récupérer les permissions Facebook');
+        throw avecReponseMeta('Impossible de récupérer les permissions Facebook', error);
     }
+};
+
+/**
+ * Liste les ensembles de données (anciennement pixels) du compte publicitaire.
+ *
+ * Meta exige un pixel et un évènement pour optimiser sur les achats d'un site.
+ * On les lit plutôt que de les faire saisir : ils appartiennent déjà au compte,
+ * et le jeton `ads_management` dont on dispose suffit à les nommer.
+ *
+ * `is_unavailable` écarte les pixels auxquels le compte n'a plus accès : les
+ * proposer reviendrait à faire choisir un identifiant que Meta refusera.
+ */
+/**
+ * Statuts de compte publicitaire, en clair.
+ *
+ * Meta ne renvoie qu'un entier. Sans traduction, l'interface ne peut pas dire
+ * pourquoi un compte est inutilisable — et l'utilisateur choisit un compte
+ * désactivé, sur lequel toute création de publicité est refusée.
+ */
+const AD_ACCOUNT_STATUS = {
+    1: { usable: true, label: 'Actif' },
+    2: { usable: false, label: 'Désactivé' },
+    3: { usable: false, label: 'Impayé' },
+    7: { usable: false, label: 'En attente de vérification' },
+    8: { usable: false, label: 'En attente de clôture' },
+    9: { usable: true, label: 'En période de grâce' },
+    100: { usable: false, label: 'Fermé définitivement' },
+    101: { usable: false, label: 'Fermé' }
+};
+
+const describeAdAccountStatus = (status) =>
+    AD_ACCOUNT_STATUS[status] || { usable: false, label: 'Statut inconnu' };
+
+const formaterPixels = (liste) => (liste || [])
+    .filter(pixel => !pixel.is_unavailable)
+    .map(pixel => ({
+        id: pixel.id,
+        name: pixel.name || `Pixel ${pixel.id}`,
+        last_fired_time: pixel.last_fired_time || null
+    }));
+
+const getAdAccountPixels = async (adAccountId, accessToken) => {
+    const compte = String(adAccountId).startsWith('act_') ? adAccountId : `act_${adAccountId}`;
+
+    try {
+        const response = await axios.get(`${FACEBOOK_GRAPH_URL}/${compte}/adspixels`, {
+            params: {
+                fields: 'id,name,is_unavailable,last_fired_time',
+                access_token: accessToken
+            }
+        });
+
+        return formaterPixels(response.data.data);
+    } catch (error) {
+        logger.error('❌ Erreur récupération pixels:', error.response?.data || error.message);
+        throw new Error('Impossible de récupérer les ensembles de données du compte publicitaire');
+    }
+};
+
+/**
+ * Ensembles de données que l'entreprise possède (`{entreprise}/owned_pixels`).
+ *
+ * Lecture seule, avec la permission `business_management` que le jeton a déjà.
+ * Jamais bloquant : sans entreprise, sans permission ou si Meta refuse, la
+ * liste est vide — l'écran retombe alors sur ce que le compte a déjà.
+ */
+const getBusinessPixels = async (businessId, accessToken) => {
+    if (!businessId) return [];
+
+    try {
+        const response = await axios.get(`${FACEBOOK_GRAPH_URL}/${businessId}/owned_pixels`, {
+            params: {
+                fields: 'id,name,is_unavailable,last_fired_time',
+                access_token: accessToken
+            }
+        });
+        return formaterPixels(response.data.data);
+    } catch (error) {
+        logger.warn('⚠️ Ensembles de données de l’entreprise illisibles : '
+            + `${error.response?.data?.error?.message || error.message}`);
+        return [];
+    }
+};
+
+/**
+ * Vue d'ensemble pour le wizard : ce qui est rattaché au compte publicitaire
+ * (utilisable tout de suite) et ce que l'entreprise possède sans l'avoir
+ * partagé avec ce compte (à partager, dans Meta, avant de s'en servir).
+ */
+const getPixelsOverview = async (adAccountId, accessToken, businessId = null) => {
+    const attached = await getAdAccountPixels(adAccountId, accessToken);
+
+    let entreprise = businessId;
+    if (!entreprise) {
+        const compte = String(adAccountId).startsWith('act_') ? adAccountId : `act_${adAccountId}`;
+        try {
+            const response = await axios.get(`${FACEBOOK_GRAPH_URL}/${compte}`, {
+                params: { fields: 'business{id}', access_token: accessToken }
+            });
+            entreprise = response.data?.business?.id || null;
+        } catch {
+            entreprise = null;
+        }
+    }
+
+    const dansEntreprise = await getBusinessPixels(entreprise, accessToken);
+    const rattaches = new Set(attached.map(p => p.id));
+
+    return {
+        attached,
+        business_unattached: dansEntreprise.filter(p => !rattaches.has(p.id))
+    };
 };
 
 module.exports = {
     exchangeCodeForToken,
+    getAdAccountPixels,
+    getBusinessPixels,
+    getPixelsOverview,
+    describeAdAccountStatus,
     getLongLivedToken,
     getUserInfo,
     getUserPages,

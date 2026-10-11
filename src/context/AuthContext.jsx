@@ -151,7 +151,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const isAuth = checkAuth();
     // Refresh le profil en arrière-plan pour avoir les dernières données (plan, crédits)
-    // Utile car le webhook CamPay ou l'auto-repair côté backend met à jour la base
+    // Utile car le webhook SasPay ou l'auto-repair côté backend met à jour la base
     // sans que le localStorage du frontend ne soit au courant.
     if (isAuth) {
       refreshUser();

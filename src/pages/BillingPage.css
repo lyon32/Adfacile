@@ -739,6 +739,54 @@
     margin-bottom: var(--spacing-5);
 }
 
+/* Sélecteur de pays : même cadre que le champ téléphone. */
+.pm-phone-input select {
+    flex: 1;
+    border: none;
+    padding: var(--spacing-3);
+    font-size: var(--font-size-sm);
+    background: transparent;
+    color: var(--color-text);
+}
+
+.pm-phone-input select:focus {
+    outline: none;
+}
+
+.pm-hint {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-light);
+    margin-bottom: var(--spacing-2);
+}
+
+.pm-loading-line {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-light);
+    margin-bottom: var(--spacing-4);
+}
+
+/* Récapitulatif des frais, payés par le client. */
+.pm-fee-recap {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--spacing-2) var(--spacing-4);
+    padding: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-bg-alt);
+    font-size: var(--font-size-sm);
+    font-variant-numeric: tabular-nums;
+}
+
+.pm-fee-recap span:nth-child(even),
+.pm-fee-recap strong:nth-child(even) {
+    text-align: right;
+}
+
 .pm-field label {
     display: flex;
     align-items: center;
@@ -904,7 +952,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
- * CAMPAY SANDBOX & EXTRAS
+ * MODE TEST (SASPAY) & EXTRAS
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
 .pm-sandbox-info {

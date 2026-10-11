@@ -18,8 +18,12 @@ const {
     getConnectedInstagramAccount,
     getConnectedWhatsAppAccount,
     getWhatsAppAccounts,
-    getUserPermissions
+    getUserPermissions,
+    getAdAccountPixels,
+    getPixelsOverview,
+    describeAdAccountStatus
 } = require('../services/facebookService');
+const tokenHealth = require('../services/facebookTokenHealth');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SCOPES FACEBOOK — Marketing API + Instagram + WhatsApp
@@ -28,13 +32,16 @@ const {
 const FACEBOOK_SCOPES = [
     'pages_show_list',
     'ads_management',
+    'ads_read',
     'business_management',
     'pages_read_engagement',
-    // Instagram permissions
+    // Instagram : identité Instagram des publicités.
     'instagram_basic',
-    'instagram_manage_insights',
-    // WhatsApp permissions
+    // WhatsApp : numéro de la Page pour les destinations WhatsApp.
     'whatsapp_business_management'
+    // Volontairement absentes : pages_manage_ads et leads_retrieval (aucun
+    // appel /leadgen_forms ni /leads) et instagram_manage_insights (jamais
+    // appelée). Voir docs/meta/dossier-revue-application.md.
 ].join(',');
 
 /**
@@ -111,10 +118,17 @@ const getAuthUrl = async (req, res) => {
         // State signé, daté et à usage unique : voir utils/oauthState.js
         const statePayload = createOAuthState(req.user.id);
 
+        // Facebook Login for Business : les permissions sont portées par une
+        // configuration créée dans le tableau de bord Meta (config_id), qui
+        // remplace scope. Relevé du 8 oct. 2026 : l'app « Entreprise » répondait
+        // « Feature Unavailable » au dialogue appelé avec scope. Sans
+        // FACEBOOK_LOGIN_CONFIG_ID, on garde l'ancien comportement.
+        const configId = process.env.FACEBOOK_LOGIN_CONFIG_ID;
+
         const params = new URLSearchParams({
             client_id: process.env.FACEBOOK_APP_ID,
             redirect_uri: process.env.FACEBOOK_REDIRECT_URI,
-            scope: FACEBOOK_SCOPES,
+            ...(configId ? { config_id: configId } : { scope: FACEBOOK_SCOPES }),
             response_type: 'code',
             state: statePayload,
             auth_type: 'rerequest'
@@ -239,10 +253,31 @@ const handleCallback = async (req, res) => {
                 is_active: true
             });
 
+            tokenHealth.forget(userId);
             return res.redirect(`${frontendUrl}/dashboard?connected=true&no_page=true`);
         }
 
         // 6. Delete old connections for this user
+        // L'identifiant du numéro WhatsApp est saisi par l'utilisateur : l'API
+        // ne l'expose pas quand le numéro vit dans un portefeuille auquel
+        // l'application n'a pas accès. Comme la reconnexion supprime puis
+        // réinsère les lignes, il était perdu à chaque fois, sans que rien ne
+        // le signale — et la publicité repartait sans numéro à promouvoir.
+        const { data: ancien } = await supabase
+            .from('facebook_accounts')
+            .select('fb_page_id, whatsapp_phone_number_id')
+            .eq('user_id', userId);
+
+        const idsWhatsAppParPage = Object.fromEntries(
+            (ancien || [])
+                .filter(l => l.whatsapp_phone_number_id)
+                .map(l => [l.fb_page_id, l.whatsapp_phone_number_id])
+        );
+
+        if (Object.keys(idsWhatsAppParPage).length > 0) {
+            logger.info(`💾 Identifiants WhatsApp conservés pour ${Object.keys(idsWhatsAppParPage).length} page(s)`);
+        }
+
         const { error: deleteError } = await supabase
             .from('facebook_accounts')
             .delete()
@@ -299,6 +334,7 @@ const handleCallback = async (req, res) => {
                     whatsapp_number: (whatsapp && !whatsapp._fallback_business_id) ? whatsapp.phone_number : null,
                     whatsapp_business_id: (whatsapp && !whatsapp._fallback_business_id) ? whatsapp.id : null,
                     fb_business_id: (whatsapp && whatsapp._fallback_business_id) ? whatsapp._fallback_business_id : (whatsapp ? whatsapp.id : null), // Fallback to store business ID for OAuth link
+                    whatsapp_phone_number_id: idsWhatsAppParPage[page.id] || null,
                     is_active: i === 0 // First page active by default
                 });
 
@@ -326,6 +362,8 @@ const handleCallback = async (req, res) => {
             ? 'connected=true&multiple_pages=true'
             : 'connected=true';
 
+        // Nouveau jeton : l'état « révoqué » mis en cache ne vaut plus.
+        tokenHealth.forget(userId);
         res.redirect(`${frontendUrl}/dashboard?${redirectParams}`);
 
     } catch (error) {
@@ -345,7 +383,7 @@ const getStatus = async (req, res) => {
 
         const { account: fbAccount, error: fbError } = await getActiveAccount(
             userId,
-            'fb_user_id, fb_page_id, fb_page_name, is_active, created_at, updated_at'
+            'fb_user_id, fb_page_id, fb_page_name, fb_access_token, is_active, created_at, updated_at'
         );
 
         if (fbError || !fbAccount) {
@@ -355,10 +393,29 @@ const getStatus = async (req, res) => {
             });
         }
 
+        // Une ligne en base ne prouve pas que Facebook accepte encore le jeton :
+        // Meta peut l'invalider à tout moment (mot de passe changé, session
+        // réinitialisée). On le lui demande ; valid:null (Meta injoignable)
+        // ne vaut pas révocation.
+        const jeton = await tokenHealth.checkToken(userId, decryptToken(fbAccount.fb_access_token));
+
+        if (jeton.valid === false) {
+            return res.json({
+                success: true,
+                data: {
+                    connected: false,
+                    reason: 'revoked',
+                    message: tokenHealth.RECONNECT_MESSAGE,
+                    pageName: fbAccount.fb_page_name
+                }
+            });
+        }
+
         return res.json({
             success: true,
             data: {
                 connected: true,
+                dataAccessExpiresAt: jeton.dataAccessExpiresAt || null,
                 pageName: fbAccount.fb_page_name,
                 pageId: fbAccount.fb_page_id,
                 connectedAt: fbAccount.created_at,
@@ -542,6 +599,7 @@ const getConnectionStatus = async (req, res) => {
         });
 
     } catch (error) {
+        if (tokenHealth.respondIfRevoked(res, error, req.user.id)) return;
         logger.error('❌ Erreur récupération statut connexions:', error.message);
         logger.error('Stack trace:', error.stack);
         return res.status(500).json({
@@ -573,6 +631,7 @@ const getPermissions = async (req, res) => {
             permissions
         });
     } catch (error) {
+        if (tokenHealth.respondIfRevoked(res, error, req.user.id)) return;
         logger.error('❌ Erreur récupération permissions Facebook:', error);
         return res.status(500).json({
             success: false,
@@ -748,8 +807,189 @@ const refreshConnections = async (req, res) => {
     }
 };
 
+/**
+ * GET /api/facebook/pixels
+ * Ensembles de données (pixels) du compte publicitaire actif.
+ *
+ * Sert le bloc « Conversion » du wizard : quand le compte n'a qu'un seul pixel,
+ * l'interface le retient sans rien demander ; quand il n'en a aucun, elle cesse
+ * de proposer l'optimisation sur les achats plutôt que de la faire échouer à la
+ * création.
+ */
+const getPixels = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const { account, error } = await getActiveAccount(
+            userId, 'fb_account_id, fb_access_token'
+        );
+
+        if (error || !account) {
+            return res.status(404).json({
+                success: false,
+                message: 'Compte Facebook non connecté.'
+            });
+        }
+
+        // `pixels` : rattachés au compte, utilisables tout de suite.
+        // `business_unattached` : possédés par l'entreprise mais pas encore
+        // partagés avec ce compte — l'écran les nomme et explique comment les
+        // partager, au lieu de dire « aucun ensemble de données ».
+        const { attached: pixels, business_unattached } = await getPixelsOverview(
+            account.fb_account_id,
+            decryptToken(account.fb_access_token)
+        );
+        // L'entreprise est lue sur le compte publicitaire : la colonne
+        // fb_business_id peut contenir un compte WhatsApp Business.
+
+        logger.info(`📊 ${pixels.length} ensemble(s) rattaché(s), ${business_unattached.length} non partagé(s) pour user ${userId}`);
+
+        return res.json({ success: true, data: { pixels, business_unattached } });
+    } catch (error) {
+        logger.error('❌ Erreur getPixels:', error.message);
+        return res.status(502).json({
+            success: false,
+            message: error.message || 'Erreur récupération des ensembles de données'
+        });
+    }
+};
+
+/**
+ * GET /api/facebook/ad-accounts
+ * Comptes publicitaires du jeton, avec leur statut et leurs ensembles de données.
+ *
+ * Le compte était choisi une fois pour toutes à la connexion — le premier
+ * actif — sans jamais être montré ni modifiable. Un utilisateur dont les pixels
+ * vivent sur un autre compte n'avait aucun moyen de le comprendre, ni d'en
+ * changer.
+ */
+const getAdAccountsForUser = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const { account, error } = await getActiveAccount(
+            userId, 'fb_account_id, fb_access_token'
+        );
+
+        if (error || !account) {
+            return res.status(404).json({ success: false, message: 'Compte Facebook non connecté.' });
+        }
+
+        const token = decryptToken(account.fb_access_token);
+        const comptes = await getAdAccounts(token);
+
+        // Le nombre d'ensembles de données est ce qui permet de choisir : sans
+        // lui, l'utilisateur ne peut que deviner où vivent ses pixels.
+        const enrichis = await Promise.all(comptes.map(async (c) => {
+            const statut = describeAdAccountStatus(c.account_status);
+            let pixels = null;
+
+            try {
+                pixels = (await getAdAccountPixels(c.id, token)).length;
+            } catch {
+                pixels = null;   // le compte refuse la lecture : on n'affiche rien
+            }
+
+            return {
+                id: c.id,
+                name: c.name,
+                currency: c.currency,
+                status_label: statut.label,
+                usable: statut.usable,
+                pixels_count: pixels,
+                is_active: c.id === account.fb_account_id
+            };
+        }));
+
+        return res.json({
+            success: true,
+            data: { ad_accounts: enrichis, active_id: account.fb_account_id }
+        });
+    } catch (error) {
+        if (tokenHealth.respondIfRevoked(res, error, req.user.id)) return;
+        logger.error('❌ Erreur getAdAccountsForUser:', error.message);
+        return res.status(502).json({
+            success: false,
+            message: 'Erreur récupération des comptes publicitaires'
+        });
+    }
+};
+
+/**
+ * POST /api/facebook/switch-ad-account
+ * Change le compte publicitaire sur lequel partent les campagnes.
+ *
+ * Deux garde-fous : le compte doit appartenir au jeton de l'utilisateur — sans
+ * quoi on écrirait un identifiant arbitraire en base — et il doit être en état
+ * de diffuser. Laisser choisir un compte désactivé déplacerait l'échec à la
+ * création de la campagne, après que tout a été saisi.
+ */
+const switchAdAccount = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { ad_account_id } = req.body;
+
+        if (!ad_account_id) {
+            return res.status(400).json({ success: false, message: 'Identifiant de compte publicitaire requis' });
+        }
+
+        const { account, error } = await getActiveAccount(
+            userId, 'fb_access_token'
+        );
+
+        if (error || !account) {
+            return res.status(404).json({ success: false, message: 'Compte Facebook non connecté.' });
+        }
+
+        const token = decryptToken(account.fb_access_token);
+        const comptes = await getAdAccounts(token);
+        const cible = comptes.find(c => c.id === ad_account_id);
+
+        if (!cible) {
+            logger.warn(`⚠️ User ${userId} a demandé le compte ${ad_account_id}, absent de son jeton`);
+            return res.status(403).json({
+                success: false,
+                message: 'Ce compte publicitaire n\'est pas accessible avec votre connexion Facebook.'
+            });
+        }
+
+        const statut = describeAdAccountStatus(cible.account_status);
+        if (!statut.usable) {
+            return res.status(400).json({
+                success: false,
+                message: `Le compte « ${cible.name} » est ${statut.label.toLowerCase()} : `
+                    + 'Meta n\'y autorise aucune création de publicité.'
+            });
+        }
+
+        const { error: majError } = await supabase
+            .from('facebook_accounts')
+            .update({ fb_account_id: cible.id, updated_at: new Date().toISOString() })
+            .eq('user_id', userId);
+
+        if (majError) {
+            logger.error('❌ Erreur switchAdAccount:', majError.message);
+            return res.status(500).json({ success: false, message: 'Erreur changement de compte publicitaire' });
+        }
+
+        logger.info(`✅ User ${userId} bascule sur le compte publicitaire ${cible.id} (${cible.name})`);
+
+        return res.json({
+            success: true,
+            message: `Compte publicitaire « ${cible.name} » sélectionné`,
+            data: { id: cible.id, name: cible.name }
+        });
+    } catch (error) {
+        logger.error('❌ Erreur switchAdAccount:', error.message);
+        return res.status(500).json({ success: false, message: 'Erreur changement de compte publicitaire' });
+    }
+};
+
 module.exports = {
     getActiveAccount,
+    getPixels,
+    getAdAccountsForUser,
+    switchAdAccount,
     enforceSingleActivePage,
     getAuthUrl,
     handleCallback,

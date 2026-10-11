@@ -13,8 +13,10 @@ const { authenticate } = require('../middleware/auth');
 const { supabase } = require('../config/supabase');
 const { decryptToken } = require('../services/facebookService');
 const logger = require('../utils/logger');
+const tokenHealth = require('../services/facebookTokenHealth');
 
-const FACEBOOK_GRAPH_URL = 'https://graph.facebook.com/v21.0';
+// Version de l'API Graph : une seule source, config/facebook.js.
+const { GRAPH_URL: FACEBOOK_GRAPH_URL } = require('../config/facebook');
 
 /**
  * GET /api/facebook/targeting/locations?q=Douala
@@ -65,6 +67,7 @@ router.get('/locations', authenticate, async (req, res) => {
         res.json({ suggestions });
 
     } catch (error) {
+        if (tokenHealth.respondIfRevoked(res, error, req.user.id)) return;
         logger.error('❌ Location search error:', error.response?.data || error.message);
         res.status(500).json({ error: 'Erreur recherche localisation' });
     }
@@ -117,6 +120,7 @@ router.get('/interests', authenticate, async (req, res) => {
         res.json({ suggestions });
 
     } catch (error) {
+        if (tokenHealth.respondIfRevoked(res, error, req.user.id)) return;
         logger.error('❌ Interest search error:', error.response?.data || error.message);
         res.status(500).json({ error: 'Erreur recherche intérêts' });
     }

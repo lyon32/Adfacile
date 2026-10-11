@@ -237,8 +237,43 @@ function buildMessagingDestination(apps) {
     };
 }
 
+/**
+ * Bouton de messagerie ajouté à une publicité qui mène vers un site web.
+ *
+ * Produit différent des publicités de messagerie : ici la personne arrive bien
+ * sur le site, avec un bandeau lui proposant d'écrire à l'entreprise. Meta
+ * l'appelle « publicité web qui redirige vers la messagerie », et l'exprime par
+ * `asset_feed_spec.message_extensions` sur une destination WEBSITE.
+ *
+ * Deux contraintes vérifiées contre l'API :
+ *   · la création doit être passée **en ligne** dans POST /ads — la déclarer
+ *     séparément échoue avec « (#3) Application does not have the capability » ;
+ *   · le bouton d'appel à l'action reste celui d'un site web (LEARN_MORE) ;
+ *     un bouton de messagerie y est refusé.
+ *
+ * @param {string[]} apps  applications cochées
+ * @returns {Object|null}  asset_feed_spec à joindre, ou null
+ */
+function buildMessageExtensions(apps) {
+    const TYPES = {
+        whatsapp: 'whatsapp',
+        messenger: 'messenger',
+        instagram: 'instagram_message'
+    };
+
+    const selected = normalizeApps(apps);
+    if (selected.length === 0) return null;
+
+    return {
+        message_extensions: CALL_TO_ACTION_PRIORITY
+            .filter(app => selected.includes(app))
+            .map(app => ({ type: TYPES[app] }))
+    };
+}
+
 module.exports = {
     normalizeWhatsAppNumber,
+    buildMessageExtensions,
     MESSAGING_APPS,
     DESTINATION_TYPE_BY_COMBO,
     CALL_TO_ACTION_BY_APP,

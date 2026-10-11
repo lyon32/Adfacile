@@ -242,3 +242,34 @@ describe('normalizeWhatsAppNumber', () => {
         expect(normalizeWhatsAppNumber('12345')).toBeNull();
     });
 });
+
+describe('buildMessageExtensions — bouton de messagerie sur une publicité web', () => {
+    const { buildMessageExtensions } = require('./messagingDestinations');
+
+    it('traduit les applications cochées au format de Meta', () => {
+        expect(buildMessageExtensions(['whatsapp'])).toEqual({
+            message_extensions: [{ type: 'whatsapp' }]
+        });
+        expect(buildMessageExtensions(['instagram'])).toEqual({
+            message_extensions: [{ type: 'instagram_message' }]
+        });
+    });
+
+    it('accepte plusieurs applications, dans un ordre stable', () => {
+        expect(buildMessageExtensions(['instagram', 'whatsapp', 'messenger']))
+            .toEqual({
+                message_extensions: [
+                    { type: 'messenger' }, { type: 'whatsapp' }, { type: 'instagram_message' }
+                ]
+            });
+    });
+
+    it('ne produit rien sans application cochée', () => {
+        expect(buildMessageExtensions([])).toBeNull();
+        expect(buildMessageExtensions(undefined)).toBeNull();
+    });
+
+    it('écarte une application inconnue', () => {
+        expect(buildMessageExtensions(['telegram'])).toBeNull();
+    });
+});

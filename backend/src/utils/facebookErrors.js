@@ -64,6 +64,17 @@ const FACEBOOK_ERRORS = {
 /** Sous-codes plus précis que le code principal. */
 const FACEBOOK_ERROR_SUBCODES = {
     1815675: FACEBOOK_ERRORS[1815675],
+    // Objectif de performance refusé pour l'objectif de campagne. Relevé sur
+    // Ventes vers un site web sans ensemble de données (pixel) : Meta refuse
+    // alors toute optimisation, même « maximum de visites ».
+    2490408: {
+        title: 'Objectif de performance refusé par Facebook',
+        message: 'Facebook refuse cet objectif de performance pour cette campagne. Pour Ventes vers un site web, '
+            + 'il faut un ensemble de données (pixel) rattaché à votre compte publicitaire. '
+            + 'Créez-en un dans le Gestionnaire d’évènements, ou choisissez « Applications de messagerie » '
+            + 'comme lieu de conversion.',
+        fix: 'destination'
+    },
     // Jeton invalidé par un changement de mot de passe.
     460: FACEBOOK_ERRORS[190],
     // Session expirée.

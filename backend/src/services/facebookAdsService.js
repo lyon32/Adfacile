@@ -14,7 +14,8 @@ const {
     isMessagingDestination,
     validateMessagingApps,
     buildMessagingDestination,
-    normalizeWhatsAppNumber
+    normalizeWhatsAppNumber,
+    buildMessageExtensions
 } = require('./messagingDestinations');
 const {
     fcfaToUsdCents,
@@ -23,10 +24,17 @@ const {
     FB_MIN_DAILY_BUDGET_CENTS,
     ACCOUNT_CURRENCY
 } = require('../utils/currency');
+const {
+    validateCombination,
+    getDefaultGoal,
+    getBillingEvent,
+    toApiDestination
+} = require('./campaignObjectives');
 const { debutDeJournee, finDeJournee } = require('../utils/adAccountTime');
 const logger = require('../utils/logger');
 
-const FACEBOOK_GRAPH_URL = 'https://graph.facebook.com/v21.0';
+// Version de l'API Graph : une seule source, config/facebook.js.
+const { GRAPH_URL: FACEBOOK_GRAPH_URL } = require('../config/facebook');
 
 /** Fuseau retenu si Meta ne renvoie pas celui du compte. */
 const FUSEAU_PAR_DEFAUT = 'America/Los_Angeles';
@@ -78,7 +86,20 @@ function getOptimizationGoal(objective) {
 function buildTargeting(targeting) {
     const result = {
         age_min: targeting.age_min || 18,
-        age_max: targeting.age_max || 65
+        age_max: targeting.age_max || 65,
+
+        // Meta exige un choix explicite sur l'audience Advantage, et refuse la
+        // création sans lui (sous-code 1870227). Le champ vit **dans** la
+        // spécification de ciblage : le placer à côté, au niveau de l'ensemble
+        // de publicités, revient à ne pas le fournir du tout.
+        //
+        // 0 par défaut : le ciblage composé par l'utilisateur est respecté tel
+        // quel. À 1, Meta s'autorise à élargir l'audience au-delà de ce qui a
+        // été demandé, ce qui ne doit pas arriver sans que l'utilisateur l'ait
+        // choisi.
+        targeting_automation: {
+            advantage_audience: targeting.advantage_audience === 1 ? 1 : 0
+        }
     };
 
     // ═══════════════════════════════════════════════════════════════════
@@ -124,18 +145,47 @@ function buildTargeting(targeting) {
     result.geo_locations = geoLocations;
 
     // ═══════════════════════════════════════════════════════════════════
-    // INTÉRÊTS avec IDs de Facebook
+    // GENRE
     // ═══════════════════════════════════════════════════════════════════
+    // Le formulaire enregistre ['male'] / ['female'] / [] ; Meta attend
+    // [1] / [2], et l'absence du champ pour « tous ». Faute de cette
+    // conversion, le ciblage par genre était saisi puis perdu en silence :
+    // la campagne visait tout le monde sans que rien ne le signale.
+    const GENRES_META = { male: 1, female: 2 };
+    if (Array.isArray(targeting.genders) && targeting.genders.length > 0) {
+        const codes = targeting.genders
+            .map(g => GENRES_META[String(g).toLowerCase()] || (g === 1 || g === 2 ? g : null))
+            .filter(Boolean);
+
+        // Cocher les deux revient à ne pas filtrer : Meta préfère le champ absent.
+        if (codes.length === 1) result.genders = codes;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // INTÉRÊTS ET COMPORTEMENTS avec IDs de Facebook
+    // ═══════════════════════════════════════════════════════════════════
+    // Les deux vivent dans le même flexible_spec. Les comportements étaient
+    // proposés par l'assistant IA mais n'atteignaient jamais Meta.
+    const specs = {};
+
     if (targeting.interests && targeting.interests.length > 0) {
-        // interests is now array of { id, name }
-        result.flexible_spec = [
-            {
-                interests: targeting.interests.map(i => ({
-                    id: i.id,
-                    name: i.name
-                }))
-            }
-        ];
+        specs.interests = targeting.interests
+            .filter(i => i && i.id)
+            .map(i => ({ id: i.id, name: i.name }));
+    }
+
+    if (targeting.behaviors && targeting.behaviors.length > 0) {
+        // L'assistant IA peut renvoyer des libellés seuls, sans identifiant.
+        // Meta exige un id : les entrées sans id sont écartées plutôt que de
+        // faire échouer toute la campagne.
+        const avecId = targeting.behaviors.filter(b => b && b.id);
+        if (avecId.length > 0) {
+            specs.behaviors = avecId.map(b => ({ id: b.id, name: b.name }));
+        }
+    }
+
+    if (Object.keys(specs).length > 0) {
+        result.flexible_spec = [specs];
     }
 
     return result;
@@ -186,7 +236,7 @@ async function getFacebookAccount(userId) {
 /**
  * Construit le promoted_object selon le type de destination
  */
-function buildPromotedObject(destinationType, fb, whatsappNumber = null, whatsappNumberId = null) {
+function buildPromotedObject(destinationType, fb, whatsappNumber = null, whatsappNumberId = null, conversion = null) {
     if (isMessagingDestination(destinationType) || destinationType === 'INSTAGRAM_PROFILE') {
         const promoted = { page_id: fb.fb_page_id };
 
@@ -211,7 +261,21 @@ function buildPromotedObject(destinationType, fb, whatsappNumber = null, whatsap
 
         return promoted;
     }
-    // Pour WEBSITE, pas de promoted_object requis (pixel_id optionnel)
+    // Site web : Meta exige l'ensemble de données (anciennement pixel) et
+    // l'évènement à optimiser dès que l'on optimise sur les conversions — le
+    // Gestionnaire de publicités le marque d'une astérisque et refuse de
+    // publier sans lui. Le champ était réputé « optionnel » ici, si bien que
+    // toute campagne Ventes vers un site web échouait à la validation, après
+    // que l'utilisateur avait tout saisi.
+    if (conversion?.pixel_id) {
+        return {
+            pixel_id: String(conversion.pixel_id),
+            custom_event_type: conversion.custom_event_type || 'PURCHASE'
+        };
+    }
+
+    // Sans pixel, on ne fabrique rien : validateCombination() dira lui-même ce
+    // qui manque, dans les termes de l'utilisateur.
     return undefined;
 }
 
@@ -229,6 +293,78 @@ function buildPromotedObject(destinationType, fb, whatsappNumber = null, whatsap
  * @param {Object} data  données du wizard
  * @param {Object} fb    ligne facebook_accounts de l'utilisateur
  */
+/**
+ * Refuse une combinaison que Meta rejetterait, avant tout appel réseau.
+ * L'erreur est marquée `userFacing` pour être affichée telle quelle.
+ */
+function assertCombinaisonValide({ objective, goal, destination, promoted_object }) {
+    const verdict = validateCombination({ objective, goal, destination, promoted_object });
+    if (verdict.valid) return;
+
+    const err = new Error(verdict.errors.join(' '));
+    err.userFacing = true;
+    err.validationErrors = verdict.errors;
+    throw err;
+}
+
+/**
+ * Compte Instagram à déclarer sur la création publicitaire.
+ *
+ * Une publicité « Instagram ou Facebook » (INSTAGRAM_PROFILE) doit être
+ * associée à un compte Instagram : sans lui, Meta refuse la publicité
+ * (sous-code 3907008), relevé réel du 8 oct. 2026. Le champ est
+ * `object_story_spec.instagram_user_id`, qui remplace instagram_actor_id
+ * (déprécié en v22.0, retiré le 9 sept. 2025).
+ *
+ * @throws {Error} userFacing si aucun compte Instagram n'est relié — levée
+ *   avant toute création chez Meta.
+ */
+function instagramIdentity(destinationType, fb) {
+    if (destinationType !== 'INSTAGRAM_PROFILE') return {};
+
+    const id = String(fb?.instagram_account_id || '').trim();
+    if (!id) {
+        const err = new Error(
+            "Aucun compte Instagram n'est relié à votre Page Facebook. Reliez-en un "
+            + '(Paramètres de la Page → Comptes liés) puis reconnectez Facebook, ou '
+            + 'choisissez une autre destination.'
+        );
+        err.userFacing = true;
+        throw err;
+    }
+    return { instagram_user_id: id };
+}
+
+/**
+ * Bouton d'une publicité « Appels » (destination PHONE_CALL).
+ *
+ * Meta exige CALL_NOW avec un lien `tel:+<indicatif><numéro>` (doc « Call
+ * Ads »). Relevé réel du 8 oct. 2026 : faute de numéro, la publicité partait
+ * avec « En savoir plus » vers le site — personne ne pouvait appeler.
+ *
+ * @param {string} telephone  numéro saisi, avec indicatif pays (+237…)
+ * @throws {Error} userFacing si le numéro manque ou n'a pas d'indicatif
+ */
+function phoneCallToAction(telephone) {
+    const brut = String(telephone || '').trim();
+    if (!brut) {
+        const err = new Error('Indiquez le numéro de téléphone à appeler.');
+        err.userFacing = true;
+        throw err;
+    }
+
+    const chiffres = brut.replace(/[^\d+]/g, '');
+    if (!/^\+\d{8,15}$/.test(chiffres)) {
+        const err = new Error(
+            'Le numéro doit commencer par l’indicatif pays, par exemple +237 6 99 00 00 00.'
+        );
+        err.userFacing = true;
+        throw err;
+    }
+
+    return { type: 'CALL_NOW', value: { link: `tel:${chiffres}` } };
+}
+
 function resolveDestination(data, fb) {
     // Nouveau format : cases à cocher multiples.
     let apps = data.messaging_destinations;
@@ -239,11 +375,34 @@ function resolveDestination(data, fb) {
     }
 
     if (!apps || apps.length === 0) {
-        const destinationType = data.destination_type || 'WEBSITE';
+        // La carte d'interface peut couvrir plusieurs valeurs API : on envoie
+        // celle que l'objectif accepte (« Votre publication » → ON_AD en Trafic).
+        const destinationType = toApiDestination(data.objective, data.destination_type || 'WEBSITE');
+
+        // L'objectif de performance venu du formulaire n'était repris que sur
+        // parole. Il survivait notamment à un changement d'objectif : passer de
+        // Trafic à Notoriété conservait LANDING_PAGE_VIEWS, que Meta refuse
+        // pour Notoriété — après avoir créé la campagne.
+        const goal = data.optimization_goal
+            || getDefaultGoal(data.objective, destinationType)
+            || getOptimizationGoal(data.objective);
+
+        const conversion = data.pixel_id
+            ? { pixel_id: data.pixel_id, custom_event_type: data.custom_event_type || 'PURCHASE' }
+            : null;
+
+        assertCombinaisonValide({
+            objective: data.objective,
+            goal,
+            destination: destinationType,
+            promoted_object: buildPromotedObject(destinationType, fb, null, null, conversion) || {}
+        });
+
         return {
             is_messaging: false,
             destination_type: destinationType,
-            optimization_goal: data.optimization_goal || getOptimizationGoal(data.objective)
+            optimization_goal: goal,
+            conversion
         };
     }
 
@@ -364,6 +523,284 @@ async function uploadAdImage(adAccountId, accessToken, mediaUrl) {
     return hash;
 }
 
+/**
+ * Identité WhatsApp de la Page, pour le champ « Numéro de téléphone WhatsApp »
+ * de l'identité de la publicité.
+ *
+ * Meta la stocke dans `wamo_whatsapp_identity_spec.wamo_whatsapp_identity_id`
+ * (relevé sur les créations faites dans Ads Manager). Cet identifiant n'est
+ * lisible ni sur la Page ni sur le compte publicitaire : la seule source fiable
+ * est une création existante de la même Page. On prend le plus fréquent.
+ *
+ * Non bloquant : sans identité connue, ou si la lecture échoue, la publicité
+ * part sans numéro, comme avant.
+ *
+ * @returns {Promise<string|null>}
+ */
+async function findWhatsAppIdentity(adAccountId, accessToken, pageId) {
+    try {
+        const { data } = await axios.get(`${FACEBOOK_GRAPH_URL}/${adAccountId}/adcreatives`, {
+            params: {
+                access_token: accessToken,
+                fields: 'object_story_spec{page_id},wamo_whatsapp_identity_spec',
+                limit: 100
+            }
+        });
+        const compte = {};
+        for (const c of data?.data || []) {
+            const id = c.wamo_whatsapp_identity_spec?.wamo_whatsapp_identity_id;
+            if (id && c.object_story_spec?.page_id === pageId) compte[id] = (compte[id] || 0) + 1;
+        }
+        const [meilleur] = Object.entries(compte).sort((a, b) => b[1] - a[1]);
+        return meilleur ? meilleur[0] : null;
+    } catch (err) {
+        logger.warn(`⚠️ Identité WhatsApp de la Page illisible : ${err.response?.data?.error?.message || err.message}`);
+        return null;
+    }
+}
+
+/** Fragment de création portant le numéro WhatsApp, ou objet vide. */
+function whatsappIdentity(identityId) {
+    return identityId
+        ? { wamo_whatsapp_identity_spec: { wamo_whatsapp_identity_id: identityId } }
+        : {};
+}
+
+/**
+ * Comment Meta accepte « plusieurs visuels » selon l'objectif.
+ *
+ * - `groups` : le vrai format flexible (`creative_asset_groups_spec`), réservé
+ *   par Meta aux objectifs Ventes et Promotion d'application ;
+ * - `dynamic` : le contenu dynamique (`asset_feed_spec`) pour tous les autres.
+ *   Meta exige alors un ensemble de publicités créé en mode dynamique
+ *   (`is_dynamic_creative`), sinon la publicité est refusée.
+ *
+ * @returns {'groups'|'dynamic'|null} null si le format n'est pas « flexible »
+ */
+function flexibleMode(mediaType, objective) {
+    if (mediaType !== 'flexible') return null;
+    return ['OUTCOME_SALES', 'OUTCOME_APP_PROMOTION'].includes(objective) ? 'groups' : 'dynamic';
+}
+
+const attendre = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Téléverse une vidéo sur le compte publicitaire et attend qu'elle soit prête.
+ *
+ * Comme pour les images, les octets sont envoyés en multipart `source` : l'envoi
+ * par URL échoue avec l'erreur #3. Meta traite ensuite la vidéo de manière
+ * asynchrone ; une création qui la référence avant `ready` est refusée. On
+ * récupère enfin la miniature préférée, exigée par `video_data.image_url` et
+ * par les cartes vidéo d'un carrousel.
+ *
+ * @returns {Promise<{video_id: string, thumbnail_url: string|null}>}
+ */
+async function uploadAdVideo(adAccountId, accessToken, mediaUrl, options = {}) {
+    const { intervalleMs = 3000, delaiMaxMs = 120000, pause = attendre } = options;
+
+    if (!/^https?:\/\//i.test(mediaUrl)) {
+        const err = new Error('La vidéo n\'a pas été correctement téléversée. Ajoutez-la à nouveau.');
+        err.userFacing = true;
+        throw err;
+    }
+
+    const download = await axios.get(mediaUrl, { responseType: 'arraybuffer', timeout: 120000 });
+
+    const form = new FormData();
+    form.append('source', Buffer.from(download.data), {
+        filename: mediaUrl.split('/').pop().split('?')[0] || 'video.mp4',
+        contentType: download.headers?.['content-type'] || 'video/mp4'
+    });
+
+    const response = await axios.post(
+        `${FACEBOOK_GRAPH_URL}/${adAccountId}/advideos`,
+        form,
+        {
+            params: { access_token: accessToken },
+            headers: form.getHeaders(),
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity
+        }
+    );
+    const videoId = response.data.id;
+    if (!videoId) {
+        throw new Error('Facebook n\'a pas renvoyé d\'identifiant pour la vidéo.');
+    }
+
+    // Attendre la fin du traitement.
+    let ecoule = 0;
+    for (;;) {
+        const { data } = await axios.get(`${FACEBOOK_GRAPH_URL}/${videoId}`, {
+            params: { access_token: accessToken, fields: 'status' }
+        });
+        const statut = data?.status?.video_status;
+        if (statut === 'ready') break;
+        if (statut === 'error') {
+            const err = new Error('Facebook n\'a pas pu traiter la vidéo. Vérifiez son format (MP4 ou MOV, H.264).');
+            err.userFacing = true;
+            throw err;
+        }
+        if (ecoule >= delaiMaxMs) {
+            const err = new Error('Le traitement de la vidéo par Facebook prend trop de temps. Réessayez dans quelques minutes.');
+            err.userFacing = true;
+            throw err;
+        }
+        await pause(intervalleMs);
+        ecoule += intervalleMs;
+    }
+
+    const { data: miniatures } = await axios.get(`${FACEBOOK_GRAPH_URL}/${videoId}/thumbnails`, {
+        params: { access_token: accessToken }
+    });
+    const liste = miniatures?.data || [];
+    const preferee = liste.find((m) => m.is_preferred) || liste[0];
+
+    return { video_id: videoId, thumbnail_url: preferee?.uri || null };
+}
+
+/**
+ * Téléverse un média (image ou vidéo) et renvoie ce qu'il faut pour le citer
+ * dans une création : `hash` pour une image, `video_id` + miniature pour une
+ * vidéo.
+ */
+async function uploadMediaItem(adAccountId, accessToken, item, options) {
+    if (item.type === 'video') {
+        return { type: 'video', ...(await uploadAdVideo(adAccountId, accessToken, item.url, options)) };
+    }
+    return { type: 'image', hash: await uploadAdImage(adAccountId, accessToken, item.url) };
+}
+
+/**
+ * Construit la partie visuelle de la création selon le format choisi.
+ *
+ * Fonction pure : elle reçoit les médias déjà téléversés et renvoie
+ * `object_story_spec` et, pour le format flexible, `asset_feed_spec`.
+ *
+ * - image  : link_data classique (image_hash facultatif) ;
+ * - video  : video_data — Meta n'accepte pas de vidéo dans link_data ;
+ * - carousel : link_data.child_attachments, une carte par média ;
+ * - flexible : asset_feed_spec AUTOMATIC_FORMAT, Meta choisit la combinaison.
+ */
+function buildCreativeMedia({
+    mediaType, uploaded = [], items = [], pageId, identity = {},
+    message = '', headline = '', description = '', link, callToAction,
+    bodies = [], titles = [], objective
+}) {
+    const objectStorySpec = { page_id: pageId, ...identity };
+
+    if (mediaType === 'video') {
+        const [video] = uploaded;
+        objectStorySpec.video_data = {
+            video_id: video.video_id,
+            image_url: video.thumbnail_url,
+            message,
+            title: headline,
+            link_description: description,
+            call_to_action: callToAction
+        };
+        return { object_story_spec: objectStorySpec };
+    }
+
+    if (mediaType === 'carousel') {
+        const childAttachments = uploaded.map((media, i) => {
+            const item = items[i] || {};
+            const carteLien = item.link || link;
+            const carte = {
+                link: carteLien,
+                name: item.name || '',
+                description: item.description || ''
+            };
+            if (media.type === 'video') {
+                carte.video_id = media.video_id;
+                carte.picture = media.thumbnail_url;
+            } else {
+                carte.image_hash = media.hash;
+            }
+            if (callToAction) {
+                carte.call_to_action = callToAction.type === 'CALL_NOW' || !callToAction.value?.link
+                    ? callToAction
+                    : { ...callToAction, value: { ...callToAction.value, link: carteLien } };
+            }
+            return carte;
+        });
+        objectStorySpec.link_data = {
+            message,
+            link,
+            child_attachments: childAttachments,
+            multi_share_optimized: true,
+            call_to_action: callToAction
+        };
+        return { object_story_spec: objectStorySpec };
+    }
+
+    if (flexibleMode(mediaType, objective) === 'groups') {
+        const textes = (liste, type) => liste.filter(Boolean).map((text) => ({ text, text_type: type }));
+        const groupe = {
+            images: uploaded.filter((m) => m.type === 'image').map((m) => ({ hash: m.hash })),
+            videos: uploaded.filter((m) => m.type === 'video').map((m) => ({ video_id: m.video_id })),
+            texts: [
+                ...textes([message, ...bodies], 'primary_text'),
+                ...textes([headline, ...titles], 'headline'),
+                ...textes([description], 'description')
+            ],
+            call_to_action: callToAction
+        };
+        for (const cle of ['images', 'videos', 'texts']) {
+            if (groupe[cle].length === 0) delete groupe[cle];
+        }
+        // Les médias et textes sont un paramètre de la publicité, pas de la
+        // création. La création garde un `link_data` minimal : sans lui, Meta
+        // répond « Le champ link est requis » (relevé en réel).
+        //
+        // Meta exige aussi que le PREMIER média du groupe soit celui de la
+        // création (« la première image ou vidéo du premier groupe doit
+        // correspondre ») : image → link_data, vidéo → video_data.
+        const [premier] = uploaded;
+        if (premier?.type === 'video') {
+            objectStorySpec.video_data = {
+                video_id: premier.video_id,
+                image_url: premier.thumbnail_url,
+                call_to_action: callToAction
+            };
+        } else {
+            objectStorySpec.link_data = { link, ...(premier?.hash ? { image_hash: premier.hash } : {}) };
+        }
+        return { object_story_spec: objectStorySpec, creative_asset_groups_spec: { groups: [groupe] } };
+    }
+
+    if (mediaType === 'flexible') {
+        const textes = (liste) => liste.filter(Boolean).map((text) => ({ text }));
+        const assetFeedSpec = {
+            ad_formats: ['AUTOMATIC_FORMAT'],
+            images: uploaded.filter((m) => m.type === 'image').map((m) => ({ hash: m.hash })),
+            videos: uploaded.filter((m) => m.type === 'video')
+                .map((m) => ({ video_id: m.video_id, thumbnail_url: m.thumbnail_url })),
+            bodies: textes([message, ...bodies]),
+            titles: textes([headline, ...titles]),
+            descriptions: textes([description]),
+            link_urls: [{ website_url: link }],
+            call_to_action_types: [callToAction?.type || 'LEARN_MORE']
+        };
+        for (const cle of ['images', 'videos', 'bodies', 'titles', 'descriptions']) {
+            if (assetFeedSpec[cle].length === 0) delete assetFeedSpec[cle];
+        }
+        return { object_story_spec: objectStorySpec, asset_feed_spec: assetFeedSpec };
+    }
+
+    // Image (ou aucun visuel).
+    objectStorySpec.link_data = {
+        message,
+        link,
+        name: headline,
+        description,
+        call_to_action: callToAction
+    };
+    if (uploaded[0]?.hash) {
+        objectStorySpec.link_data.image_hash = uploaded[0].hash;
+    }
+    return { object_story_spec: objectStorySpec };
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // CRÉATION COMPLÈTE DE CAMPAGNE (3 niveaux)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -402,7 +839,13 @@ function normalizeObjective(objective) {
  * @param {Object} data - Données du wizard (campaign, adset, ad)
  * @returns {Object} { success, campaign_id, fb_campaign_id }
  */
-async function createFullCampaign(userId, data) {
+async function createFullCampaign(userId, data, options = {}) {
+    // Avancement pour l'écran (voir services/campaignJobs.js). Ne doit jamais
+    // faire échouer la création.
+    const step = (name, detail) => {
+        try { options.onStep?.(name, detail); } catch { /* sans effet sur la création */ }
+    };
+
     // 0. Normaliser l'objectif (compatibilité ancienne API → v21)
     data.objective = normalizeObjective(data.objective);
 
@@ -423,6 +866,10 @@ async function createFullCampaign(userId, data) {
     // invalide, mieux vaut le dire tout de suite que laisser des objets
     // orphelins chez Meta.
     const destination = resolveDestination(data, fb);
+    const identiteInstagram = instagramIdentity(destination.destination_type, fb);
+    const boutonAppel = destination.destination_type === 'PHONE_CALL'
+        ? phoneCallToAction(data.phone_number)
+        : null;
     logger.info(`🎯 Destination : ${destination.destination_type} `
         + `(optimisation ${destination.optimization_goal})`);
 
@@ -435,6 +882,7 @@ async function createFullCampaign(userId, data) {
     try {
         // 2. Créer la Campaign
         logger.info('📢 Étape 1/4 : Création Campaign...');
+        step('campagne');
 
         // Paramètres MINIMAUX pour test
         const campaignParams = {
@@ -458,6 +906,7 @@ async function createFullCampaign(userId, data) {
 
         // 3. Créer l'Ad Set
         logger.info('📢 Étape 2/4 : Création Ad Set...');
+        step('ensemble');
 
         if (!data.targeting || !data.targeting.locations || data.targeting.locations.length === 0) {
             throw new Error('Au moins une localisation est requise');
@@ -479,13 +928,10 @@ async function createFullCampaign(userId, data) {
             name: data.adset_name || `${data.campaign_name} - AdSet`,
             campaign_id: fbCampaignId,
             daily_budget: dailyBudgetInCents,
-            billing_event: 'IMPRESSIONS',
+            billing_event: getBillingEvent(destination.optimization_goal),
             optimization_goal: destination.optimization_goal,
             bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
             targeting: buildTargeting(data.targeting),
-            targeting_automation: {
-                advantage_audience: 0
-            },
             destination_type: destination.destination_type,
             status: 'PAUSED',
             start_time: debutDeJournee(data.start_date, timezone),
@@ -497,13 +943,18 @@ async function createFullCampaign(userId, data) {
         // Ajouter promoted_object seulement si nécessaire (Messenger, WhatsApp, Instagram)
         const promotedObject = buildPromotedObject(
             destination.destination_type, fb,
-            destination.whatsapp_phone_number, destination.whatsapp_phone_number_id
+            destination.whatsapp_phone_number, destination.whatsapp_phone_number_id,
+            destination.conversion
         );
         if (promotedObject) {
             adSetPayload.promoted_object = promotedObject;
         }
 
         // Objectif de coût par résultat (optionnel) — bascule en stratégie "coût maîtrisé"
+        if (flexibleMode(data.creative.media_type, data.objective) === 'dynamic') {
+            adSetPayload.is_dynamic_creative = true;
+        }
+
         if (data.cost_per_result_goal && Number(data.cost_per_result_goal) > 0) {
             const bidAmount = fcfaToUsdCents(data.cost_per_result_goal);
             if (Number.isFinite(bidAmount) && bidAmount > 0) {
@@ -545,11 +996,26 @@ async function createFullCampaign(userId, data) {
         // 4. Upload image et créer Ad Creative
         logger.info('📢 Étape 3/4 : Création Ad Creative...');
 
-        let imageHash = null;
-        if (data.creative.media_type === 'image' && data.creative.media_url) {
-            imageHash = await uploadAdImage(adAccountId, accessToken, data.creative.media_url);
-            logger.info(`✅ Image uploadée, hash : ${imageHash}`);
+        // Téléverser les médias : un seul pour image/vidéo, plusieurs pour le
+        // carrousel et le format flexible. Une vidéo est attendue jusqu'à ce
+        // que Meta l'ait traitée.
+        const mediaType = data.creative.media_type;
+        const items = (mediaType === 'carousel' || mediaType === 'flexible')
+            ? (data.creative.media_items || [])
+            : (data.creative.media_url && (mediaType === 'image' || mediaType === 'video')
+                ? [{ url: data.creative.media_url, type: mediaType }]
+                : []);
+        if (mediaType === 'video' && items.length === 0) {
+            const err = new Error('Ajoutez une vidéo pour cette publicité.');
+            err.userFacing = true;
+            throw err;
         }
+        const uploaded = [];
+        for (const [i, item] of items.entries()) {
+            step(item.type === 'video' ? 'video' : 'medias', { current: i + 1, total: items.length });
+            uploaded.push(await uploadMediaItem(adAccountId, accessToken, item));
+        }
+        logger.info(`✅ ${uploaded.length} média(s) téléversé(s) (${mediaType || 'aucun'})`);
 
         // Le lien et le bouton viennent de la destination résolue : c'est ce qui
         // garantit qu'une création de messagerie ne se retrouve pas dans un
@@ -560,54 +1026,128 @@ async function createFullCampaign(userId, data) {
 
         const callToAction = destination.is_messaging
             ? destination.call_to_action
-            : {
+            : boutonAppel || {
                 type: data.creative.call_to_action || 'LEARN_MORE',
                 value: { link: creativeLink }
             };
 
-        const objectStorySpec = {
-            page_id: fb.fb_page_id,
-            link_data: {
-                message: data.creative.message || '',
-                link: creativeLink,
-                name: data.creative.headline || '',
-                description: data.creative.description || '',
-                call_to_action: callToAction
-            }
-        };
+        const media = buildCreativeMedia({
+            mediaType,
+            uploaded,
+            items,
+            pageId: fb.fb_page_id,
+            identity: identiteInstagram,
+            message: data.creative.message || '',
+            headline: data.creative.headline || '',
+            description: data.creative.description || '',
+            link: creativeLink,
+            callToAction,
+            bodies: data.creative.bodies || [],
+            titles: data.creative.titles || [],
+            objective: data.objective
+        });
+        const objectStorySpec = media.object_story_spec;
+        // Partie « texte » commune à link_data et video_data.
+        const story = objectStorySpec.link_data || objectStorySpec.video_data;
 
-        if (imageHash) {
-            objectStorySpec.link_data.image_hash = imageHash;
+        // Le lien d'affichage était saisi dans le formulaire, montré dans
+        // l'aperçu, puis jamais transmis. Chez Meta, c'est `caption`.
+        if (data.creative.display_link && objectStorySpec.link_data) {
+            objectStorySpec.link_data.caption = data.creative.display_link;
+        }
+
+        // Message d'accueil de la conversation : la première chose que voit la
+        // personne en ouvrant la discussion. Sans lui, Meta affiche un texte
+        // générique.
+        if (destination.is_messaging && data.creative.welcome_message && story) {
+            story.page_welcome_message = data.creative.welcome_message;
         }
 
         const creativePayload = {
             name: data.ad_name || `${data.campaign_name} - Creative`,
-            object_story_spec: objectStorySpec
+            object_story_spec: objectStorySpec,
+
+            // Publicités multi-annonceurs : la publicité peut apparaître aux
+            // côtés d'autres dans la même unité, et le visuel être recadré.
+            // Depuis le 19 août 2024, Meta y inscrit d'office toute publicité
+            // qui ne précise pas ce champ — nos utilisateurs y étaient donc
+            // tous inscrits sans l'avoir choisi. Le champ est désormais
+            // toujours transmis, avec la valeur décidée par l'utilisateur.
+            contextual_multi_ads: {
+                enroll_status: data.multi_advertiser_ads === false ? 'OPT_OUT' : 'OPT_IN'
+            },
+
+            // Numéro WhatsApp de la Page dans l'identité, pour tous les
+            // objectifs et toutes les destinations.
+            ...whatsappIdentity(await findWhatsAppIdentity(adAccountId, accessToken, fb.fb_page_id))
         };
+
+        // Paramètres d'URL (UTM) : sans eux, impossible pour l'utilisateur de
+        // savoir d'où vient son trafic.
+        if (data.creative.url_tags) {
+            creativePayload.url_tags = data.creative.url_tags;
+        }
 
         // Exigé par Meta dès que la publicité vise plusieurs applications de
         // messagerie : sans lui, la création est refusée (sous-code 2446493).
-        if (destination.asset_feed_spec) {
-            creativePayload.asset_feed_spec = destination.asset_feed_spec;
+        // Le format flexible y fusionne ses médias et textes.
+        if (destination.asset_feed_spec || media.asset_feed_spec) {
+            creativePayload.asset_feed_spec = {
+                ...(destination.asset_feed_spec || {}),
+                ...(media.asset_feed_spec || {})
+            };
         }
 
-        const creativeResponse = await axios.post(
-            `${FACEBOOK_GRAPH_URL}/${adAccountId}/adcreatives`,
-            creativePayload,
-            { params: { access_token: accessToken } }
-        );
-        const fbCreativeId = creativeResponse.data.id;
-        created.creative = fbCreativeId;
-        logger.info(`✅ Ad Creative créé : ${fbCreativeId}`);
+        // Bandeau de messagerie sur une publicité qui mène vers un site web :
+        // la personne arrive bien sur le site, avec un bouton pour écrire à
+        // l'entreprise. Meta impose alors que la création soit passée **en
+        // ligne** dans POST /ads — la déclarer séparément échoue avec
+        // « (#3) Application does not have the capability ».
+        // Ventes en est exclue : Meta ne propose pas ce bandeau sur cet
+        // objectif, et détourner le visiteur vers une conversation contredit
+        // l'optimisation sur les achats du site.
+        const extensions = (destination.is_messaging || data.objective === 'OUTCOME_SALES')
+            ? null
+            : buildMessageExtensions(data.website_message_apps);
+
+        if (extensions) {
+            creativePayload.asset_feed_spec = {
+                ...(creativePayload.asset_feed_spec || {}),
+                ...extensions
+            };
+        }
+
+        let fbCreativeId = null;
+
+        // Le format flexible (Ventes) se déclare avec la publicité : la
+        // création est passée en ligne dans POST /ads.
+        const enLigne = Boolean(extensions || media.creative_asset_groups_spec);
+
+        if (!enLigne) {
+            const creativeResponse = await axios.post(
+                `${FACEBOOK_GRAPH_URL}/${adAccountId}/adcreatives`,
+                creativePayload,
+                { params: { access_token: accessToken } }
+            );
+            fbCreativeId = creativeResponse.data.id;
+            created.creative = fbCreativeId;
+            logger.info(`✅ Ad Creative créé : ${fbCreativeId}`);
+        } else {
+            logger.info('✅ Création passée en ligne (bandeau de messagerie)');
+        }
 
         // 5. Créer l'Ad
         logger.info('📢 Étape 4/4 : Création Ad...');
+        step('publicite');
         const adResponse = await axios.post(
             `${FACEBOOK_GRAPH_URL}/${adAccountId}/ads`,
             {
                 name: data.ad_name || `${data.campaign_name} - Ad`,
                 adset_id: fbAdSetId,
-                creative: { creative_id: fbCreativeId },
+                creative: fbCreativeId ? { creative_id: fbCreativeId } : creativePayload,
+                ...(media.creative_asset_groups_spec
+                    ? { creative_asset_groups_spec: media.creative_asset_groups_spec }
+                    : {}),
                 status: 'PAUSED'
             },
             { params: { access_token: accessToken } }
@@ -617,6 +1157,7 @@ async function createFullCampaign(userId, data) {
         logger.info(`✅ Ad créée : ${fbAdId}`);
 
         // 6. Sauvegarder en base locale
+        step('enregistrement');
         const { data: campaignRecord, error: dbError } = await supabase
             .from('campaigns')
             .insert({
@@ -770,15 +1311,68 @@ async function updateCampaignStatus(userId, campaign, status) {
     return { status: fbStatus, levels: ordonnes.length };
 }
 
+/**
+ * Supprime une campagne chez Meta.
+ *
+ * Supprimer la seule ligne locale ne suffit pas : la campagne disparaît du
+ * tableau de bord mais continue d'exister chez Facebook — et de dépenser si
+ * elle diffuse. L'utilisateur croit l'avoir arrêtée sans l'avoir fait.
+ *
+ * Supprimer la campagne emporte l'ensemble de publicités et la publicité :
+ * Meta supprime l'arborescence.
+ */
+async function deleteCampaignOnFacebook(userId, campaign) {
+    if (!campaign?.fb_campaign_id) return { deleted: false, reason: 'aucun identifiant Facebook' };
+
+    const fb = await getFacebookAccount(userId);
+    if (!fb) {
+        const err = new Error('Compte Facebook non connecté.');
+        err.userFacing = true;
+        throw err;
+    }
+
+    const accessToken = decryptToken(fb.fb_access_token);
+
+    await axios.delete(`${FACEBOOK_GRAPH_URL}/${campaign.fb_campaign_id}`, {
+        params: { access_token: accessToken }
+    });
+
+    logger.info(`🗑️ Campagne ${campaign.fb_campaign_id} supprimée chez Facebook`);
+
+    // Supprimer la campagne emporte l'ensemble et la publicité, pas la
+    // création : relevé du 8 oct. 2026, elle restait ACTIVE dans la
+    // bibliothèque du compte. Un échec ici n'annule pas la suppression faite.
+    if (campaign.fb_creative_id) {
+        try {
+            await axios.delete(`${FACEBOOK_GRAPH_URL}/${campaign.fb_creative_id}`, {
+                params: { access_token: accessToken }
+            });
+        } catch (err) {
+            logger.warn(`⚠️ Création ${campaign.fb_creative_id} non supprimée : `
+                + `${err.response?.data?.error?.message || err.message}`);
+        }
+    }
+
+    return { deleted: true };
+}
+
 module.exports = {
     createFullCampaign,
     updateCampaignStatus,
+    deleteCampaignOnFacebook,
     getAdAccountTimezone,
     getFacebookAccount,
     buildTargeting,
     getOptimizationGoal,
     resolveDestination,
+    instagramIdentity,
+    phoneCallToAction,
     buildPromotedObject,
     uploadAdImage,
+    uploadAdVideo,
+    findWhatsAppIdentity,
+    flexibleMode,
+    whatsappIdentity,
+    buildCreativeMedia,
     rollbackFacebookObjects
 };

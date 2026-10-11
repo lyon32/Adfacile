@@ -9,68 +9,121 @@
 import { useState, useMemo, useEffect } from 'react';
 import {
     MapPin, Calendar, DollarSign, ChevronLeft, ChevronRight,
-    X, Plus, Sparkles, Info, Users, Target
+    X, Plus, Info, Users, Target
 } from 'lucide-react';
 import AITargetingHelper from '../ai/AITargetingHelper';
 import CurrencyHint from './CurrencyHint';
 import MessagingDestinationPicker from './MessagingDestinationPicker';
+import InfoTooltip from '../ui/InfoTooltip';
+import api from '../../services/api';
 import '../../styles/adset-form.css';
 
-const OPTIMIZATION_LABELS = {
-    'LINK_CLICKS': 'Clics sur le lien',
-    'OUTCOME_ENGAGEMENT': 'Engagement sur la publication',
-    'OUTCOME_LEADS': 'Prospects',
-    'OUTCOME_SALES': 'Conversions',
-    'OUTCOME_AWARENESS': 'Portée maximale',
-    'APP_INSTALLS': "Installations d'application"
+/**
+ * Libellés de tous les objectifs de performance, quel que soit l'objectif de
+ * campagne. Ce dictionnaire ne décide de rien : ce sont les valeurs servies par
+ * /api/config/objectives qui déterminent lesquels sont proposés. Il ne fait que
+ * les nommer en français courant plutôt qu'en jargon publicitaire.
+ */
+const LIBELLES_GOALS = {
+    LINK_CLICKS: {
+        label: 'Obtenir un maximum de clics',
+        description: 'Vos publicités iront vers les personnes les plus enclines à cliquer.'
+    },
+    LANDING_PAGE_VIEWS: {
+        label: 'Obtenir un maximum de visites',
+        description: 'Vos publicités iront vers les personnes qui chargeront vraiment votre page, pas seulement celles qui cliquent.'
+    },
+    REACH: {
+        label: 'Toucher le plus de personnes différentes',
+        description: 'Chaque personne verra votre publicité environ une fois par jour.'
+    },
+    IMPRESSIONS: {
+        label: 'Être vu le plus souvent possible',
+        description: 'Vos publicités seront montrées autant de fois que le budget le permet, même aux mêmes personnes.'
+    },
+    CONVERSATIONS: {
+        label: 'Obtenir un maximum de conversations',
+        description: 'Vos publicités iront vers les personnes les plus enclines à vous écrire.'
+    },
+    POST_ENGAGEMENT: {
+        label: 'Obtenir des réactions et des commentaires',
+        description: 'Vos publicités iront vers les personnes les plus enclines à interagir avec votre publication.'
+    },
+    THRUPLAY: {
+        label: 'Faire regarder votre vidéo en entier',
+        description: 'Vos publicités iront vers les personnes qui regardent les vidéos jusqu’au bout.'
+    },
+    AD_RECALL_LIFT: {
+        label: 'Marquer les esprits',
+        description: 'Vos publicités iront vers les personnes les plus susceptibles de se souvenir de vous.'
+    },
+    QUALITY_CALL: {
+        label: 'Recevoir des appels utiles',
+        description: 'Vos publicités iront vers les personnes les plus enclines à vous appeler pour de bon.'
+    },
+    LEAD_GENERATION: {
+        label: 'Recueillir des coordonnées',
+        description: 'Vos publicités iront vers les personnes les plus enclines à laisser leurs coordonnées.'
+    },
+    OFFSITE_CONVERSIONS: {
+        label: 'Obtenir des achats sur votre site',
+        description: 'Vos publicités iront vers les personnes les plus enclines à acheter. Nécessite un ensemble de données rattaché à votre compte publicitaire.'
+    },
+    VALUE: {
+        label: 'Obtenir les achats les plus rentables',
+        description: 'Vos publicités iront vers les personnes qui dépensent le plus, pas seulement vers celles qui achètent. Nécessite un ensemble de données qui transmet le montant des ventes.'
+    }
 };
 
-// Objectifs de performance disponibles pour une campagne Trafic (OUTCOME_TRAFFIC),
-// groupés comme dans Ads Manager natif : "Objectifs de trafic" puis "Autres objectifs".
-const TRAFFIC_PERFORMANCE_GOAL_GROUPS = [
+const decrireGoal = (valeur) => LIBELLES_GOALS[valeur] || { label: valeur, description: '' };
+
+/**
+ * Groupes de la liste des objectifs de performance, dans l'ordre du
+ * Gestionnaire de publicités : les optimisations de conversion d'abord, le
+ * reste ensuite. Le groupe se déduit de la valeur — pas de seconde liste à
+ * tenir à jour à côté du référentiel serveur.
+ */
+const GOALS_DE_CONVERSION = ['OFFSITE_CONVERSIONS', 'VALUE', 'LEAD_GENERATION', 'CONVERSATIONS'];
+const GOAL_RECOMMANDE = 'OFFSITE_CONVERSIONS';
+
+/**
+ * Lieux de conversion de secours.
+ *
+ * Le serveur sert la liste propre à chaque objectif (`destinations`). Ce
+ * catalogue ne sert qu'à un backend antérieur à ce champ : il reconstruit les
+ * cartes depuis `goals_by_destination`, servi de longue date. Il reproduit
+ * DESTINATION_CATALOG de backend/src/services/campaignObjectives.js — s'il
+ * diverge, c'est le serveur qui fait foi dès qu'il répond.
+ */
+const CATALOGUE_REPLI = [
     {
-        group: 'Objectifs de trafic',
-        options: [
-            {
-                value: 'LANDING_PAGE_VIEWS',
-                label: 'Maximiser le nombre de vues de la page de destination',
-                description: 'Nous essaierons de montrer vos publicités aux personnes les plus susceptibles de consulter le site Web dont le lien se trouve dans la publicité.'
-            },
-            {
-                value: 'LINK_CLICKS',
-                label: 'Maximiser le nombre de clics sur un lien',
-                description: 'Nous essaierons de montrer vos publicités aux personnes les plus susceptibles de cliquer sur celles-ci.'
-            }
-        ]
+        value: 'WEBSITE', covers: ['WEBSITE'], icon: '🌐',
+        label: 'Site Web', description: 'Envoyez les visiteurs vers votre site Web'
     },
     {
-        group: 'Autres objectifs',
-        options: [
-            {
-                value: 'REACH',
-                label: 'Optimiser la couverture unique quotidienne',
-                description: 'Nous essaierons de montrer vos publicités aux personnes jusqu’à une fois par jour.'
-            },
-            {
-                value: 'CONVERSATIONS',
-                label: 'Maximiser le nombre de conversations par messages',
-                description: 'Nous essaierons de montrer vos publicités aux personnes les plus susceptibles d’échanger avec vous par message.'
-            },
-            {
-                value: 'IMPRESSIONS',
-                label: "Optimiser le nombre d'impressions",
-                description: 'Nous essaierons de montrer vos publicités aux personnes autant de fois que possible.'
-            }
-        ]
+        value: 'MESSENGER',
+        covers: ['MESSENGER', 'WHATSAPP', 'INSTAGRAM_DIRECT', 'MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP'],
+        icon: '💬',
+        label: 'Applications de messagerie',
+        description: 'Ouvrez une conversation sur Messenger, Instagram ou WhatsApp'
+    },
+    {
+        value: 'INSTAGRAM_PROFILE', covers: ['INSTAGRAM_PROFILE', 'FACEBOOK_PAGE'], icon: '📷',
+        label: 'Instagram ou Facebook', description: 'Envoyez les visiteurs vers un profil Instagram ou une Page Facebook'
+    },
+    {
+        value: 'PHONE_CALL', covers: ['PHONE_CALL'], icon: '📞',
+        label: 'Appels', description: 'Incitez les personnes à appeler votre entreprise'
+    },
+    {
+        value: 'ON_POST', covers: ['ON_POST', 'ON_AD'], icon: '📣',
+        label: 'Votre publication', description: 'Faites réagir et commenter votre publication'
+    },
+    {
+        value: 'APP', covers: ['APP'], icon: '📲',
+        label: 'Application', description: 'Envoyez les visiteurs vers votre application'
     }
 ];
-
-// À plat, pour retrouver facilement le label/description d'une valeur sélectionnée.
-const TRAFFIC_PERFORMANCE_GOALS = TRAFFIC_PERFORMANCE_GOAL_GROUPS.flatMap(g => g.options);
-
-// Valeur proposée par défaut, comme dans Ads Manager. Elle est écrite dans
-// l'état du formulaire pour que l'affichage et l'envoi ne divergent jamais.
-const TRAFFIC_DEFAULT_PERFORMANCE_GOAL = 'LANDING_PAGE_VIEWS';
 
 // -------------------------------------------------------------------
 // Debounce hook
@@ -95,6 +148,22 @@ try {
 }
 
 // -------------------------------------------------------------------
+// Réponse des recherches de ciblage
+// -------------------------------------------------------------------
+// Ces recherches passent par fetch, pas par l'instance api : un échec
+// (connexion Facebook révoquée notamment) laissait la liste vide sans un mot.
+// La localisation semblait alors « ne jamais marcher ».
+async function lireSuggestions(response, quoi) {
+    const data = await response.json().catch(() => ({}));
+    if (response.ok) return { suggestions: data.suggestions || [], erreur: null };
+    if (data.code === 'FACEBOOK_RECONNECT_REQUIRED') {
+        window.dispatchEvent(new CustomEvent('facebook:reconnect-required', { detail: { message: data.message } }));
+        return { suggestions: [], erreur: data.message };
+    }
+    return { suggestions: [], erreur: `La recherche de ${quoi} a échoué. Réessayez dans un instant.` };
+}
+
+// -------------------------------------------------------------------
 // Component
 // -------------------------------------------------------------------
 const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
@@ -109,6 +178,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
     const [locationSearch, setLocationSearch] = useState('');
     const [locationSuggestions, setLocationSuggestions] = useState([]);
     const [loadingLocations, setLoadingLocations] = useState(false);
+    const [locationError, setLocationError] = useState(null);
 
     // -------------------------------------------------------------------
     // Interest autocomplete state
@@ -116,6 +186,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
     const [interestInput, setInterestInput] = useState('');
     const [interestSuggestions, setInterestSuggestions] = useState([]);
     const [loadingInterests, setLoadingInterests] = useState(false);
+    const [interestError, setInterestError] = useState(null);
 
     const debouncedLocationSearch = useDebounce(locationSearch, 500);
     const debouncedInterestSearch = useDebounce(interestInput, 500);
@@ -148,16 +219,245 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
         }));
     };
 
-    // Le sélecteur d'objectif de performance affiche LANDING_PAGE_VIEWS par
-    // défaut ; on l'inscrit dans l'état, sinon le backend retombe sur
-    // LINK_CLICKS et la campagne serait optimisée autrement que ce qui est
-    // affiché à l'utilisateur.
+    // ───────────────────────────────────────────────────────────────────
+    // Référentiel des objectifs — servi par le backend
+    //
+    // Le formulaire n'entretient plus sa propre liste : il lit celle que le
+    // backend applique. C'est ce qui empêche de proposer une combinaison que
+    // la création rejettera ensuite.
+    // ───────────────────────────────────────────────────────────────────
+    const [tousObjectifs, setTousObjectifs] = useState(null);
+    const [typesMessagerie, setTypesMessagerie] = useState({});
+
     useEffect(() => {
-        if (objective === 'LINK_CLICKS' && !campaignData.optimization_goal) {
-            updateField('optimization_goal', TRAFFIC_DEFAULT_PERFORMANCE_GOAL);
+        let annule = false;
+        api.get('/config/objectives')
+            .then(res => {
+                if (annule) return;
+                setTousObjectifs(res.data?.data?.objectives || []);
+                setTypesMessagerie(res.data?.data?.messaging_destination_types || {});
+            })
+            .catch(() => { if (!annule) setTousObjectifs([]); });
+        return () => { annule = true; };
+    }, []);
+
+    // Minimum de budget : le formulaire imposait 1000 FCFA en dur alors que le
+    // backend applique minDailyBudgetFcfa(), calcule depuis le taux de change.
+    // Les deux pouvaient diverger sans que rien ne le signale.
+    const [minBudget, setMinBudget] = useState(1000);
+
+    useEffect(() => {
+        let annule = false;
+        api.get('/config/currency')
+            .then(res => {
+                const v = res.data?.data?.min_daily_budget_xaf;
+                if (!annule && v) setMinBudget(v);
+            })
+            .catch(() => { });
+        return () => { annule = true; };
+    }, []);
+
+    // Le champ de budget ecrivait toujours dans daily_budget : choisir « Total »
+    // ne changeait que l'etiquette, et le service recevait un budget total egal
+    // au budget journalier saisi.
+    const champBudget = budget_type === 'lifetime' ? 'lifetime_budget' : 'daily_budget';
+    const montantBudget = campaignData[champBudget] ?? daily_budget ?? minBudget;
+    const definirBudget = (valeur) => updateField(champBudget, valeur);
+
+    const referentiel = useMemo(
+        () => (tousObjectifs || []).find(o => o.value === objective) || null,
+        [tousObjectifs, objective]
+    );
+
+    /**
+     * Lieux de conversion propres à l'objectif choisi.
+     *
+     * La liste était figée dans le formulaire : les mêmes six cartes pour les
+     * six objectifs, les inapplicables grisées. Ventes proposait ainsi
+     * « Instagram ou Facebook », absent de cet objectif chez Meta, et « Site
+     * Web et appels », qui n'existe pas au niveau de l'API. Le serveur sert
+     * désormais la liste, déduite de la table sondée.
+     */
+    const destinationsProposees = useMemo(() => {
+        if (!referentiel) return [];
+        if (referentiel.destinations?.length) return referentiel.destinations;
+
+        // Repli : un backend antérieur à ce champ ne sert que
+        // `goals_by_destination`. Sans ce repli, l'écran restait bloqué sur
+        // « Chargement des lieux de conversion… » — une dépendance dure à un
+        // champ neuf casse à chaque décalage entre le front et le serveur.
+        const acceptees = new Set(Object.values(referentiel.goals_by_destination || {}).flat());
+        return CATALOGUE_REPLI
+            .filter(carte => carte.covers.some(d => acceptees.has(d)))
+            .map(({ value, label, icon, description }) => ({ value, label, icon, description }));
+    }, [referentiel]);
+
+    useEffect(() => {
+        // Changer d'objectif peut rendre la destination retenue impossible :
+        // rester dessus bloquait l'étape sans l'expliquer.
+        if (destinationsProposees.length === 0) return;
+
+        const courante = campaignData.destination_type || 'WEBSITE';
+        if (!destinationsProposees.some(d => d.value === courante)) {
+            selectionnerDestination(destinationsProposees[0].value);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [objective, campaignData.optimization_goal]);
+    }, [destinationsProposees, campaignData.destination_type]);
+
+    /** Objectifs de performance acceptés pour l'objectif ET la destination. */
+    const goalsDisponibles = useMemo(() => {
+        if (!referentiel) return [];
+
+        // Messagerie : le serveur envoie toujours CONVERSATIONS
+        // (buildMessagingDestination). L'écran proposait « Obtenir un maximum
+        // de clics » alors que Meta recevait CONVERSATIONS — relevé réel du
+        // 8 oct. 2026, test T2. On affiche ce qui part réellement.
+        if (campaignData.destination_type === MESSAGING_UI_VALUE) return ['CONVERSATIONS'];
+
+        // La destination réellement envoyée à Meta dépend des applications
+        // cochées, pas du bouton d'interface. Déduire « Messenger » de toute
+        // sélection unique faisait proposer les objectifs de Messenger à une
+        // campagne WhatsApp — l'écran affichait alors autre chose que ce qui
+        // partait chez Meta.
+        const apps = [...(campaignData.messaging_destinations || [])].sort();
+        const dest = campaignData.destination_type === MESSAGING_UI_VALUE
+            ? (typesMessagerie[apps.join('+')] || 'MESSENGER')
+            : (campaignData.destination_type || 'WEBSITE');
+
+        return Object.entries(referentiel.goals_by_destination || {})
+            .filter(([, destinations]) => destinations.includes(dest))
+            .map(([goal]) => goal);
+    }, [referentiel, typesMessagerie, campaignData.destination_type, campaignData.messaging_destinations]);
+
+    /**
+     * Objectifs de performance groupés comme le Gestionnaire de publicités :
+     * les optimisations de conversion d'abord, le reste ensuite. La liste
+     * plate mettait « Obtenir un maximum de clics » au même rang qu'« Obtenir
+     * des achats », alors que l'un mesure une vente et l'autre un clic.
+     *
+     * Quand aucun objectif de conversion n'existe pour la combinaison, le
+     * groupe unique reste sans titre — inutile d'intituler une seule liste.
+     */
+    const groupesDeGoals = useMemo(() => {
+        const decrire = (v) => ({ value: v, ...decrireGoal(v) });
+        const conversion = goalsDisponibles.filter(g => GOALS_DE_CONVERSION.includes(g));
+        const autres = goalsDisponibles.filter(g => !GOALS_DE_CONVERSION.includes(g));
+
+        if (conversion.length === 0) {
+            return [{ group: null, options: autres.map(decrire) }];
+        }
+
+        return [
+            { group: 'Objectifs de conversion', options: conversion.map(decrire) },
+            { group: 'Autres objectifs', options: autres.map(decrire) }
+        ].filter(g => g.options.length > 0);
+    }, [goalsDisponibles]);
+
+    useEffect(() => {
+        // L'objectif de performance par défaut dépend de l'objectif de campagne
+        // ET de la destination : Ventes vers un site web n'accepte pas ce que
+        // Ventes par messagerie accepte. Le référentiel serveur tranche.
+        if (!objective || !referentiel) return;
+
+        const acceptables = goalsDisponibles;
+        if (acceptables.length === 0) return;
+
+        if (!campaignData.optimization_goal || !acceptables.includes(campaignData.optimization_goal)) {
+            const defaut = acceptables.includes(referentiel.default_goal)
+                ? referentiel.default_goal
+                : acceptables[0];
+            updateField('optimization_goal', defaut);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [objective, referentiel, goalsDisponibles, campaignData.optimization_goal]);
+
+    // ───────────────────────────────────────────────────────────────────
+    // Ensemble de données (pixel) — exigé par Meta pour optimiser sur les
+    // achats d'un site web. Il n'est pas saisi : il appartient déjà au compte
+    // publicitaire, on le lit. Le wizard proposait cette optimisation sans
+    // jamais collecter le pixel : la campagne était refusée à la dernière
+    // étape, après que tout avait été rempli.
+    // ───────────────────────────────────────────────────────────────────
+    const besoinPixel = ['OFFSITE_CONVERSIONS', 'VALUE']
+        .includes(campaignData.optimization_goal);
+
+    useEffect(() => {
+        // Le bandeau de messagerie n'existe pas sur Ventes : s'il a été coché
+        // avant de changer d'objectif, il partirait quand même chez Meta.
+        if (objective === 'OUTCOME_SALES' && campaignData.website_message_apps?.length) {
+            updateField('website_message_apps', []);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [objective, campaignData.website_message_apps]);
+
+    const [pixels, setPixels] = useState(null);      // null = pas encore chargé
+    const [erreurPixels, setErreurPixels] = useState('');
+    const [pixelsNonPartages, setPixelsNonPartages] = useState([]);
+    const pixelChoisi = pixels?.find(p => p.id === campaignData.pixel_id) || null;
+
+    // Sortie explicite pour qui n'a pas de pixel : Trafic n'en exige aucun.
+    // L'utilisateur le demande par un clic ; rien n'est changé en cachette, et
+    // le nom, l'adresse du site et l'audience sont conservés.
+    const passerATrafic = () => {
+        setCampaignData(prev => ({
+            ...prev,
+            objective: 'OUTCOME_TRAFFIC',
+            optimization_goal: '',
+            destination_type: 'WEBSITE',
+            messaging_destinations: [],
+            cost_per_result_goal: '',
+            pixel_id: ''
+        }));
+    };
+
+    useEffect(() => {
+        if (!besoinPixel || pixels !== null) return;
+
+        let annule = false;
+        api.get('/facebook/pixels')
+            .then(res => {
+                if (annule) return;
+                setPixels(res.data?.data?.pixels || []);
+                setPixelsNonPartages(res.data?.data?.business_unattached || []);
+                setErreurPixels('');
+            })
+            .catch(err => {
+                if (annule) return;
+                setPixels([]);
+
+                // Un 404 ne veut pas dire « aucun ensemble de données » : la
+                // route n'existe pas dans le serveur qui répond. Afficher le
+                // message des comptes sans pixel enverrait l'utilisateur
+                // corriger un réglage Meta qui n'a rien à voir.
+                setErreurPixels(
+                    err.response?.status === 404
+                        ? 'Le serveur AdsFacile n’expose pas encore cette fonction : redémarrez-le pour prendre en compte la dernière version.'
+                        : (err.response?.data?.message
+                            || 'Impossible de lire les ensembles de données du compte.')
+                );
+            });
+        return () => { annule = true; };
+    }, [besoinPixel, pixels]);
+
+    useEffect(() => {
+        if (!besoinPixel) {
+            // Changer d'optimisation ne doit pas laisser traîner un pixel : il
+            // partirait chez Meta avec une combinaison qui ne l'attend pas.
+            if (campaignData.pixel_id) updateField('pixel_id', '');
+            return;
+        }
+        if (!pixels) return;
+
+        // Un seul ensemble de données : rien à demander.
+        if (pixels.length === 1 && campaignData.pixel_id !== pixels[0].id) {
+            updateField('pixel_id', pixels[0].id);
+        }
+        // Le pixel retenu n'appartient plus au compte (changement de Page).
+        if (campaignData.pixel_id && !pixels.some(p => p.id === campaignData.pixel_id)) {
+            updateField('pixel_id', pixels.length === 1 ? pixels[0].id : '');
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [besoinPixel, pixels, campaignData.pixel_id]);
 
     // -------------------------------------------------------------------
     // Location API search
@@ -165,6 +465,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
     useEffect(() => {
         if (debouncedLocationSearch.length < 2) {
             setLocationSuggestions([]);
+            setLocationError(null);
             return;
         }
         const searchLocations = async () => {
@@ -175,11 +476,13 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                     `${API_BASE}/api/facebook/targeting/locations?q=${encodeURIComponent(debouncedLocationSearch)}`,
                     { headers: { 'Authorization': `Bearer ${token}` } }
                 );
-                const data = await response.json();
-                setLocationSuggestions(data.suggestions || []);
+                const { suggestions, erreur } = await lireSuggestions(response, "lieux");
+                setLocationSuggestions(suggestions);
+                setLocationError(erreur);
             } catch (err) {
                 console.error('Location search error:', err);
                 setLocationSuggestions([]);
+                setLocationError("La recherche de lieux a échoué. Vérifiez votre connexion internet.");
             } finally {
                 setLoadingLocations(false);
             }
@@ -193,6 +496,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
     useEffect(() => {
         if (debouncedInterestSearch.length < 2) {
             setInterestSuggestions([]);
+            setInterestError(null);
             return;
         }
         const searchInterests = async () => {
@@ -203,11 +507,13 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                     `${API_BASE}/api/facebook/targeting/interests?q=${encodeURIComponent(debouncedInterestSearch)}`,
                     { headers: { 'Authorization': `Bearer ${token}` } }
                 );
-                const data = await response.json();
-                setInterestSuggestions(data.suggestions || []);
+                const { suggestions, erreur } = await lireSuggestions(response, "centres d'intérêt");
+                setInterestSuggestions(suggestions);
+                setInterestError(erreur);
             } catch (err) {
                 console.error('Interest search error:', err);
                 setInterestSuggestions([]);
+                setInterestError("La recherche de centres d'intérêt a échoué. Vérifiez votre connexion internet.");
             } finally {
                 setLoadingInterests(false);
             }
@@ -302,27 +608,39 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
     };
 
     // Budget calculation
+    // Relevé du 8 oct. 2026 : en budget « Total », le résumé multipliait encore
+    // le budget journalier (35 000 affichés pour 30 000 saisis). Et la fin est
+    // incluse — diffusion jusqu'à 23:59 —, donc du 20 au 27 font 8 jours.
     const totalEstimate = useMemo(() => {
+        if (budget_type === 'lifetime') return Number(campaignData.lifetime_budget) || 0;
         if (!start_date) return daily_budget;
         if (!end_date) return daily_budget + ' FCFA/jour (continu)';
-        const days = Math.ceil((new Date(end_date) - new Date(start_date)) / (1000 * 60 * 60 * 24));
+        const days = Math.round((new Date(end_date) - new Date(start_date)) / (1000 * 60 * 60 * 24)) + 1;
         return daily_budget * Math.max(1, days);
-    }, [daily_budget, start_date, end_date]);
+    }, [budget_type, campaignData.lifetime_budget, daily_budget, start_date, end_date]);
 
     // Validation
     const destType = campaignData.destination_type || 'WEBSITE';
     const isValid = targeting.locations.length > 0 &&
         targeting.age_min >= 18 &&
         targeting.age_max <= 65 &&
-        daily_budget >= 1000 &&
+        montantBudget >= minBudget &&
+        (budget_type !== 'lifetime' || !!end_date) &&
         (destType !== 'WEBSITE' || (campaignData.website_url && campaignData.website_url.startsWith('http'))) &&
+        // Publicité d'appel : Meta exige un bouton « Appeler » vers un numéro
+        // au format international. Sans lui, la publicité partait vers le site.
+        (destType !== 'PHONE_CALL' || /^\+\d{8,15}$/.test((campaignData.phone_number || '').replace(/[^\d+]/g, ''))) &&
         // Un ensemble de publicités de messagerie sans application cochée est
         // refusé par Facebook : on l'interdit dès le formulaire.
         (destType !== 'MESSENGER' || (campaignData.messaging_destinations?.length > 0)) &&
         // WhatsApp coché sans numéro produit une publicité sans destinataire :
         // Facebook l'accepte, mais elle ne peut pas être diffusée.
         (!campaignData.messaging_destinations?.includes('whatsapp')
-            || /^\d+$/.test((campaignData.whatsapp_phone_number_id || '').trim()));
+            || /^\d+$/.test((campaignData.whatsapp_phone_number_id || '').trim())) &&
+        // Meta refuse d'optimiser les achats d'un site sans ensemble de données
+        // (sonde du 8 octobre 2026). L'exiger ici évite d'échouer à la dernière
+        // étape ; le bloc « Suivi des achats » donne les deux sorties.
+        (!besoinPixel || Boolean(campaignData.pixel_id));
 
     const rangePct = Math.round(((daily_budget - 1000) / (50000 - 1000)) * 100);
 
@@ -336,8 +654,12 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                 {/* LEFT — Form */}
                 <div className="adset-left">
 
-                    {objective === 'LINK_CLICKS' ? (
-                        <>
+                    {/* La carte Conversion est désormais commune à tous les
+                     * objectifs. Elle n'existait que pour Trafic : les cinq
+                     * autres partageaient un bloc réduit, intitulé « Destination
+                     * du trafic » même pour une campagne Notoriété, sans nom
+                     * d'ensemble ni objectif de performance. */}
+                    <>
                             {/* === NOM DE L'ENSEMBLE DE PUBLICITÉS (spécifique Trafic) === */}
                             <div className="adset-card">
                                 <div className="adset-field-group">
@@ -346,7 +668,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                         type="text"
                                         value={campaignData.adset_name || ''}
                                         onChange={(e) => updateField('adset_name', e.target.value)}
-                                        placeholder="Nouvel ensemble de publicités de Trafic"
+                                        placeholder={`Nouvel ensemble de publicités de ${referentiel?.label || 'campagne'}`}
                                         className="adset-input"
                                     />
                                 </div>
@@ -360,36 +682,48 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                     </div>
                                     <div>
                                         <h3 className="adset-section-title">Conversion</h3>
-                                        <p className="adset-section-subtitle">Choisissez où vous voulez générer du trafic</p>
+                                        <p className="adset-section-subtitle">
+                                            {objective === 'OUTCOME_SALES'
+                                                ? 'Choisissez où vos clients achètent'
+                                                : 'Choisissez où vous voulez envoyer les personnes'}
+                                        </p>
                                     </div>
                                 </div>
 
                                 <div className="adset-field-group">
                                     <label className="adset-label">Lieu de conversion <span className="required">*</span></label>
                                     <div className="adset-destination-group">
-                                        {[
-                                            { value: 'WEBSITE', label: 'Site Web', icon: '🌐', desc: 'Envoyez le trafic vers votre site Web', disabled: false },
-                                            { value: 'APP', label: 'Application', icon: '📲', desc: 'Envoyez le trafic vers votre application', disabled: true },
-                                            { value: 'MESSENGER', label: 'Applications de messagerie', icon: '💬', desc: 'Ouvrez une conversation sur Messenger, Instagram ou WhatsApp', disabled: false },
-                                            { value: 'INSTAGRAM_PROFILE', label: 'Instagram ou Facebook', icon: '📷', desc: 'Envoyez le trafic vers un profil Instagram ou une Page Facebook', disabled: false },
-                                            { value: 'PHONE_CALL', label: 'Appels', icon: '📞', desc: 'Incitez les personnes à appeler votre entreprise', disabled: true },
-                                            { value: 'WEBSITE_AND_PHONE_CALL', label: 'Site Web et appels', icon: '🌐📞', desc: 'Redirigez vers votre site et incitez aux appels', disabled: true }
-                                        ].map(opt => {
-                                            const isSelected = (campaignData.destination_type || 'WEBSITE') === opt.value;
+                                        {/* Les cartes viennent du référentiel serveur,
+                                            filtrées pour cet objectif : Ventes n'affiche
+                                            plus « Instagram ou Facebook », que Meta ne
+                                            propose pas sur cet objectif. */}
+                                        {destinationsProposees.length === 0 && (
+                                            tousObjectifs === null
+                                                ? <p className="adset-hint">Chargement des lieux de conversion…</p>
+                                                : (
+                                                    <div className="adset-warning">
+                                                        <p>
+                                                            Aucun lieu de conversion pour l’objectif
+                                                            {referentiel?.label ? ` « ${referentiel.label} »` : ''}.
+                                                            Le référentiel des objectifs n’a pas pu être lu.
+                                                        </p>
+                                                        <p>Revenez à l’étape précédente et choisissez un autre objectif.</p>
+                                                    </div>
+                                                )
+                                        )}
+                                        {destinationsProposees.map(opt => {
+                                            const isSelected = destType === opt.value;
                                             return (
                                                 <button
                                                     key={opt.value}
                                                     type="button"
-                                                    disabled={opt.disabled}
-                                                    title={opt.disabled ? 'Bientôt disponible' : undefined}
                                                     onClick={() => selectionnerDestination(opt.value)}
                                                     className={`adset-destination-btn ${isSelected ? 'active' : ''}`}
-                                                    style={opt.disabled ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
                                                 >
                                                     <span className="dest-icon">{opt.icon}</span>
                                                     <div className="dest-content">
-                                                        <span className="dest-label">{opt.label}{opt.disabled ? ' (bientôt)' : ''}</span>
-                                                        <span className="dest-desc">{opt.desc}</span>
+                                                        <span className="dest-label">{opt.label}</span>
+                                                        <span className="dest-desc">{opt.description}</span>
                                                     </div>
                                                 </button>
                                             );
@@ -413,6 +747,83 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                     </div>
                                 )}
 
+                                {campaignData.destination_type === 'PHONE_CALL' && (
+                                    <div className="adset-field-group">
+                                        <label className="adset-label" htmlFor="adset-phone">
+                                            Numéro à appeler <span className="required">*</span>
+                                        </label>
+                                        <input
+                                            id="adset-phone"
+                                            type="tel"
+                                            inputMode="tel"
+                                            autoComplete="tel"
+                                            value={campaignData.phone_number || ''}
+                                            onChange={(e) => updateField('phone_number', e.target.value)}
+                                            placeholder="+237 6 99 00 00 00"
+                                            className={`adset-input ${campaignData.phone_number && !/^\+\d{8,15}$/.test(campaignData.phone_number.replace(/[^\d+]/g, '')) ? 'error' : ''}`}
+                                        />
+                                        <p className="adset-hint">
+                                            Avec l’indicatif pays. Le bouton « Appeler » de la publicité compose ce numéro ; il doit être du même pays que l’audience.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Bandeau de messagerie sur une publicité web.
+                                    Le visiteur arrive bien sur le site ; un bouton
+                                    lui propose d'écrire à l'entreprise. Sans cela,
+                                    le numéro relié à la Page n'apparaît nulle part
+                                    dans la publicité.
+
+                                    Absent de Ventes : le Gestionnaire de publicités
+                                    ne le propose pas sur cet objectif, où la
+                                    conversion se produit sur le site — détourner le
+                                    visiteur vers une conversation contredit
+                                    l'optimisation sur les achats. */}
+                                {objective !== 'OUTCOME_SALES'
+                                    && (campaignData.destination_type === 'WEBSITE' || !campaignData.destination_type) && (
+                                    <div className="adset-field-group">
+                                        <label className="adset-label">
+                                            Bouton pour vous écrire <span className="optional">(optionnel)</span>
+                                        </label>
+                                        <div className="messaging-apps">
+                                            {[
+                                                { value: 'whatsapp', label: 'WhatsApp', icon: '📱' },
+                                                { value: 'messenger', label: 'Messenger', icon: '💬' },
+                                                { value: 'instagram', label: 'Instagram', icon: '📷' }
+                                            ].map(app => {
+                                                const choisies = campaignData.website_message_apps || [];
+                                                const coche = choisies.includes(app.value);
+                                                return (
+                                                    <label
+                                                        key={app.value}
+                                                        className={`messaging-app ${coche ? 'active' : ''}`}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            className="messaging-app-checkbox"
+                                                            checked={coche}
+                                                            onChange={() => updateField(
+                                                                'website_message_apps',
+                                                                coche
+                                                                    ? choisies.filter(v => v !== app.value)
+                                                                    : [...choisies, app.value]
+                                                            )}
+                                                        />
+                                                        <span className="dest-icon">{app.icon}</span>
+                                                        <span className="dest-content">
+                                                            <span className="dest-label">{app.label}</span>
+                                                        </span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                        <p className="adset-hint">
+                                            Les visiteurs arrivent sur votre site, avec un bouton pour
+                                            vous écrire. Laissez vide pour une publicité vers le site seul.
+                                        </p>
+                                    </div>
+                                )}
+
                                 {campaignData.destination_type === MESSAGING_UI_VALUE && (
                                     <MessagingDestinationPicker
                                         selected={campaignData.messaging_destinations || ['messenger']}
@@ -425,9 +836,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                 <div className="adset-field-group adset-relative">
                                     <label className="adset-label">Objectif de performance</label>
                                     {(() => {
-                                        const selectedGoal = TRAFFIC_PERFORMANCE_GOALS.find(
-                                            opt => opt.value === (campaignData.optimization_goal || TRAFFIC_DEFAULT_PERFORMANCE_GOAL)
-                                        );
+                                        const selectedGoal = decrireGoal(campaignData.optimization_goal);
                                         return (
                                             <button
                                                 type="button"
@@ -454,11 +863,27 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                             className="adset-dropdown"
                                             style={{ maxHeight: 360, overflowY: 'auto', padding: '10px 0' }}
                                         >
-                                            {TRAFFIC_PERFORMANCE_GOAL_GROUPS.map(grp => (
-                                                <div key={grp.group} style={{ marginBottom: 8 }}>
-                                                    <p style={{ fontWeight: 700, fontSize: 14, margin: '4px 16px 6px' }}>{grp.group}</p>
+                                            {groupesDeGoals.map(grp => (
+                                                <div key={grp.group || 'tous'} style={{ marginBottom: 8 }}>
+                                                    {grp.group && grp.options.length > 0 && (
+                                                        <p style={{
+                                                            margin: '6px 16px 4px',
+                                                            fontSize: 12,
+                                                            fontWeight: 700,
+                                                            textTransform: 'uppercase',
+                                                            letterSpacing: '0.03em',
+                                                            color: '#94a3b8'
+                                                        }}>
+                                                            {grp.group}
+                                                        </p>
+                                                    )}
+                                                    {grp.options.length === 0 && grp.group === null && (
+                                                        <p style={{ fontSize: 13, margin: '4px 16px', color: 'var(--color-text-light)' }}>
+                                                            Choisissez d’abord un lieu de conversion.
+                                                        </p>
+                                                    )}
                                                     {grp.options.map(opt => {
-                                                        const isSelected = (campaignData.optimization_goal || TRAFFIC_DEFAULT_PERFORMANCE_GOAL) === opt.value;
+                                                        const isSelected = campaignData.optimization_goal === opt.value;
                                                         return (
                                                             <label
                                                                 key={opt.value}
@@ -483,7 +908,22 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                                                     style={{ marginTop: 3 }}
                                                                 />
                                                                 <span>
-                                                                    <span style={{ display: 'block', fontWeight: 600, fontSize: 14 }}>{opt.label}</span>
+                                                                    <span style={{ display: 'block', fontWeight: 600, fontSize: 14 }}>
+                                                                        {opt.label}
+                                                                        {opt.value === GOAL_RECOMMANDE && (
+                                                                            <span style={{
+                                                                                marginLeft: 8,
+                                                                                padding: '1px 7px',
+                                                                                borderRadius: 999,
+                                                                                fontSize: 11,
+                                                                                fontWeight: 700,
+                                                                                color: '#059669',
+                                                                                background: '#d1fae5'
+                                                                            }}>
+                                                                                Recommandé
+                                                                            </span>
+                                                                        )}
+                                                                    </span>
                                                                     <span style={{ display: 'block', fontSize: 13, color: '#6B7280' }}>{opt.description}</span>
                                                                 </span>
                                                             </label>
@@ -494,6 +934,142 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                         </div>
                                     )}
                                 </div>
+                                {/* Ensemble de données : affiché seulement quand
+                                    l'optimisation le réclame. */}
+                                {besoinPixel && (
+                                    <div className="adset-field-group">
+                                        <label className="adset-label">
+                                            Suivi des achats <span className="required">*</span>
+                                            <InfoTooltip label="À quoi sert un pixel ?">
+                                                Un pixel (ou « ensemble de données ») est un petit code installé
+                                                sur votre site. Il dit à Facebook qui a acheté ou s’est inscrit,
+                                                pour qu’il montre vos publicités à des personnes qui vous
+                                                ressemblent, et pour mesurer vos ventes. Sans lui, Facebook ne
+                                                peut pas optimiser les achats sur un site.
+                                            </InfoTooltip>
+                                        </label>
+
+                                        {pixels === null && (
+                                            <p className="adset-hint">Lecture de vos ensembles de données…</p>
+                                        )}
+
+                                        {pixels?.length === 1 && (
+                                            <p className="adset-hint">
+                                                ✅ Achats suivis via <strong>{pixels[0].name}</strong>.
+                                                Il est déjà relié à votre compte publicitaire.
+                                            </p>
+                                        )}
+
+                                        {pixels?.length > 1 && (
+                                            <>
+                                                <select
+                                                    value={campaignData.pixel_id || ''}
+                                                    onChange={(e) => updateField('pixel_id', e.target.value)}
+                                                    className="adset-input"
+                                                >
+                                                    <option value="">Choisissez l’ensemble de données</option>
+                                                    {pixels.map(p => (
+                                                        <option key={p.id} value={p.id}>
+                                                            {p.name}{p.last_fired_time ? '' : ' — aucun évènement reçu'}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <p className="adset-hint">
+                                                    Celui qui est installé sur la page où vos clients achètent.
+                                                </p>
+                                            </>
+                                        )}
+
+                                        {/* Serveur pas à jour : cause différente, message différent. */}
+                                        {pixels?.length === 0 && erreurPixels && (
+                                            <div className="adset-warning">
+                                                <p>{erreurPixels}</p>
+                                            </div>
+                                        )}
+
+                                        {pixels?.length === 0 && !erreurPixels && (
+                                            <div className="adset-warning adset-pixel-note">
+                                                <p className="adset-pixel-title">
+                                                    Un pixel est nécessaire pour optimiser les achats.
+                                                </p>
+                                                <p>
+                                                    Sans pixel, choisissez Trafic : il fonctionne sans, et vous suivez
+                                                    impressions, clics et CTR.
+                                                </p>
+
+                                                {pixelsNonPartages.length > 0 && (
+                                                    <div className="adset-pixel-found">
+                                                        <p className="adset-pixel-subtitle">
+                                                            Déjà dans votre entreprise, non partagé avec ce compte :
+                                                        </p>
+                                                        <ul className="adset-pixel-list">
+                                                            {pixelsNonPartages.map(p => (
+                                                                <li key={p.id}>{p.name}</li>
+                                                            ))}
+                                                        </ul>
+                                                        <details className="adset-pixel-steps">
+                                                            <summary>Comment le partager ?</summary>
+                                                            <ol>
+                                                                <li>Ouvrez les Paramètres d’entreprise.</li>
+                                                                <li>Sources de données → Ensembles de données.</li>
+                                                                <li>Choisissez l’ensemble → Ajouter des ressources → ce compte publicitaire.</li>
+                                                                <li>Revenez ici.</li>
+                                                            </ol>
+                                                        </details>
+                                                    </div>
+                                                )}
+
+                                                <p className="adset-pixel-action">
+                                                    <a
+                                                        href="https://business.facebook.com/events_manager2"
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                    >
+                                                        Créer un pixel ↗
+                                                    </a>
+                                                    <button
+                                                        type="button"
+                                                        className="adset-pixel-switch"
+                                                        onClick={passerATrafic}
+                                                    >
+                                                        Passer à Trafic
+                                                    </button>
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {pixelChoisi && !pixelChoisi.last_fired_time && (
+                                            <p className="adset-hint">
+                                                Ce pixel n’a encore reçu aucun évènement : installez son code sur
+                                                votre site pour mesurer vos ventes. Vous pouvez créer la campagne
+                                                dès maintenant.
+                                            </p>
+                                        )}
+
+                                        {campaignData.pixel_id && (
+                                            <>
+                                                <label className="adset-label" style={{ marginTop: 12 }}>
+                                                    Évènement à optimiser
+                                                </label>
+                                                <select
+                                                    value={campaignData.custom_event_type || 'PURCHASE'}
+                                                    onChange={(e) => updateField('custom_event_type', e.target.value)}
+                                                    className="adset-input"
+                                                >
+                                                    <option value="PURCHASE">Achat</option>
+                                                    <option value="INITIATE_CHECKOUT">Commande commencée</option>
+                                                    <option value="ADD_TO_CART">Ajout au panier</option>
+                                                    <option value="COMPLETE_REGISTRATION">Inscription terminée</option>
+                                                </select>
+                                                <p className="adset-hint">
+                                                    💡 L’achat donne les meilleurs résultats, à condition que votre
+                                                    site en enregistre assez chaque semaine.
+                                                </p>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="adset-field-group">
                                     <label className="adset-label">
                                         Objectif de coût par résultat <span className="optional">(optionnel)</span>
@@ -511,75 +1087,7 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                     <p className="adset-hint">💡 Laissez vide pour le coût le plus bas sans plafond</p>
                                 </div>
                             </div>
-                        </>
-                    ) : (
-                        /* === SECTION 0: DESTINATION (autres objectifs) === */
-                        <div className="adset-card">
-                            <div className="adset-section-header">
-                                <div className="adset-section-icon audience">
-                                    <Target size={22} />
-                                </div>
-                                <div>
-                                    <h3 className="adset-section-title">Destination du trafic</h3>
-                                    <p className="adset-section-subtitle">Où voulez-vous envoyer les visiteurs ?</p>
-                                </div>
-                            </div>
-
-                            <div className="adset-field-group">
-                                <label className="adset-label">Type de destination <span className="required">*</span></label>
-                                <div className="adset-destination-group">
-                                    {[
-                                        { value: 'WEBSITE', label: 'Site web', icon: '🌐', desc: 'Rediriger vers votre site' },
-                                        // Une seule entrée pour la messagerie : le choix des
-                                        // applications se fait juste en dessous, en cases à cocher.
-                                        { value: 'MESSENGER', label: 'Applications de messagerie', icon: '💬', desc: 'Messenger, Instagram ou WhatsApp' },
-                                        { value: 'INSTAGRAM_PROFILE', label: 'Profil Instagram', icon: '📷', desc: 'Visiter votre Instagram' }
-                                    ].map(opt => {
-                                        const isSelected = (campaignData.destination_type || 'WEBSITE') === opt.value;
-                                        return (
-                                            <button
-                                                key={opt.value}
-                                                type="button"
-                                                onClick={() => selectionnerDestination(opt.value)}
-                                                className={`adset-destination-btn ${isSelected ? 'active' : ''}`}
-                                            >
-                                                <span className="dest-icon">{opt.icon}</span>
-                                                <div className="dest-content">
-                                                    <span className="dest-label">{opt.label}</span>
-                                                    <span className="dest-desc">{opt.desc}</span>
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {(campaignData.destination_type === 'WEBSITE' || !campaignData.destination_type) && (
-                                <div className="adset-field-group">
-                                    <label className="adset-label">
-                                        URL du site web <span className="required">*</span>
-                                    </label>
-                                    <input
-                                        type="url"
-                                        value={campaignData.website_url || ''}
-                                        onChange={(e) => updateField('website_url', e.target.value)}
-                                        placeholder="https://votre-site.com"
-                                        className={`adset-input ${campaignData.website_url && !campaignData.website_url.startsWith('http') ? 'error' : ''}`}
-                                    />
-                                    <p className="adset-hint">💡 Les visiteurs seront redirigés vers cette URL</p>
-                                </div>
-                            )}
-
-                            {campaignData.destination_type === MESSAGING_UI_VALUE && (
-                                <MessagingDestinationPicker
-                                    selected={campaignData.messaging_destinations || ['messenger']}
-                                    onChange={(apps) => updateField('messaging_destinations', apps)}
-                                        whatsappNumberId={campaignData.whatsapp_phone_number_id || ''}
-                                        onWhatsappNumberIdChange={(v) => updateField('whatsapp_phone_number_id', v)}
-                                />
-                            )}
-                        </div>
-                    )}
+                    </>
 
                     {/* === SECTION A: AUDIENCE === */}
                     <div className="adset-card">
@@ -609,6 +1117,9 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                 />
                                 {loadingLocations && (
                                     <div className="adset-dropdown-loading">🔍 Recherche...</div>
+                                )}
+                                {!loadingLocations && locationError && (
+                                    <div className="adset-dropdown-loading" role="alert">{locationError}</div>
                                 )}
                                 {!loadingLocations && locationSuggestions.length > 0 && (
                                     <div className="adset-dropdown">
@@ -725,6 +1236,9 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                 {loadingInterests && (
                                     <div className="adset-dropdown-loading">🔍 Recherche...</div>
                                 )}
+                                {!loadingInterests && interestError && (
+                                    <div className="adset-dropdown-loading" role="alert">{interestError}</div>
+                                )}
                                 {!loadingInterests && interestSuggestions.length > 0 && (
                                     <div className="adset-dropdown" style={{ maxHeight: '300px', overflowY: 'auto' }}>
                                         {interestSuggestions.map(interest => (
@@ -820,9 +1334,11 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                 <div className="adset-budget-input-wrapper">
                                     <input
                                         type="number"
-                                        value={daily_budget}
-                                        onChange={(e) => updateField('daily_budget', Math.max(1000, parseInt(e.target.value) || 1000))}
-                                        min={1000}
+                                        value={montantBudget}
+                                        onChange={(e) => definirBudget(
+                                            Math.max(minBudget, parseInt(e.target.value) || minBudget)
+                                        )}
+                                        min={minBudget}
                                         step={500}
                                         className="adset-budget-input"
                                     />
@@ -832,18 +1348,18 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                             </div>
 
                             <CurrencyHint
-                                amount={daily_budget}
+                                amount={montantBudget}
                                 suffix={budget_type === 'daily' ? ' / jour' : ' au total'}
                             />
 
                             {/* Slider */}
                             <input
                                 type="range"
-                                min={1000}
+                                min={minBudget}
                                 max={50000}
                                 step={500}
-                                value={daily_budget}
-                                onChange={(e) => updateField('daily_budget', parseInt(e.target.value))}
+                                value={montantBudget}
+                                onChange={(e) => definirBudget(parseInt(e.target.value))}
                                 className="adset-range"
                                 style={{ '--range-pct': `${rangePct}%` }}
                             />
@@ -901,20 +1417,20 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                                 />
                                 <span className="adset-checkbox-label">Diffusion continue (pas de date de fin)</span>
                             </label>
+                            {budget_type === 'lifetime' && !end_date && (
+                                <p className="messaging-app-missing" style={{ marginLeft: 0 }}>
+                                    Un budget total demande une date de fin : Facebook a besoin de
+                                    savoir sur combien de temps le répartir.
+                                </p>
+                            )}
                         </div>
 
-                        {/* Optimization — pour Trafic, ces réglages sont déjà dans la carte "Conversion" plus haut */}
-                        {objective !== 'LINK_CLICKS' && (
-                            <div className="adset-field-group">
-                                <label className="adset-label">Optimisation de la diffusion</label>
-                                <div className="adset-opt-pill">
-                                    <Sparkles size={16} className="opt-icon" />
-                                    <span className="opt-text">
-                                        {OPTIMIZATION_LABELS[objective] || 'Portée maximale'}
-                                    </span>
-                                </div>
-                            </div>
-                        )}
+                        {/* La pastille « Optimisation de la diffusion » a été retirée :
+                            elle affichait un libellé sans jamais renseigner
+                            optimization_goal, laissant croire à un réglage qui
+                            n'était pas transmis. Le véritable sélecteur, dans la
+                            carte Conversion, s'applique désormais à tous les
+                            objectifs. */}
 
                         {/* Total estimate (dark bar) */}
                         <div className="adset-total-bar">
@@ -993,6 +1509,13 @@ const AdSetForm = ({ campaignData, setCampaignData, user, onNext, onPrev }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Dit pourquoi « Suivant » est grisé, au lieu de le laisser deviner. */}
+            {besoinPixel && !campaignData.pixel_id && pixels !== null && (
+                <p className="adset-hint" role="status" style={{ textAlign: 'right' }}>
+                    Choisissez un pixel, ou passez à Trafic, pour continuer.
+                </p>
+            )}
 
             {/* Navigation */}
             <div className="adset-nav">

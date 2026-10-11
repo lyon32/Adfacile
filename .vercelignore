@@ -1,0 +1,13 @@
+# Vercel ne sert que le frontend (Vite). Sans ce fichier, la CLI enverrait
+# aussi le backend, dont backend/.env et ses secrets.
+backend/
+.env
+.env.*
+**/.env
+**/.env.*
+.playwright-mcp/
+.tools/
+.claude/
+scripts/
+docs/
+*.mp4

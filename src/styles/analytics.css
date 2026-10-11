@@ -923,3 +923,10 @@
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
+.analytics-conversions-note {
+    margin: -0.25rem 0 1rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--color-text-light);
+    max-width: 70ch;
+}

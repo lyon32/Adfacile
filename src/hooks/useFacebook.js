@@ -25,6 +25,13 @@ const ETAT_INITIAL = {
     pageName: null,
     accountId: null,
     fbUserId: null,
+    // 'revoked' : Facebook a invalidé le jeton (mot de passe changé, session
+    // réinitialisée). La ligne existe encore en base mais ne sert plus à rien.
+    reason: null,
+    reasonMessage: null,
+    // Fin de l'accès aux données accordé par l'utilisateur (règle Meta des
+    // 90 jours) : sert à prévenir avant la coupure.
+    dataAccessExpiresAt: null,
     error: null,
     // `false` tant qu'aucune réponse n'a été reçue : sert à savoir si un
     // remontage doit réafficher un état de chargement ou réutiliser le cache.
@@ -64,12 +71,15 @@ const chargerStatut = (force = false) => {
     requeteEnCours = api.get('/facebook/status')
         .then(response => {
             if (response.data.success) {
-                const { connected, pageName, accountId, fbUserId } = response.data.data;
+                const { connected, pageName, accountId, fbUserId, reason, message, dataAccessExpiresAt } = response.data.data;
                 majEtat({
                     connected,
                     pageName: pageName ?? null,
                     accountId: accountId ?? null,
-                    fbUserId: fbUserId ?? null
+                    fbUserId: fbUserId ?? null,
+                    reason: reason ?? null,
+                    reasonMessage: message ?? null,
+                    dataAccessExpiresAt: dataAccessExpiresAt ?? null
                 });
             }
         })
@@ -91,6 +101,22 @@ export const resetFacebookStatus = () => {
     etat = ETAT_INITIAL;
     abonnes.forEach(notifier => notifier());
 };
+
+/**
+ * Un appel API a répondu FACEBOOK_RECONNECT_REQUIRED (voir services/api.js) :
+ * la connexion est morte, inutile d'attendre le prochain /facebook/status.
+ */
+if (typeof window !== 'undefined') {
+    window.addEventListener('facebook:reconnect-required', (e) => {
+        majEtat({
+            connected: false,
+            reason: 'revoked',
+            reasonMessage: e.detail?.message ?? null,
+            loading: false,
+            charge: true
+        });
+    });
+}
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -149,6 +175,9 @@ export const useFacebook = () => {
         pageName: snapshot.pageName,
         accountId: snapshot.accountId,
         fbUserId: snapshot.fbUserId,
+        reason: snapshot.reason,
+        reasonMessage: snapshot.reasonMessage,
+        dataAccessExpiresAt: snapshot.dataAccessExpiresAt,
         error: snapshot.error,
         getAuthUrl,
         getStatus,

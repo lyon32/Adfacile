@@ -4,9 +4,10 @@
  */
 
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
     MoreVertical, Play, Pause, Trash2, Eye, TrendingUp,
-    MousePointer, DollarSign, Calendar
+    MousePointer, DollarSign, Calendar, Loader2, BarChart3
 } from 'lucide-react';
 
 const STATUS_BADGES = {
@@ -19,44 +20,38 @@ const STATUS_BADGES = {
 
 const OBJECTIVE_LABELS = {
     'OUTCOME_AWARENESS': 'Notoriété',
+    'OUTCOME_TRAFFIC': 'Trafic',
     'LINK_CLICKS': 'Trafic',
     'OUTCOME_ENGAGEMENT': 'Engagement',
     'OUTCOME_LEADS': 'Prospects',
-    'APP_INSTALLS': 'App',
+    'OUTCOME_APP_PROMOTION': 'Application',
+    'APP_INSTALLS': 'Application',
     'OUTCOME_SALES': 'Ventes'
 };
 
-const CampaignCard = ({ campaign, onUpdateStatus, onDelete }) => {
+const CampaignCard = ({ campaign, onUpdateStatus, onRequestDelete, deleting = false }) => {
     const [menuOpen, setMenuOpen] = useState(false);
-    const [actionLoading, setActionLoading] = useState(false);
+    const [statusLoading, setStatusLoading] = useState(false);
+    const actionLoading = statusLoading || deleting;
 
     const status = STATUS_BADGES[campaign.status] || STATUS_BADGES.paused;
     const objectiveLabel = OBJECTIVE_LABELS[campaign.objective] || campaign.objective;
 
     const handleStatusToggle = async () => {
-        setActionLoading(true);
+        if (actionLoading) return;
+        setStatusLoading(true);
+        setMenuOpen(false);
         try {
             const newStatus = campaign.status === 'active' ? 'paused' : 'active';
             await onUpdateStatus(campaign.id, newStatus);
-        } catch (err) {
-            console.error('Erreur changement statut:', err);
         } finally {
-            setActionLoading(false);
-            setMenuOpen(false);
+            setStatusLoading(false);
         }
     };
 
-    const handleDelete = async () => {
-        if (!window.confirm('Supprimer cette campagne ? Cette action est irréversible.')) return;
-        setActionLoading(true);
-        try {
-            await onDelete(campaign.id);
-        } catch (err) {
-            console.error('Erreur suppression:', err);
-        } finally {
-            setActionLoading(false);
-            setMenuOpen(false);
-        }
+    const handleDelete = () => {
+        setMenuOpen(false);
+        onRequestDelete(campaign);
     };
 
     const formatBudget = (budget) => {
@@ -70,7 +65,10 @@ const CampaignCard = ({ campaign, onUpdateStatus, onDelete }) => {
     };
 
     return (
-        <div className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 overflow-hidden">
+        <div
+            className={`bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 overflow-hidden ${deleting ? 'opacity-50 pointer-events-none' : ''}`}
+            aria-busy={deleting}
+        >
             {/* Header */}
             <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
                 <div className="flex-1 min-w-0">
@@ -162,6 +160,14 @@ const CampaignCard = ({ campaign, onUpdateStatus, onDelete }) => {
                     {campaign.end_date && ` → ${formatDate(campaign.end_date)}`}
                 </span>
                 <div className="flex gap-2">
+                    <Link
+                        to={`/analytics?campaign=${encodeURIComponent(campaign.id)}`}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-gray-700 border border-gray-200 hover:bg-gray-100 transition-colors"
+                        aria-label={`Voir les analytics de ${campaign.name}`}
+                    >
+                        <BarChart3 size={12} />
+                        Analytics
+                    </Link>
                     <button
                         onClick={handleStatusToggle}
                         disabled={actionLoading}
@@ -174,7 +180,9 @@ const CampaignCard = ({ campaign, onUpdateStatus, onDelete }) => {
               ${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}
             `}
                     >
-                        {campaign.status === 'active' ? <Pause size={12} /> : <Play size={12} />}
+                        {statusLoading
+                            ? <Loader2 size={12} className="animate-spin" />
+                            : campaign.status === 'active' ? <Pause size={12} /> : <Play size={12} />}
                         {campaign.status === 'active' ? 'Pause' : 'Activer'}
                     </button>
                 </div>

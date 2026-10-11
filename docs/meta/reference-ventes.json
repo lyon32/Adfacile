@@ -1,0 +1,211 @@
+{
+  "_source": {
+    "objectif": "OUTCOME_SALES (Ventes)",
+    "compte": "act_1086412686842710",
+    "brouillon": {
+      "campaign": "120255710451560583",
+      "adset": "120255710451570583",
+      "ad": "120255710451550583"
+    },
+    "releve": "2026-08-11",
+    "methode": "Lecture des trois écrans « edit/standalone » du Gestionnaire de publicités (campagne, ensemble, publicité), volets « Afficher plus d'options » et « Afficher plus de paramètres » dépliés.",
+    "urls": [
+      "https://adsmanager.facebook.com/adsmanager/manage/campaigns/edit/standalone?act=1086412686842710&selected_campaign_ids=120255710451560583",
+      "https://adsmanager.facebook.com/adsmanager/manage/adsets/edit/standalone?act=1086412686842710&selected_adset_ids=120255710451570583",
+      "https://adsmanager.facebook.com/adsmanager/manage/ads/edit/standalone?act=1086412686842710&selected_ad_ids=120255710451550583"
+    ],
+    "hors_perimetre": [
+      "Lieu de conversion (destination_type) — déjà couvert par AdsFacile",
+      "Objectif de performance (optimization_goal) — déjà couvert par AdsFacile"
+    ]
+  },
+
+  "campaign": [
+    {
+      "id": "special_ad_categories",
+      "libelle_meta": "Catégories publicitaires spéciales",
+      "champ_api": "special_ad_categories",
+      "statut_meta": "demandé explicitement",
+      "gravite": "haute",
+      "attendu": "Valeur choisie par l'utilisateur (crédit, emploi, logement, enjeu social/électoral/politique).",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "special_ad_categories:\\s*\\[\\s*\\]", "attendu_absent": true, "constat": "Tableau vide codé en dur : aucune déclaration possible." }
+    },
+    {
+      "id": "buying_type",
+      "libelle_meta": "Type d'achat (Enchères)",
+      "champ_api": "buying_type",
+      "statut_meta": "affiché",
+      "gravite": "basse",
+      "attendu": "AUCTION explicite.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "buying_type" }
+    },
+    {
+      "id": "campaign_budget_optimization",
+      "libelle_meta": "Stratégie budgétaire → Budget de campagne (Advantage+), activé par défaut sur Ventes",
+      "champ_api": "daily_budget / lifetime_budget au niveau campagne",
+      "statut_meta": "activé par défaut",
+      "gravite": "moyenne",
+      "attendu": "Choix budget de campagne ↔ budget d'ensemble.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "campaignParams[\\s\\S]{0,400}daily_budget" }
+    },
+    {
+      "id": "campaign_bid_strategy",
+      "libelle_meta": "Stratégie d'enchère de campagne (Volume le plus élevé)",
+      "champ_api": "bid_strategy (niveau campagne)",
+      "statut_meta": "affiché",
+      "gravite": "basse",
+      "attendu": "Transmise au niveau campagne quand le budget est au niveau campagne.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "campaignParams[\\s\\S]{0,400}bid_strategy" }
+    },
+    {
+      "id": "advantage_plus_catalog",
+      "libelle_meta": "Publicités de catalogue Advantage+",
+      "champ_api": "promoted_object.product_set_id / product_catalog_id",
+      "statut_meta": "proposé",
+      "gravite": "moyenne",
+      "attendu": "Vente sur catalogue produit.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "product_set_id|product_catalog_id" }
+    },
+    {
+      "id": "ab_test",
+      "libelle_meta": "Test A/B",
+      "champ_api": "POST /adstudies",
+      "statut_meta": "proposé",
+      "gravite": "basse",
+      "attendu": "Comparaison de deux variantes.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "adstudies" }
+    },
+    {
+      "id": "budget_schedule",
+      "libelle_meta": "Planification budgétaire",
+      "champ_api": "budget_schedule_specs",
+      "statut_meta": "proposé",
+      "gravite": "basse",
+      "attendu": "Hausses de budget programmées.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "budget_schedule" }
+    }
+  ],
+
+  "adset": [
+    {
+      "id": "dataset_pixel",
+      "libelle_meta": "Ensemble de données (anciennement pixel) — marqué « * » et bloquant : « Un ensemble de données est requis. Pour publier, configurez votre ensemble de données ou passez à une autre optimisation »",
+      "champ_api": "promoted_object.pixel_id + promoted_object.custom_event_type",
+      "statut_meta": "obligatoire",
+      "gravite": "bloquante",
+      "attendu": "Choix du pixel et de l'évènement de conversion (ACHAT par défaut sur Ventes).",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "pixel_id" }
+    },
+    {
+      "id": "customer_lifecycle",
+      "libelle_meta": "Stratégie de cycle de vie de la clientèle (toutes les audiences / acquérir une nouvelle clientèle)",
+      "champ_api": "promoted_object + paramètres d'audience existante",
+      "statut_meta": "affiché, propre à Ventes",
+      "gravite": "basse",
+      "attendu": "Distinction acquisition / clientèle existante.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "existing_customer|customer_lifecycle" }
+    },
+    {
+      "id": "attribution_spec",
+      "libelle_meta": "Modèle d'attribution (Standard)",
+      "champ_api": "attribution_spec",
+      "statut_meta": "affiché, propre aux conversions",
+      "gravite": "moyenne",
+      "attendu": "Fenêtre d'attribution (clic 7 j / vue 1 j par défaut).",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "attribution_spec" }
+    },
+    {
+      "id": "value_rules",
+      "libelle_meta": "Règles relatives à la valeur",
+      "champ_api": "value_rule_set_id",
+      "statut_meta": "proposé",
+      "gravite": "basse",
+      "attendu": "Enchères ajustées par audience.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "value_rule" }
+    },
+    {
+      "id": "spend_cap",
+      "libelle_meta": "Limites de dépenses pour l'ensemble de publicités",
+      "champ_api": "daily_spend_cap / lifetime_spend_cap",
+      "statut_meta": "proposé",
+      "gravite": "basse",
+      "attendu": "Plafond de dépense par ensemble.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "spend_cap" }
+    },
+    {
+      "id": "heure_de_debut",
+      "libelle_meta": "Programmation — date ET heure de début (« Entrer l'heure … PDT »)",
+      "champ_api": "start_time",
+      "statut_meta": "affiché",
+      "gravite": "basse",
+      "attendu": "Heure de démarrage choisie, pas seulement la date.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "debutDeJournee", "attendu_absent": true, "constat": "Le début est forcé à 00:00 dans le fuseau du compte (debutDeJournee) : l'heure de démarrage n'est jamais demandée." }
+    },
+    {
+      "id": "placements",
+      "libelle_meta": "Placements (Advantage+ activé) + contrôles du compte + brand safety / suitability",
+      "champ_api": "publisher_platforms, brand_safety_content_filter_levels",
+      "statut_meta": "affiché",
+      "gravite": "basse",
+      "attendu": "Au minimum le choix manuel des placements.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "publisher_platforms|brand_safety" }
+    }
+  ],
+
+  "ad": [
+    {
+      "id": "instagram_actor",
+      "libelle_meta": "Identité → Profil Instagram (adsfacile)",
+      "champ_api": "instagram_user_id / instagram_actor_id",
+      "statut_meta": "affiché dans l'identité",
+      "gravite": "haute",
+      "attendu": "L'identité Instagram de la publicité.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "instagram_(user|actor)_id" }
+    },
+    {
+      "id": "tracking_specs",
+      "libelle_meta": "Suivi — « Suivez les ensembles de données d'évènements qui contiennent les conversions que votre publicité pourrait motiver »",
+      "champ_api": "tracking_specs",
+      "statut_meta": "affiché",
+      "gravite": "moyenne",
+      "attendu": "Rattachement du pixel au suivi de la publicité.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "tracking_specs" }
+    },
+    {
+      "id": "format_carrousel",
+      "libelle_meta": "Format → Image/Vidéo unique ou Carrousel",
+      "champ_api": "object_story_spec.link_data.child_attachments",
+      "statut_meta": "affiché",
+      "gravite": "moyenne",
+      "attendu": "Carrousel produit, format majeur des ventes.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "child_attachments" }
+    },
+    {
+      "id": "video",
+      "libelle_meta": "Format → Vidéo unique",
+      "champ_api": "POST /advideos + video_data",
+      "statut_meta": "affiché",
+      "gravite": "moyenne",
+      "attendu": "Publicité vidéo.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "axios\\.post\\([^)]{0,120}advideos" }
+    },
+    {
+      "id": "cta_vente",
+      "libelle_meta": "Bouton d'appel à l'action d'une publicité de vente (Acheter)",
+      "champ_api": "call_to_action.type = SHOP_NOW",
+      "statut_meta": "attendu sur Ventes",
+      "gravite": "moyenne",
+      "attendu": "Défaut adapté à l'objectif.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "SHOP_NOW", "constat": "Le défaut est LEARN_MORE quel que soit l'objectif." }
+    },
+    {
+      "id": "creative_test",
+      "libelle_meta": "Test de contenu publicitaire (jusqu'à 7 versions)",
+      "champ_api": "asset_feed_spec (variantes)",
+      "statut_meta": "proposé",
+      "gravite": "basse",
+      "attendu": "Plusieurs textes / visuels.",
+      "sonde": { "fichier": "backend/src/services/facebookAdsService.js", "motif": "creative_test|asset_customization_rules" }
+    }
+  ]
+}

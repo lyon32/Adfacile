@@ -18,11 +18,14 @@ const USER_ID = 'c42ffbf3-e9bf-44af-90cf-044b9feb8e74';
 const SCOPES_ATTENDUS = [
     'pages_show_list',
     'ads_management',
+    'ads_read',
     'business_management',
     'pages_read_engagement',
     'instagram_basic',
-    'instagram_manage_insights',
     'whatsapp_business_management'
+    // Retirées : pages_manage_ads, leads_retrieval (aucun appel /leadgen_forms
+    // ni /leads dans le code) et instagram_manage_insights (jamais appelée).
+    // Demander ce qu'on n'utilise pas est un motif de refus à la revue Meta.
 ];
 
 const BASE_ENV = {
@@ -31,7 +34,9 @@ const BASE_ENV = {
     FACEBOOK_REDIRECT_URI: REDIRECT_URI,
     FACEBOOK_GRAPH_VERSION: 'v23.0',
     // Requis depuis que le state OAuth est signé (voir utils/oauthState.js)
-    JWT_SECRET: 'secret-de-test-pour-le-state-oauth'
+    JWT_SECRET: 'secret-de-test-pour-le-state-oauth',
+    // Absent par défaut : les autres tests vérifient le repli sur scope.
+    FACEBOOK_LOGIN_CONFIG_ID: undefined
 };
 
 /**
@@ -75,6 +80,17 @@ afterEach(() => {
 });
 
 describe('getAuthUrl', () => {
+    it('Facebook Login for Business : config_id remplace scope quand il est configuré', async () => {
+        // Relevé réel (8 oct. 2026) : l'app « Entreprise » renvoyait « Feature
+        // Unavailable » au dialogue appelé avec scope, même en mode Développement.
+        const url = await genererUrl({ FACEBOOK_LOGIN_CONFIG_ID: '1588765496066346' });
+
+        expect(url.searchParams.get('config_id')).toBe('1588765496066346');
+        expect(url.searchParams.has('scope')).toBe(false);
+        expect(url.searchParams.get('response_type')).toBe('code');
+        expect(url.searchParams.get('redirect_uri')).toBe(REDIRECT_URI);
+    });
+
     it('cible le dialogue OAuth de la version configurée', async () => {
         const url = await genererUrl();
 
@@ -89,7 +105,7 @@ describe('getAuthUrl', () => {
         expect(url.searchParams.get('redirect_uri')).toBe(REDIRECT_URI);
     });
 
-    it('demande les 7 permissions attendues', async () => {
+    it('demande les permissions attendues, sans en omettre', async () => {
         const url = await genererUrl();
         const scopes = url.searchParams.get('scope').split(',');
 

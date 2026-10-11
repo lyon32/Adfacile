@@ -80,7 +80,7 @@ node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
 | `META_APP_ID` | Identifiant de l'application Meta | W J | ○ | nombre |
 | `META_APP_SECRET` | Secret de l'application : échange du code OAuth **et** vérification de `X-Hub-Signature-256` des webhooks | W J | ○ | 32 caractères hexadécimaux |
 | `META_LOGIN_CONFIG_ID` | Configuration « Facebook Login for Business » (autorisations demandées) | W | ○ | nombre |
-| `META_GRAPH_API_VERSION` | Version de l'API Graph appelée. Le code AdFacile actuel utilise `v25.0` par défaut (`backend/src/config/facebook.js`). | W J | ○ | `v25.0` |
+| `META_GRAPH_API_VERSION` | Version de l'API Graph appelée. Le code AdFacile actuel utilise `v26.0` par défaut (`backend/src/config/facebook.js`, depuis le commit 9b081ca de `main`). | W J | ○ | `v26.0` |
 | `META_WEBHOOK_VERIFY_TOKEN` | Jeton comparé à `hub.verify_token` lors de l'abonnement aux webhooks | W | ○ | texte aléatoire |
 
 ### 1.5 SasPay

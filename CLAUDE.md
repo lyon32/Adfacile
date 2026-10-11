@@ -30,7 +30,7 @@ Lu au début de **chaque** session. Court par principe : le détail est dans `do
 - **`Idempotency-Key`** sur toute action qui dépense de l'argent, des crédits ou un quota ; une tâche de fond reçoit des identifiants et peut être relancée sans double effet.
 - **Textes affichés via `t('domaine.ecran.element')`**, en FR **et** en EN dans le même commit.
 - **Tests** : unitaires pour les règles, les 5 cas pour chaque route (succès, 401, 404 autre espace, 403 rôle, 400 corps invalide), un test qui échoue **avant** de corriger un défaut ; le nom du test cite l'exigence (`TR-…`, `EC-…`). Détail : [TESTING](docs/architecture/TESTING.md).
-- **Prouver avant d'annoncer** : commandes lancées et résultat lu ; pour un écran, captures sur `http://app.localhost:5173` à **390 px et 1280 px**. Rien n'est « fonctionnel » sans preuve à l'écran.
+- **Prouver avant d'annoncer** : commandes lancées et résultat lu ; pour un écran, captures sur `http://app.localhost:5173` à **390 px et 1280 px**. Rien n'est « fonctionnel » sans preuve à l'écran. Le serveur se lance avec l'**outil de prévisualisation** (`.claude/launch.json`), pas avec Bash ; recharger, lire la console et la page. Ne jamais demander à la personne de vérifier à la main.
 - **Documentation à jour avant d'utiliser une bibliothèque ou une API** (outil Context7 s'il est disponible, sinon la documentation officielle) : tes connaissances peuvent être dépassées.
 - **Demander plutôt que supposer.** Si une règle manque ou si deux documents se contredisent, pose la question. La personne a été explicite : « je ne veux pas des suppositions ».
 - **Commits** au format *Conventional Commits*, en français : `feat(credits): libérer les crédits des visuels échoués` (CONVENTIONS §4).
@@ -51,7 +51,16 @@ Lu au début de **chaque** session. Court par principe : le détail est dans `do
 - Ajouter une dépendance sans version exacte publiée depuis **au moins 14 jours** ni justification dans la PR (CONVENTIONS §1).
 - Changer de port : l'application tourne **toujours sur 5173**.
 - `git push --force` sur `main`, `--no-verify`, fusionner avec une CI rouge, **lancer une mise en production** (c'est la personne qui lance `release.yml`).
+- **Toucher aux couleurs** (voir ci-dessous).
 - Écrire « Facebook » dans le nom ou la marque d'EasAds (on dit « Meta » ; « Page Facebook » reste le nom de l'objet), ou mentionner AdFacile dans le produit.
+
+### Règle absolue : les couleurs sont figées
+
+Les couleurs du produit sont celles du [design system](docs/design/DESIGN-SYSTEM.md), reprises dans les jetons de `packages/ui`. **Ne jamais modifier, remplacer, « harmoniser » ou « moderniser » une couleur**, même quand une compétence de design propose une autre direction : on garde la palette et on applique seulement le reste (espacement, hiérarchie, typographie, états).
+
+- Ne pas changer la valeur d'un jeton de couleur ; ne pas écrire de couleur en dur : réutiliser un jeton existant.
+- Besoin réel d'une nouvelle couleur : le signaler à la personne et **attendre sa décision**.
+- Seule exception : une demande explicite de la personne portant sur cette couleur précise.
 
 ---
 
@@ -119,7 +128,11 @@ La session est finie quand **tout** ce qui suit est vrai, avec la preuve dans la
 
 ## 6. Compétences (skills) à appeler
 
-Installées sur le poste de la personne. Appelle-les avec l'outil Skill **avant** la tâche concernée. Si elles ne sont pas disponibles dans ton environnement, suis les documents de `docs/`.
+**Règle n° 1 : nommer le domaine de la tâche, appeler la compétence, puis seulement coder.** Jamais l'inverse, y compris pour une « petite » modification (un bouton, une marge, une requête) : c'est là qu'on s'écarte des conventions. Une tâche mixte appelle plusieurs compétences. Aucune ligne ne correspond : appeler `find-skills`.
+
+Deux sources : les compétences **du dépôt** (`.claude/skills/`, disponibles pour tout agent qui clone le projet) et celles **installées sur le poste** de la personne. Si une compétence n'est pas disponible dans ton environnement, suis les documents de `docs/`.
+
+Compétences du dépôt : `turborepo` (monodépôt, S01), `shadcn` (composants shadcn, S08), `unit-tests`, `test-driven-development`, `debugging-and-error-recovery`, `source-driven-development` (vérifier la documentation d'une bibliothèque avant de l'utiliser), `doubt-driven-development`, `pr-open` (ouvrir une pull request).
 
 
 | Quand                                         | Compétence                                                                                                                             |
@@ -129,14 +142,17 @@ Installées sur le poste de la personne. Appelle-les avec l'outil Skill **avant*
 | Écrire du code testé                        | `superpowers:test-driven-development`, `javascript-testing-patterns`, `e2e-testing-patterns`                                            |
 | Un défaut, un test qui échoue               | `superpowers:systematic-debugging`, `debugging-strategies`                                                                              |
 | Avant de dire « c'est fait »                | `superpowers:verification-before-completion`                                                                                            |
-| Fin de session, pull request                  | `superpowers:finishing-a-development-branch`, `superpowers:requesting-code-review`                                                      |
-| **Tout écran ou composant**                  | **`frontend-design`** (obligatoire), puis `tailwind-design-system`, `design-system-patterns`, `responsive-design`, `interaction-design` |
-| Accessibilité                                | `accessibility-compliance`, `wcag-audit-patterns`                                                                                       |
+| Fin de session, pull request                  | `superpowers:finishing-a-development-branch`, `pr-open` (du dépôt), `superpowers:requesting-code-review`, `code-review-excellence`      |
+| **Tout écran ou composant**                  | **`frontend-design`** (obligatoire), puis `typography`, `tailwind-design-system`, `design-system-patterns`, `responsive-design`, `interaction-design` — **sans jamais toucher aux couleurs** (§3) |
+| Composants shadcn                             | `shadcn` (du dépôt)                                                                                                                     |
+| Monodépôt, Turborepo                          | `turborepo` (du dépôt)                                                                                                                  |
+| Accessibilité                                | `accessibility-compliance`, puis `accesslint-audit`, `wcag-audit-patterns`                                                              |
 | Next.js, React, état                         | `nextjs-app-router-patterns`, `react-best-practices`, `react-state-management`, `composition-patterns`, `typescript-advanced-types`     |
 | Base de données                              | `postgresql`, `database-migration`, `sql-optimization-patterns`                                                                         |
 | API, erreurs, connexion                       | `api-design-principles`, `openapi-spec-generation`, `error-handling-patterns`, `auth-implementation-patterns`                           |
 | Prompts des agents                            | `prompt-engineering-patterns`                                                                                                           |
-| Animations du site public                     | `gsap-react`, `gsap-scrolltrigger`, `gsap-performance`                                                                                  |
+| Animations du site public                     | `gsap-core`, `gsap-react`, `gsap-scrolltrigger`, `gsap-performance`, `improve-animations`                                               |
+| Git avancé, historique                        | `git-advanced-workflows`                                                                                                                |
 | Référencement du site public                | `seo-technical`, `seo-schema`, `seo-hreflang`, `seo-sitemap`                                                                            |
 | CI, déploiement                              | `github-actions-templates`, `deployment-pipeline-design`, `deploy-to-vercel`, `vercel-cli-with-tokens`                                  |
 | Mise à jour de dépendances                  | `dependency-upgrade`                                                                                                                    |

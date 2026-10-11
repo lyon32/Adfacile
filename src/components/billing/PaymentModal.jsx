@@ -1,32 +1,43 @@
 /**
- * PaymentModal — Modal de paiement Mobile Money via CamPay
+ * PaymentModal — Paiement Mobile Money via SasPay (multi-pays)
  * AdsFacile Frontend
  *
- * 3 étapes : Récapitulatif → Méthode + Numéro → Confirmation/Attente
- * Polling CamPay toutes les 3s pour vérifier le statut du paiement
+ * 3 étapes : Récapitulatif → Pays, réseau, numéro → Confirmation/Attente
+ *
+ * Les pays, réseaux, frais et codes OTP viennent du backend
+ * (/billing/payment-networks), lui-même alimenté par SasPay : aucun réseau
+ * n'est codé en dur. Frais payés par le client, affichés avant de payer.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
     X as XIcon, ArrowRight, Phone, Loader2,
-    CheckCircle2, AlertTriangle, Shield, Info
+    CheckCircle2, AlertTriangle, Shield, Info, Globe, ExternalLink
 } from 'lucide-react';
 import api from '../../services/api';
 
+const formatMontant = (n, devise) => `${Number(n || 0).toLocaleString('fr-FR')} ${devise === 'XAF' || devise === 'XOF' ? 'FCFA' : devise}`;
+
 const PaymentModal = ({ plan, onClose, onSuccess, onRefreshUser }) => {
     const [step, setStep] = useState(1);
-    const [paymentMethod, setPaymentMethod] = useState('mtn');
+    const [pays, setPays] = useState(null); // null = chargement
+    const [chargementErreur, setChargementErreur] = useState('');
+    const [countryCode, setCountryCode] = useState('');
+    const [networkCode, setNetworkCode] = useState('');
     const [phone, setPhone] = useState('');
+    const [otp, setOtp] = useState('');
     const [phoneError, setPhoneError] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [paymentData, setPaymentData] = useState(null);
-    const [status, setStatus] = useState('pending'); // pending | successful | failed | timeout
-    const [timer, setTimer] = useState(180); // 3 min
+    const [status, setStatus] = useState('pending'); // pending | successful | failed | timeout | activation_failed
+    const [timer, setTimer] = useState(300);
+    const [smsOtp, setSmsOtp] = useState('');
+    const [smsOtpOuvert, setSmsOtpOuvert] = useState(false);
+    const [smsOtpErreur, setSmsOtpErreur] = useState('');
     const intervalRef = useRef(null);
     const pollingRef = useRef(null);
 
-    // Nettoyage au démontage
     useEffect(() => {
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
@@ -34,11 +45,49 @@ const PaymentModal = ({ plan, onClose, onSuccess, onRefreshUser }) => {
         };
     }, []);
 
-    // ─── Initier le paiement CamPay ───
+    // ─── Pays et réseaux disponibles (frais calculés pour ce plan) ───
+    useEffect(() => {
+        if (!plan) return;
+        let annule = false;
+        api.get('/billing/payment-networks', { params: { plan: plan.id } })
+            .then(res => {
+                if (annule) return;
+                const liste = res.data.data?.countries || [];
+                setPays(liste);
+                const defaut = liste.find(p => p.code === 'CM') || liste[0];
+                if (defaut) {
+                    setCountryCode(defaut.code);
+                    setNetworkCode(defaut.networks[0]?.code || '');
+                }
+            })
+            .catch(err => {
+                if (annule) return;
+                setPays([]);
+                setChargementErreur(err.response?.data?.message || 'Impossible de charger les moyens de paiement.');
+            });
+        return () => { annule = true; };
+    }, [plan]);
+
+    const paysChoisi = useMemo(() => (pays || []).find(p => p.code === countryCode) || null, [pays, countryCode]);
+    const reseau = useMemo(() => paysChoisi?.networks.find(n => n.code === networkCode) || null, [paysChoisi, networkCode]);
+
+    const choisirPays = (code) => {
+        setCountryCode(code);
+        const p = (pays || []).find(x => x.code === code);
+        setNetworkCode(p?.networks[0]?.code || '');
+        setOtp('');
+        setError('');
+    };
+
+    // ─── Initier le paiement ───
     const handlePay = async () => {
-        const cleaned = phone.replace(/\s/g, '');
-        if (!cleaned || cleaned.length < 9) {
-            setPhoneError('Numéro invalide (9 chiffres après +237)');
+        const cleaned = phone.replace(/[^\d+]/g, '');
+        if (cleaned.replace('+', '').length < 8) {
+            setPhoneError('Numéro trop court');
+            return;
+        }
+        if (reseau?.otp_required && !otp.trim()) {
+            setError('Saisissez le code de paiement obtenu sur votre téléphone.');
             return;
         }
         setPhoneError('');
@@ -48,57 +97,71 @@ const PaymentModal = ({ plan, onClose, onSuccess, onRefreshUser }) => {
         try {
             const res = await api.post('/billing/upgrade', {
                 target_plan: plan.id,
-                payment_method: paymentMethod,
-                phone: `+237${cleaned}`
+                country: countryCode,
+                network: networkCode,
+                phone: cleaned,
+                otp: reseau?.otp_required ? otp.trim() : undefined
             });
 
             if (res.data.success) {
-                setPaymentData(res.data.data);
+                const data = res.data.data;
+                setPaymentData(data);
                 setStep(3);
-                startPolling(res.data.data.reference);
+                // Certains réseaux (Wave, Orange Money…) paient sur une page
+                // SasPay : on l'ouvre dans un nouvel onglet et on continue de
+                // vérifier le statut ici.
+                if (data.checkout_url) window.open(data.checkout_url, '_blank', 'noopener');
+                startPolling(data.reference);
                 startTimer();
             }
         } catch (err) {
-            const msg = err.response?.data?.message || 'Erreur lors du paiement';
-            setError(msg);
+            setError(err.response?.data?.message || 'Erreur lors du paiement');
         } finally {
             setLoading(false);
         }
     };
 
-    // ─── Polling CamPay toutes les 3s ───
+    const terminer = async (nouveau) => {
+        clearInterval(pollingRef.current);
+        clearInterval(intervalRef.current);
+        setStatus(nouveau);
+        if (nouveau === 'successful') {
+            if (onRefreshUser) {
+                try { await onRefreshUser(); } catch (e) { console.error('refreshUser error:', e); }
+            }
+            if (onSuccess) onSuccess(plan);
+        }
+    };
+
+    // ─── Vérification du statut toutes les 3 s ───
     const startPolling = (reference) => {
         pollingRef.current = setInterval(async () => {
             try {
-                const res = await api.get('/billing/payment/status', {
-                    params: { reference }
-                });
-
-                const newStatus = res.data.data?.status;
-
-                if (newStatus === 'successful') {
-                    clearInterval(pollingRef.current);
-                    clearInterval(intervalRef.current);
-                    setStatus('successful');
-                    // Refresh user data in AuthContext (plan, credits, etc.)
-                    if (onRefreshUser) {
-                        try { await onRefreshUser(); } catch (e) { console.error('refreshUser error:', e); }
-                    }
-                    if (onSuccess) onSuccess(plan);
-                } else if (newStatus === 'failed') {
-                    clearInterval(pollingRef.current);
-                    clearInterval(intervalRef.current);
-                    setStatus('failed');
-                }
+                const res = await api.get('/billing/payment/status', { params: { reference } });
+                const nouveau = res.data.data?.status;
+                if (['successful', 'failed', 'activation_failed'].includes(nouveau)) await terminer(nouveau);
             } catch (err) {
                 console.error('Status check error:', err);
             }
         }, 3000);
     };
 
-    // ─── Timer 3 minutes ───
+    // ─── Code reçu par SMS après la demande (certains réseaux) ───
+    const envoyerSmsOtp = async () => {
+        if (!smsOtp.trim()) return;
+        setSmsOtpErreur('');
+        try {
+            const res = await api.post('/billing/payment/confirm-otp', { reference: paymentData.reference, otp: smsOtp.trim() });
+            const nouveau = res.data.data?.status;
+            if (['successful', 'failed', 'activation_failed'].includes(nouveau)) await terminer(nouveau);
+            else setSmsOtpOuvert(false);
+        } catch (err) {
+            setSmsOtpErreur(err.response?.data?.message || 'Code refusé');
+        }
+    };
+
     const startTimer = () => {
-        setTimer(180);
+        setTimer(300);
         intervalRef.current = setInterval(() => {
             setTimer(prev => {
                 if (prev <= 1) {
@@ -112,35 +175,43 @@ const PaymentModal = ({ plan, onClose, onSuccess, onRefreshUser }) => {
         }, 1000);
     };
 
-    const formatTimer = (s) => {
-        const min = Math.floor(s / 60);
-        const sec = s % 60;
-        return `${min}:${sec.toString().padStart(2, '0')}`;
+    const recommencer = () => {
+        setStep(2);
+        setStatus('pending');
+        setPaymentData(null);
+        setSmsOtp('');
+        setSmsOtpOuvert(false);
     };
+
+    const formatTimer = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
     if (!plan) return null;
 
+    // Hors FCFA, le prix part en XAF et SasPay convertit : on affiche donc le
+    // montant en FCFA, et les frais (calculés par SasPay) ne sont pas connus.
+    const devise = reseau?.amount_currency || paysChoisi?.currency || 'XAF';
+    const totalAffiche = reseau?.total ?? reseau?.amount ?? plan.price;
+
     return (
         <div className="pm-backdrop" onClick={onClose}>
-            <div className="pm-modal" onClick={e => e.stopPropagation()}>
-                {/* ─── Header ─── */}
+            <div className="pm-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
                 <div className="pm-header">
                     <h3>
                         {step === 1 && 'Récapitulatif'}
                         {step === 2 && 'Mode de paiement'}
                         {step === 3 && (
-                            status === 'successful' ? 'Paiement confirmé !' :
+                            status === 'successful' ? 'Paiement confirmé' :
                                 status === 'failed' ? 'Paiement échoué' :
                                     status === 'timeout' ? 'Délai expiré' :
-                                        'En attente de confirmation...'
+                                        status === 'activation_failed' ? 'Paiement reçu' :
+                                            'En attente de confirmation…'
                         )}
                     </h3>
-                    <button className="pm-close" onClick={onClose}>
+                    <button className="pm-close" onClick={onClose} aria-label="Fermer">
                         <XIcon size={20} />
                     </button>
                 </div>
 
-                {/* ─── Steps indicator ─── */}
                 <div className="pm-steps">
                     {[1, 2, 3].map(s => (
                         <div key={s} className={`pm-step ${step >= s ? 'active' : ''} ${step === s ? 'current' : ''}`}>
@@ -156,7 +227,7 @@ const PaymentModal = ({ plan, onClose, onSuccess, onRefreshUser }) => {
                             <div className="pm-plan-card">
                                 <h4>{plan.name}</h4>
                                 <div className="pm-plan-price">
-                                    <span className="pm-amount">{plan.price.toLocaleString()}</span>
+                                    <span className="pm-amount">{plan.price.toLocaleString('fr-FR')}</span>
                                     <span className="pm-currency">FCFA/{plan.period}</span>
                                 </div>
                             </div>
@@ -167,11 +238,6 @@ const PaymentModal = ({ plan, onClose, onSuccess, onRefreshUser }) => {
                                 ))}
                             </ul>
 
-                            <div className="pm-annual-hint">
-                                💡 Économisez <strong>{Math.round(plan.price * 12 * 0.17).toLocaleString()} FCFA</strong> avec un paiement annuel
-                                <span className="pm-badge">-17%</span>
-                            </div>
-
                             <button className="pm-btn primary" onClick={() => setStep(2)}>
                                 Continuer vers le paiement
                                 <ArrowRight size={16} />
@@ -179,60 +245,85 @@ const PaymentModal = ({ plan, onClose, onSuccess, onRefreshUser }) => {
                         </div>
                     )}
 
-                    {/* ═══ ÉTAPE 2 : Méthode de paiement ═══ */}
+                    {/* ═══ ÉTAPE 2 : Pays, réseau, numéro ═══ */}
                     {step === 2 && (
                         <div className="pm-payment">
-                            <div className="pm-methods">
-                                <button
-                                    className={`pm-method ${paymentMethod === 'mtn' ? 'active' : ''}`}
-                                    onClick={() => setPaymentMethod('mtn')}
-                                >
-                                    <span className="pm-method-logo mtn">MTN</span>
-                                    <span>MTN Mobile Money</span>
-                                </button>
-                                <button
-                                    className={`pm-method ${paymentMethod === 'orange' ? 'active' : ''}`}
-                                    onClick={() => setPaymentMethod('orange')}
-                                >
-                                    <span className="pm-method-logo orange">OM</span>
-                                    <span>Orange Money</span>
-                                </button>
-                            </div>
+                            {pays === null && (
+                                <p className="pm-loading-line"><Loader2 size={16} className="pm-spin" /> Chargement des moyens de paiement…</p>
+                            )}
 
-                            <div className="pm-field">
-                                <label htmlFor="pm-phone">
-                                    <Phone size={14} /> Numéro de téléphone
-                                </label>
-                                <div className="pm-phone-input">
-                                    <span className="pm-prefix">+237</span>
-                                    <input
-                                        id="pm-phone"
-                                        type="tel"
-                                        value={phone}
-                                        onChange={e => {
-                                            setPhone(e.target.value.replace(/\D/g, '').slice(0, 9));
-                                            setPhoneError('');
-                                        }}
-                                        placeholder="6XX XX XX XX"
-                                        maxLength={9}
-                                    />
+                            {pays !== null && pays.length === 0 && (
+                                <div className="pm-error-box">
+                                    <AlertTriangle size={16} />
+                                    {chargementErreur || 'Aucun moyen de paiement disponible pour le moment.'}
                                 </div>
-                                {phoneError && <span className="pm-error">{phoneError}</span>}
-                            </div>
+                            )}
 
-                            {/* Info sandbox */}
-                            {paymentData?.sandbox_mode && (
-                                <div className="pm-sandbox-info">
-                                    <Info size={14} />
-                                    <div>
-                                        <strong>Mode Sandbox</strong>
-                                        <p>Montant test: {paymentData.sandbox_info?.message}</p>
-                                        <p className="pm-test-nums">
-                                            MTN OK: 677777777 • MTN FAIL: 677777770<br />
-                                            Orange OK: 699999999 • Orange FAIL: 699999990
-                                        </p>
+                            {pays && pays.length > 0 && (
+                                <>
+                                    <div className="pm-field">
+                                        <label htmlFor="pm-country"><Globe size={14} /> Pays</label>
+                                        <div className="pm-phone-input">
+                                            <select id="pm-country" value={countryCode} onChange={e => choisirPays(e.target.value)}>
+                                                {pays.map(p => (
+                                                    <option key={p.code} value={p.code}>{p.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
                                     </div>
-                                </div>
+
+                                    <div className="pm-methods" role="radiogroup" aria-label="Réseau de paiement">
+                                        {paysChoisi?.networks.map(n => (
+                                            <button
+                                                key={n.code}
+                                                type="button"
+                                                role="radio"
+                                                aria-checked={networkCode === n.code}
+                                                className={`pm-method ${networkCode === n.code ? 'active' : ''}`}
+                                                onClick={() => { setNetworkCode(n.code); setOtp(''); setError(''); }}
+                                            >
+                                                <span>{n.name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="pm-field">
+                                        <label htmlFor="pm-phone"><Phone size={14} /> Numéro Mobile Money</label>
+                                        <div className="pm-phone-input">
+                                            <input
+                                                id="pm-phone"
+                                                type="tel"
+                                                inputMode="tel"
+                                                autoComplete="tel"
+                                                value={phone}
+                                                onChange={e => { setPhone(e.target.value.replace(/[^\d+\s]/g, '').slice(0, 18)); setPhoneError(''); }}
+                                                placeholder="Avec l’indicatif, ex. +237 6 99 00 00 00"
+                                            />
+                                        </div>
+                                        {phoneError && <span className="pm-error">{phoneError}</span>}
+                                    </div>
+
+                                    {reseau?.otp_required && (
+                                        <div className="pm-field">
+                                            <label htmlFor="pm-otp"><Info size={14} /> Code de paiement</label>
+                                            <p className="pm-hint">{reseau.otp_instructions}</p>
+                                            <div className="pm-phone-input">
+                                                <input id="pm-otp" type="text" inputMode="numeric" value={otp} onChange={e => setOtp(e.target.value.slice(0, 12))} />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {reseau && (
+                                        <div className="pm-fee-recap">
+                                            <span>Abonnement {plan.name}</span><span>{formatMontant(reseau.amount, devise)}</span>
+                                            <span>Frais Mobile Money</span>
+                                            <span>{reseau.fee === null ? 'Calculés par SasPay' : formatMontant(reseau.fee, devise)}</span>
+                                            {reseau.total !== null && (
+                                                <><strong>Total débité</strong><strong>{formatMontant(reseau.total, devise)}</strong></>
+                                            )}
+                                        </div>
+                                    )}
+                                </>
                             )}
 
                             {error && (
@@ -244,19 +335,17 @@ const PaymentModal = ({ plan, onClose, onSuccess, onRefreshUser }) => {
 
                             <div className="pm-secure">
                                 <Shield size={14} />
-                                <span>Paiement sécurisé par CamPay</span>
+                                <span>Paiement sécurisé par SasPay</span>
                             </div>
 
                             <button
                                 className="pm-btn primary"
                                 onClick={handlePay}
-                                disabled={loading}
+                                disabled={loading || !reseau}
                             >
-                                {loading ? (
-                                    <><Loader2 size={16} className="pm-spin" /> Traitement...</>
-                                ) : (
-                                    <>Payer {plan.price.toLocaleString()} FCFA maintenant</>
-                                )}
+                                {loading
+                                    ? <><Loader2 size={16} className="pm-spin" /> Traitement…</>
+                                    : <>Payer {formatMontant(totalAffiche, devise)}{reseau && reseau.fee === null ? ' + frais' : ''}</>}
                             </button>
 
                             <button className="pm-btn secondary" onClick={() => setStep(1)}>
@@ -265,7 +354,7 @@ const PaymentModal = ({ plan, onClose, onSuccess, onRefreshUser }) => {
                         </div>
                     )}
 
-                    {/* ═══ ÉTAPE 3 : Confirmation / Polling ═══ */}
+                    {/* ═══ ÉTAPE 3 : Confirmation / attente ═══ */}
                     {step === 3 && (
                         <div className="pm-confirm">
                             {status === 'pending' && (
@@ -273,19 +362,37 @@ const PaymentModal = ({ plan, onClose, onSuccess, onRefreshUser }) => {
                                     <div className="pm-waiting">
                                         <Loader2 size={48} className="pm-spin" />
                                     </div>
-                                    <h4>En attente de confirmation...</h4>
-                                    <p>Vérifiez votre téléphone pour confirmer le paiement de <strong>{plan.price.toLocaleString()} FCFA</strong></p>
+                                    <h4>En attente de confirmation…</h4>
+                                    {paymentData?.checkout_url ? (
+                                        <p>
+                                            Terminez le paiement de <strong>{formatMontant(paymentData.total ?? paymentData.amount, paymentData.currency)}</strong> sur la page sécurisée.{' '}
+                                            <a href={paymentData.checkout_url} target="_blank" rel="noopener noreferrer">
+                                                Ouvrir la page de paiement <ExternalLink size={12} />
+                                            </a>
+                                        </p>
+                                    ) : (
+                                        <p>Validez le paiement de <strong>{formatMontant(paymentData?.total ?? paymentData?.amount, paymentData?.currency)}</strong> sur votre téléphone.</p>
+                                    )}
                                     <div className="pm-timer">{formatTimer(timer)}</div>
-                                    {paymentData && (
-                                        <p className="pm-ref">Réf : {paymentData.reference}</p>
-                                    )}
-                                    {paymentData?.ussd_code && (
-                                        <p className="pm-ussd">Code USSD : {paymentData.ussd_code}</p>
-                                    )}
-                                    {paymentData?.sandbox_mode && (
-                                        <div className="pm-sandbox-badge">
-                                            ⚠️ Mode sandbox — Montant réel: {paymentData.amount} XAF
+                                    {paymentData && <p className="pm-ref">Réf : {paymentData.reference}</p>}
+
+                                    {!smsOtpOuvert ? (
+                                        <button className="pm-btn secondary" onClick={() => setSmsOtpOuvert(true)}>
+                                            J’ai reçu un code par SMS
+                                        </button>
+                                    ) : (
+                                        <div className="pm-field">
+                                            <label htmlFor="pm-sms-otp">Code reçu par SMS</label>
+                                            <div className="pm-phone-input">
+                                                <input id="pm-sms-otp" type="text" inputMode="numeric" value={smsOtp} onChange={e => setSmsOtp(e.target.value.slice(0, 12))} />
+                                            </div>
+                                            {smsOtpErreur && <span className="pm-error">{smsOtpErreur}</span>}
+                                            <button className="pm-btn primary" onClick={envoyerSmsOtp}>Valider le code</button>
                                         </div>
+                                    )}
+
+                                    {paymentData?.sandbox_mode && (
+                                        <div className="pm-sandbox-badge">Mode test SasPay — aucun argent réel n’est débité</div>
                                     )}
                                 </>
                             )}
@@ -295,11 +402,20 @@ const PaymentModal = ({ plan, onClose, onSuccess, onRefreshUser }) => {
                                     <div className="pm-success-icon">
                                         <CheckCircle2 size={56} />
                                     </div>
-                                    <h4>Plan {plan.name} activé ! 🎉</h4>
+                                    <h4>Plan {plan.name} activé</h4>
                                     <p>Vous avez maintenant accès à toutes les fonctionnalités de votre nouveau plan.</p>
-                                    <button className="pm-btn primary" onClick={onClose}>
-                                        C'est parti !
-                                    </button>
+                                    <button className="pm-btn primary" onClick={onClose}>C’est parti</button>
+                                </>
+                            )}
+
+                            {status === 'activation_failed' && (
+                                <>
+                                    <div className="pm-timeout-icon">
+                                        <AlertTriangle size={48} />
+                                    </div>
+                                    <h4>Paiement reçu, activation en attente</h4>
+                                    <p>Votre paiement est bien enregistré. L’activation du plan sera relancée automatiquement à votre prochaine visite de la page Facturation.</p>
+                                    <button className="pm-btn primary" onClick={onClose}>Fermer</button>
                                 </>
                             )}
 
@@ -309,17 +425,9 @@ const PaymentModal = ({ plan, onClose, onSuccess, onRefreshUser }) => {
                                         <AlertTriangle size={48} />
                                     </div>
                                     <h4>Paiement échoué</h4>
-                                    <p>Le paiement n'a pas pu être traité. Veuillez réessayer.</p>
-                                    <button className="pm-btn primary" onClick={() => {
-                                        setStep(2);
-                                        setStatus('pending');
-                                        setPaymentData(null);
-                                    }}>
-                                        Réessayer
-                                    </button>
-                                    <button className="pm-btn secondary" onClick={onClose}>
-                                        Annuler
-                                    </button>
+                                    <p>Le paiement a été refusé ou annulé. Aucun montant n’a été débité.</p>
+                                    <button className="pm-btn primary" onClick={recommencer}>Réessayer</button>
+                                    <button className="pm-btn secondary" onClick={onClose}>Annuler</button>
                                 </>
                             )}
 
@@ -328,18 +436,10 @@ const PaymentModal = ({ plan, onClose, onSuccess, onRefreshUser }) => {
                                     <div className="pm-timeout-icon">
                                         <AlertTriangle size={48} />
                                     </div>
-                                    <h4>Paiement non reçu</h4>
-                                    <p>Le délai de confirmation a expiré. Vérifiez votre historique de paiements.</p>
-                                    <button className="pm-btn primary" onClick={() => {
-                                        setStep(2);
-                                        setStatus('pending');
-                                        setPaymentData(null);
-                                    }}>
-                                        Réessayer
-                                    </button>
-                                    <button className="pm-btn secondary" onClick={onClose}>
-                                        Fermer
-                                    </button>
+                                    <h4>Paiement non confirmé</h4>
+                                    <p>Aucune confirmation reçue après 5 minutes. Si vous avez validé le paiement, il apparaîtra dans votre historique.</p>
+                                    <button className="pm-btn primary" onClick={recommencer}>Réessayer</button>
+                                    <button className="pm-btn secondary" onClick={onClose}>Fermer</button>
                                 </>
                             )}
                         </div>

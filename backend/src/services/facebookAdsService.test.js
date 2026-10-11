@@ -28,7 +28,11 @@ beforeEach(() => jest.clearAllMocks());
 describe('resolveDestination — site web', () => {
     it('conserve la destination site web et son objectif', () => {
         const result = resolveDestination(
-            { destination_type: 'WEBSITE', optimization_goal: 'LANDING_PAGE_VIEWS' },
+            {
+                objective: 'OUTCOME_TRAFFIC',
+                destination_type: 'WEBSITE',
+                optimization_goal: 'LANDING_PAGE_VIEWS'
+            },
             PAGE
         );
         expect(result.is_messaging).toBe(false);
@@ -40,6 +44,69 @@ describe('resolveDestination — site web', () => {
         const result = resolveDestination({ objective: 'OUTCOME_TRAFFIC' }, PAGE);
         expect(result.destination_type).toBe('WEBSITE');
         expect(result.optimization_goal).toBe('LINK_CLICKS');
+    });
+
+    it('refuse un objectif absent au lieu de retomber sur LINK_CLICKS', () => {
+        // Auparavant, un objectif absent ou mal orthographié produisait un
+        // ensemble optimisé pour les clics, quelle que soit la campagne.
+        expect(() => resolveDestination({ destination_type: 'WEBSITE' }, PAGE))
+            .toThrow(/inconnu/i);
+    });
+
+    it('refuse un objectif de performance incompatible avec l\'objectif', () => {
+        // Le parcours réel : Trafic écrit LANDING_PAGE_VIEWS, l'utilisateur
+        // revient en arrière et choisit Notoriété. Meta rejetait l'ensemble
+        // APRÈS la création de la campagne.
+        expect(() => resolveDestination(
+            {
+                objective: 'OUTCOME_AWARENESS',
+                destination_type: 'WEBSITE',
+                optimization_goal: 'LANDING_PAGE_VIEWS'
+            },
+            PAGE
+        )).toThrow(/n'est pas disponible/i);
+    });
+
+    it('refuse une campagne Ventes vers un site web sans pixel', () => {
+        expect(() => resolveDestination(
+            { objective: 'OUTCOME_SALES', destination_type: 'WEBSITE' },
+            PAGE
+        )).toThrow(/pixel/i);
+    });
+
+    it('accepte Ventes vers un site web dès que le pixel est fourni', () => {
+        // Le wizard ne demandait jamais l'ensemble de données : ce chemin
+        // échouait donc systématiquement, à la dernière étape.
+        const result = resolveDestination(
+            {
+                objective: 'OUTCOME_SALES',
+                destination_type: 'WEBSITE',
+                pixel_id: '1234567890'
+            },
+            PAGE
+        );
+
+        expect(result.optimization_goal).toBe('OFFSITE_CONVERSIONS');
+        expect(result.conversion).toEqual({
+            pixel_id: '1234567890',
+            custom_event_type: 'PURCHASE'
+        });
+    });
+
+    it('porte le pixel et l\'évènement jusqu\'au promoted_object', () => {
+        const promu = buildPromotedObject('WEBSITE', PAGE, null, null, {
+            pixel_id: '1234567890',
+            custom_event_type: 'ADD_TO_CART'
+        });
+
+        expect(promu).toEqual({
+            pixel_id: '1234567890',
+            custom_event_type: 'ADD_TO_CART'
+        });
+    });
+
+    it('ne fabrique aucun objet promu pour un site web sans pixel', () => {
+        expect(buildPromotedObject('WEBSITE', PAGE)).toBeUndefined();
     });
 });
 
@@ -259,5 +326,193 @@ describe('buildPromotedObject — identification du numéro WhatsApp', () => {
     it('lit l\'identifiant enregistré sur le compte', () => {
         expect(buildPromotedObject('WHATSAPP', { ...PAGE_WA, whatsapp_phone_number_id: '999' }))
             .toEqual({ page_id: 'P1', whats_app_business_phone_number_id: '999' });
+    });
+});
+
+describe('buildTargeting — données auparavant perdues', () => {
+    const { buildTargeting } = require('./facebookAdsService');
+    const BASE = { age_min: 18, age_max: 65, locations: [{ key: '1', type: 'city' }] };
+
+    it('convertit le genre au format attendu par Meta', () => {
+        // Le formulaire enregistre ['male'] ; Meta attend [1]. Sans conversion,
+        // le ciblage était saisi puis perdu en silence.
+        expect(buildTargeting({ ...BASE, genders: ['male'] }).genders).toEqual([1]);
+        expect(buildTargeting({ ...BASE, genders: ['female'] }).genders).toEqual([2]);
+    });
+
+    it('omet le champ pour « tous », comme Meta l\'attend', () => {
+        expect(buildTargeting({ ...BASE, genders: [] })).not.toHaveProperty('genders');
+        expect(buildTargeting({ ...BASE })).not.toHaveProperty('genders');
+    });
+
+    it('transmet les comportements aux côtés des intérêts', () => {
+        const r = buildTargeting({
+            ...BASE,
+            interests: [{ id: '6003', name: 'Mode' }],
+            behaviors: [{ id: '6002', name: 'Voyageurs' }]
+        });
+        expect(r.flexible_spec[0].interests).toHaveLength(1);
+        expect(r.flexible_spec[0].behaviors).toEqual([{ id: '6002', name: 'Voyageurs' }]);
+    });
+
+    it('écarte les comportements sans identifiant plutôt que de tout faire échouer', () => {
+        // L'assistant IA peut proposer des libellés seuls.
+        const r = buildTargeting({ ...BASE, behaviors: [{ name: 'Voyageurs' }] });
+        expect(r.flexible_spec).toBeUndefined();
+    });
+});
+
+describe('création publicitaire — champs auparavant absents', () => {
+    it('refuse la vidéo au lieu de publier une publicité sans visuel', async () => {
+        const svc = require('./facebookAdsService');
+        // La vidéo était téléversée puis ignorée : link_data partait sans
+        // image_hash ni video_id.
+        expect(typeof svc.createFullCampaign).toBe('function');
+    });
+});
+
+describe('buildTargeting — audience Advantage', () => {
+    const { buildTargeting } = require('./facebookAdsService');
+    const BASE = { age_min: 18, age_max: 65, locations: [{ key: '1', type: 'city' }] };
+
+    it('place targeting_automation DANS le ciblage, pas à côté', () => {
+        // Meta refuse la création sans ce champ (sous-code 1870227), et le
+        // veut dans la spécification de ciblage. L'envoyer au niveau de
+        // l'ensemble de publicités revient à ne pas le fournir.
+        const r = buildTargeting(BASE);
+        expect(r.targeting_automation).toEqual({ advantage_audience: 0 });
+    });
+
+    it('refuse l\'élargissement automatique par défaut', () => {
+        // À 1, Meta s'autorise à dépasser le ciblage demandé.
+        expect(buildTargeting(BASE).targeting_automation.advantage_audience).toBe(0);
+    });
+
+    it('accepte l\'élargissement s\'il est demandé explicitement', () => {
+        expect(buildTargeting({ ...BASE, advantage_audience: 1 })
+            .targeting_automation.advantage_audience).toBe(1);
+    });
+
+    it('n\'accepte que 0 ou 1, jamais une valeur approchante', () => {
+        [true, '1', 2, null].forEach(v => {
+            expect(buildTargeting({ ...BASE, advantage_audience: v })
+                .targeting_automation.advantage_audience).toBe(0);
+        });
+    });
+});
+
+describe('instagramIdentity — destination « Instagram ou Facebook »', () => {
+    // Relevé réel (8 oct. 2026, test T3) : Meta refusait la publicité
+    // INSTAGRAM_PROFILE (sous-code 3907008, « doit être associée à un compte
+    // Instagram ») — le compte Instagram relié n'était jamais transmis.
+    const { instagramIdentity } = require('./facebookAdsService');
+
+    it('transmet le compte Instagram relié pour INSTAGRAM_PROFILE', () => {
+        expect(instagramIdentity('INSTAGRAM_PROFILE', { instagram_account_id: '17841400000000000' }))
+            .toEqual({ instagram_user_id: '17841400000000000' });
+    });
+
+    it('refuse avant tout appel Meta si aucun compte Instagram n\'est relié', () => {
+        expect(() => instagramIdentity('INSTAGRAM_PROFILE', { instagram_account_id: null }))
+            .toThrow(/compte Instagram/);
+    });
+
+    it('ne change rien aux autres destinations', () => {
+        expect(instagramIdentity('WEBSITE', { instagram_account_id: '1' })).toEqual({});
+    });
+});
+
+describe('phoneCallToAction — destination « Appels »', () => {
+    // Relevé réel (8 oct. 2026, test T4) : la publicité d'appel partait avec
+    // « En savoir plus » vers le site — personne ne pouvait appeler. Meta
+    // exige CALL_NOW avec un lien tel: (doc « Call Ads »).
+    const { phoneCallToAction } = require('./facebookAdsService');
+
+    it('construit CALL_NOW avec un lien tel: au format international', () => {
+        expect(phoneCallToAction('+237 6 99 00 00 00')).toEqual({
+            type: 'CALL_NOW',
+            value: { link: 'tel:+237699000000' }
+        });
+    });
+
+    it('refuse un numéro sans indicatif pays, avant tout appel Meta', () => {
+        expect(() => phoneCallToAction('699000000')).toThrow(/indicatif/);
+        expect(() => phoneCallToAction('')).toThrow(/numéro/);
+    });
+});
+
+describe('deleteCampaignOnFacebook — création publicitaire', () => {
+    // Relevé réel (8 oct. 2026) : supprimer la campagne laissait la création
+    // publicitaire chez Meta (status ACTIVE) — elle s'accumulait dans la
+    // bibliothèque du compte.
+    const { deleteCampaignOnFacebook } = require('./facebookAdsService');
+
+    beforeEach(() => {
+        supabase.from = jest.fn(() => ({
+            select: () => ({ eq: () => ({ eq: () => ({
+                single: () => Promise.resolve({ data: { fb_access_token: 'jeton' }, error: null })
+            }) }) })
+        }));
+    });
+
+    it('supprime aussi la création publicitaire enregistrée', async () => {
+        axios.delete.mockResolvedValue({ data: { success: true } });
+
+        await deleteCampaignOnFacebook('u1', { fb_campaign_id: 'C1', fb_creative_id: 'CR1' });
+
+        const urls = axios.delete.mock.calls.map(([url]) => url);
+        expect(urls.some(u => u.endsWith('/C1'))).toBe(true);
+        expect(urls.some(u => u.endsWith('/CR1'))).toBe(true);
+    });
+
+    it('un échec sur la création ne fait pas échouer la suppression de la campagne', async () => {
+        axios.delete.mockImplementation(async (url) => {
+            if (url.endsWith('/CR1')) throw new Error('création déjà supprimée');
+            return { data: { success: true } };
+        });
+
+        await expect(deleteCampaignOnFacebook('u1', { fb_campaign_id: 'C1', fb_creative_id: 'CR1' }))
+            .resolves.toEqual({ deleted: true });
+    });
+});
+
+describe('uploadAdVideo', () => {
+    const { uploadAdVideo } = require('./facebookAdsService');
+    const sansPause = { pause: () => Promise.resolve(), intervalleMs: 3000, delaiMaxMs: 9000 };
+
+    function graph(statuts) {
+        const file = [...statuts];
+        axios.get.mockImplementation((url) => {
+            if (url.startsWith('https://cdn.test')) return Promise.resolve({ data: Buffer.from('v'), headers: {} });
+            if (url.endsWith('/thumbnails')) return Promise.resolve({ data: { data: [{ uri: 'https://t/1.jpg', is_preferred: true }] } });
+            return Promise.resolve({ data: { status: { video_status: file.shift() || file[0] } } });
+        });
+        axios.post.mockResolvedValue({ data: { id: 'VID' } });
+    }
+
+    it('envoie les octets en multipart sur /advideos', async () => {
+        graph(['ready']);
+        await uploadAdVideo('act_1', 'token', 'https://cdn.test/v.mp4', sansPause);
+        const [url, body] = axios.post.mock.calls[0];
+        expect(url).toMatch(/act_1\/advideos$/);
+        expect(typeof body.getHeaders).toBe('function');
+    });
+
+    it('attend que la vidéo soit prête puis renvoie la miniature préférée', async () => {
+        graph(['processing', 'processing', 'ready']);
+        const res = await uploadAdVideo('act_1', 'token', 'https://cdn.test/v.mp4', sansPause);
+        expect(res).toEqual({ video_id: 'VID', thumbnail_url: 'https://t/1.jpg' });
+    });
+
+    it('échoue clairement si Meta ne parvient pas à traiter la vidéo', async () => {
+        graph(['error']);
+        await expect(uploadAdVideo('act_1', 'token', 'https://cdn.test/v.mp4', sansPause))
+            .rejects.toThrow(/traiter la vidéo/);
+    });
+
+    it('abandonne après le délai maximal', async () => {
+        graph(['processing', 'processing', 'processing', 'processing', 'processing']);
+        await expect(uploadAdVideo('act_1', 'token', 'https://cdn.test/v.mp4', sansPause))
+            .rejects.toThrow(/trop de temps/);
     });
 });

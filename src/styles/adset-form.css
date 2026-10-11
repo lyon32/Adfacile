@@ -956,6 +956,94 @@
     margin-top: 6px;
 }
 
+/* Avertissement bloquant : ce qui manque, et comment le régler. */
+.adset-warning {
+    margin-top: 8px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border-left: 4px solid #eab308;
+    background: #fefce8;
+}
+
+.adset-warning p {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #713f12;
+    margin: 0 0 6px;
+}
+
+.adset-warning p:last-child {
+    margin-bottom: 0;
+}
+
+.adset-pixel-title {
+    font-weight: 700;
+}
+
+.adset-pixel-subtitle {
+    margin-top: 10px !important;
+    font-weight: 600;
+}
+
+.adset-pixel-list {
+    margin: 0 0 6px;
+    padding-left: 20px;
+    font-size: 13px;
+    color: #713f12;
+}
+
+.adset-pixel-steps {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: #713f12;
+}
+
+.adset-pixel-steps summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #a16207;
+}
+
+.adset-pixel-steps ol {
+    margin: 6px 0 0;
+    padding-left: 20px;
+    line-height: 1.5;
+}
+
+.adset-pixel-action {
+    margin-top: 10px !important;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+}
+
+.adset-pixel-switch {
+    padding: 6px 12px;
+    border: 1px solid #a16207;
+    border-radius: 8px;
+    background: transparent;
+    color: #a16207;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.adset-pixel-switch:hover {
+    background: #ffffff;
+}
+
+.adset-pixel-switch:focus-visible {
+    outline: 2px solid #a16207;
+    outline-offset: 2px;
+}
+
+.adset-warning a {
+    color: #a16207;
+    font-weight: 600;
+    text-decoration: underline;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    CONVERSION FCFA → USD sous les champs de budget
    L'utilisateur saisit en FCFA ; le compte publicitaire est en dollars.

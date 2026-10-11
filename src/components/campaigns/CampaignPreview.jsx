@@ -58,6 +58,35 @@ const CampaignPreview = ({ creative, user }) => {
             </div>
 
             {/* Media */}
+            {creative.media_type === 'carousel' && creative.media_items?.length > 0 ? (
+                <div className="flex gap-2 overflow-x-auto px-4 pb-3 snap-x snap-mandatory" aria-label="Cartes du carrousel">
+                    {creative.media_items.map((item, i) => (
+                        <div key={`${item.url}-${i}`} className="flex-shrink-0 w-56 snap-start rounded-lg border border-gray-200 overflow-hidden">
+                            <div className="aspect-square bg-gray-100">
+                                {item.type === 'video'
+                                    ? <video src={item.url} className="w-full h-full object-cover" muted />
+                                    : <img src={item.url} alt={`Carte ${i + 1}`} className="w-full h-full object-cover" />}
+                            </div>
+                            <div className="bg-gray-50 px-3 py-2">
+                                <p className="text-sm font-semibold text-gray-900 truncate">{item.name || `Carte ${i + 1}`}</p>
+                                {item.description && <p className="text-xs text-gray-500 truncate">{item.description}</p>}
+                                <span className="mt-2 block w-full py-1.5 bg-gray-200 rounded text-xs font-semibold text-gray-800 text-center">
+                                    {ctaLabel}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : creative.media_type === 'flexible' && creative.media_items?.length > 0 ? (
+                <div className="relative bg-gray-100 aspect-square">
+                    {creative.media_items[0].type === 'video'
+                        ? <video src={creative.media_items[0].url} className="w-full h-full object-cover" muted />
+                        : <img src={creative.media_items[0].url} alt="Visuel 1" className="w-full h-full object-cover" />}
+                    <span className="absolute right-2 bottom-2 rounded bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
+                        1 / {creative.media_items.length} · Meta choisit l’ordre
+                    </span>
+                </div>
+            ) : (
             <div className="bg-gray-100 aspect-square flex items-center justify-center">
                 {creative.media_url ? (
                     creative.media_type === 'video' ? (
@@ -70,13 +99,14 @@ const CampaignPreview = ({ creative, user }) => {
                         <svg className="w-16 h-16 text-gray-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        <p className="text-xs text-gray-400">Votre image apparaîtra ici</p>
+                        <p className="text-xs text-gray-400">Votre visuel apparaîtra ici</p>
                     </div>
                 )}
             </div>
+            )}
 
-            {/* Link Card */}
-            {(creative.headline || creative.link) && (
+            {/* Link Card — le carrousel porte titres et boutons sur chaque carte */}
+            {creative.media_type !== 'carousel' && (creative.headline || creative.link) && (
                 <div className="border-t border-gray-200 bg-gray-50 px-4 py-3">
                     {creative.display_link && (
                         <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">

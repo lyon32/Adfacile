@@ -12,6 +12,8 @@
 
 html {
   scroll-behavior: smooth;
+  /* clip (et non hidden) : coupe le menu mobile replié hors écran sans casser position: sticky */
+  overflow-x: clip;
 }
 
 body {

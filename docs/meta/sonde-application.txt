@@ -1,0 +1,20 @@
+CAMP OK 120255666401340583
+KO|APP_INSTALLS|APP|Application incorrectement configurée
+KO|APP_INSTALLS|WEBSITE|Application incorrectement configurée
+KO|APP_INSTALLS|UNDEFINED|Application incorrectement configurée
+KO|LINK_CLICKS|APP|Application incorrectement configurée
+KO|LINK_CLICKS|WEBSITE|Application incorrectement configurée
+KO|LINK_CLICKS|UNDEFINED|Application incorrectement configurée
+KO|OFFSITE_CONVERSIONS|APP|Application incorrectement configurée
+KO|OFFSITE_CONVERSIONS|WEBSITE|Application incorrectement configurée
+KO|OFFSITE_CONVERSIONS|UNDEFINED|Application incorrectement configurée
+KO|IMPRESSIONS|APP|Application incorrectement configurée
+KO|IMPRESSIONS|WEBSITE|Application incorrectement configurée
+KO|IMPRESSIONS|UNDEFINED|Application incorrectement configurée
+KO|REACH|APP|Application incorrectement configurée
+KO|REACH|WEBSITE|Application incorrectement configurée
+KO|REACH|UNDEFINED|Application incorrectement configurée
+KO|VALUE|APP|Application incorrectement configurée
+KO|VALUE|WEBSITE|Application incorrectement configurée
+KO|VALUE|UNDEFINED|Application incorrectement configurée
+NETTOYAGE ok

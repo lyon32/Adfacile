@@ -285,7 +285,7 @@ Cas limites ajoutés à chaque fois : 0, 1, la valeur juste sous un seuil et jus
 ### 5.6 Fixtures des fournisseurs
 
 - **Réponses réellement enregistrées**, une fois, avec les clés de test, par `pnpm fixtures:record <fournisseur>` (lancé à la main), puis **anonymisées** par le script (jetons, identifiants de compte, numéros, URL signées remplacés) et **relues dans la pull request**.
-- Chaque dossier a un `README.md` : date d'enregistrement, version de l'API (ex. Meta `v25.0`), scénario de chaque fichier.
+- Chaque dossier a un `README.md` : date d'enregistrement, version de l'API (ex. Meta `v26.0`), scénario de chaque fichier.
 - Les fixtures alimentent **à la fois** les gestionnaires MSW (tests de clients HTTP et de hooks) et les fausses implémentations (§6).
 - Webhooks : le fichier contient le **corps exact**. La signature est recalculée par le test avec un secret de test (`whsec_test…`, `test_signing_secret`), selon la méthode réelle de chaque fournisseur (SasPay : HMAC-SHA256 de `"<timestamp>.<corps>"`).
 - Le contrôle des fournisseurs (§2.7) signale toute fixture devenue fausse.

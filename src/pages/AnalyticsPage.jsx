@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
     Loader2, AlertTriangle, RefreshCw, BarChart3,
     Download, FileText, FileSpreadsheet, Clock
@@ -30,7 +31,15 @@ const AnalyticsPage = () => {
     const { user } = useAuth();
     const plan = user?.plan || 'free';
 
-    const [campaignId, setCampaignId] = useState('all');
+    // Une campagne peut être ouverte directement depuis la liste :
+    // /analytics?campaign=<id>. Le choix reste dans l'adresse pour pouvoir
+    // être partagé ou rechargé.
+    const [searchParams, setSearchParams] = useSearchParams();
+    const campaignId = searchParams.get('campaign') || 'all';
+    const setCampaignId = (id) => setSearchParams(
+        id === 'all' ? {} : { campaign: id },
+        { replace: true }
+    );
     const [dateRange, setDateRange] = useState({ start: getDateDaysAgo(7), end: getTodayDate() });
     const [exporting, setExporting] = useState(null);
 
@@ -144,6 +153,13 @@ const AnalyticsPage = () => {
                         {/* ════════ SECTION 1: VUE D'ENSEMBLE ════════ */}
                         <div className="analytics-section">
                             <h2 className="analytics-section-title">👁️ Vue d'ensemble</h2>
+                            {/* Un « 0 » de conversions peut vouloir dire « pas de pixel » :
+                                on le dit au lieu de laisser croire à une campagne sans résultat. */}
+                            <p className="analytics-conversions-note">
+                                Impressions, clics et dépenses viennent de la publicité. Les conversions
+                                (achats, inscriptions) viennent du pixel installé sur votre site : sans lui,
+                                elles restent à zéro.
+                            </p>
                             <StatsGrid
                                 stats={data?.overview || {}}
                                 timeseries={data?.timeseries || []}

@@ -16,17 +16,17 @@ import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import ConnectFacebookButton from '../components/facebook/ConnectFacebookButton';
 import { ConnectionsCard } from '../components/dashboard/ConnectionsCard';
-import { SetupInstructions } from '../components/dashboard/SetupInstructions';
 import { WhatsAppSetupGuide } from '../components/dashboard/WhatsAppSetupGuide';
 import { PaymentMethodCard } from '../components/billing/PaymentMethodCard';
 import { ReconnectFacebookButton } from '../components/dashboard/ReconnectFacebookButton';
 import { PageSelector } from '../components/dashboard/PageSelector';
+import { AdAccountSelector } from '../components/dashboard/AdAccountSelector';
 import { useFacebook } from '../hooks/useFacebook';
 import './DashboardPage.css';
 
 const DashboardPage = () => {
   const { user } = useAuth();
-  const { connected: facebookConnected, disconnect } = useFacebook();
+  const { connected: facebookConnected, reason: facebookReason, reasonMessage, dataAccessExpiresAt, disconnect } = useFacebook();
   const [searchParams] = useSearchParams();
   const [connections, setConnections] = useState(null);
   const [permissionsData, setPermissionsData] = useState(null);
@@ -65,25 +65,6 @@ const DashboardPage = () => {
     await fetchData(); // Re-fetch all data for the newly active page
   }, [fetchData]);
 
-  // Called when SetupInstructions refreshes connections
-  const handleRefresh = useCallback((updatedConnections) => {
-    // Update connections state locally
-    if (updatedConnections) {
-      setConnections(prev => ({
-        ...prev,
-        instagram: updatedConnections.instagram || prev?.instagram,
-        whatsapp: updatedConnections.whatsapp || prev?.whatsapp
-      }));
-      // Also update activePage
-      setActivePage(prev => prev ? {
-        ...prev,
-        instagram_connected: updatedConnections.instagram?.connected || false,
-        instagram_username: updatedConnections.instagram?.username || null,
-        whatsapp_connected: updatedConnections.whatsapp?.connected || false,
-        whatsapp_number: updatedConnections.whatsapp?.phoneNumber || null
-      } : prev);
-    }
-  }, []);
 
   // Check for error params from OAuth redirect
   const noPageError = searchParams.get('no_page') === 'true';
@@ -97,6 +78,15 @@ const DashboardPage = () => {
   const showSetupInstructions = facebookConnected &&
     connections &&
     !needsReconnect;
+
+  // Facebook a invalidé le jeton : la ligne existe encore en base, mais plus
+  // rien ne passe. On le dit au lieu d'afficher « connecté ».
+  const facebookRevoked = !facebookConnected && facebookReason === 'revoked';
+
+  // Règle Meta des 90 jours : prévenir une semaine avant la coupure.
+  const SEPT_JOURS = 7 * 24 * 60 * 60 * 1000;
+  const accessExpiringSoon = facebookConnected && dataAccessExpiresAt &&
+    new Date(dataAccessExpiresAt).getTime() - Date.now() < SEPT_JOURS;
 
   return (
     <DashboardLayout title="Dashboard">
@@ -200,7 +190,15 @@ const DashboardPage = () => {
 
         {/* ── Connexion Facebook & Plateformes ── */}
         {/* SCENARIO 1: Not connected to Facebook */}
-        {!facebookConnected && (
+        {facebookRevoked && (
+          <ReconnectFacebookButton reason="revoked" message={reasonMessage} />
+        )}
+
+        {accessExpiringSoon && (
+          <ReconnectFacebookButton reason="expiring" expiresAt={dataAccessExpiresAt} />
+        )}
+
+        {!facebookConnected && !facebookRevoked && (
           <div className="bg-white rounded-lg shadow p-6 mb-6">
             <h3 className="text-lg font-semibold mb-4 text-gray-900">Connexion Facebook</h3>
             <p className="text-gray-600 mb-4 text-sm">
@@ -227,11 +225,15 @@ const DashboardPage = () => {
               />
             )}
 
-            <SetupInstructions
-              hasPage={connections.hasPage}
-              connections={connections}
-              onRefresh={handleRefresh}
-            />
+            {/* Compte publicitaire : c'est lui qui porte les ensembles de
+                données et qui reçoit les campagnes. Il était choisi en
+                silence à la connexion. */}
+            <AdAccountSelector />
+
+
+            {/* « Configuration du compte » retirée : la connexion Facebook
+                demande désormais directement la Page, le numéro WhatsApp et
+                le business — ces instructions ne correspondaient plus. */}
 
             {/* Config & WhatsApp info below */}
             {connections.hasPage && (
