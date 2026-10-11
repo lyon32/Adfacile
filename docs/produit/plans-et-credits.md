@@ -1,7 +1,7 @@
 # Plans et crédits Pubeka
 
 > Version 1 · 10 octobre 2026 · Décidé : 3 formules (5 000 / 12 000 / 25 000 XAF), marge vidéo ≥ 75 %, crédit supplémentaire à 1 000 XAF, vidéo à 2 crédits minimum.
-> Calculs détaillés et hypothèses : [../rapports/calcul-credits.md](../rapports/calcul-credits.md). Coûts au **prix normal** des fournisseurs, **1 $ ≈ 600 XAF**, frais SasPay payés par le client. À recalculer avec les coûts mesurés pendant les tests.
+> Calculs détaillés et hypothèses : [../rapports/calcul-credits.md](../rapports/calcul-credits.md). **Coût, prix facturé et gain par modèle et par durée (images et vidéos 5 à 30 s) : [gains-images-videos.md](gains-images-videos.md).** Coûts au **prix normal** des fournisseurs, **1 $ ≈ 600 XAF**, frais SasPay payés par le client. À recalculer avec les coûts mesurés pendant les tests.
 
 ## 1. Les formules
 
@@ -117,6 +117,8 @@ Pour comparaison, Seedance à 75 % minimum : 12 / 23 / 34 / 67 crédits pour 5 /
 
 Gain = prix de la formule − coût réel de ce qui est généré (avant IA texte et hébergement).
 
+**Pire cas corrigé le 11/10/2026 :** depuis la décision Seedance à 65 % de marge minimale (§3 bis), un crédit peut coûter jusqu'à **175 XAF** (et non plus 125). Les lignes « Pire cas » ci-dessous en tiennent compte.
+
 ### Starter — 5 000 XAF, 10 crédits
 | Utilisation du mois | Crédits | Coût réel | **Ton gain** | Marge |
 |---|---|---|---|---|
@@ -126,7 +128,7 @@ Gain = prix de la formule − coût réel de ce qui est généré (avant IA text
 | 3 vidéos Kling sans son + 1 image | 10 | 769 XAF | **4 231 XAF** | 84,6 % |
 | 5 vidéos Veo 3.1 Lite | 10 | 450 XAF | **4 550 XAF** | 91 % |
 | Seedance 2.5 | ❌ 12 crédits nécessaires : 2 crédits supplémentaires à acheter | | | |
-| **Pire cas** (tout au coût maximal par crédit) | 10 | 1 250 XAF max | **≥ 3 750 XAF** | ≥ 75 % |
+| **Pire cas** (chaque crédit au coût maximal : 175 XAF avec Seedance) | 10 | 1 750 XAF max | **≥ 3 250 XAF** | ≥ 65 % |
 
 ### Pro — 12 000 XAF, 15 crédits
 | Utilisation du mois | Crédits | Coût réel | **Ton gain** | Marge |
@@ -136,7 +138,7 @@ Gain = prix de la formule − coût réel de ce qui est généré (avant IA text
 | 3 vidéos Kling avec son + 3 images | 15 | 1 174 XAF | **10 826 XAF** | 90,2 % |
 | 1 vidéo Seedance 2.5 720p + 3 images | 15 | 1 427 XAF | **10 573 XAF** | 88,1 % |
 | 5 vidéos Kling sans son | 15 | 1 260 XAF | **10 740 XAF** | 89,5 % |
-| **Pire cas** | 15 | 1 875 XAF max | **≥ 10 125 XAF** | ≥ 84 % |
+| **Pire cas** (175 XAF par crédit) | 15 | 2 625 XAF max | **≥ 9 375 XAF** | ≥ 78 % |
 
 ### Business — 25 000 XAF, 30 crédits
 | Utilisation du mois | Crédits | Coût réel | **Ton gain** | Marge |
@@ -146,7 +148,7 @@ Gain = prix de la formule − coût réel de ce qui est généré (avant IA text
 | 7 vidéos Kling avec son + 2 images | 30 | 2 673 XAF | **22 327 XAF** | 89,3 % |
 | 2 vidéos Seedance 2.5 720p + 6 images | 30 | 2 854 XAF | **22 146 XAF** | 88,6 % |
 | 1 vidéo Seedance 2.5 1080p + 2 images | 30 | 3 439 XAF | **21 561 XAF** | 86,2 % |
-| **Pire cas** | 30 | 3 750 XAF max | **≥ 21 250 XAF** | ≥ 85 % |
+| **Pire cas** (175 XAF par crédit) | 30 | 5 250 XAF max | **≥ 19 750 XAF** | ≥ 79 % |
 
 ## 5. Ce que tu gagnes sur les crédits supplémentaires (1 000 XAF le crédit)
 

@@ -77,6 +77,8 @@ Un crédit vaut alors **500 XAF**. Même règle : coût réel ≤ 25 % du prix, 
 
 **Pire cas pour Pubeka :** le client dépense ses 10 crédits sur la génération la plus chère par crédit. Le coût réel reste plafonné à 10 × 125 = **1 250 XAF**, soit au moins **3 750 XAF** de marge brute par abonné Starter, avant IA texte et hébergement.
 
+> **Correction du 11/10/2026 :** depuis la décision Seedance à 65 % de marge minimale, un crédit Starter peut coûter jusqu'à **175 XAF**. Le vrai plafond est donc 10 × 175 = **1 750 XAF**, soit au moins **3 250 XAF** de marge brute (65 %). Voir [gains-images-videos.md](../produit/gains-images-videos.md) §4.
+
 **Cas typique :** 10 images standard Marketing Studio = **130 XAF** de coût réel, soit **4 870 XAF** de marge brute.
 
 ⚠️ **Point d'expérience utilisateur :** « Générer 3 visuels » consomme **3 crédits**. Avec 10 crédits, un client Starter fait **3 générations de 3 visuels** (9 crédits) et il lui en reste 1. C'est cohérent avec le PRD (Starter = 10 visuels), mais peu pour tester plusieurs modèles. Le prix des recharges de crédits devra être visible et simple.
