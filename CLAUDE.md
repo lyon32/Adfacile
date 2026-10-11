@@ -132,7 +132,7 @@ La session est finie quand **tout** ce qui suit est vrai, avec la preuve dans la
 
 Deux sources : les compétences **du dépôt** (`.claude/skills/`, disponibles pour tout agent qui clone le projet) et celles **installées sur le poste** de la personne. Si une compétence n'est pas disponible dans ton environnement, suis les documents de `docs/`.
 
-Compétences du dépôt : `turborepo` (monodépôt, S01), `shadcn` (composants shadcn, S08), `unit-tests`, `test-driven-development`, `debugging-and-error-recovery`, `source-driven-development` (vérifier la documentation d'une bibliothèque avant de l'utiliser), `doubt-driven-development`, `pr-open` (ouvrir une pull request).
+Compétences du dépôt utiles à EasAds : `turborepo` (monodépôt, S01), `shadcn` (composants shadcn, S08), `test-driven-development`, `debugging-and-error-recovery`, `source-driven-development` (vérifier la documentation d'une bibliothèque avant de l'utiliser), `doubt-driven-development` (décisions à fort enjeu : sécurité, paiement, migration). **Ne pas utiliser** `pr-open`, `unit-tests`, `bklit-*` ni `add-x-tweet` : elles viennent d'un autre projet (bklit-ui) et lancent des outils qui n'existent pas ici.
 
 
 | Quand                                         | Compétence                                                                                                                             |
@@ -142,7 +142,7 @@ Compétences du dépôt : `turborepo` (monodépôt, S01), `shadcn` (composants s
 | Écrire du code testé                        | `superpowers:test-driven-development`, `javascript-testing-patterns`, `e2e-testing-patterns`                                            |
 | Un défaut, un test qui échoue               | `superpowers:systematic-debugging`, `debugging-strategies`                                                                              |
 | Avant de dire « c'est fait »                | `superpowers:verification-before-completion`                                                                                            |
-| Fin de session, pull request                  | `superpowers:finishing-a-development-branch`, `pr-open` (du dépôt), `superpowers:requesting-code-review`, `code-review-excellence`      |
+| Fin de session, pull request                  | `superpowers:finishing-a-development-branch`, `superpowers:requesting-code-review`, `code-review-excellence`      |
 | **Tout écran ou composant**                  | **`frontend-design`** (obligatoire), puis `typography`, `tailwind-design-system`, `design-system-patterns`, `responsive-design`, `interaction-design` — **sans jamais toucher aux couleurs** (§3) |
 | Composants shadcn                             | `shadcn` (du dépôt)                                                                                                                     |
 | Monodépôt, Turborepo                          | `turborepo` (du dépôt)                                                                                                                  |
