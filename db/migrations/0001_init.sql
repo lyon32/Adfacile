@@ -1,5 +1,5 @@
 -- =====================================================================
--- EasAds — migration 0001 : schéma initial et protections
+-- Pubeka — migration 0001 : schéma initial et protections
 -- Cible : Supabase (PostgreSQL 15+). Rôles Supabase : anon, authenticated, service_role.
 -- Principes de sécurité (voir docs/architecture/SECURITE-BACKEND.md) :
 --   1. RLS activée sur toutes les tables (public, private, audit).

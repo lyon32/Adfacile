@@ -2,7 +2,7 @@
 
 Lu au début de **chaque** session. Court par principe : le détail est dans `docs/`, et ce fichier dit où.
 
-**Pubeka** est un SaaS qui crée des publicités en ligne en quelques clics grâce à l'IA. Meta Ads aujourd'hui, Google et TikTok « bientôt ». Conçu d'abord pour l'Afrique : paiement Mobile Money par SasPay, francs CFA, français et anglais. Il remplace complètement AdFacile. Domaine : `pubeka.com` (application : `app.pubeka.com`). L'ancien nom de travail « EasAds » est abandonné : ne plus l'écrire.
+**Pubeka** est un SaaS qui crée des publicités en ligne en quelques clics grâce à l'IA. Meta Ads aujourd'hui, Google et TikTok « bientôt ». Conçu d'abord pour l'Afrique : paiement Mobile Money par SasPay, francs CFA, français et anglais. Il remplace complètement AdFacile. Domaine : `pubeka.com` (application : `app.pubeka.com`). N'utiliser que ce nom : l'ancien nom de travail est abandonné.
 
 **État du dépôt (10/10/2026)** : la documentation est complète ; le monodépôt n'est **pas encore créé** (session S01). Le code AdFacile (`src/`, `backend/`) est encore présent : c'est une **référence** pour porter le connecteur Meta (S10), à supprimer en S12. Ne pas le modifier, ne pas s'en inspirer pour autre chose.
 

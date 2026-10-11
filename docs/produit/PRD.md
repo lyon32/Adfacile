@@ -2,7 +2,7 @@
 
 > Version 1.0 · 10 octobre 2026 · Statut : brouillon validé en atelier
 > Pubeka remplace complètement AdFacile. Le nom AdFacile n'est plus utilisé.
-> Nom et domaine : **Pubeka**, `pubeka.com` (décidé le 11/10/2026). Il remplace le nom de travail « EasAds », trop proche de concurrents déjà bien référencés (easyadsapp.com, easyads.app) et que Google corrige en « easy ads ».
+> Nom et domaine : **Pubeka**, `pubeka.com` (décidé le 11/10/2026). Il remplace l'ancien nom de travail, trop proche de concurrents déjà bien référencés (easyadsapp.com, easyads.app) et que Google corrige en « easy ads ».
 
 ---
 

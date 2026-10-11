@@ -1,5 +1,5 @@
 -- =====================================================================
--- EasAds — migration 0002 : stockage des fichiers (Supabase Storage)
+-- Pubeka — migration 0002 : stockage des fichiers (Supabase Storage)
 -- ⚠ Non testée localement (le schéma "storage" n'existe que dans Supabase).
 --   À tester sur le projet Supabase de développement avant la production.
 -- Règles :
