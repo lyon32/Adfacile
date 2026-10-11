@@ -1,4 +1,4 @@
-# AppFlow — Parcours et écrans EasAds
+# AppFlow — Parcours et écrans Pubeka
 
 > Version 1 · 10 octobre 2026 · Décrit **chaque écran, chaque parcours, chaque état** (chargement, vide, erreur, limites) du site public, de l'application et de l'administration.
 > Documents liés : [PRD](PRD.md) · [TRD](TRD.md) · [Plans et crédits](plans-et-credits.md) · [Architecture](../architecture/ARCHITECTURE.md) · [Design system](../design/DESIGN-SYSTEM.md) · [Prototype choix du modèle](../design/prototype-choix-modele.html).
@@ -34,7 +34,7 @@
 
 ## 1. Carte des écrans et adresses
 
-### Site public — `easads.com/{fr|en}`
+### Site public — `pubeka.com/{fr|en}`
 | Écran | Adresse |
 |---|---|
 | Accueil | `/fr` |
@@ -45,7 +45,7 @@
 | Blog | `/fr/blog`, `/fr/blog/{article}` |
 | Légal | `/fr/confidentialite`, `/fr/conditions`, `/fr/suppression-des-donnees` |
 
-### Application — `app.easads.com`
+### Application — `app.pubeka.com`
 | Écran | Adresse |
 |---|---|
 | Connexion / inscription | `/connexion`, `/inscription`, `/mot-de-passe-oublie` |
@@ -111,7 +111,7 @@
 1. Barre : logo · Fonctionnement · Tarifs · Aide · **[Se connecter]**.
 2. Pastille « Nouveau » + annonce.
 3. Titre : **« Tes pubs en ligne, prêtes en quelques clics. »**
-4. Texte : « Colle le lien de ton site. EasAds écrit la campagne, crée le visuel et la publie sur la plateforme de ton choix. Tu valides, c'est tout. »
+4. Texte : « Colle le lien de ton site. Pubeka écrit la campagne, crée le visuel et la publie sur la plateforme de ton choix. Tu valides, c'est tout. »
 5. **Champ héros** : `https://ta-boutique.com` + **[Créer ma pub]**.
 6. Pastilles plateformes : Meta Ads (Disponible) · Google Ads (Bientôt) · TikTok Ads (Bientôt) · Et d'autres (À venir).
 7. Liens « Pas de site ? **Envoie une photo** ou **décris ton business** ».
@@ -135,7 +135,7 @@ Colle un lien → [Créer ma pub]
 
 ### 3.3 Pages pays, aide, blog
 - Page pays : prix en monnaie locale, moyens de paiement du pays, TVA de la plateforme expliquée, **[Commencer l'essai gratuit]**.
-- Guides publics : liste par catégorie (Payer ses pubs, Lier WhatsApp, Créer un pixel…), chaque guide finit par **[Essayer EasAds]**.
+- Guides publics : liste par catégorie (Payer ses pubs, Lier WhatsApp, Créer un pixel…), chaque guide finit par **[Essayer Pubeka]**.
 
 ---
 
@@ -199,13 +199,13 @@ Barre de progression « Étape X sur 5 ». Chaque étape a **[Continuer]** ; les
 ### 6.1 Connecter
 ```
 Écran : « Connecte ton compte Meta »
-Texte : ce qu'EasAds pourra faire (créer et suivre tes campagnes) et ne fera jamais
+Texte : ce que Pubeka pourra faire (créer et suivre tes campagnes) et ne fera jamais
         (publier sans ton accord, voir tes messages).
 [Connecter mon compte Meta]  → fenêtre Facebook (Login for Business)
    → l'utilisateur choisit le portefeuille business, les Pages, les comptes publicitaires
-   ⟶ retour EasAds ⟶ bilan de santé
+   ⟶ retour Pubeka ⟶ bilan de santé
 ```
-⚠ Fenêtre fermée ou permissions refusées → « La connexion n'a pas abouti. Sans accès à ton compte publicitaire, EasAds ne peut pas publier. **[Réessayer]** ».
+⚠ Fenêtre fermée ou permissions refusées → « La connexion n'a pas abouti. Sans accès à ton compte publicitaire, Pubeka ne peut pas publier. **[Réessayer]** ».
 
 ### 6.2 Choisir la Page active
 - Liste des Pages ; la formule limite le nombre activable (1 / 3 / 10).
@@ -286,7 +286,7 @@ Ce que tu veux comme pub (facultatif) : [                         ]
 |---|---|
 | Site illisible (protégé, vide) | Lecture interne → Jina en secours → si échec : « Je n'arrive pas à lire ce site. Ajoute une description ou une photo. » |
 | Fichier trop lourd / mauvais format | « Ce fichier dépasse 10 Mo » / « Formats acceptés : JPG, PNG, WEBP, PDF, DOCX » |
-| **Produit illégal évident** (drogue, armes, contrefaçon, médicaments sans ordonnance, arnaque) | Arrêt : « EasAds ne peut pas créer de publicité pour ce produit : il est interdit par la loi et par les plateformes. » Aucun crédit, aucun quota consommé |
+| **Produit illégal évident** (drogue, armes, contrefaçon, médicaments sans ordonnance, arnaque) | Arrêt : « Pubeka ne peut pas créer de publicité pour ce produit : il est interdit par la loi et par les plateformes. » Aucun crédit, aucun quota consommé |
 | Instruction cachée dans le site (injection) | Ignorée silencieusement, enregistrée pour l'administration |
 
 ### 8.2 Étape « Questions »
@@ -327,7 +327,7 @@ Option **[Tester 2 visuels (test A/B)]** : sélection de 2 visuels ; compte pour
 - Récapitulatif final (objectif, zone, budget, dates, coût total TVA incluse).
 
 ### 8.6 Étape « Publier »
-- **Première publication du compte** : fenêtre de responsabilité à accepter une fois — « La plateforme vérifie chaque pub. EasAds n'est pas responsable si ton compte publicitaire est restreint à cause du contenu publié. **[J'ai compris]** ».
+- **Première publication du compte** : fenêtre de responsabilité à accepter une fois — « La plateforme vérifie chaque pub. Pubeka n'est pas responsable si ton compte publicitaire est restreint à cause du contenu publié. **[J'ai compris]** ».
 - **[Publier la campagne]** ⟶ « Publication en cours… » ⟶ quota de campagnes décompté ⟶ écran de succès :
   « Ta campagne est envoyée à Meta. Meta la vérifie, en général sous 24 heures. On te prévient dès qu'elle est en diffusion. » **[Voir ma campagne]** · **[Créer une autre pub]**.
 
@@ -530,7 +530,7 @@ J-3, J-1, J0 : bandeau + notification + e-mail « Ton abonnement se termine le J
 ### 17.1 Bulle d'aide (Assistant)
 - 💬 en bas à droite → panneau de conversation.
 - L'Assistant connaît l'état du compte : « Ta pub ne peut pas démarrer car ton compte publicitaire n'a pas de moyen de paiement. » + étapes + lien vers l'écran ou le guide.
-- Hors sujet : réponse polie et retour au sujet EasAds.
+- Hors sujet : réponse polie et retour au sujet Pubeka.
 - Ne sait pas : **[Écrire au support]** → ticket pré-rempli avec la conversation.
 
 ### 17.2 Support `/support`
@@ -563,7 +563,7 @@ Tout fonctionne ; bandeau orange permanent avec compte à rebours et **[Payer]**
 ### 19.3 Supprimer son compte
 ```
 Réglages > Mes données > [Supprimer mon compte]
-⟶ écran d'explication : ce qui est supprimé (tout chez EasAds), ce qui reste (campagnes chez Meta,
+⟶ écran d'explication : ce qui est supprimé (tout chez Pubeka), ce qui reste (campagnes chez Meta,
    factures conservées par obligation légale), crédits perdus
 ⟶ saisir « SUPPRIMER » + mot de passe (ou reconnexion Google/Apple)
 ⟶ e-mail de confirmation ⟶ suppression effective ⟶ déconnexion
@@ -571,12 +571,12 @@ Réglages > Mes données > [Supprimer mon compte]
 
 ---
 
-## 20. Administration `app.easads.com/{chemin-secret}`
+## 20. Administration `app.pubeka.com/{chemin-secret}`
 
 ### 20.1 Accès
 ```
 Non-administrateur ⟶ 404 (page « introuvable » standard)
-Administrateur ⟶ connexion EasAds ⟶ code à 6 chiffres (application d'authentification)
+Administrateur ⟶ connexion Pubeka ⟶ code à 6 chiffres (application d'authentification)
    5 échecs ⟶ blocage temporaire + e-mail d'alerte
 Chaque action ⟶ journal (qui, quoi, quand, avant/après)
 ```

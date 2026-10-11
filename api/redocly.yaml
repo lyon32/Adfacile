@@ -2,5 +2,5 @@
 extends:
   - recommended
 apis:
-  easads@v1:
+  pubeka@v1:
     root: openapi.yaml

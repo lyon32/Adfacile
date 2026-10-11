@@ -1,4 +1,4 @@
-# Plans et crédits EasAds
+# Plans et crédits Pubeka
 
 > Version 1 · 10 octobre 2026 · Décidé : 3 formules (5 000 / 12 000 / 25 000 XAF), marge vidéo ≥ 75 %, crédit supplémentaire à 1 000 XAF, vidéo à 2 crédits minimum.
 > Calculs détaillés et hypothèses : [../rapports/calcul-credits.md](../rapports/calcul-credits.md). Coûts au **prix normal** des fournisseurs, **1 $ ≈ 600 XAF**, frais SasPay payés par le client. À recalculer avec les coûts mesurés pendant les tests.
@@ -31,14 +31,14 @@ Payables par Mobile Money via SasPay, frais SasPay en plus.
 
 ### Images (par image)
 
-| Génération | Crédits | Coût réel pour EasAds |
+| Génération | Crédits | Coût réel pour Pubeka |
 |---|---|---|
 | Image **Standard**, tous modèles (Marketing Studio 2K basse, Seedream, Bria, Nano Banana, FLUX 3, Grok, Soul 2, GPT Image…) | **1** | 2 à 81 XAF |
 | Image **Haute qualité**, tous modèles **sauf** Marketing Studio | **1** | 3 à 81 XAF |
 | Image **Haute qualité Marketing Studio** (2K haute) | **3** | 264 XAF |
 
 « Générer 3 visuels » = 3 images = 3 crédits en Standard.
-Inclus sans crédit : détourage du produit, adaptation aux formats 9:16, 1:1, 1.91:1, textes posés par EasAds.
+Inclus sans crédit : détourage du produit, adaptation aux formats 9:16, 1:1, 1.91:1, textes posés par Pubeka.
 
 ### Vidéos (clip de 5 s) — marge minimale 75 %, 2 crédits minimum
 
@@ -73,7 +73,7 @@ Même règle : `crédits = le plus grand de 2 et de (prix par seconde × durée 
 | Seedance 2.5 480p (Higgsfield / fal) | **5** (617) | **10** (1 234) | **15** (1 850) | **30** (3 701) |
 | Seedance 2.5 720p (Higgsfield / fal) | **12** (1 387) | **23** (2 773) | **34** (4 160) | **67** (8 320) |
 
-Entre parenthèses : coût réel pour EasAds en XAF. Durées maximales documentées : Kling 3.0 et Seedance 2.0 Mini 15 s, Wan 3.0 et Seedance 2.5 30 s ; Veo 3.1 Lite : durées autorisées non vérifiées.
+Entre parenthèses : coût réel pour Pubeka en XAF. Durées maximales documentées : Kling 3.0 et Seedance 2.0 Mini 15 s, Wan 3.0 et Seedance 2.5 30 s ; Veo 3.1 Lite : durées autorisées non vérifiées.
 
 **Seedance 2.5 est 2 fois moins cher chez BytePlus** que chez Higgsfield ou fal (prix officiels). Même chez BytePlus, 10 s en 720p = 12 crédits, soit plus qu'un Starter entier.
 

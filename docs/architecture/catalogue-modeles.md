@@ -1,11 +1,11 @@
 # Catalogue de modèles : l'utilisateur choisit
 
-> 10 octobre 2026 · Remplace l'idée d'un modèle imposé. L'utilisateur choisit le modèle qui correspond à ce qu'il veut créer ; EasAds explique chaque modèle en langage simple.
+> 10 octobre 2026 · Remplace l'idée d'un modèle imposé. L'utilisateur choisit le modèle qui correspond à ce qu'il veut créer ; Pubeka explique chaque modèle en langage simple.
 > Bénéfice direct : la charge se répartit entre Higgsfield, BytePlus et fal, au lieu de saturer un seul fournisseur.
 
 ## 1. Principe
 
-1. Pour chaque **capacité** (texte → image, texte + référence → image, modification, vidéo), EasAds propose **une courte liste de modèles** : 3 à 4 maximum, pour ne pas noyer un débutant.
+1. Pour chaque **capacité** (texte → image, texte + référence → image, modification, vidéo), Pubeka propose **une courte liste de modèles** : 3 à 4 maximum, pour ne pas noyer un débutant.
 2. **Un modèle est présélectionné** (« Recommandé pour ton cas ») selon ce que l'utilisateur crée. Il peut générer directement, ce qui garde la promesse « en quelques clics », ou **changer de modèle**.
 3. Chaque modèle a une **fiche simple** : à quoi il sert, son point fort, sa limite, son coût en crédits, sa vitesse.
 4. Aucun modèle « meilleur que les autres » : chacun est **le bon choix pour un usage précis**.
@@ -98,5 +98,5 @@ Changer la liste, le modèle recommandé ou le coût en crédits **ne demande au
 
 ## 6. Pannes et attente
 
-- L'utilisateur choisit un modèle. Si ce modèle est en panne ou si l'attente dépasse 60 s, EasAds **propose** (ne force pas) un modèle équivalent : « Marketing Studio est surchargé. Utiliser Seedream 5.0 flash (1 crédit) ? »
+- L'utilisateur choisit un modèle. Si ce modèle est en panne ou si l'attente dépasse 60 s, Pubeka **propose** (ne force pas) un modèle équivalent : « Marketing Studio est surchargé. Utiliser Seedream 5.0 flash (1 crédit) ? »
 - Budget de 15 $/mois par fournisseur atteint → ses modèles passent en « indisponible » jusqu'à la recharge, avec une alerte e-mail à l'administrateur.

@@ -15,7 +15,7 @@ Exemple vérifié, **Marketing Studio Image 2.0** (même image, réglages diffé
 | 4K, qualité haute | 0,7219 $ |
 
 **Entre « 2K basse » et « 2K haute », le prix est multiplié par 20.** Les autres facteurs : résolution, format, nombre d'images par lot (`batch_size`), durée et son pour la vidéo, présence d'une vidéo en entrée.
-**Conséquence pour EasAds :** l'utilisateur ne doit **pas** voir tous les réglages. EasAds propose 2 ou 3 niveaux simples (« Standard », « Haute qualité »), chacun avec son coût en crédits fixé à partir du prix réel.
+**Conséquence pour Pubeka :** l'utilisateur ne doit **pas** voir tous les réglages. Pubeka propose 2 ou 3 niveaux simples (« Standard », « Haute qualité »), chacun avec son coût en crédits fixé à partir du prix réel.
 
 ## 2. Images
 
@@ -36,7 +36,7 @@ Exemple vérifié, **Marketing Studio Image 2.0** (même image, réglages diffé
 | Recraft V4.1 | `text2image` | prompt · **couleurs imposées** · couleur de fond | 1K · 14 formats dont 4:5 | 0,035 $ |
 | Qwen Image 3 | `text2image` | prompt · prompt négatif | 1K/2K · 10 formats | 0,04 $ (1K) · 0,075 $ (2K) |
 | Z-Image Turbo | `text2image` | prompt | 1K/2K | 0,015 $ |
-| AI Influencer | création de personnage | brief · image | — | 0,05 $ (hors sujet EasAds) |
+| AI Influencer | création de personnage | brief · image | — | 0,05 $ (hors sujet Pubeka) |
 
 ## 3. Vidéos (V2)
 
@@ -57,7 +57,7 @@ Exemple vérifié, **Marketing Studio Image 2.0** (même image, réglages diffé
 | HappyHorse 1.0 / 1.1 | image | — | 720p/1080p | 0,14 à 0,28 $/s / 0,14 à 0,18 $/s |
 | Genjutsu, Cinema Studio 4.0 | transformation de vidéo, scènes de cinéma | vidéo en entrée | — | 0,318 à 1,632 $/s d'entrée · hors sujet au départ |
 
-## 4. Ce que ça donne pour EasAds (faits)
+## 4. Ce que ça donne pour Pubeka (faits)
 
 | Capacité | Modèles Higgsfield qui la font (documenté) |
 |---|---|

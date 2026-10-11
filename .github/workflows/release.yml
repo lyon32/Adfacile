@@ -26,15 +26,15 @@ concurrency:
 jobs:
   release:
     name: Production
-    if: vars.EASADS_PIPELINE_ENABLED == 'true'
+    if: vars.PUBEKA_PIPELINE_ENABLED == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
       contents: write   # étiquette et note de version
       actions: read     # vérifier la préproduction de ce commit
     environment:
-      name: easads-production
-      url: https://app.easads.com
+      name: pubeka-production
+      url: https://app.pubeka.com
     env:
       SHA: ${{ inputs.sha }}
       ALLOW_DESTRUCTIVE: ${{ inputs.allow_destructive_migrations }}
@@ -92,7 +92,7 @@ jobs:
         run: supabase db push
 
       - name: 2. Tâches Trigger.dev (prod)
-        run: pnpm --filter @easads/jobs exec trigger.dev deploy --env prod --external-id "$SHA"
+        run: pnpm --filter @pubeka/jobs exec trigger.dev deploy --env prod --external-id "$SHA"
 
       - name: 3. Vercel — construction (variables de production)
         run: |
@@ -104,10 +104,10 @@ jobs:
       - name: 4. Tests de fumée en production (lecture seule)
         id: smoke
         env:
-          BASE_URL: https://app.easads.com
-          SITE_URL: https://easads.com
+          BASE_URL: https://app.pubeka.com
+          SITE_URL: https://pubeka.com
         run: |
-          pnpm --filter @easads/web exec playwright install --with-deps chromium
+          pnpm --filter @pubeka/web exec playwright install --with-deps chromium
           pnpm e2e:smoke:prod
 
       - name: Retour arrière de Vercel si les tests de fumée échouent

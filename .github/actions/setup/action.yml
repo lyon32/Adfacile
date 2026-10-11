@@ -1,6 +1,6 @@
 # Préparation commune à tous les travaux : pnpm (version de package.json), Node (version de .nvmrc),
 # dépendances installées depuis le fichier de verrouillage, sans le modifier. Voir docs/architecture/CI_CD.md.
-name: Préparer le dépôt EasAds
+name: Préparer le dépôt Pubeka
 description: Installe pnpm, Node.js et les dépendances (pnpm install --frozen-lockfile).
 runs:
   using: composite

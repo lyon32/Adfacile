@@ -1,15 +1,16 @@
-# PRD — EasAds
+# PRD — Pubeka
 
 > Version 1.0 · 10 octobre 2026 · Statut : brouillon validé en atelier
-> EasAds remplace complètement AdFacile. Le nom AdFacile n'est plus utilisé.
+> Pubeka remplace complètement AdFacile. Le nom AdFacile n'est plus utilisé.
+> Nom et domaine : **Pubeka**, `pubeka.com` (décidé le 11/10/2026). Il remplace le nom de travail « EasAds », trop proche de concurrents déjà bien référencés (easyadsapp.com, easyads.app) et que Google corrige en « easy ads ».
 
 ---
 
 ## 1. Vision
 
-**EasAds** permet à n'importe qui, sans formation en publicité, de créer et lancer une campagne publicitaire professionnelle en quelques clics, à partir de ce qu'il a déjà : son site, une photo de son produit, une publication, un document ou une simple description.
+**Pubeka** permet à n'importe qui, sans formation en publicité, de créer et lancer une campagne publicitaire professionnelle en quelques clics, à partir de ce qu'il a déjà : son site, une photo de son produit, une publication, un document ou une simple description.
 
-**Mission : la création de publicités sur toutes les plateformes publicitaires.** EasAds n'est **pas** un outil Facebook. C'est un outil de création de pubs, quelle que soit la plateforme : Meta Ads, Google Ads, TikTok Ads, puis les suivantes au fur et à mesure. Aucune plateforme n'est mise en avant par rapport aux autres dans le discours, la marque ou l'interface.
+**Mission : la création de publicités sur toutes les plateformes publicitaires.** Pubeka n'est **pas** un outil Facebook. C'est un outil de création de pubs, quelle que soit la plateforme : Meta Ads, Google Ads, TikTok Ads, puis les suivantes au fur et à mesure. Aucune plateforme n'est mise en avant par rapport aux autres dans le discours, la marque ou l'interface.
 
 **Promesse :** *« Tes pubs en ligne, prêtes en quelques clics. Sur Meta, Google, TikTok et plus. »*
 (Variante EN : *"Your online ads, ready in a few clicks. On Meta, Google, TikTok and more."*)
@@ -27,7 +28,7 @@
 - La configuration nécessaire (Page, Instagram, WhatsApp Business, portefeuille business, pixel, moyen de paiement) est incompréhensible pour un débutant.
 
 ### 1.2 Positionnement
-| Concurrent | Ce qu'il fait | Ce qu'EasAds fait de plus |
+| Concurrent | Ce qu'il fait | Ce que Pubeka fait de plus |
 |---|---|---|
 | AdCreative.ai | Génère des visuels et des textes | Génère **et lance** la campagne complète, avec un paiement local et un guide de configuration |
 | Madgicx | Optimise des campagnes Meta existantes (audit IA) | Accessible aux débutants : propositions en langage simple, en FCFA |
@@ -61,14 +62,14 @@ Contrainte commune : beaucoup utilisent **uniquement un téléphone**. L'applica
 4. **Transparence de l'argent.** Montants en dollars et en FCFA, TVA incluse, en temps réel.
 5. **Pas d'incohérence affichée.** Un utilisateur qui n'a rien lancé ne voit aucun chiffre fictif.
 6. **Guider plutôt que bloquer.** Toute configuration manquante est détectée et expliquée pas à pas.
-7. **Le client reste propriétaire.** Les campagnes sont créées dans **son** Business Manager et **son** compte publicitaire, et payées par **son** moyen de paiement Meta. EasAds n'avance jamais d'argent à Meta.
+7. **Le client reste propriétaire.** Les campagnes sont créées dans **son** Business Manager et **son** compte publicitaire, et payées par **son** moyen de paiement Meta. Pubeka n'avance jamais d'argent à Meta.
 
 ---
 
 ## 4. Parcours principaux
 
 ### 4.1 Inscription et intégration
-1. Inscription ou connexion via **Google, Apple ou e-mail** (pas de connexion Facebook pour le compte EasAds).
+1. Inscription ou connexion via **Google, Apple ou e-mail** (pas de connexion Facebook pour le compte Pubeka).
 2. Choix du **pays** (qui fixe la TVA et la devise par défaut), de la **devise d'affichage** (XOF ou XAF) et de la **langue de l'interface** (FR ou EN).
 3. Démarrage de l'**essai gratuit** : 1 campagne, 3 visuels, 7 jours, sans moyen de paiement.
 4. **Connexion du compte Meta** (Facebook Login for Business, permissions publicitaires).
@@ -81,7 +82,7 @@ Contrainte commune : beaucoup utilisent **uniquement un téléphone**. L'applica
    - Pixel ou ensemble de données : optionnel (voir §7.3).
 6. Création du **kit de marque** (F2) : logo, couleurs, police, numéro WhatsApp ou téléphone, slogan. Ces informations sont réutilisées automatiquement.
 
-> EasAds **détecte et guide**. Il ne crée jamais de Page, de portefeuille business ni de liaison Instagram ou WhatsApp à la place de l'utilisateur.
+> Pubeka **détecte et guide**. Il ne crée jamais de Page, de portefeuille business ni de liaison Instagram ou WhatsApp à la place de l'utilisateur.
 
 ### 4.2 Créer une campagne (parcours principal)
 1. **Entrée.** L'utilisateur fournit une ou plusieurs sources :
@@ -94,7 +95,7 @@ Contrainte commune : beaucoup utilisent **uniquement un téléphone**. L'applica
    Un champ de description complémentaire, facultatif, permet de dire « ce que je veux comme pub ».
 2. **Analyse** par l'agent Analyste business, qui produit une fiche business structurée.
 3. **3 à 5 questions ciblées**, générées selon ce qui manque (zone géographique, offre, numéro à afficher, public, ton…). Pas de questionnaire générique.
-4. **Proposition visuels (optionnelle, facturée sur le quota visuels).** EasAds propose : « Créer aussi le visuel avec l'IA ? ». Si oui :
+4. **Proposition visuels (optionnelle, facturée sur le quota visuels).** Pubeka propose : « Créer aussi le visuel avec l'IA ? ». Si oui :
    - 3 à 5 questions visuelles ;
    - possibilité d'ajouter une ou plusieurs **images de référence personnelles** ;
    - génération de **3 visuels en 4:5** ;
@@ -137,12 +138,12 @@ Même logique que l'étape 4 du parcours campagne, sans créer de campagne :
 
 ### 4.6 Fin d'abonnement
 - Les campagnes en cours **continuent** chez Meta, puisque c'est le compte du client.
-- EasAds passe en **lecture seule** : statistiques consultables, aucune nouvelle campagne, aucune modification, aucune génération.
+- Pubeka passe en **lecture seule** : statistiques consultables, aucune nouvelle campagne, aucune modification, aucune génération.
 
 ---
 
 ## 5. Multi-business
-- Un compte EasAds gère **plusieurs business ou Pages** et choisit la Page à chaque campagne.
+- Un compte Pubeka gère **plusieurs business ou Pages** et choisit la Page à chaque campagne.
 - Starter = 1 business, Pro = 3, Business = 10.
 - Les données de chaque business (fiche, kit de marque, références) sont séparées.
 
@@ -161,7 +162,7 @@ Chaque agent fera l'objet d'un **document de spécification dédié** (`docs/age
 | 3 | **Designer visuel** | Produire des visuels au niveau d'un graphiste | `BusinessProfile`, réponses visuelles, photos, références, kit de marque, format | `VisualSpec` (scène, mise en page, calques texte) + images | Dessiner le texte, le prix, le numéro ou le logo dans l'image ; déformer le produit ; modifier ce qui n'est pas demandé |
 | 4 | **Modérateur** | Expliquer un refus de Meta **après coup** et proposer la correction | Pub refusée + motif officiel Meta | Rapport (cause, élément en cause, correction, nouvel examen conseillé ou non) | Juger ou bloquer un commerce légal ; inventer une règle Meta |
 | 5 | **Optimiseur** | Surveiller les campagnes publiées et proposer des actions | Statistiques Meta | Recommandations (pause, budget ±, nouveau visuel, fatigue) | Agir sans l'accord de l'utilisateur |
-| 6 | **Assistant aide** | Bulle d'aide professionnelle qui connaît l'état du compte | Question + état du compte | Réponse et guide pas à pas | Créer ou modifier des campagnes ; sortir du sujet EasAds |
+| 6 | **Assistant aide** | Bulle d'aide professionnelle qui connaît l'état du compte | Question + état du compte | Réponse et guide pas à pas | Créer ou modifier des campagnes ; sortir du sujet Pubeka |
 | V2 | **Vidéaste** | Vidéos publicitaires | — | — | — |
 
 Les modèles d'IA (Claude, Gemini, OpenAI, Mistral, Kimi…) seront **choisis par agent après des tests comparatifs** (§14). Chaque appel est journalisé avec son coût.
@@ -186,7 +187,7 @@ Advantage+ (ciblage automatique de Meta) par défaut. Seule la **zone géographi
 
 ### 7.3 Pixel / ensemble de données
 - Question posée : « As-tu un pixel Meta sur ton site ? »
-- **Oui :** EasAds liste les pixels du compte (menu déroulant), active le suivi (événements du site web, événements d'application, événements hors ligne) et affiche les statistiques du pixel dans la campagne.
+- **Oui :** Pubeka liste les pixels du compte (menu déroulant), active le suivi (événements du site web, événements d'application, événements hors ligne) et affiche les statistiques du pixel dans la campagne.
 - **Non :** la campagne est créée quand même. Un message explique que sans pixel, on ne voit pas ce qui se passe sur le site. Un guide d'installation du pixel est proposé.
 - Guides d'installation par plateforme : **Shopify, WordPress/WooCommerce, Wix, site sur mesure**.
 - ⚠️ **À tester :** une campagne Ventes avec conversion site web sans pixel actif est-elle acceptée par Meta ? Le constat actuel est qu'elle n'est pas bloquée.
@@ -248,7 +249,7 @@ Détail des crédits, coûts par génération et marges : [plans-et-credits.md](
 ### 9.2 Budget publicitaire (payé à Meta par le client)
 - Le client paie Meta avec **sa carte** ou des **fonds prépayés** dans son compte publicitaire.
 - Si le client n'a pas de carte : le guide recommande une carte virtuelle (**Keecash**).
-- EasAds affiche : **budget + TVA du pays = total**, en $ et en FCFA (**taux du marché en temps réel**, via une API gratuite), par jour et pour toute la durée.
+- Pubeka affiche : **budget + TVA du pays = total**, en $ et en FCFA (**taux du marché en temps réel**, via une API gratuite), par jour et pour toute la durée.
 - Mention : « hors frais éventuels de ta banque ou de ta carte ».
 
 ### 9.3 TVA Meta par pays
@@ -278,7 +279,7 @@ Meta ajoute la TVA locale selon le pays de facturation (« Sold To ») du compte
 - **Résultat traduit en argent** (F7) : « 42 messages WhatsApp, soit 357 FCFA par client potentiel ».
 - Statistiques du pixel quand il y a un pixel.
 - Résultats des tests A/B.
-- **Premium** : export PDF ; comparaison avec les campagnes précédentes, puis avec la moyenne anonyme du secteur sur EasAds (F8) ; analyse des concurrents (F10).
+- **Premium** : export PDF ; comparaison avec les campagnes précédentes, puis avec la moyenne anonyme du secteur sur Pubeka (F8) ; analyse des concurrents (F10).
 - **V2** : comparaison entre plateformes (Meta, Google, TikTok).
 
 ### 10.3 Optimiseur (Pro et Business)
@@ -364,6 +365,6 @@ Pub validée, pub refusée, paiement Meta échoué, budget épuisé, fin de camp
 
 ## 15. Documents suivants
 1. `docs/agents/*.md` : spécification complète de chaque agent.
-2. Design system EasAds.
+2. Design system Pubeka.
 3. Architecture technique et modèle de données.
 4. Plan d'implémentation du MVP.

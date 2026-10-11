@@ -1,8 +1,8 @@
-# EasAds — consignes pour les agents IA
+# Pubeka — consignes pour les agents IA
 
 Lu au début de **chaque** session. Court par principe : le détail est dans `docs/`, et ce fichier dit où.
 
-**EasAds** est un SaaS qui crée des publicités en ligne en quelques clics grâce à l'IA. Meta Ads aujourd'hui, Google et TikTok « bientôt ». Conçu d'abord pour l'Afrique : paiement Mobile Money par SasPay, francs CFA, français et anglais. Il remplace complètement AdFacile.
+**Pubeka** est un SaaS qui crée des publicités en ligne en quelques clics grâce à l'IA. Meta Ads aujourd'hui, Google et TikTok « bientôt ». Conçu d'abord pour l'Afrique : paiement Mobile Money par SasPay, francs CFA, français et anglais. Il remplace complètement AdFacile. Domaine : `pubeka.com` (application : `app.pubeka.com`). L'ancien nom de travail « EasAds » est abandonné : ne plus l'écrire.
 
 **État du dépôt (10/10/2026)** : la documentation est complète ; le monodépôt n'est **pas encore créé** (session S01). Le code AdFacile (`src/`, `backend/`) est encore présent : c'est une **référence** pour porter le connecteur Meta (S10), à supprimer en S12. Ne pas le modifier, ne pas s'en inspirer pour autre chose.
 
@@ -52,7 +52,7 @@ Lu au début de **chaque** session. Court par principe : le détail est dans `do
 - Changer de port : l'application tourne **toujours sur 5173**.
 - `git push --force` sur `main`, `--no-verify`, fusionner avec une CI rouge, **lancer une mise en production** (c'est la personne qui lance `release.yml`).
 - **Toucher aux couleurs** (voir ci-dessous).
-- Écrire « Facebook » dans le nom ou la marque d'EasAds (on dit « Meta » ; « Page Facebook » reste le nom de l'objet), ou mentionner AdFacile dans le produit.
+- Écrire « Facebook » dans le nom ou la marque de Pubeka (on dit « Meta » ; « Page Facebook » reste le nom de l'objet), ou mentionner AdFacile dans le produit.
 
 ### Règle absolue : les couleurs sont figées
 
@@ -132,7 +132,7 @@ La session est finie quand **tout** ce qui suit est vrai, avec la preuve dans la
 
 Deux sources : les compétences **du dépôt** (`.claude/skills/`, disponibles pour tout agent qui clone le projet) et celles **installées sur le poste** de la personne. Si une compétence n'est pas disponible dans ton environnement, suis les documents de `docs/`.
 
-Compétences du dépôt utiles à EasAds : `turborepo` (monodépôt, S01), `shadcn` (composants shadcn, S08), `test-driven-development`, `debugging-and-error-recovery`, `source-driven-development` (vérifier la documentation d'une bibliothèque avant de l'utiliser), `doubt-driven-development` (décisions à fort enjeu : sécurité, paiement, migration). **Ne pas utiliser** `pr-open`, `unit-tests`, `bklit-*` ni `add-x-tweet` : elles viennent d'un autre projet (bklit-ui) et lancent des outils qui n'existent pas ici.
+Compétences du dépôt utiles à Pubeka : `turborepo` (monodépôt, S01), `shadcn` (composants shadcn, S08), `test-driven-development`, `debugging-and-error-recovery`, `source-driven-development` (vérifier la documentation d'une bibliothèque avant de l'utiliser), `doubt-driven-development` (décisions à fort enjeu : sécurité, paiement, migration). **Ne pas utiliser** `pr-open`, `unit-tests`, `bklit-*` ni `add-x-tweet` : elles viennent d'un autre projet (bklit-ui) et lancent des outils qui n'existent pas ici.
 
 
 | Quand                                         | Compétence                                                                                                                             |

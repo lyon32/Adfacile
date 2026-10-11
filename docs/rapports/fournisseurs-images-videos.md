@@ -9,7 +9,7 @@
 | Higgsfield | docs.higgsfield.ai : index, billing-and-retention, rate-limits, errors, webhooks, sdk, faq ; catalogue open.higgsfield.ai/explore ; GitHub higgsfield-client |
 | fal.ai | fal.ai/llms.txt ; docs : pricing, faq, concurrency-limits, fal-cdn, queue ; fiches techniques (llms.txt) de 11 modèles ; recherche « seedance » du catalogue |
 | BytePlus (ModelArk) | ai.byteplus.com/en/activity/seedance2-5 ; docs.byteplus.com Pricing (ModelArk/1099320) ; docs.byteplus.com/en/docs/modelark/api-key → **erreur serveur 500 côté BytePlus, contenu illisible** |
-| Lien hors sujet | api.byteplus.com/api-explorer?action=CreateDeploymentSet&serviceCode=**ecs** : c'est l'API des **serveurs cloud** (ECS) de BytePlus, pas des modèles d'IA. Inutile pour EasAds |
+| Lien hors sujet | api.byteplus.com/api-explorer?action=CreateDeploymentSet&serviceCode=**ecs** : c'est l'API des **serveurs cloud** (ECS) de BytePlus, pas des modèles d'IA. Inutile pour Pubeka |
 
 ## 2. Fonctionnement
 

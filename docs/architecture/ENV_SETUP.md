@@ -1,4 +1,4 @@
-# Environnement et configuration — EasAds
+# Environnement et configuration — Pubeka
 
 > Version 1 · 10 octobre 2026
 > Variables d'environnement (noms et rôle, **jamais de valeurs**), installation sur un poste de développement, liste des dépendances avec leurs versions.
@@ -23,7 +23,7 @@
 
 **Colonne « Lue par »** : **N** = navigateur (préfixe `NEXT_PUBLIC_`, donc **publique**) · **W** = serveur de l'application web · **J** = tâches Trigger.dev · **B** = moment du build · **S** = CLI Supabase · **CI** = intégration continue.
 
-**Colonne « Local »** : ✔ obligatoire sur un poste de développement · ○ facultative (sans elle, la fonction utilise une fausse implémentation, voir `EASADS_FAKE_PROVIDERS`) · — inutile en local.
+**Colonne « Local »** : ✔ obligatoire sur un poste de développement · ○ facultative (sans elle, la fonction utilise une fausse implémentation, voir `PUBEKA_FAKE_PROVIDERS`) · — inutile en local.
 
 Les exemples montrent **la forme** de la valeur, jamais une vraie valeur.
 
@@ -32,15 +32,15 @@ Les exemples montrent **la forme** de la valeur, jamais une vraie valeur.
 | Variable | Rôle | Lue par | Local | Forme |
 |---|---|---|---|---|
 | `NEXT_PUBLIC_APP_ENV` | Environnement courant ; sert à Sentry, PostHog, au bandeau « Préversion » et aux garde-fous | N W J | ✔ | `development` · `preview` · `production` |
-| `NEXT_PUBLIC_SITE_URL` | Adresse du site public (liens canoniques, sitemap, e-mails) | N W J | ✔ | `http://localhost:5173` · `https://easads.com` |
-| `NEXT_PUBLIC_APP_URL` | Adresse de l'application (liens dans les e-mails, retour OAuth, retour de paiement) | N W J | ✔ | `http://app.localhost:5173` · `https://app.easads.com` |
-| `SITE_HOSTS` | Liste des noms d'hôte servis comme **site public** par `proxy.ts`. Tout autre hôte est servi comme application (préversions Vercel, tunnel). 🔶 | W | ✔ | `localhost:5173` · `easads.com,www.easads.com` |
+| `NEXT_PUBLIC_SITE_URL` | Adresse du site public (liens canoniques, sitemap, e-mails) | N W J | ✔ | `http://localhost:5173` · `https://pubeka.com` |
+| `NEXT_PUBLIC_APP_URL` | Adresse de l'application (liens dans les e-mails, retour OAuth, retour de paiement) | N W J | ✔ | `http://app.localhost:5173` · `https://app.pubeka.com` |
+| `SITE_HOSTS` | Liste des noms d'hôte servis comme **site public** par `proxy.ts`. Tout autre hôte est servi comme application (préversions Vercel, tunnel). 🔶 | W | ✔ | `localhost:5173` · `pubeka.com,www.pubeka.com` |
 | `ADMIN_PATH` | Chemin secret de l'administration (LLD §2.2). 32 caractères aléatoires. | W | ✔ | `k3J9…` (lettres et chiffres) |
 | `APP_SIGNING_SECRET` | Clé HMAC qui signe les curseurs de pagination et le paramètre `state` de la connexion Meta (anti-CSRF). 🔶 | W | ✔ | 32 octets en base64 |
 | `NEXT_PUBLIC_CAPTCHA_SITE_KEY` | Clé publique du CAPTCHA invisible (inscription, connexion, mot de passe oublié — SECURITE-BACKEND §3). ❓ Cloudflare Turnstile ou hCaptcha. La clé **secrète** se règle dans Supabase Auth, pas ici. | N | ○ | texte |
-| `PUBLIC_WEBHOOK_BASE_URL` | Adresse **publique** que les fournisseurs rappellent (fal, Higgsfield, BytePlus). En local : l'adresse du tunnel (§3.8). | W J | ○ | `https://xxxx.trycloudflare.com` · `https://app.easads.com` |
-| `EASADS_JOB_DISPATCH` | `trigger` (normal) ou `inline` : les tâches s'exécutent dans le même processus, pour les tests d'intégration et les parcours (TESTING §6.1). **`inline` refusé en production.** 🔶 | W J | ○ | `trigger` · `inline` |
-| `EASADS_FAKE_PROVIDERS` | Remplace les services externes par de fausses implémentations (pas de coût, pas de réseau). **Refusée au démarrage si `NEXT_PUBLIC_APP_ENV=production`.** 🔶 | W J | ○ | `all` · ou liste : `meta,saspay,media,ai,email` |
+| `PUBLIC_WEBHOOK_BASE_URL` | Adresse **publique** que les fournisseurs rappellent (fal, Higgsfield, BytePlus). En local : l'adresse du tunnel (§3.8). | W J | ○ | `https://xxxx.trycloudflare.com` · `https://app.pubeka.com` |
+| `PUBEKA_JOB_DISPATCH` | `trigger` (normal) ou `inline` : les tâches s'exécutent dans le même processus, pour les tests d'intégration et les parcours (TESTING §6.1). **`inline` refusé en production.** 🔶 | W J | ○ | `trigger` · `inline` |
+| `PUBEKA_FAKE_PROVIDERS` | Remplace les services externes par de fausses implémentations (pas de coût, pas de réseau). **Refusée au démarrage si `NEXT_PUBLIC_APP_ENV=production`.** 🔶 | W J | ○ | `all` · ou liste : `meta,saspay,media,ai,email` |
 
 ### 1.2 Supabase
 
@@ -54,7 +54,7 @@ Supabase remplace les anciennes clés `anon` et `service_role` par une clé **pu
 | `SUPABASE_SECRET_KEY` | Clé secrète : **contourne la RLS**. Serveur et tâches uniquement, jamais `NEXT_PUBLIC_`. | W J | ✔ | `sb_secret_…` |
 | `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` | Connexion Google en local (`supabase/config.toml`). En production : réglé dans le tableau de bord Supabase. | S | ○ | `….apps.googleusercontent.com` |
 | `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` | Secret OAuth Google, en local | S | ○ | texte |
-| `SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID` | Connexion Apple en local (identifiant du service) | S | ○ | `com.easads.web` |
+| `SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID` | Connexion Apple en local (identifiant du service) | S | ○ | `com.pubeka.web` |
 | `SUPABASE_AUTH_EXTERNAL_APPLE_SECRET` | Secret Apple (jeton signé avec la clé Apple, à régénérer tous les 6 mois) | S | ○ | JWT |
 | `SUPABASE_ACCESS_TOKEN` | Jeton personnel de la CLI pour appliquer les migrations depuis la CI | CI | — | `sbp_…` |
 | `SUPABASE_PROJECT_REF` | Projet visé par la CI (développement ou production) | CI | — | 20 caractères |
@@ -118,8 +118,8 @@ Le choix du modèle de chaque agent **n'est pas** une variable d'environnement :
 |---|---|---|---|---|
 | `RESEND_API_KEY` | Envoi des e-mails | W J | ○ | `re_…` |
 | `RESEND_WEBHOOK_SECRET` | Vérification des webhooks Resend (signature Svix) | W | ○ | `whsec_…` |
-| `EMAIL_FROM_NOTIFICATIONS` | Expéditeur des notifications | W J | ○ | `EasAds <notifications@easads.com>` |
-| `EMAIL_FROM_SUPPORT` | Expéditeur des réponses du support | W J | ○ | `EasAds <support@easads.com>` |
+| `EMAIL_FROM_NOTIFICATIONS` | Expéditeur des notifications | W J | ○ | `Pubeka <notifications@pubeka.com>` |
+| `EMAIL_FROM_SUPPORT` | Expéditeur des réponses du support | W J | ○ | `Pubeka <support@pubeka.com>` |
 
 En local, les e-mails de **connexion** (lien magique, confirmation) ne passent pas par Resend : ils arrivent dans la boîte de test de Supabase (§3.6).
 
@@ -127,7 +127,7 @@ En local, les e-mails de **connexion** (lien magique, confirmation) ne passent p
 
 | Variable | Rôle | Lue par | Local | Forme |
 |---|---|---|---|---|
-| `TRIGGER_SECRET_KEY` | Permet à l'application web de **déclencher** des tâches (clé de l'environnement : dev, staging ou prod). Exigée seulement si `EASADS_JOB_DISPATCH=trigger` | W | ✔ | `tr_dev_…` · `tr_prod_…` |
+| `TRIGGER_SECRET_KEY` | Permet à l'application web de **déclencher** des tâches (clé de l'environnement : dev, staging ou prod). Exigée seulement si `PUBEKA_JOB_DISPATCH=trigger` | W | ✔ | `tr_dev_…` · `tr_prod_…` |
 | `TRIGGER_PROJECT_REF` | Projet Trigger.dev, lu par `jobs/trigger.config.ts` | J B | ✔ | `proj_…` |
 | `TRIGGER_ACCESS_TOKEN` | Déploiement des tâches depuis la CI (environnements GitHub, CI_CD §9.3) | CI | — | `tr_pat_…` |
 | `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `VERCEL_AUTOMATION_BYPASS_SECRET` | Déploiement Vercel et tests de fumée de la préproduction depuis la CI | CI | — | texte |
@@ -152,7 +152,7 @@ Hors application. Déjà en place et ignoré par Git : `GEMINI_API_KEY`, `ANTHRO
 Toutes les variables sont lues **uniquement** par `packages/shared/src/env.ts` (CONVENTIONS §6.10). Ce fichier, avec Zod :
 
 1. refuse de démarrer si une variable obligatoire manque ou a une forme invalide, et nomme la variable fautive (sans afficher sa valeur) ;
-2. refuse `EASADS_FAKE_PROVIDERS` en production ;
+2. refuse `PUBEKA_FAKE_PROVIDERS` en production ;
 3. refuse une clé `sk_test_` en production et une clé `sk_live_` hors production ;
 4. refuse toute variable secrète dont le nom commence par `NEXT_PUBLIC_` (liste des noms autorisés à être publics dans `env.ts`).
 
@@ -212,11 +212,11 @@ Le résultat attendu est `12.7.0`.
 ### 3.2 Récupérer le code et installer
 
 ```bash
-git clone https://github.com/<organisation>/<dépôt>.git easads
+git clone https://github.com/<organisation>/<dépôt>.git pubeka
 ```
 
 ```bash
-cd easads && fnm use && corepack enable && pnpm install --frozen-lockfile
+cd pubeka && fnm use && corepack enable && pnpm install --frozen-lockfile
 ```
 
 `--frozen-lockfile` échoue si `pnpm-lock.yaml` ne correspond pas à `package.json` : c'est voulu (CONVENTIONS §1.1).
@@ -266,8 +266,8 @@ Valeurs minimales pour démarrer **sans aucun compte externe** :
 | `ADMIN_PATH`, `APP_SIGNING_SECRET`, `TOKEN_ENCRYPTION_KEYS`, `TOKEN_ENCRYPTION_ACTIVE_KEY_ID` | à générer (§1.3) |
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` | depuis `supabase status -o env` |
 | `TRIGGER_SECRET_KEY`, `TRIGGER_PROJECT_REF` | depuis le projet Trigger.dev, environnement **Dev** |
-| `EASADS_JOB_DISPATCH` | `trigger` (normal) ou `inline` : les tâches s'exécutent dans le même processus, pour les tests d'intégration et les parcours (TESTING §6.1). **`inline` refusé en production.** 🔶 | W J | ○ | `trigger` · `inline` |
-| `EASADS_FAKE_PROVIDERS` | `all` |
+| `PUBEKA_JOB_DISPATCH` | `trigger` (normal) ou `inline` : les tâches s'exécutent dans le même processus, pour les tests d'intégration et les parcours (TESTING §6.1). **`inline` refusé en production.** 🔶 | W J | ○ | `trigger` · `inline` |
+| `PUBEKA_FAKE_PROVIDERS` | `all` |
 
 Vérifier :
 
@@ -322,7 +322,7 @@ pnpm db:make-admin vous@exemple.com
 
 ### 3.8 Travailler avec les vrais services (facultatif)
 
-Par défaut `EASADS_FAKE_PROVIDERS=all` : aucune dépense, aucun compte externe. Pour tester un vrai service, le retirer de la liste et remplir ses variables :
+Par défaut `PUBEKA_FAKE_PROVIDERS=all` : aucune dépense, aucun compte externe. Pour tester un vrai service, le retirer de la liste et remplir ses variables :
 
 | Service | Mode à utiliser en local | Point d'attention |
 |---|---|---|

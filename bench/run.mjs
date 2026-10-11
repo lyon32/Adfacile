@@ -1,4 +1,4 @@
-// Banc de test EasAds : node bench/run.mjs [--only=gemini-flash,claude-haiku] [--agent=analyste|moderateur]
+// Banc de test Pubeka : node bench/run.mjs [--only=gemini-flash,claude-haiku] [--agent=analyste|moderateur]
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';

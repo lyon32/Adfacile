@@ -15,7 +15,7 @@
 Au moins 2 personnes hors de ton cercle proche, et au moins 2 pays différents si possible.
 
 ## Règles pour l'intervieweur
-1. **Ne pas présenter EasAds au début.** On écoute d'abord sa réalité.
+1. **Ne pas présenter Pubeka au début.** On écoute d'abord sa réalité.
 2. Demander des **faits passés** (« la dernière fois que… »), pas des opinions sur le futur (« est-ce que vous utiliseriez… »).
 3. Ne jamais corriger ni défendre : noter.
 4. Relancer avec « Pourquoi ? », « Racontez-moi la dernière fois. », « Et ensuite ? ».
@@ -36,7 +36,7 @@ Au moins 2 personnes hors de ton cercle proche, et au moins 2 pays différents s
 7. Une pub vous a-t-elle déjà été **refusée** ? Qu'avez-vous fait ?
 8. Avez-vous déjà payé une **formation** ou quelqu'un pour faire vos pubs ? Combien ?
 
-### C. Réaction à EasAds (10 min)
+### C. Réaction à Pubeka (10 min)
 Montrer le [prototype de choix du modèle](../design/prototype-choix-modele.html) et expliquer en une phrase : « Vous collez le lien de votre site ou une photo, l'IA prépare la pub et le visuel, vous validez et c'est publié. »
 9. Qu'est-ce que vous comprenez de cet écran ? Que feriez-vous en premier ?
 10. Qu'est-ce qui vous inquiète ou vous semble compliqué ?
@@ -45,12 +45,12 @@ Montrer le [prototype de choix du modèle](../design/prototype-choix-modele.html
 
 ### D. Le prix (5 min)
 13. Combien dépensez-vous par mois pour vous faire connaître (pub, graphiste, formation) ?
-14. EasAds Starter coûte **5 000 XAF par mois** pour 10 visuels et 2 campagnes. Votre réaction ? Trop cher, correct, pas cher ?
+14. Pubeka Starter coûte **5 000 XAF par mois** pour 10 visuels et 2 campagnes. Votre réaction ? Trop cher, correct, pas cher ?
 15. Paieriez-vous chaque mois par Mobile Money ? Avec quel opérateur ?
 16. Qu'est-ce qui vous ferait payer **dès aujourd'hui** ?
 
 ### Fin
-17. Puis-je vous recontacter pour tester EasAds en avant-première ?
+17. Puis-je vous recontacter pour tester Pubeka en avant-première ?
 18. Connaissez-vous quelqu'un d'autre que je devrais interroger ?
 
 ## Fiche de synthèse (une par entretien)

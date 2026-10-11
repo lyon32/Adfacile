@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
-  title: EasAds API
+  title: Pubeka API
   version: 1.0.0
-  summary: API interne d'EasAds (application web, puis application mobile V3).
+  summary: API interne de Pubeka (application web, puis application mobile V3).
   description: |
     Source de vérité du contrat d'API. Règles communes : docs/architecture/API_SPEC.md.
     - Toutes les erreurs suivent le format **Problem Details** (RFC 9457), type `application/problem+json`, avec un `code` stable.
@@ -11,10 +11,10 @@ info:
   license:
     name: Propriétaire — tous droits réservés
   contact:
-    name: EasAds
-    url: https://easads.com
+    name: Pubeka
+    url: https://pubeka.com
 servers:
-  - url: https://app.easads.com/api/v1
+  - url: https://app.pubeka.com/api/v1
     description: Production
   - url: http://localhost:5173/api/v1
     description: Développement local
@@ -1167,7 +1167,7 @@ components:
       type: apiKey
       in: cookie
       name: sb-access-token
-      description: Session Supabase en cookie HttpOnly, Secure, SameSite=Lax (application web). Les requêtes qui modifient des données exigent aussi une origine EasAds (contrôle Origin) — protection CSRF.
+      description: Session Supabase en cookie HttpOnly, Secure, SameSite=Lax (application web). Les requêtes qui modifient des données exigent aussi une origine Pubeka (contrôle Origin) — protection CSRF.
     bearerAuth:
       type: http
       scheme: bearer
@@ -1214,10 +1214,10 @@ components:
     # ---------- Erreurs
     Problem:
       type: object
-      description: Format d'erreur unique (RFC 9457 Problem Details) + extensions EasAds.
+      description: Format d'erreur unique (RFC 9457 Problem Details) + extensions Pubeka.
       required: [ type, title, status, code, request_id ]
       properties:
-        type: { type: string, format: uri, examples: [ 'https://easads.com/errors/insufficient-credits' ] }
+        type: { type: string, format: uri, examples: [ 'https://pubeka.com/errors/insufficient-credits' ] }
         title: { type: string, description: "Résumé court, en anglais, stable" }
         status: { type: integer, minimum: 400, maximum: 599 }
         detail: { type: string, description: "Message pour l'utilisateur, dans sa langue (fr/en)" }

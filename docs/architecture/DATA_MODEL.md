@@ -1,4 +1,4 @@
-# DATA_MODEL — Modèle de données EasAds
+# DATA_MODEL — Modèle de données Pubeka
 
 > Version 1 · 10 octobre 2026 · **Document de référence des données.** Remplace l'ancien `MODELE-DE-DONNEES.md`.
 > Source de vérité : les migrations SQL [`db/migrations/`](../../db/migrations/). La section 6 (schémas des tables) est **générée automatiquement** à partir de la base réelle par [`db/scripts/gen-data-model.mjs`](../../db/scripts/gen-data-model.mjs) : elle ne peut pas diverger du SQL.

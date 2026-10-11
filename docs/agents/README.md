@@ -1,4 +1,4 @@
-# Agents IA EasAds : règles communes
+# Agents IA Pubeka : règles communes
 
 > Ces règles s'appliquent à **tous** les agents. Chaque fichier d'agent les complète, il ne les remplace jamais.
 > Les spécifications sont **indépendantes du modèle** : elles servent aussi de banc de test pour choisir le modèle de chaque agent (PRD §14, T1).
@@ -32,7 +32,7 @@
 L'**orchestrateur** est du code, pas un agent. C'est lui qui appelle les agents, valide les sorties, décompte les quotas et appelle l'API Meta. **Aucun agent n'appelle un autre agent, et aucun agent n'appelle l'API Meta en écriture.**
 
 ## Plateformes
-EasAds vise toutes les plateformes publicitaires (PRD §1). L'Analyste, le Designer, le Modérateur et l'Assistant aide sont **indépendants de la plateforme**. Le Stratège et l'Optimiseur parlent la langue de chaque plateforme (objectifs, formats, règles) : leur spécification actuelle couvre **Meta Ads**, la première branchée. Google Ads et TikTok Ads auront chacun leur section de règles et leurs cas de test avant activation.
+Pubeka vise toutes les plateformes publicitaires (PRD §1). L'Analyste, le Designer, le Modérateur et l'Assistant aide sont **indépendants de la plateforme**. Le Stratège et l'Optimiseur parlent la langue de chaque plateforme (objectifs, formats, règles) : leur spécification actuelle couvre **Meta Ads**, la première branchée. Google Ads et TikTok Ads auront chacun leur section de règles et leurs cas de test avant activation.
 
 ## Règles communes (R1 à R12)
 
@@ -81,7 +81,7 @@ EasAds vise toutes les plateformes publicitaires (PRD §1). L'Analyste, le Desig
   "whatsapp": "string|null",    // format E.164
   "tagline": "string|null",
   "tone": "premium|friendly|bold|serious|playful|null",
-  "ad_address": "vous|tu"     // ton des pubs face au public. Défaut : "vous". L'interface EasAds tutoie toujours l'utilisateur
+  "ad_address": "vous|tu"     // ton des pubs face au public. Défaut : "vous". L'interface Pubeka tutoie toujours l'utilisateur
 }
 ```
 

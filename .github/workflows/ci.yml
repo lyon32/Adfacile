@@ -1,4 +1,4 @@
-# Intégration continue EasAds — docs/architecture/CI_CD.md §3.
+# Intégration continue Pubeka — docs/architecture/CI_CD.md §3.
 # Bloque la fusion dans main au premier échec (vérification obligatoire : « CI terminée »).
 # Tant que le monodépôt n'existe pas (pas de pnpm-workspace.yaml), tous les travaux sont ignorés.
 name: CI
@@ -23,8 +23,8 @@ env:
   NEXT_PUBLIC_SITE_URL: http://localhost:5173
   NEXT_PUBLIC_APP_URL: http://app.localhost:5173
   SITE_HOSTS: localhost:5173
-  EASADS_FAKE_PROVIDERS: all
-  EASADS_JOB_DISPATCH: inline
+  PUBEKA_FAKE_PROVIDERS: all
+  PUBEKA_JOB_DISPATCH: inline
   SUPABASE_CLI_VERSION: 2.118.0
   NEXT_TELEMETRY_DISABLED: '1'
 
@@ -46,7 +46,7 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Monodépôt EasAds absent : CI ignorée (docs/architecture/CI_CD.md §9)."
+            echo "::notice::Monodépôt Pubeka absent : CI ignorée (docs/architecture/CI_CD.md §9)."
           fi
 
   quality:
@@ -171,7 +171,7 @@ jobs:
       - run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector
       - run: pnpm ci:env >> "$GITHUB_ENV"
       - name: Installer Chromium pour Playwright
-        run: pnpm --filter @easads/web exec playwright install --with-deps chromium
+        run: pnpm --filter @pubeka/web exec playwright install --with-deps chromium
       - name: Construire, démarrer sur le port 5173, lancer P1 à P7 (390 et 1280 px)
         run: pnpm e2e:ci
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

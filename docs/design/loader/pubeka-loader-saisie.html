@@ -1,22 +1,22 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EasAds · Loader Saisie</title>
+<title>Pubeka · Loader Saisie</title>
 <style>
 html,body{margin:0;height:100%;background:#0A0A0A}
-.easads-loader{position:fixed;inset:0;display:grid;place-items:center;background:#0A0A0A;z-index:9999;transition:opacity .25s}
-.easads-loader.done{opacity:0;pointer-events:none}
-.easads-loader .lg *{transform-box:fill-box}
+.pubeka-loader{position:fixed;inset:0;display:grid;place-items:center;background:#0A0A0A;z-index:9999;transition:opacity .25s}
+.pubeka-loader.done{opacity:0;pointer-events:none}
+.pubeka-loader .lg *{transform-box:fill-box}
 
-.easads-loader .rt{transform-origin:left center;animation:wipeX .45s .5s cubic-bezier(.87,0,.13,1) both}
-.easads-loader .rb{transform-origin:left center;animation:wipeX .4s 1.05s cubic-bezier(.87,0,.13,1) both}
-.easads-loader .c1{animation:blink .5s steps(1) both, caret1 .45s .5s cubic-bezier(.87,0,.13,1) both, fadeOut .1s 1s both}
-.easads-loader .c2{opacity:0;animation:show .01s .95s both, caret2 .4s 1.05s cubic-bezier(.87,0,.13,1) both, fadeOut .1s 1.5s both}
-.easads-loader .l{opacity:0;animation:type .01s both, rise .35s cubic-bezier(.16,1,.3,1) both}
-.easads-loader .t0{animation-delay:.62s}.easads-loader .t1{animation-delay:.72s}.easads-loader .t2{animation-delay:.82s}
-.easads-loader .b0{animation-delay:1.15s}.easads-loader .b1{animation-delay:1.24s}.easads-loader .b2{animation-delay:1.33s}
-.easads-loader .bot{transform-origin:center;animation:settle .5s 1.5s cubic-bezier(.16,1,.3,1) both}
-.easads-loader .lg{transform-origin:center;animation:tvOff .5s 2.45s cubic-bezier(.7,0,.84,0) both}
+.pubeka-loader .rt{transform-origin:left center;animation:wipeX .45s .5s cubic-bezier(.87,0,.13,1) both}
+.pubeka-loader .rb{transform-origin:left center;animation:wipeX .4s 1.05s cubic-bezier(.87,0,.13,1) both}
+.pubeka-loader .c1{animation:blink .5s steps(1) both, caret1 .45s .5s cubic-bezier(.87,0,.13,1) both, fadeOut .1s 1s both}
+.pubeka-loader .c2{opacity:0;animation:show .01s .95s both, caret2 .4s 1.05s cubic-bezier(.87,0,.13,1) both, fadeOut .1s 1.5s both}
+.pubeka-loader .l{opacity:0;animation:type .01s both, rise .35s cubic-bezier(.16,1,.3,1) both}
+.pubeka-loader .t0{animation-delay:.62s}.pubeka-loader .t1{animation-delay:.72s}.pubeka-loader .t2{animation-delay:.82s}
+.pubeka-loader .b0{animation-delay:1.15s}.pubeka-loader .b1{animation-delay:1.24s}.pubeka-loader .b2{animation-delay:1.33s}
+.pubeka-loader .bot{transform-origin:center;animation:settle .5s 1.5s cubic-bezier(.16,1,.3,1) both}
+.pubeka-loader .lg{transform-origin:center;animation:tvOff .5s 2.45s cubic-bezier(.7,0,.84,0) both}
 @keyframes wipeX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @keyframes blink{0%,50%{opacity:1}25%,75%{opacity:0}}
 @keyframes caret1{from{transform:translateX(0)}to{transform:translateX(156px)}}
@@ -28,15 +28,15 @@ html,body{margin:0;height:100%;background:#0A0A0A}
 @keyframes rise{from{transform:translateY(64px)}to{transform:none}}
 @keyframes fadeOut{to{opacity:0}}
 
-@media (prefers-reduced-motion:reduce){.easads-loader *{animation-duration:.01s!important;animation-delay:0s!important}}
+@media (prefers-reduced-motion:reduce){.pubeka-loader *{animation-duration:.01s!important;animation-delay:0s!important}}
 </style></head><body>
-<div class="easads-loader" id="easads-loader" role="status" aria-label="Chargement EasAds">
-<svg class="lg" viewBox="-4 -4 168 160" width="230" height="219" aria-label="EasAds"><defs><clipPath id="ct2"><rect width="160" height="72" rx="10"/></clipPath><clipPath id="cb2"><rect y="80" width="160" height="72" rx="10"/></clipPath></defs>
+<div class="pubeka-loader" id="pubeka-loader" role="status" aria-label="Chargement Pubeka">
+<svg class="lg" viewBox="-4 -4 168 160" width="230" height="219" aria-label="Pubeka"><defs><clipPath id="ct2"><rect width="160" height="72" rx="10"/></clipPath><clipPath id="cb2"><rect y="80" width="160" height="72" rx="10"/></clipPath></defs>
 <g class="top"><rect class="rt" width="160" height="72" rx="10" fill="#1F2421"/><g clip-path="url(#ct2)"><path class="l t0" d="M32.675 54.0V17.5H41.675V54.0ZM40.675 54.0V46.4H56.074999999999996V54.0ZM40.675 39.25V31.65H55.02499999999999V39.25ZM40.675 25.099999999999998V17.5H55.77499999999999V25.099999999999998Z" fill="#F4F4EF"/><path class="l t1" d="M58.974999999999994 54.0 70.675 17.5H85.57499999999999L97.675 54.0H88.07499999999999L78.675 24.0L81.32499999999999 25.0H74.725L77.425 24.0L68.27499999999999 54.0ZM68.52499999999999 45.55 71.32499999999999 37.95H85.175L87.975 45.55Z" fill="#F4F4EF"/><path class="l t2" d="M114.77499999999999 55.0Q109.67499999999998 55.0 106.19999999999999 53.4Q102.725 51.8 100.94999999999999 49.025Q99.17499999999998 46.25 99.17499999999998 42.65H108.17499999999998Q108.17499999999998 43.95 108.89999999999998 45.025000000000006Q109.62499999999999 46.1 111.07499999999999 46.7Q112.52499999999999 47.3 114.77499999999999 47.3Q116.725 47.3 118.1 46.8Q119.475 46.3 120.19999999999999 45.4Q120.92499999999998 44.5 120.92499999999998 43.25Q120.92499999999998 41.65 119.57499999999999 40.775Q118.225 39.9 115.02499999999999 39.65L112.67499999999998 39.45Q107.02499999999999 38.95 103.67499999999998 35.9Q100.32499999999999 32.849999999999994 100.32499999999999 27.799999999999997Q100.32499999999999 24.2 101.99999999999999 21.65Q103.67499999999998 19.1 106.725 17.75Q109.77499999999999 16.4 113.92499999999998 16.4Q118.42499999999998 16.4 121.54999999999998 17.9Q124.67499999999998 19.4 126.32499999999999 22.125Q127.975 24.849999999999998 127.975 28.45H118.975Q118.975 27.25 118.375 26.25Q117.77499999999999 25.25 116.64999999999999 24.674999999999997Q115.52499999999999 24.099999999999998 113.92499999999998 24.099999999999998Q112.42499999999998 24.099999999999998 111.39999999999998 24.574999999999996Q110.37499999999999 25.049999999999997 109.85 25.9Q109.32499999999999 26.75 109.32499999999999 27.799999999999997Q109.32499999999999 29.2 110.27499999999999 30.2Q111.225 31.2 113.57499999999999 31.4L115.92499999999998 31.599999999999998Q120.02499999999999 31.95 123.17499999999998 33.375Q126.32499999999999 34.8 128.125 37.25Q129.92499999999998 39.7 129.92499999999998 43.25Q129.92499999999998 46.8 128.1 49.45Q126.27499999999999 52.1 122.89999999999999 53.55Q119.52499999999999 55.0 114.77499999999999 55.0Z" fill="#F4F4EF"/></g></g>
 <g class="bot"><rect class="rb" y="80" width="160" height="72" rx="10" fill="#C6F432"/><g clip-path="url(#cb2)"><path class="l b0" d="M24.724999999999994 134.0 36.425 97.5H51.324999999999996L63.425 134.0H53.824999999999996L44.425 104.0L47.074999999999996 105.0H40.474999999999994L43.175 104.0L34.025 134.0ZM34.275 125.55 37.074999999999996 117.95H50.925L53.724999999999994 125.55Z" fill="#0A0A0A"/><path class="l b1" d="M75.82499999999999 134.2V125.5H81.82499999999999Q84.175 125.5 86.05 124.825Q87.925 124.15 89.225 122.875Q90.525 121.6 91.225 119.775Q91.925 117.95 91.925 115.65Q91.925 113.25 91.225 111.425Q90.525 109.6 89.225 108.375Q87.925 107.15 86.05 106.525Q84.175 105.9 81.82499999999999 105.9H75.82499999999999V97.19999999999999H81.425Q86.375 97.19999999999999 90.1 98.6Q93.82499999999999 100.0 96.32499999999999 102.475Q98.82499999999999 104.95 100.07499999999999 108.2Q101.32499999999999 111.45 101.32499999999999 115.1V116.2Q101.32499999999999 119.55 100.07499999999999 122.775Q98.82499999999999 126.0 96.32499999999999 128.575Q93.82499999999999 131.15 90.1 132.675Q86.375 134.2 81.425 134.2ZM67.52499999999999 134.2V97.19999999999999H76.82499999999999V134.2Z" fill="#0A0A0A"/><path class="l b2" d="M119.425 135.0Q114.32499999999999 135.0 110.85 133.4Q107.375 131.8 105.6 129.025Q103.82499999999999 126.25 103.82499999999999 122.65H112.82499999999999Q112.82499999999999 123.95 113.54999999999998 125.025Q114.27499999999999 126.1 115.725 126.69999999999999Q117.175 127.3 119.425 127.3Q121.375 127.3 122.75 126.8Q124.125 126.3 124.85 125.4Q125.57499999999999 124.5 125.57499999999999 123.25Q125.57499999999999 121.65 124.225 120.775Q122.875 119.9 119.675 119.65L117.32499999999999 119.45Q111.675 118.95 108.32499999999999 115.9Q104.975 112.85 104.975 107.8Q104.975 104.2 106.64999999999999 101.65Q108.32499999999999 99.1 111.375 97.75Q114.425 96.4 118.57499999999999 96.4Q123.07499999999999 96.4 126.19999999999999 97.9Q129.325 99.4 130.975 102.125Q132.625 104.85 132.625 108.45H123.625Q123.625 107.25 123.025 106.25Q122.425 105.25 121.3 104.675Q120.175 104.1 118.57499999999999 104.1Q117.07499999999999 104.1 116.04999999999998 104.57499999999999Q115.02499999999999 105.05 114.5 105.9Q113.975 106.75 113.975 107.8Q113.975 109.2 114.925 110.2Q115.875 111.2 118.225 111.4L120.57499999999999 111.6Q124.675 111.95 127.82499999999999 113.375Q130.975 114.8 132.77499999999998 117.25Q134.575 119.7 134.575 123.25Q134.575 126.8 132.75 129.45Q130.925 132.1 127.55000000000001 133.55Q124.175 135.0 119.425 135.0Z" fill="#0A0A0A"/></g></g><rect class="c1" x="0" y="0" width="4" height="72" rx="2" fill="#C6F432"/><rect class="c2" x="0" y="80" width="4" height="72" rx="2" fill="#F4F4EF"/></svg>
 </div>
 <script>
 /* Le loader dure 3 s puis disparaît. Retire ce script si tu gères la fin toi-même. */
-setTimeout(function(){document.getElementById('easads-loader').classList.add('done');},3000);
+setTimeout(function(){document.getElementById('pubeka-loader').classList.add('done');},3000);
 </script>
 </body></html>

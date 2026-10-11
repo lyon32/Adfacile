@@ -1,5 +1,5 @@
 # Banc de test des agents — obligatoire si un prompt ou un modèle d'agent change (TR-AGT-04).
-# Appelle les VRAIS modèles : coûte de l'argent. Actif seulement si la variable EASADS_PIPELINE_ENABLED vaut true.
+# Appelle les VRAIS modèles : coûte de l'argent. Actif seulement si la variable PUBEKA_PIPELINE_ENABLED vaut true.
 name: Banc des agents
 
 on:
@@ -23,10 +23,10 @@ concurrency:
 jobs:
   bench:
     name: Banc des agents (vrais modèles)
-    if: vars.EASADS_PIPELINE_ENABLED == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.draft)
+    if: vars.PUBEKA_PIPELINE_ENABLED == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.draft)
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    environment: easads-agents-bench
+    environment: pubeka-agents-bench
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

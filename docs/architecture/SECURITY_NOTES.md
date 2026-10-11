@@ -1,4 +1,4 @@
-# Règles de sécurité et cas limites — EasAds
+# Règles de sécurité et cas limites — Pubeka
 
 > Version 1 · 10 octobre 2026
 > **Qui peut faire quoi**, **comment chaque entrée est validée**, et **comment l'application se comporte dans les situations limites**. Ce document fixe des règles de code ; les protections déjà en place (RLS, en-têtes, secrets, administration) sont décrites dans [SECURITE-BACKEND](SECURITE-BACKEND.md).
@@ -240,10 +240,10 @@ Une réponse d'agent ou un résultat de génération est traité comme une donn�
 | # | Situation | Comportement attendu | Réponse |
 |---|---|---|---|
 | EC-META-01 | Jeton expiré au moment de publier | Campagne → `error`, **quota rendu**, notification « Reconnecte Meta » | `424 meta_token_expired` |
-| EC-META-02 | L'utilisateur retire l'autorisation d'EasAds dans Facebook | Connexion marquée `revoked` à la prochaine erreur ou par webhook ; campagnes **toujours actives chez Meta** ; bandeau « Reconnecte Meta pour gérer tes campagnes » | `424` |
+| EC-META-02 | L'utilisateur retire l'autorisation de Pubeka dans Facebook | Connexion marquée `revoked` à la prochaine erreur ou par webhook ; campagnes **toujours actives chez Meta** ; bandeau « Reconnecte Meta pour gérer tes campagnes » | `424` |
 | EC-META-03 | Page retirée du portefeuille business, ou droits perdus sur la Page | Page désactivée chez nous, campagnes conservées en lecture, notification au propriétaire | — |
 | EC-META-04 | Compte publicitaire désactivé par Meta | Bilan de santé en échec, publication bloquée, lien vers l'aide de Meta | `424` |
-| EC-META-05 | Publication **réussie chez Meta** mais réponse perdue (délai dépassé) | Résultat ambigu : **pas de nouvel envoi automatique** ; la tâche cherche d'abord chez Meta une campagne portant notre référence de publication 🔶 (ex. libellé contenant l'identifiant de la campagne EasAds), puis décide | — |
+| EC-META-05 | Publication **réussie chez Meta** mais réponse perdue (délai dépassé) | Résultat ambigu : **pas de nouvel envoi automatique** ; la tâche cherche d'abord chez Meta une campagne portant notre référence de publication 🔶 (ex. libellé contenant l'identifiant de la campagne Pubeka), puis décide | — |
 | EC-META-06 | Une seule des deux pubs d'un test A/B est refusée | La campagne reste active avec l'autre pub ; le Modérateur ne traite que la pub refusée | — |
 | EC-META-07 | Pause demandée alors que Meta ne répond pas | La campagne **n'est pas** affichée comme en pause ; message « Meta ne répond pas, réessaie » ; pas de faux succès | `502 meta_error` |
 | EC-META-08 | Campagne modifiée ou supprimée directement dans le gestionnaire de publicités de Meta | La synchronisation horaire reprend les valeurs de Meta (**Meta fait foi** pour statut, budget et dates d'une campagne publiée) 🔶 ; supprimée → `stopped`, historique conservé | — |
@@ -277,7 +277,7 @@ Une réponse d'agent ou un résultat de génération est traité comme une donn�
 | EC-CRED-06 | Même résultat reçu deux fois | Un seul visuel, une seule consommation (✅ TR-MED-10) | `200` |
 | EC-CRED-07 | Fichier du résultat introuvable au téléchargement | 3 essais espacés, puis visuel en échec et crédit rendu | — |
 | EC-CRED-08 | Annulation demandée alors que le fournisseur a commencé | Refus : annulation possible seulement en file d'attente | `409 conflict` |
-| EC-CRED-09 | Bascule acceptée, puis le résultat d'origine arrive quand même | Le premier résultat d'origine est **ignoré** (coût absorbé par EasAds) ; les crédits d'origine ont été rendus à l'acceptation ; seuls ceux de la bascule sont consommés | — |
+| EC-CRED-09 | Bascule acceptée, puis le résultat d'origine arrive quand même | Le premier résultat d'origine est **ignoré** (coût absorbé par Pubeka) ; les crédits d'origine ont été rendus à l'acceptation ; seuls ceux de la bascule sont consommés | — |
 | EC-CRED-10 | Modèle désactivé par l'administration pendant qu'une génération attend | Déjà envoyée : continue. Pas encore envoyée : la bascule est proposée, sinon annulation et crédits rendus | — |
 | EC-CRED-11 | Budget mensuel de 15 $ d'un fournisseur atteint | Ses modèles passent « indisponibles » ; la bascule vers un modèle testé est proposée (✅ TR-MED-08) | `503 provider_unavailable` si aucun secours |
 | EC-CRED-12 | Crédits rendus **après** la fin de la période (génération à cheval) | ✅ Rendus dans le compartiment **bonus** (le client ne perd pas des crédits qu'il n'a pas pu utiliser) ; le registre l'indique avec le motif | — |
@@ -287,7 +287,7 @@ Une réponse d'agent ou un résultat de génération est traité comme une donn�
 
 | # | Situation | Comportement attendu | Réponse |
 |---|---|---|---|
-| EC-PAY-01 | Le webhook SasPay arrive avant le retour de l'utilisateur sur EasAds | L'écran « Paiement en cours de vérification » interroge l'état et affiche le succès dès qu'il est connu | — |
+| EC-PAY-01 | Le webhook SasPay arrive avant le retour de l'utilisateur sur Pubeka | L'écran « Paiement en cours de vérification » interroge l'état et affiche le succès dès qu'il est connu | — |
 | EC-PAY-02 | Le webhook n'arrive jamais | Vérification planifiée des paiements en attente chez SasPay ; sans réponse après 24 h 🔶 → `expired` et proposition d'envoyer une preuve | — |
 | EC-PAY-03 | Deux paiements lancés dans deux onglets (clés d'idempotence différentes) | Une seule session de paiement **en attente** par espace et par objet : la deuxième demande renvoie la session existante 🔶 | `200` (session existante) |
 | EC-PAY-04 | Montant du paiement relu chez SasPay ≠ montant enregistré | **Pas d'activation** ; paiement en vérification manuelle ; alerte à l'administrateur | — |

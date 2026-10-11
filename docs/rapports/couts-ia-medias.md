@@ -10,7 +10,7 @@ La console Higgsfield affiche **0,374 $ (barré 0,44 $)** pour Marketing Studio 
 
 ## 1. Images
 
-| Modèle / outil | Usage pour EasAds | Prix normal | ≈ FCFA |
+| Modèle / outil | Usage pour Pubeka | Prix normal | ≈ FCFA |
 |---|---|---|---|
 | Product shots (workflow) | Photo produit → image de campagne | 0,016 $ / image | 10 |
 | Marketing Studio Image | Créer et **modifier** une image de campagne (1K à 4K) | à partir de 0,016 $ / image | 10+ |

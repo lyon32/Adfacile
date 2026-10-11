@@ -1,7 +1,7 @@
-# Conception détaillée (LLD) — EasAds
+# Conception détaillée (LLD) — Pubeka
 
 > Version 1 · 10 octobre 2026
-> Ce document dit **où va chaque fichier, qui fait quoi, et avec quelles signatures**. Un humain ou un agent IA qui écrit du code pour EasAds suit cet arbre et ces noms : on n'invente pas de dossier, de couche ou de convention.
+> Ce document dit **où va chaque fichier, qui fait quoi, et avec quelles signatures**. Un humain ou un agent IA qui écrit du code pour Pubeka suit cet arbre et ces noms : on n'invente pas de dossier, de couche ou de convention.
 >
 > Documents liés : [ARCHITECTURE](ARCHITECTURE.md) (le quoi et le pourquoi) · [API_SPEC](API_SPEC.md) + [`api/openapi.yaml`](../../api/openapi.yaml) (le contrat) · [DATA_MODEL](DATA_MODEL.md) (les tables) · [SECURITE-BACKEND](SECURITE-BACKEND.md) · [APPFLOW](../produit/APPFLOW.md) (les écrans) · [agents/](../agents/README.md).
 >
@@ -47,7 +47,7 @@ Ces choix n'étaient pas encore écrits ailleurs. Ils sont nécessaires pour fix
 ### 2.1 L'arbre cible
 
 ```
-easads/                                  ← ce dépôt (Adfacile), renommé plus tard
+pubeka/                                  ← ce dépôt (Adfacile), renommé plus tard
 ├─ package.json                          scripts racine (turbo), "packageManager": "pnpm@…"
 ├─ pnpm-workspace.yaml                   apps/*, packages/*, jobs, bench
 ├─ turbo.json                            tâches : typecheck, lint, test, build
@@ -80,7 +80,7 @@ easads/                                  ← ce dépôt (Adfacile), renommé plu
 │     │  ├─ global-error.tsx
 │     │  ├─ sitemap.ts · robots.ts       site public uniquement
 │     │  │
-│     │  ├─ site/[locale]/               easads.com/{fr|en}/…   (statique : SSG/ISR)
+│     │  ├─ site/[locale]/               pubeka.com/{fr|en}/…   (statique : SSG/ISR)
 │     │  │  ├─ layout.tsx                GSAP + Lenis, en-tête, pied de page, hreflang
 │     │  │  ├─ page.tsx                  accueil
 │     │  │  ├─ fonctionnement/page.tsx
@@ -90,7 +90,7 @@ easads/                                  ← ce dépôt (Adfacile), renommé plu
 │     │  │  ├─ blog/page.tsx · blog/[slug]/page.tsx
 │     │  │  └─ (legal)/confidentialite · conditions · suppression-des-donnees
 │     │  │
-│     │  ├─ console/                     app.easads.com/…        (connexion obligatoire)
+│     │  ├─ console/                     app.pubeka.com/…        (connexion obligatoire)
 │     │  │  ├─ (auth)/                   sans barre latérale
 │     │  │  │  ├─ connexion/page.tsx
 │     │  │  │  ├─ inscription/page.tsx
@@ -109,7 +109,7 @@ easads/                                  ← ce dépôt (Adfacile), renommé plu
 │     │  │     ├─ support/page.tsx · [ticket]/page.tsx
 │     │  │     └─ parrainage/page.tsx
 │     │  │
-│     │  ├─ admin/                       app.easads.com/<chemin-secret>/…  (aal2)
+│     │  ├─ admin/                       app.pubeka.com/<chemin-secret>/…  (aal2)
 │     │  │  ├─ layout.tsx                requireAdmin() sinon notFound()
 │     │  │  ├─ page.tsx                  vue d'ensemble
 │     │  │  ├─ utilisateurs/ · espaces/[id]/ · paiements/ · tickets/
@@ -193,7 +193,7 @@ easads/                                  ← ce dépôt (Adfacile), renommé plu
 │  ├─ billing/                           registre de crédits, formules, SasPay, TVA, change
 │  ├─ notifications/                     catalogue d'événements, e-mails Resend FR/EN, cloche
 │  ├─ i18n/                              textes FR/EN (interface, e-mails)
-│  ├─ ui/                                composants shadcn habillés EasAds, jetons, loader
+│  ├─ ui/                                composants shadcn habillés Pubeka, jetons, loader
 │  ├─ core/                              CAS D'USAGE : la logique métier qui orchestre tout
 │  └─ testing/                           tests uniquement : constructeurs, fabriques, fausses implémentations, fixtures (TESTING §5)
 │
@@ -214,11 +214,11 @@ Un seul projet Next.js sert trois adresses. Sans précaution, `/campagnes` (appl
 
 | Adresse demandée | Réécrite vers | Accès direct au dossier interne |
 |---|---|---|
-| `easads.com/fr/tarifs` | `/site/fr/tarifs` | `easads.com/site/…` → 404 |
-| `easads.com/` | redirection 308 vers `/fr` ou `/en` (langue du navigateur) | — |
-| `app.easads.com/campagnes` | `/console/campagnes` | `app.easads.com/console/…` → 404 |
-| `app.easads.com/<ADMIN_PATH>/…` | `/admin/…` | `app.easads.com/admin/…` → 404 |
-| `app.easads.com/api/v1/…` | inchangé | `easads.com/api/…` → 404 |
+| `pubeka.com/fr/tarifs` | `/site/fr/tarifs` | `pubeka.com/site/…` → 404 |
+| `pubeka.com/` | redirection 308 vers `/fr` ou `/en` (langue du navigateur) | — |
+| `app.pubeka.com/campagnes` | `/console/campagnes` | `app.pubeka.com/console/…` → 404 |
+| `app.pubeka.com/<ADMIN_PATH>/…` | `/admin/…` | `app.pubeka.com/admin/…` → 404 |
+| `app.pubeka.com/api/v1/…` | inchangé | `pubeka.com/api/…` → 404 |
 
 `ADMIN_PATH` est une variable chiffrée de Vercel. Le *layout* `admin/layout.tsx` revérifie l'accès (`requireAdmin()`) : la réécriture cache le chemin, elle **ne protège pas** à elle seule.
 
@@ -281,7 +281,7 @@ Les 6 agents IA (docs/agents). Pour chacun : prompt versionné (`prompts/v3.md`)
 Tout ce qui produit une image ou une vidéo. Il contient le **catalogue** (lecture de `media_models`, `model_quality_levels`), l'**aiguilleur** (choix du modèle principal ou de secours, ARCHITECTURE §8.3), le **calcul du prix en crédits**, un client par fournisseur (fal, Higgsfield, BytePlus) avec la même interface, la **copie immédiate** des fichiers vers le stockage privé, et le **rendu des calques** (titre, prix, numéro, logo posés par notre code selon `layout_id`). Il ne réserve pas de crédits lui-même : c'est `core` qui le fait.
 
 ### `packages/platforms`
-Une interface commune `PlatformConnector` (ARCHITECTURE §6) et une implémentation par plateforme. `meta/` reprend en TypeScript la logique éprouvée d'AdFacile (`facebookAdsService.js`, `campaignController.js`, `facebookErrors.js`, destinations de messagerie) avec ses tests. Il traduit les erreurs de Meta en codes EasAds (`meta_token_expired`, `meta_payment_method_missing`…), chiffre et déchiffre les jetons. `google/` et `tiktok/` exportent un connecteur qui répond `available: false`.
+Une interface commune `PlatformConnector` (ARCHITECTURE §6) et une implémentation par plateforme. `meta/` reprend en TypeScript la logique éprouvée d'AdFacile (`facebookAdsService.js`, `campaignController.js`, `facebookErrors.js`, destinations de messagerie) avec ses tests. Il traduit les erreurs de Meta en codes Pubeka (`meta_token_expired`, `meta_payment_method_missing`…), chiffre et déchiffre les jetons. `google/` et `tiktok/` exportent un connecteur qui répond `available: false`.
 
 ### `packages/billing`
 L'argent et les crédits. Formules et limites, calcul des montants (abonnement, passage à une formule supérieure, achat de crédits, frais SasPay, TVA par pays), conversion USD ↔ XAF/XOF, client SasPay (création de session, vérification d'un paiement), et lecture du **registre de crédits** (soldes par compartiment). Tous les montants sont des **entiers** (FCFA, centimes de dollar). Il ne décide pas d'activer un abonnement : il fournit les calculs et les appels, `core` décide.
@@ -293,7 +293,7 @@ Le catalogue des événements notifiables (ARCHITECTURE §11), les modèles d'e-
 Les fichiers de textes `fr.json` et `en.json` (interface, e-mails, messages d'erreur `detail`), et les fonctions de formatage (montants en FCFA avec chiffres tabulaires, dates dans le fuseau de l'utilisateur, salutation selon l'heure).
 
 ### `packages/ui`
-Les composants shadcn/ui habillés avec les jetons du design system v2 (Sora, couleurs, rayons), le loader « Saisie » en composant React, et les composants EasAds réutilisables (montant, carte de modèle, badge de statut de campagne). Aucun appel réseau, aucune logique métier : des composants purs pilotés par leurs propriétés.
+Les composants shadcn/ui habillés avec les jetons du design system v2 (Sora, couleurs, rayons), le loader « Saisie » en composant React, et les composants Pubeka réutilisables (montant, carte de modèle, badge de statut de campagne). Aucun appel réseau, aucune logique métier : des composants purs pilotés par leurs propriétés.
 
 ### `packages/shared`
 Les briques sans dépendance métier : type `Money` et arithmétique entière, identifiants, dates et fuseaux, lecture et validation des variables d'environnement (`env.ts`, échoue au démarrage si une variable manque), journal structuré relié à Sentry, utilitaire `assertNever`.

@@ -1,4 +1,4 @@
-# Documentation EasAds
+# Documentation Pubeka
 
 Toute la documentation du projet est ici. Les consignes pour les agents IA sont à la racine : [`CLAUDE.md`](../CLAUDE.md) (et [`AGENTS.md`](../AGENTS.md), qui y renvoie). Le code du banc de test des modèles IA est dans [`../bench/`](../bench/).
 
@@ -6,7 +6,7 @@ Toute la documentation du projet est ici. Les consignes pour les agents IA sont 
 |---|---|
 | [ROADMAP.md](ROADMAP.md) | **Plan de construction du MVP** : 36 sessions de travail avec un agent IA, dans l'ordre, avec ce qui prouve que chacune est finie |
 | [produit/PROJECT_BRIEF.md](produit/PROJECT_BRIEF.md) | **À lire en premier** : vision, problème, pour qui, critères de réussite, non-objectifs |
-| [produit/PRD.md](produit/PRD.md) | Ce que fait EasAds : mission, parcours, plans, paiement, feuille de route |
+| [produit/PRD.md](produit/PRD.md) | Ce que fait Pubeka : mission, parcours, plans, paiement, feuille de route |
 | [produit/APPFLOW.md](produit/APPFLOW.md) | Parcours et écrans : chaque écran, chaque étape, chaque état (vide, chargement, erreur, limites) |
 | [produit/TRD.md](produit/TRD.md) | Exigences techniques vérifiables (performance, sécurité, données, paiement, médias, critères d'acceptation du MVP) |
 | [agents/](agents/README.md) | Les 6 agents IA (règles, entrées et sorties, critères de qualité) et les résultats des tests de modèles |

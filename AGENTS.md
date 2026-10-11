@@ -1,4 +1,4 @@
-# EasAds — consignes pour les agents IA (Codex et autres)
+# Pubeka — consignes pour les agents IA (Codex et autres)
 
 Les consignes sont écrites **une seule fois**, dans [`CLAUDE.md`](CLAUDE.md), pour tous les agents. Lis-le en entier avant toute action : ta tâche, ce que tu dois toujours ou jamais faire, la définition de « fini », le périmètre de chaque session et les documents de référence.
 

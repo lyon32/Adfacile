@@ -1,6 +1,6 @@
 # Déploiement automatique en préproduction après une CI réussie sur main — docs/architecture/CI_CD.md §4.
 # Ordre fixe : migrations (projet Supabase de développement) → tâches Trigger.dev (staging) → Vercel → tests de fumée.
-# Actif seulement si la variable de dépôt EASADS_PIPELINE_ENABLED vaut true.
+# Actif seulement si la variable de dépôt PUBEKA_PIPELINE_ENABLED vaut true.
 name: Déploiement préproduction
 
 on:
@@ -21,13 +21,13 @@ jobs:
   deploy:
     name: Préproduction
     if: >-
-      vars.EASADS_PIPELINE_ENABLED == 'true' &&
+      vars.PUBEKA_PIPELINE_ENABLED == 'true' &&
       (github.event_name == 'workflow_dispatch' ||
        (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'))
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     environment:
-      name: easads-staging
+      name: pubeka-staging
       url: https://${{ vars.STAGING_APP_HOST }}
     env:
       SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
@@ -57,7 +57,7 @@ jobs:
         run: supabase db push
 
       - name: 2. Tâches Trigger.dev (environnement staging)
-        run: pnpm --filter @easads/jobs exec trigger.dev deploy --env staging --external-id "$SHA"
+        run: pnpm --filter @pubeka/jobs exec trigger.dev deploy --env staging --external-id "$SHA"
 
       - name: 3. Vercel — construction (variables de l'environnement Preview)
         run: |
@@ -74,5 +74,5 @@ jobs:
           BASE_URL: https://${{ vars.STAGING_APP_HOST }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
-          pnpm --filter @easads/web exec playwright install --with-deps chromium
+          pnpm --filter @pubeka/web exec playwright install --with-deps chromium
           pnpm e2e:smoke

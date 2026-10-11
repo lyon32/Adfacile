@@ -1,7 +1,7 @@
-# Conventions de code — EasAds
+# Conventions de code — Pubeka
 
 > Version 1 · 10 octobre 2026
-> Règles que **tout** code d'EasAds respecte, qu'il soit écrit par une personne ou par un agent IA. En cas de doute, ce document l'emporte sur les habitudes personnelles et sur ce que « fait d'habitude » un outil.
+> Règles que **tout** code de Pubeka respecte, qu'il soit écrit par une personne ou par un agent IA. En cas de doute, ce document l'emporte sur les habitudes personnelles et sur ce que « fait d'habitude » un outil.
 >
 > Documents liés : [LLD](LLD.md) (arborescence, modules, signatures) · [API_SPEC](API_SPEC.md) · [SECURITE-BACKEND](SECURITE-BACKEND.md) · [DESIGN-SYSTEM](../design/DESIGN-SYSTEM.md).
 >
@@ -149,7 +149,7 @@ Imports interdits (`no-restricted-imports`) :
 | `axios` | inutile, une dépendance de plus | `fetch`, ou `packages/api-client` |
 | `moment`, `dayjs` | poids, fuseaux mal gérés | `Intl` + fonctions de `packages/shared/time` |
 | `@react-email/components` | paquet abandonné | `react-email` |
-| `../../packages/…` (chemin relatif entre modules) | contourne les frontières | `@easads/<module>` |
+| `../../packages/…` (chemin relatif entre modules) | contourne les frontières | `@pubeka/<module>` |
 | `gsap`, `lenis` hors de `site/` et `features/marketing/` | animations réservées au site public | transitions CSS courtes |
 
 ### 3.4 Commandes
@@ -223,7 +223,7 @@ Commit écrit avec un agent IA : pied `Co-Authored-By:` avec le nom de l'agent.
 
 ### 4.2 Branches
 
-`<type>/<sujet-en-kebab-case>`, courte durée de vie, partie de `main` : `feat/campaign-publish`, `fix/saspay-webhook-replay`, `docs/easads-prd-agents`.
+`<type>/<sujet-en-kebab-case>`, courte durée de vie, partie de `main` : `feat/campaign-publish`, `fix/saspay-webhook-replay`, `docs/pubeka-prd-agents`.
 
 ### 4.3 Pull requests
 
@@ -255,7 +255,7 @@ Commit écrit avec un agent IA : pied `Co-Authored-By:` avec le nom de l'agent.
 | Adresses de l'API | **anglais**, noms au pluriel, `kebab-case` | `/payment-proofs`, `/ad-accounts` |
 | Migration SQL | `NNNN_sujet.sql`, jamais renumérotée | `0003_api_support.sql` |
 | Prompt d'agent | `packages/agents/src/<agent>/prompts/v<N>.md` | `stratege/prompts/v2.md` |
-| Paquet interne | `@easads/<module>` | `@easads/core`, `@easads/db` |
+| Paquet interne | `@pubeka/<module>` | `@pubeka/core`, `@pubeka/db` |
 
 ### 5.2 Code TypeScript
 

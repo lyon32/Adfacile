@@ -1,4 +1,4 @@
-// Tests de sécurité de la base EasAds — exécutés sur un vrai PostgreSQL (PGlite).
+// Tests de sécurité de la base Pubeka — exécutés sur un vrai PostgreSQL (PGlite).
 // Usage : node db/tests/security.test.mjs <dossier contenant node_modules/@electric-sql/pglite>
 // Simule les rôles Supabase (anon, authenticated, service_role) et les fonctions auth.uid() / auth.jwt().
 import { readFileSync } from 'node:fs';
@@ -33,7 +33,7 @@ await db.exec(readFileSync(join(here, '..', 'migrations', '0001_init.sql'), 'utf
 // --- Données de test (superutilisateur) --------------------------------
 await db.exec(`
   insert into auth.users values ('${ids.A}'),('${ids.B}'),('${ids.ADM}'),('${ids.V}');
-  insert into public.profiles (id,email) values ('${ids.A}','a@test.cm'),('${ids.B}','b@test.cm'),('${ids.ADM}','adm@easads.com'),('${ids.V}','v@test.cm');
+  insert into public.profiles (id,email) values ('${ids.A}','a@test.cm'),('${ids.B}','b@test.cm'),('${ids.ADM}','adm@pubeka.com'),('${ids.V}','v@test.cm');
   insert into public.workspaces (id,name,owner_id) values ('${ids.WA}','Boutique A','${ids.A}'),('${ids.WB}','Boutique B','${ids.B}');
   insert into public.workspace_members values ('${ids.WA}','${ids.A}','owner',null,now()),('${ids.WB}','${ids.B}','owner',null,now()),('${ids.WA}','${ids.V}','viewer',null,now());
   insert into public.campaigns (id,workspace_id,name,created_by) values ('${ids.CA}','${ids.WA}','Campagne A','${ids.A}'),('${ids.CB}','${ids.WB}','Campagne SECRETE B','${ids.B}');

@@ -1,4 +1,4 @@
-# Sécurité du backend EasAds
+# Sécurité du backend Pubeka
 
 > Version 1 · 10 octobre 2026 · Objectif : **aucune fuite de données, aucune prise de contrôle**, ni sur la production, ni sur l'environnement de test, ni sur l'administration.
 > Schéma de la base : [`db/migrations/0001_init.sql`](../../db/migrations/0001_init.sql) · stockage : [`0002_storage.sql`](../../db/migrations/0002_storage.sql) · tests d'attaque : [`db/tests/security.test.mjs`](../../db/tests/security.test.mjs).
@@ -15,7 +15,7 @@
 | Données des clients (campagnes, business, fichiers, statistiques) | Confidentielles ; fuite = perte de confiance et sanctions légales |
 | Crédits et paiements | Fraude possible (crédits gratuits, abonnement activé sans payer) |
 | Administration | Contrôle total sur tous les comptes |
-| Clés EasAds (SasPay, IA, fournisseurs médias, Meta App) | Coût et usurpation |
+| Clés Pubeka (SasPay, IA, fournisseurs médias, Meta App) | Coût et usurpation |
 | Environnement de test | Souvent la porte d'entrée : il ne doit contenir **aucune** vraie donnée ni clé de production |
 
 ---
@@ -79,14 +79,14 @@
 | Menace | Protection | Statut |
 |---|---|---|
 | Vol de session par script (XSS) | Échappement automatique de React ; **aucun `dangerouslySetInnerHTML`** (le loader est réécrit) ; Markdown du blog nettoyé ; **CSP stricte** avec nonce | 🔧 |
-| Requêtes forgées (CSRF) | Pas d'actions serveur Next.js pour les écritures (LLD D2) ; chaque écriture de `/api/v1` avec cookie exige un en-tête `Origin` EasAds (API_SPEC §2.2) ; cookies `SameSite` | 🔧 |
+| Requêtes forgées (CSRF) | Pas d'actions serveur Next.js pour les écritures (LLD D2) ; chaque écriture de `/api/v1` avec cookie exige un en-tête `Origin` Pubeka (API_SPEC §2.2) ; cookies `SameSite` | 🔧 |
 | Clic détourné (clickjacking) | `frame-ancestors 'none'` | 🔧 |
 | Lecture de sites clients → attaque du réseau interne (**SSRF**) | Lecture **côté serveur uniquement** ; seulement `http(s)` ; **adresses privées, locales et de métadonnées cloud refusées** (vérifiées après résolution DNS et à chaque redirection) ; 5 redirections max ; taille max ; délai max ; Jina Reader en secours | 🔧 |
 | Fichiers piégés | Vérification du type réel (octets magiques, pas l'extension) ; **images ré-encodées** (supprime les scripts et métadonnées EXIF) ; PDF : texte extrait, jamais exécuté ; tailles limitées (10 Mo image, 20 Mo PDF) ; compartiments privés | ✅ stockage · 🔧 code |
 | Injection d'instructions dans l'IA | Contenu des sources traité comme donnée ; détection `PROMPT_INJECTION_SUSPECTED` ; aucun agent n'a de droit d'écriture | ✅ testé (banc) |
 | Abus et coûts IA | Limites de requêtes par compte et par adresse ; plafond quotidien de générations ; budgets fournisseurs | 🔧 |
 | Énumération des comptes | Messages identiques pour « e-mail inconnu » et « mauvais mot de passe » | 🔧 |
-| Transport | HTTPS partout, **HSTS** ; CORS limité aux domaines EasAds | 🔧 |
+| Transport | HTTPS partout, **HSTS** ; CORS limité aux domaines Pubeka | 🔧 |
 | En-têtes | `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` restrictive | 🔧 |
 
 ---

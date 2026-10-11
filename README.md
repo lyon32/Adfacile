@@ -1,6 +1,6 @@
-# EasAds
+# Pubeka
 
-Créer et lancer des publicités en ligne en quelques clics, sur Meta Ads aujourd'hui, puis Google Ads, TikTok Ads et les plateformes suivantes. EasAds remplace AdFacile.
+Créer et lancer des publicités en ligne en quelques clics, sur Meta Ads aujourd'hui, puis Google Ads, TikTok Ads et les plateformes suivantes. Pubeka remplace AdFacile.
 
 - Documentation : [docs/README.md](docs/README.md) (PRD, agents IA, design system)
 - Banc de test des modèles IA : [bench/](bench/)

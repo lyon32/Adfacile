@@ -1,7 +1,7 @@
-# TRD — Exigences techniques EasAds
+# TRD — Exigences techniques Pubeka
 
 > Version 1 · 10 octobre 2026 · Statut : à valider.
-> Le **PRD** dit *ce que fait* EasAds. Ce **TRD** dit *ce que le système doit garantir techniquement*, de façon **vérifiable**. L'**architecture** dit *comment* on le construit.
+> Le **PRD** dit *ce que fait* Pubeka. Ce **TRD** dit *ce que le système doit garantir techniquement*, de façon **vérifiable**. L'**architecture** dit *comment* on le construit.
 > Documents liés : [PRD](PRD.md) · [Plans et crédits](plans-et-credits.md) · [Architecture](../architecture/ARCHITECTURE.md) · [Modèle de données](../architecture/DATA_MODEL.md) · [Agents](../agents/README.md) · [Design system](../design/DESIGN-SYSTEM.md).
 
 **Lecture des exigences**
@@ -62,7 +62,7 @@
 | TR-DSP-02 | Production sur Supabase **Pro** dès le paiement de l'offre : **sauvegardes quotidiennes** ; perte de données maximale 24 h (RPO) ; remise en service < 4 h (RTO) 🔶 | MVP (à l'activation Pro) | Test de restauration trimestriel |
 | TR-DSP-03 | **Mode maintenance** activable depuis l'administration, sans redéploiement, avec message (« Retour à 14 h ») | MVP | Test manuel |
 | TR-DSP-04 | Panne d'un fournisseur d'IA média : **bascule proposée** vers un modèle testé équivalent ; aucune perte de crédits | MVP | Test de panne simulée |
-| TR-DSP-05 | Page de statut publique `status.easads.com` | MVP | Revue |
+| TR-DSP-05 | Page de statut publique `status.pubeka.com` | MVP | Revue |
 | TR-DSP-06 | Deux environnements isolés (**développement**, **production**), deux projets Supabase distincts | MVP | Revue |
 
 ---
@@ -84,7 +84,7 @@
 | TR-SEC-11 | Procédure écrite de **rotation de toutes les clés** en cas de fuite | MVP | Revue |
 | TR-SEC-13 | **Déconnexion après 10 minutes d'inactivité**, avertissement 60 s avant avec **[Rester connecté]** ; brouillons enregistrés ; tâches serveur (génération, publication) non interrompues | MVP | Test automatique |
 | TR-SEC-14 | Connexion bloquée **15 minutes** après 5 échecs ; lien de réinitialisation valable 1 heure | MVP | Test automatique |
-| TR-SEC-12 | Connexion : Google, Apple, e-mail ; **pas de connexion Facebook pour le compte EasAds** | MVP | Revue |
+| TR-SEC-12 | Connexion : Google, Apple, e-mail ; **pas de connexion Facebook pour le compte Pubeka** | MVP | Revue |
 
 ---
 
@@ -96,7 +96,7 @@
 | TR-DON-02 | Fichiers des visuels **non utilisés supprimés après 7 jours**, avec avertissement préalable ; fichiers des visuels utilisés en campagne conservés tant que la campagne existe | MVP | Test de la tâche de suppression |
 | TR-DON-03 | Description des visuels (`VisualSpec`) et propositions de campagne **conservées** (références « similaire à ») | MVP | Revue |
 | TR-DON-04 | Fichiers générés **copiés dans notre stockage dès la fin de la génération** (BytePlus ne les garde que 24 h ; URL fal publiques par défaut) | MVP | Test automatique |
-| TR-DON-05 | **Suppression de compte** : effacement de toutes les données EasAds ; campagnes conservées chez Meta ; données de facturation conservées (obligation légale) | MVP | Test manuel |
+| TR-DON-05 | **Suppression de compte** : effacement de toutes les données Pubeka ; campagnes conservées chez Meta ; données de facturation conservées (obligation légale) | MVP | Test manuel |
 | TR-DON-06 | **URL de suppression des données** et politique de confidentialité publiques (exigées par Meta) ; textes relus par un juriste avant lancement | MVP | Revue |
 | TR-DON-07 | Registre des crédits et journal d'administration **en ajout seul** (aucune modification ni suppression possible) | MVP | Test : une mise à jour est refusée par la base |
 | TR-DON-08 | Revisionnage de sessions PostHog : **champs sensibles masqués** (téléphone, jetons, paiement) | MVP | Revue |
@@ -180,7 +180,7 @@
 | ID | Exigence | Priorité | Vérification |
 |---|---|---|---|
 | TR-NOT-01 | Cloche dans l'application **et** e-mail (Resend), préférences par type | MVP | Test |
-| TR-NOT-02 | E-mails en FR/EN selon la langue de l'utilisateur, envoyés depuis `notifications@easads.com` | MVP | Test |
+| TR-NOT-02 | E-mails en FR/EN selon la langue de l'utilisateur, envoyés depuis `notifications@pubeka.com` | MVP | Test |
 | TR-NOT-03 | Séquence de bienvenue (J1, J3, J6) et résumé du lundi | MVP | Test des tâches |
 | TR-SUP-01 | Tickets avec pièces jointes ; réponse depuis l'administration reçue **dans l'application et par e-mail** | MVP | Test |
 | TR-SUP-02 | Preuve de paiement envoyée par l'utilisateur, visible et traitable dans l'administration | MVP | Test |
@@ -247,7 +247,7 @@
 ## 17. Critères d'acceptation du MVP
 
 Le MVP est livrable quand **toutes** les conditions suivantes sont vraies :
-1. Les tests portés de la création de campagnes Meta passent, et une campagne réelle est publiée sur un compte de test via EasAds.
+1. Les tests portés de la création de campagnes Meta passent, et une campagne réelle est publiée sur un compte de test via Pubeka.
 2. Un client peut, **sur téléphone** : s'inscrire, connecter Meta, coller un lien de site, obtenir une proposition, générer 3 visuels, publier, voir le statut et les statistiques.
 3. Un paiement SasPay réel (environnement de test puis production) active un abonnement ; un échec de génération rend les crédits.
 4. Les tests d'accès croisé RLS passent sur 100 % des tables.

@@ -23,14 +23,14 @@ env:
   NEXT_PUBLIC_SITE_URL: http://localhost:5173
   NEXT_PUBLIC_APP_URL: http://app.localhost:5173
   SITE_HOSTS: localhost:5173
-  EASADS_FAKE_PROVIDERS: all
-  EASADS_JOB_DISPATCH: inline
+  PUBEKA_FAKE_PROVIDERS: all
+  PUBEKA_JOB_DISPATCH: inline
   NEXT_TELEMETRY_DISABLED: '1'
 
 jobs:
   e2e-full:
     name: Parcours complets (${{ matrix.browser }})
-    if: vars.EASADS_PIPELINE_ENABLED == 'true'
+    if: vars.PUBEKA_PIPELINE_ENABLED == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
@@ -47,7 +47,7 @@ jobs:
           version: 2.118.0
       - run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector
       - run: pnpm ci:env >> "$GITHUB_ENV"
-      - run: pnpm --filter @easads/web exec playwright install --with-deps "$BROWSER"
+      - run: pnpm --filter @pubeka/web exec playwright install --with-deps "$BROWSER"
         env:
           BROWSER: ${{ matrix.browser }}
       - run: pnpm e2e:full --project="$BROWSER"
@@ -62,7 +62,7 @@ jobs:
 
   audit:
     name: Failles des dépendances (toutes)
-    if: vars.EASADS_PIPELINE_ENABLED == 'true'
+    if: vars.PUBEKA_PIPELINE_ENABLED == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -74,10 +74,10 @@ jobs:
 
   providers:
     name: Contrôle des vrais fournisseurs
-    if: vars.EASADS_PIPELINE_ENABLED == 'true' && (github.event_name == 'schedule' || inputs.providers)
+    if: vars.PUBEKA_PIPELINE_ENABLED == 'true' && (github.event_name == 'schedule' || inputs.providers)
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    environment: easads-provider-tests
+    environment: pubeka-provider-tests
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

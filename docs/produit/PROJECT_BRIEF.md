@@ -1,6 +1,6 @@
-# PROJECT BRIEF — EasAds
+# PROJECT BRIEF — Pubeka
 
-> Version 1 · 10 octobre 2026 · Une page pour se rappeler **pourquoi** on construit EasAds, **pour qui**, **à quoi on reconnaît la réussite**, et **ce qu'on ne construit pas**.
+> Version 1 · 10 octobre 2026 · Une page pour se rappeler **pourquoi** on construit Pubeka, **pour qui**, **à quoi on reconnaît la réussite**, et **ce qu'on ne construit pas**.
 > Le détail est dans le [PRD](PRD.md), le [TRD](TRD.md), l'[AppFlow](APPFLOW.md) et l'[architecture](../architecture/ARCHITECTURE.md). En cas de doute pendant une session de travail : **ce document tranche le périmètre.**
 
 ---
@@ -9,7 +9,7 @@
 
 **N'importe qui doit pouvoir lancer une publicité en ligne professionnelle en quelques clics, à partir de ce qu'il a déjà, et la payer simplement.**
 
-EasAds crée la campagne et le visuel avec l'IA, la publie sur la plateforme choisie (Meta Ads aujourd'hui, Google Ads et TikTok Ads ensuite), et explique tout en langage simple. Le client **choisit et valide** ; EasAds fait le reste.
+Pubeka crée la campagne et le visuel avec l'IA, la publie sur la plateforme choisie (Meta Ads aujourd'hui, Google Ads et TikTok Ads ensuite), et explique tout en langage simple. Le client **choisit et valide** ; Pubeka fait le reste.
 
 Promesse : *« Tes pubs en ligne, prêtes en quelques clics. Sur Meta, Google, TikTok et plus. »*
 
@@ -61,7 +61,7 @@ Ils ont **déjà** quelque chose à montrer (un site, une photo produit, une pub
 
 ### 4.1 Le MVP est « terminé » quand
 1. **Sur téléphone**, un nouveau client peut, en une session : s'inscrire → connecter Meta → coller le lien de son site → recevoir une proposition → générer 3 visuels → **publier** → voir le statut et les statistiques.
-2. Une **vraie campagne** est publiée sur Meta via EasAds (compte de test puis réel).
+2. Une **vraie campagne** est publiée sur Meta via Pubeka (compte de test puis réel).
 3. Un **paiement SasPay réel** active un abonnement ; une génération qui échoue **rend les crédits**.
 4. **Aucune fuite de données entre clients** : tests d'accès croisé réussis à 100 % (44/44 aujourd'hui sur la base, à refaire sur Supabase).
 5. **App Review Meta validée** et vérification d'entreprise acquise.
@@ -69,7 +69,7 @@ Ils ont **déjà** quelque chose à montrer (un site, une photo produit, une pub
 7. Au moins **2 modèles d'image par usage** ont réussi le banc de test.
 8. Les cibles de performance du [TRD](TRD.md) sont tenues (pages publiques et tableau de bord).
 
-### 4.2 EasAds réussit quand (6 mois après le lancement)
+### 4.2 Pubeka réussit quand (6 mois après le lancement)
 | Indicateur | Cible |
 |---|---|
 | Abonnés payants | **500** |
@@ -100,16 +100,16 @@ Ils ont **déjà** quelque chose à montrer (un site, une photo produit, une pub
 ### Jamais (hors du produit)
 | Non-objectif | Pourquoi |
 |---|---|
-| **Avancer l'argent des pubs** ou payer les plateformes à la place du client | Le client paie Meta lui-même ; EasAds n'est pas un intermédiaire financier pour le budget publicitaire |
-| **Lancer des pubs depuis le compte publicitaire d'EasAds** pour les clients | Risque de blocage collectif ; chaque client utilise son Business Manager |
-| **Créer à la place du client** sa Page, son portefeuille business, ou lier Instagram/WhatsApp | Impossible par l'API ; EasAds **détecte et guide** |
+| **Avancer l'argent des pubs** ou payer les plateformes à la place du client | Le client paie Meta lui-même ; Pubeka n'est pas un intermédiaire financier pour le budget publicitaire |
+| **Lancer des pubs depuis le compte publicitaire de Pubeka** pour les clients | Risque de blocage collectif ; chaque client utilise son Business Manager |
+| **Créer à la place du client** sa Page, son portefeuille business, ou lier Instagram/WhatsApp | Impossible par l'API ; Pubeka **détecte et guide** |
 | **Prélèvement automatique** des abonnements | SasPay ne le propose pas ; le client renouvelle chaque mois |
 | **Remboursements** | Décision commerciale |
 | **Juger ou bloquer un commerce légal** (marques, cosmétiques, etc.) avant publication | Seul l'illégal évident est écarté ; le Modérateur explique **après** un refus |
 | **Dessiner le texte, le prix ou le numéro avec l'IA** dans les visuels | Toujours posés par notre code (système en deux couches) |
-| **Imposer un modèle d'IA** | Le client choisit dans un catalogue testé ; EasAds recommande |
-| Copier **Meta Ads Manager** ou proposer tous ses réglages experts | EasAds simplifie : quelques choix, l'IA remplit le reste |
-| Un outil de **gestion des réseaux sociaux** (publication organique, messagerie, CRM) | Hors sujet : EasAds fait de la publicité |
+| **Imposer un modèle d'IA** | Le client choisit dans un catalogue testé ; Pubeka recommande |
+| Copier **Meta Ads Manager** ou proposer tous ses réglages experts | Pubeka simplifie : quelques choix, l'IA remplit le reste |
+| Un outil de **gestion des réseaux sociaux** (publication organique, messagerie, CRM) | Hors sujet : Pubeka fait de la publicité |
 | Récupérer des images sur **Pinterest** | Conditions d'utilisation et droits d'auteur |
 | Conserver les **fichiers** de visuels non utilisés au-delà de 7 jours | Règle de conservation ; seule leur description est gardée |
 | **Mélanger les données** de deux clients dans un agent ou une référence | Isolation stricte ; références partagées seulement si anonymisées |

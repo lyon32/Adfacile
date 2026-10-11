@@ -1,4 +1,4 @@
-# Feuille de route d'implémentation — EasAds (MVP)
+# Feuille de route d'implémentation — Pubeka (MVP)
 
 > Version 1 · 10 octobre 2026
 > Le MVP découpé en **36 sessions**, regroupées en 10 phases. **Une session = une séance de travail avec un agent IA = une branche = une pull request**, qui se termine avec la CI au vert.
@@ -49,7 +49,7 @@
 | 8. Notifications, support, Optimiseur | S27-S29 | ⬜ ⬜ ⬜ |
 | 9. Administration, site public, lancement | S30-S36 | ⬜ ⬜ ⬜ ⬜ ⬜ ⬜ ⬜ |
 
-**Chemin le plus court vers une première campagne publiée depuis EasAds** : S01 → S02 → S03 → S04 et S05 → S06 → S08 → S09 → S11 → S13 → S14 → S15 → S16, avec **S10 (portage Meta) en parallèle dès S02**. C'est la preuve la plus importante (TRD §17, critère 1) : à viser en premier.
+**Chemin le plus court vers une première campagne publiée depuis Pubeka** : S01 → S02 → S03 → S04 et S05 → S06 → S08 → S09 → S11 → S13 → S14 → S15 → S16, avec **S10 (portage Meta) en parallèle dès S02**. C'est la preuve la plus importante (TRD §17, critère 1) : à viser en premier.
 
 ---
 
@@ -68,7 +68,7 @@
 - **But** : les fondations que tout le reste utilise.
 - **Lire** : LLD §6.2, §6.16 · API_SPEC §3-5 · ENV_SETUP §1.12.
 - **Livrables** : `packages/shared` (`env.ts` validé par Zod avec les 4 règles d'ENV_SETUP §1.12, `Money` en entiers, dates et fuseaux, identifiants, `logger` avec masquage) ; `packages/contracts` (types générés depuis `openapi.yaml`, `ErrorCode`, `ERROR_STATUS`, `AppError`) ; scripts `api:types`, `openapi:lint`, `test:coverage` avec les seuils de TESTING §4.1.
-- **Fait quand** : test qui compare `ErrorCode` du code à l'énumération d'OpenAPI ; `env.ts` refuse `sk_test_` en production et `EASADS_FAKE_PROVIDERS` en production (tests) ; couverture ≥ 80 % sur `shared`.
+- **Fait quand** : test qui compare `ErrorCode` du code à l'énumération d'OpenAPI ; `env.ts` refuse `sk_test_` en production et `PUBEKA_FAKE_PROVIDERS` en production (tests) ; couverture ≥ 80 % sur `shared`.
 - **Hors périmètre** : base, routes.
 
 #### S03 · Base de données : migration 0003 et module `db` · M · après : S02
@@ -104,7 +104,7 @@
 #### S07 · Préproduction en ligne · S · après : S05 · 👤 projets Supabase dev, Vercel, Trigger.dev Hobby, domaine de préproduction
 - **But** : chaque fusion dans `main` se retrouve en ligne, en préproduction, automatiquement.
 - **Lire** : CI_CD §4, §9 · ENV_SETUP §2.
-- **Livrables** : réglages CI_CD §9.1-9.3 ; `apps/web/vercel.json` ; tests `e2e:smoke` (page publique, connexion, `/api/v1/public/maintenance`) ; `EASADS_PIPELINE_ENABLED=true`.
+- **Livrables** : réglages CI_CD §9.1-9.3 ; `apps/web/vercel.json` ; tests `e2e:smoke` (page publique, connexion, `/api/v1/public/maintenance`) ; `PUBEKA_PIPELINE_ENABLED=true`.
 - **Fait quand** : une fusion déclenche `deploy-staging.yml` jusqu'au bout ; l'adresse de préproduction répond ; une migration vide de test est appliquée sur le projet de développement.
 - **Hors périmètre** : mise en production (S36).
 
@@ -112,7 +112,7 @@
 
 #### S08 · Design system en composants · M · après : S01
 - **But** : `packages/ui` utilisable par tous les écrans.
-- **Lire** : DESIGN-SYSTEM · `docs/design/easads-design-system.html` · `docs/design/loader/` · TRD TR-PRF-04, TR-PRF-09, TR-ACC-03.
+- **Lire** : DESIGN-SYSTEM · `docs/design/pubeka-design-system.html` · `docs/design/loader/` · TRD TR-PRF-04, TR-PRF-09, TR-ACC-03.
 - **Livrables** : jetons (couleurs, Sora, rayons, clair et sombre), composants shadcn habillés, loader « Saisie » en React (complet une fois par session, court seulement au-delà de 300 ms), composants Montant, Badge de statut, Carte de modèle.
 - **Fait quand** : page de démonstration interne qui montre chaque composant ; contrôle axe sans erreur ; captures clair et sombre à 390 et 1280 px ; « réduire les animations » respecté.
 - **Hors périmètre** : écrans métier.
@@ -129,7 +129,7 @@
 #### S10 · Portage du connecteur Meta · L · après : S02
 - **But** : la logique AdFacile qui crée réellement des campagnes, en TypeScript, **sans changer son comportement**.
 - **Lire** : ARCHITECTURE §4 (reprise de l'existant), §6 · LLD §6.13-6.14 · `backend/src/services/facebookAdsService.js`, `campaignController.js`, `facebookErrors.js`, `messagingDestinations.js` et leurs tests · `docs/meta/`.
-- **Livrables** : `packages/platforms/meta` (connecteur, erreurs Meta traduites en codes EasAds, chiffrement des jetons) ; tests AdFacile portés ; `FakeMetaConnector` + suite de contrat commune ; connecteurs `google` et `tiktok` « indisponibles ».
+- **Livrables** : `packages/platforms/meta` (connecteur, erreurs Meta traduites en codes Pubeka, chiffrement des jetons) ; tests AdFacile portés ; `FakeMetaConnector` + suite de contrat commune ; connecteurs `google` et `tiktok` « indisponibles ».
 - **Fait quand** : **tous les tests AdFacile portés passent** (TR-PLA-02) ; tests du chiffrement (rotation des clés) ; la suite de contrat passe sur la fausse implémentation.
 - **Hors périmètre** : écrans, routes (S11).
 
@@ -171,7 +171,7 @@
 - **Hors périmètre** : publication (S16), visuel (S23).
 
 #### S16 · Aperçu et publication · L · après : S11, S15
-- **But** : publier une vraie campagne chez Meta depuis EasAds.
+- **But** : publier une vraie campagne chez Meta depuis Pubeka.
 - **Lire** : APPFLOW §8.5-8.6 · LLD §6.8 · SECURITY_NOTES §5.3-5.4 · PRD F3, F6.
 - **Livrables** : aperçu multi-emplacements (F3), estimation (F6), clause de responsabilité ; route `publish` (quota, transaction, idempotence) ; tâche `campaign.publish` avec rapprochement des résultats ambigus (EC-META-05) ; pause, reprise, relance (F9).
 - **Fait quand** : EC-CAMP-01 à 09 ; TR-PLA-08, TR-PLA-09, TR-PLA-10 ; **une campagne réelle publiée sur le compte publicitaire de test** (TRD §17, critère 1) ; parcours P2 au vert.
@@ -286,7 +286,7 @@
 - **Hors périmètre** : réglages (S31).
 
 #### S31 · Administration : réglages et traitements · M · après : S30, S26, S28, S21
-- **But** : piloter EasAds sans redéployer.
+- **But** : piloter Pubeka sans redéployer.
 - **Lire** : ARCHITECTURE §13 · TRD TR-ADM-03, TR-ADM-05, TR-DSP-03, TR-SUP-02.
 - **Livrables** : preuves de paiement, réponses aux tickets, catalogue de modèles et niveaux, routage, budgets des fournisseurs, TVA, forçage du taux de change, paramètres, **mode maintenance** (webhooks toujours traités, EC-ADM-02), coûts et marges, bibliothèque de références.
 - **Fait quand** : chaque réglage pris en compte sans redéploiement (test) ; EC-ADM-02.
@@ -358,7 +358,7 @@ Certaines prennent **des semaines** : à lancer tôt, pendant que le code avance
 | D-3 | Moteur de rendu des calques : Satori + resvg ou sharp | pendant S22 (essai sur 3 mises en page) | — |
 | D-4 | Valider les choix 🔶 du LLD (D1-D9), de CONVENTIONS, d'ENV_SETUP, de TESTING et de CI_CD | S01 | S01 les applique tels quels |
 | D-5 | Plafond quotidien de générations | S35 (après mesure des coûts réels) | valeur provisoire dans l'administration |
-| D-6 | Domaine de préproduction (ex. `staging-app.easads.com`) | S07 | adresse générée par Vercel, qui change |
+| D-6 | Domaine de préproduction (ex. `staging-app.pubeka.com`) | S07 | adresse générée par Vercel, qui change |
 
 ---
 

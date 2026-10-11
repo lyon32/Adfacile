@@ -1,4 +1,4 @@
-# Stratégie de test — EasAds
+# Stratégie de test — Pubeka
 
 > Version 1 · 10 octobre 2026
 > Ce qui est testé, à quel niveau, avec quel outil, quel taux de couverture est exigé, et comment on fabrique les données de test.
@@ -60,7 +60,7 @@ Les tests existants (`db/tests/security.test.mjs`, déplacés dans `supabase/tes
 
 ### 2.4 Intégration 🔶
 
-Contre la **vraie** pile Supabase locale (`supabase start`), parce que PGlite ne reproduit ni l'API REST de Supabase, ni Auth, ni Storage. Les services externes sont remplacés par leurs fausses implémentations (§6) et les tâches de fond s'exécutent **dans le même processus** (`EASADS_JOB_DISPATCH=inline`, §6.1), pour qu'un test puisse suivre une génération du début à la fin sans Trigger.dev.
+Contre la **vraie** pile Supabase locale (`supabase start`), parce que PGlite ne reproduit ni l'API REST de Supabase, ni Auth, ni Storage. Les services externes sont remplacés par leurs fausses implémentations (§6) et les tâches de fond s'exécutent **dans le même processus** (`PUBEKA_JOB_DISPATCH=inline`, §6.1), pour qu'un test puisse suivre une génération du début à la fin sans Trigger.dev.
 
 Une route est appelée directement (`POST(request, { params })`), sans démarrer de serveur HTTP.
 
@@ -165,7 +165,7 @@ La CI **échoue** sous ces seuils. Ils portent sur les tests unitaires et d'int�
 
 | Module | Lignes | Branches | Pourquoi |
 |---|---|---|---|
-| `packages/billing` | **95 %** | **90 %** | Argent : une erreur coûte au client ou à EasAds |
+| `packages/billing` | **95 %** | **90 %** | Argent : une erreur coûte au client ou à Pubeka |
 | `packages/media/src/pricing.ts`, `router.ts` | **95 %** | **90 %** | Crédits et bascule |
 | `packages/core` (machines d'état, crédits, publication) | **95 %** | **90 %** | Cœur métier |
 | `packages/core` (le reste) | 85 % | 80 % | |
@@ -199,7 +199,7 @@ Le pourcentage de lignes ne prouve pas tout. Ces règles-ci sont comptées par d
 
 ## 5. Données de test et fixtures
 
-Tout le matériel de test partagé vit dans un module réservé aux tests : **`packages/testing`** (`@easads/testing`), jamais importé par le code de production (règle de frontière, LLD §3). 🔶
+Tout le matériel de test partagé vit dans un module réservé aux tests : **`packages/testing`** (`@pubeka/testing`), jamais importé par le code de production (règle de frontière, LLD §3). 🔶
 
 ```
 packages/testing/
@@ -311,9 +311,9 @@ Cas limites ajoutés à chaque fois : 0, 1, la valeur juste sous un seuil et jus
 | `FakeAiGateway` | passerelle IA texte | sortie d'agent tirée des fixtures ; sortie invalide (pour tester le nouvel essai) ; flux progressif |
 | `FakeReader` | lecture interne et Jina | page lue, page illisible, redirection vers une adresse privée (anti-SSRF) |
 | `FakeMailer` | Resend | garde les e-mails envoyés pour que le test les lise |
-| `InlineJobDispatcher` | Trigger.dev | exécute la tâche dans le même processus ; `EASADS_JOB_DISPATCH=inline`, **refusé en production** 🔶 |
+| `InlineJobDispatcher` | Trigger.dev | exécute la tâche dans le même processus ; `PUBEKA_JOB_DISPATCH=inline`, **refusé en production** 🔶 |
 
-Ce sont **les mêmes** que celles activées par `EASADS_FAKE_PROVIDERS` en développement (ENV_SETUP §1.1) : une seule fausse implémentation par service.
+Ce sont **les mêmes** que celles activées par `PUBEKA_FAKE_PROVIDERS` en développement (ENV_SETUP §1.1) : une seule fausse implémentation par service.
 
 ### 6.2 Contrat commun
 
@@ -376,10 +376,10 @@ Ce que le TRD marque « test manuel » et qu'un test automatique ne prouve pas b
 | TR-PRF-04 | Loader complet une seule fois par session ; version courte seulement si le chargement dépasse 300 ms (réseau ralenti dans les outils du navigateur) |
 | TR-ACC-03 | Navigation au clavier sur P2 et P4, focus visible, cibles tactiles ≥ 44 px |
 | TR-PLA-04 | Bilan de santé sur un vrai compte Meta de test |
-| Critère d'acceptation 1 | Une **vraie campagne** publiée sur le compte publicitaire de test via EasAds |
+| Critère d'acceptation 1 | Une **vraie campagne** publiée sur le compte publicitaire de test via Pubeka |
 | Critère d'acceptation 3 | Un **vrai paiement SasPay** en clé `sk_test_` active un abonnement |
 | TR-SEC-06 | Essai d'intrusion manuel sur l'administration (chemin, aal2, verrouillage) |
-| TR-DON-05 | Suppression d'un compte de test : données EasAds effacées, campagne toujours présente chez Meta |
+| TR-DON-05 | Suppression d'un compte de test : données Pubeka effacées, campagne toujours présente chez Meta |
 
 ---
 

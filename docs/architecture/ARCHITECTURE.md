@@ -1,4 +1,4 @@
-# Architecture technique — EasAds
+# Architecture technique — Pubeka
 
 > Version 1 · 10 octobre 2026 · Rassemble **toutes** les décisions prises en atelier (PRD, agents, design system, fournisseurs, crédits).
 > Documents liés : [PRD](../produit/PRD.md) · [Plans et crédits](../produit/plans-et-credits.md) · [Modèle de données](DATA_MODEL.md) · [Capacités médias](capacites-medias.md) · [Catalogue de modèles](catalogue-modeles.md) · [Agents](../agents/README.md) · [Design system](../design/DESIGN-SYSTEM.md).
@@ -11,7 +11,7 @@
 ```
                     Navigateur (web responsive ; mobile natif en V3)
                          │
-        easads.com ──────┼────── app.easads.com            (admin : chemin caché dans app)
+        pubeka.com ──────┼────── app.pubeka.com            (admin : chemin caché dans app)
         site public      │       application
         (SEO, GSAP+Lenis)│       (shadcn/ui, loader)
                          ▼
@@ -42,7 +42,7 @@
 | Domaine | Choix | Statut | Raison |
 |---|---|---|---|
 | Cadre | **Next.js** (App Router, TypeScript strict) | ✅ | Un seul projet, un seul déploiement ; affichage progressif des réponses IA ; pages publiques indexables |
-| Interface | **shadcn/ui** (construit sur Radix) + Tailwind + jetons EasAds | ✅ | Composants accessibles, habillés avec notre design system. **Pas** de Radix Themes (conflit de styles) |
+| Interface | **shadcn/ui** (construit sur Radix) + Tailwind + jetons Pubeka | ✅ | Composants accessibles, habillés avec notre design system. **Pas** de Radix Themes (conflit de styles) |
 | Animations | **GSAP + Lenis** sur le site public uniquement ; transitions courtes dans l'application | ✅ | Lenis ralentirait le travail dans l'application. Réglage « réduire les animations » respecté partout |
 | Police | Sora (Google Fonts), chiffres tabulaires pour les montants | ✅ | Design system v2 |
 | Loader | Animation complète « Saisie » (3 s) **une fois par session** à l'ouverture de l'application ; version courte en boucle entre les pages **seulement si le chargement dépasse 300 ms** | ✅ | `docs/design/loader/` ; réécrit en composant React TypeScript, sans `dangerouslySetInnerHTML` |
@@ -56,10 +56,10 @@
 | IA médias | **Aiguilleur interne** + catalogue de modèles ; **fal + Higgsfield au lancement**, BytePlus avec la vidéo | ✅ | [capacites-medias.md](capacites-medias.md) |
 | Lecture des sources | Notre propre lecture d'abord, **Jina Reader** en secours (sites, PDF) | ✅ | Q36 |
 | Paiement | **SasPay** (Mobile Money et carte, paiement unique, pas de prélèvement automatique) | ✅ | Vérifié dans leur API |
-| E-mails | **Resend**, `notifications@easads.com`, `support@easads.com` | ✅ | Q64 |
+| E-mails | **Resend**, `notifications@pubeka.com`, `support@pubeka.com` | ✅ | Q64 |
 | Mesure produit | **PostHog** (statistiques, revisionnage de sessions, interrupteurs de fonctionnalités) | ✅ | Q41 |
 | Erreurs | **Sentry** | ✅ | Q15 |
-| Page de statut | `status.easads.com` + alertes e-mail à l'administrateur | ✅ | Q56 |
+| Page de statut | `status.pubeka.com` + alertes e-mail à l'administrateur | ✅ | Q56 |
 
 ---
 
@@ -67,17 +67,17 @@
 
 | Adresse | Contenu | Indexé par Google |
 |---|---|---|
-| `easads.com/fr/…`, `easads.com/en/…` | Site public : accueil, tarifs, fonctionnement, pages pays, guides d'aide publics, blog | ✅ |
-| `app.easads.com` | Application (connexion obligatoire) | ❌ (`noindex`, exclu du sitemap) |
-| `app.easads.com/<chemin-secret>` | Administration | ❌ ; renvoie **404** à tout non-administrateur |
-| `status.easads.com` | Page de statut des services | ❌ |
+| `pubeka.com/fr/…`, `pubeka.com/en/…` | Site public : accueil, tarifs, fonctionnement, pages pays, guides d'aide publics, blog | ✅ |
+| `app.pubeka.com` | Application (connexion obligatoire) | ❌ (`noindex`, exclu du sitemap) |
+| `app.pubeka.com/<chemin-secret>` | Administration | ❌ ; renvoie **404** à tout non-administrateur |
+| `status.pubeka.com` | Page de statut des services | ❌ |
 
 ---
 
 ## 4. Organisation du code
 
 ```
-easads/
+pubeka/
 ├─ apps/web/                      Next.js (site public + application + API)
 │  ├─ app/(public)/[locale]/…     accueil, tarifs, pays, aide, blog (SSG/ISR)
 │  ├─ app/(app)/…                 tableau de bord, campagnes, visuels, stats, réglages
@@ -85,7 +85,7 @@ easads/
 │  ├─ app/api/…                   API interne (routes et actions serveur)
 │  └─ app/api/webhooks/{saspay,meta,higgsfield,fal,byteplus,resend}
 ├─ packages/
-│  ├─ ui/                         composants shadcn habillés EasAds, loader, jetons
+│  ├─ ui/                         composants shadcn habillés Pubeka, loader, jetons
 │  ├─ db/                         schéma, migrations SQL, types générés, politiques RLS
 │  ├─ agents/                     6 agents : prompts versionnés, schémas JSON (Zod), validation
 │  ├─ media/                      aiguilleur, catalogue, clients fal/Higgsfield/BytePlus, rendu des calques
@@ -104,7 +104,7 @@ easads/
 
 ## 5. Comptes, équipe et accès
 
-- **Connexion :** Google, Apple, e-mail (lien ou mot de passe). **Pas de connexion Facebook pour le compte EasAds** (Q57).
+- **Connexion :** Google, Apple, e-mail (lien ou mot de passe). **Pas de connexion Facebook pour le compte Pubeka** (Q57).
 - **Espace de travail** = le compte client (porte l'abonnement, les crédits, les Pages).
 - **Membres et rôles** selon la formule (Q31-32) : Starter 1 · Pro 2 · Business 5.
   - Propriétaire : tout, y compris le paiement.
@@ -129,7 +129,7 @@ getStatus() · fetchStats(range) · fetchRejection()
 ### Meta ✅
 - **Connexion :** Facebook Login for Business. **Production : utilisateur système du Business Manager** (jeton durable, Q33). Jetons utilisateur classiques acceptés en filet de sécurité, avec **alerte 7 jours avant expiration** et reconnexion en un clic.
 - **Jetons chiffrés** au repos (AES-256-GCM, clé dans les variables chiffrées de Vercel et Trigger.dev, jamais dans le code ni en base en clair). Rotation de toutes les clés si l'une fuit (Q57).
-- **Bilan de santé** (F1) à la connexion : portefeuille business, compte publicitaire, moyen de paiement, Page, Instagram, WhatsApp Business, pixel. EasAds **détecte et guide**, ne crée rien à la place du client.
+- **Bilan de santé** (F1) à la connexion : portefeuille business, compte publicitaire, moyen de paiement, Page, Instagram, WhatsApp Business, pixel. Pubeka **détecte et guide**, ne crée rien à la place du client.
 - **Pages et formule :** nombre de Pages actives limité par la formule (1 / 3 / 10). En formule 1 Page, une fois une campagne lancée avec la Page A, la Page B n'est utilisable **qu'au mois suivant** (Q28). Passage à une formule inférieure : les campagnes des Pages en trop continuent chez Meta mais ne sont plus modifiables (Q29).
 - **Compte publicitaire :** librement modifiable, hors formule.
 - **Statuts :** webhooks Meta + vérification planifiée ; affichés tels quels (« En vérification chez Meta », « En diffusion », « Refusée », « Arrêtée »).
@@ -234,7 +234,7 @@ Expérience pendant l'attente (validé) :
 | Fichier d'un visuel **utilisé dans une campagne** | Tant que la campagne existe |
 | Description du visuel (`VisualSpec` : idée, scène, couleurs, mise en page, textes) | **Toujours** (sert à « proposer quelque chose de similaire ») |
 | Images de référence envoyées | 7 jours, sauf si épinglées dans le kit de marque |
-| Bibliothèque de références EasAds (curatée) | Permanente, gérée dans l'administration |
+| Bibliothèque de références Pubeka (curatée) | Permanente, gérée dans l'administration |
 
 ### 8.7 Limites d'envoi (Q35)
 Image 10 Mo · PDF 20 Mo · 10 images de référence maximum par génération (ou moins selon le modèle).

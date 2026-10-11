@@ -1,4 +1,4 @@
-# Contrat d'API EasAds (API_SPEC)
+# Contrat d'API Pubeka (API_SPEC)
 
 > **Source de vérité :** [`api/openapi.yaml`](../../api/openapi.yaml) (OpenAPI 3.1). Ce document explique les **règles communes**. Si les deux se contredisent, le fichier OpenAPI fait foi et ce document doit être corrigé.
 >
@@ -10,7 +10,7 @@
 
 | Règle | Détail |
 |---|---|
-| Adresse de base | `https://app.easads.com/api/v1` (production) · `http://localhost:5173/api/v1` (développement) |
+| Adresse de base | `https://app.pubeka.com/api/v1` (production) · `http://localhost:5173/api/v1` (développement) |
 | Version | Dans le chemin (`/v1`). Un changement incompatible crée `/v2`. Ajouter un champ ou un code d'erreur **n'est pas** un changement incompatible : les clients doivent ignorer les champs inconnus. |
 | Format | JSON en UTF-8 (`application/json`). Erreurs en `application/problem+json`. Flux en `text/event-stream`. |
 | Noms des champs | `snake_case` partout (requêtes, réponses, erreurs). |
@@ -41,7 +41,7 @@ La connexion elle-même (Google, Apple, e-mail + mot de passe, lien magique) pas
 1. **Chaque requête** vérifie le jeton côté serveur (`getUser()`, pas seulement le décodage local).
 2. **Appartenance à l'espace** : le serveur vérifie que l'utilisateur est membre de `{workspaceId}`, puis son rôle (`owner`, `editor`, `viewer`). La base applique en plus la RLS (`private.is_member`, `private.has_role`) : deux barrières indépendantes.
 3. **Ressource d'un autre espace** → `404 not_found`, jamais `403`. On ne confirme pas qu'une ressource existe.
-4. **Protection CSRF** : toute requête qui modifie des données (`POST`, `PUT`, `PATCH`, `DELETE`) avec un cookie doit avoir un en-tête `Origin` égal à `https://app.easads.com`. Sinon → `403 forbidden`.
+4. **Protection CSRF** : toute requête qui modifie des données (`POST`, `PUT`, `PATCH`, `DELETE`) avec un cookie doit avoir un en-tête `Origin` égal à `https://app.pubeka.com`. Sinon → `403 forbidden`.
 5. **Inactivité** : la session expire après 10 minutes sans activité → `401 session_expired`. Le client redirige vers la connexion et garde les saisies (mode hors connexion, choix B).
 6. **Actions sensibles** (supprimer le compte, changer l'e-mail) : réauthentification de moins de 5 minutes, sinon `403 mfa_required` avec `meta.reason = "recent_login_required"`.
 7. **Administration** (`/admin/*`) : jeton de niveau `aal2` (double vérification) + présence dans `admin_users` + compte non verrouillé. **Dans tous les autres cas, la réponse est `404 not_found`**, même pour un utilisateur connecté : la zone d'administration n'existe pas pour lui. Chaque action est inscrite dans `audit.admin_log`.
@@ -64,13 +64,13 @@ La connexion elle-même (Google, Apple, e-mail + mot de passe, lien magique) pas
 
 ## 3. Format d'erreur standardisé
 
-**Une seule forme pour toutes les erreurs**, quel que soit le point d'entrée : **Problem Details** ([RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)) avec des extensions EasAds. Type de contenu : `application/problem+json`.
+**Une seule forme pour toutes les erreurs**, quel que soit le point d'entrée : **Problem Details** ([RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)) avec des extensions Pubeka. Type de contenu : `application/problem+json`.
 
 ### 3.1 Forme
 
 ```json
 {
-  "type": "https://easads.com/errors/insufficient-credits",
+  "type": "https://pubeka.com/errors/insufficient-credits",
   "title": "Insufficient credits",
   "status": 402,
   "detail": "Il te manque 4 crédits pour générer ces 3 visuels.",
@@ -83,7 +83,7 @@ La connexion elle-même (Google, Apple, e-mail + mot de passe, lien magique) pas
 
 | Champ | Obligatoire | Rôle |
 |---|:-:|---|
-| `type` | ✅ | URL stable du type d'erreur (`https://easads.com/errors/<code-avec-tirets>`) |
+| `type` | ✅ | URL stable du type d'erreur (`https://pubeka.com/errors/<code-avec-tirets>`) |
 | `title` | ✅ | Résumé court, **en anglais**, qui ne change jamais (pour les journaux) |
 | `status` | ✅ | Même valeur que le code HTTP |
 | `code` | ✅ | **Code machine stable** (liste fermée, §4). C'est lui que le client teste, jamais `detail`. |
@@ -100,7 +100,7 @@ La connexion elle-même (Google, Apple, e-mail + mot de passe, lien magique) pas
 
 ```json
 {
-  "type": "https://easads.com/errors/validation-failed",
+  "type": "https://pubeka.com/errors/validation-failed",
   "title": "Validation failed",
   "status": 400,
   "detail": "2 champs sont à corriger.",
@@ -118,7 +118,7 @@ La connexion elle-même (Google, Apple, e-mail + mot de passe, lien magique) pas
 ### 3.3 Ce qu'une erreur ne contient jamais
 
 - Trace d'exécution, requête SQL, nom de table ou de colonne, message brut de Postgres.
-- Message brut d'un fournisseur (Meta, SasPay, fal…) : il est traduit en code EasAds et le texte d'origine reste dans Sentry.
+- Message brut d'un fournisseur (Meta, SasPay, fal…) : il est traduit en code Pubeka et le texte d'origine reste dans Sentry.
 - Jeton, clé, adresse e-mail d'un autre utilisateur, identifiant interne d'un autre espace.
 
 Une erreur inattendue renvoie toujours `500 internal_error` avec le seul `request_id` comme piste.
@@ -174,7 +174,7 @@ Liste fermée : tout nouveau code doit être ajouté à l'énumération `ErrorCo
 
 Seuls ces codes sont utilisés. Tout autre code est un bug.
 
-| Code | Sens chez EasAds |
+| Code | Sens chez Pubeka |
 |:-:|---|
 | **200** OK | Lecture, ou action terminée avec un corps de réponse |
 | **201** Created | Ressource créée (brouillon, ticket, invitation, session de paiement…). En-tête `Location` fourni. |
@@ -199,7 +199,7 @@ Seuls ces codes sont utilisés. Tout autre code est un bug.
 
 **Pourquoi 402 pour les crédits et les quotas ?** Le client sait sans lire le corps que la solution est un paiement, et peut ouvrir directement l'écran d'achat ou de changement de formule. Le `code` précise lequel.
 
-**Pourquoi 424 pour Meta ?** La demande d'EasAds est correcte, mais elle dépend d'un réglage côté Meta que seul l'utilisateur peut corriger. Ce n'est ni une erreur de l'utilisateur dans EasAds (4xx classique) ni une panne (5xx).
+**Pourquoi 424 pour Meta ?** La demande de Pubeka est correcte, mais elle dépend d'un réglage côté Meta que seul l'utilisateur peut corriger. Ce n'est ni une erreur de l'utilisateur dans Pubeka (4xx classique) ni une panne (5xx).
 
 ---
 

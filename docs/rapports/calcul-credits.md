@@ -43,7 +43,7 @@ Ce qui ne coûte pas de crédit (inclus dans l'image) : le détourage du produit
 
 ## 4. Exemple : un client avec 20 crédits (20 000 XAF)
 
-| Ce qu'il fait | Crédits | Coût réel pour EasAds |
+| Ce qu'il fait | Crédits | Coût réel pour Pubeka |
 |---|---|---|
 | 3 visuels standard Marketing Studio (2K basse) | 3 | 40 XAF |
 | 3 visuels standard avec Bria Product Shot | 3 | 72 XAF |
@@ -75,7 +75,7 @@ Un crédit vaut alors **500 XAF**. Même règle : coût réel ≤ 25 % du prix, 
 | Vidéo Seedance 2.5, 5 s 720p | 1 387 XAF | 12 | 6 000 XAF | 76,9 % |
 | Vidéo Seedance 2.5, 5 s 1080p | 3 412 XAF | 28 | 14 000 XAF | 75,6 % |
 
-**Pire cas pour EasAds :** le client dépense ses 10 crédits sur la génération la plus chère par crédit. Le coût réel reste plafonné à 10 × 125 = **1 250 XAF**, soit au moins **3 750 XAF** de marge brute par abonné Starter, avant IA texte et hébergement.
+**Pire cas pour Pubeka :** le client dépense ses 10 crédits sur la génération la plus chère par crédit. Le coût réel reste plafonné à 10 × 125 = **1 250 XAF**, soit au moins **3 750 XAF** de marge brute par abonné Starter, avant IA texte et hébergement.
 
 **Cas typique :** 10 images standard Marketing Studio = **130 XAF** de coût réel, soit **4 870 XAF** de marge brute.
 

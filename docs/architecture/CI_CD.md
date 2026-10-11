@@ -1,4 +1,4 @@
-# Pipeline CI/CD — EasAds
+# Pipeline CI/CD — Pubeka
 
 > Version 1 · 10 octobre 2026
 > Comment le code passe d'une pull request à la production : vérifications, préproduction, mise en production, migrations, retour arrière, secrets.
@@ -8,7 +8,7 @@
 >
 > Légende : ✅ décidé ou vérifié · 🔶 décidé ici, à valider · 🧪 à vérifier à l'activation.
 
-**État au 10/10/2026 :** les fichiers existent et passent `actionlint` 1.7.12 avec `shellcheck` 0.11.0, sans aucune remarque. Ils **ne font rien** tant que le monodépôt n'existe pas : la CI s'arrête d'elle-même sans `pnpm-workspace.yaml`, et les déploiements attendent la variable `EASADS_PIPELINE_ENABLED` (§9). L'ancien `main.yml` d'AdFacile (Railway, Cypress, `staging.adsfacile.cm`), qui échouait à chaque push, est retiré.
+**État au 10/10/2026 :** les fichiers existent et passent `actionlint` 1.7.12 avec `shellcheck` 0.11.0, sans aucune remarque. Ils **ne font rien** tant que le monodépôt n'existe pas : la CI s'arrête d'elle-même sans `pnpm-workspace.yaml`, et les déploiements attendent la variable `PUBEKA_PIPELINE_ENABLED` (§9). L'ancien `main.yml` d'AdFacile (Railway, Cypress, `staging.adsfacile.cm`), qui échouait à chaque push, est retiré.
 
 ## Sommaire
 
@@ -66,8 +66,8 @@
 | Déclenchement | `pnpm dev` | chaque PR et chaque push sur `main` | automatique, intégration Git de Vercel | après la CI réussie sur `main` | à la main |
 | Supabase | local (Docker) | local (Docker, dans la CI) | projet **développement** | projet **développement** | projet **production** |
 | Trigger.dev | `trigger.dev dev` | tâches dans le processus (`inline`) | aucune 🔶 | environnement **staging** (offre Hobby, §10) | environnement **prod** |
-| Services externes | faux (`EASADS_FAKE_PROVIDERS=all`) | faux | clés de **test** | clés de **test** (SasPay `sk_test_`) | clés de production |
-| Adresse | `app.localhost:5173` | — | adresse générée par Vercel | adresse fixe 🔶, ex. `staging-app.easads.com` | `app.easads.com`, `easads.com` |
+| Services externes | faux (`PUBEKA_FAKE_PROVIDERS=all`) | faux | clés de **test** | clés de **test** (SasPay `sk_test_`) | clés de production |
+| Adresse | `app.localhost:5173` | — | adresse générée par Vercel | adresse fixe 🔶, ex. `staging-app.pubeka.com` | `app.pubeka.com`, `pubeka.com` |
 | Variables d'application | `.env.local` | valeurs publiques + secrets aléatoires | Vercel *Preview* | Vercel *Preview* + Trigger.dev *staging* | Vercel *Production* + Trigger.dev *prod* |
 
 Les secrets **de l'application** vivent dans Vercel et Trigger.dev (ENV_SETUP §2). GitHub ne garde que les jetons qui servent à **déployer** (§9.3).
@@ -98,13 +98,13 @@ Préversions de PR : elles partagent le projet Supabase de développement avec l
 
 ### 3.2 `agents-bench.yml` — si un prompt, un modèle ou un jeu de test d'agent change
 
-Lance `node bench/run.mjs` avec les **vraies** clés (environnement GitHub `easads-agents-bench`), conserve `bench/results` 30 jours. Obligatoire pour fusionner une PR qui touche un prompt (TR-AGT-04). 🧪 Le banc doit **échouer** (code de sortie différent de 0) sous les seuils de TR-AGT-05 : à ajouter dans `bench/run.mjs`.
+Lance `node bench/run.mjs` avec les **vraies** clés (environnement GitHub `pubeka-agents-bench`), conserve `bench/results` 30 jours. Obligatoire pour fusionner une PR qui touche un prompt (TR-AGT-04). 🧪 Le banc doit **échouer** (code de sortie différent de 0) sous les seuils de TR-AGT-05 : à ajouter dans `bench/run.mjs`.
 
 ### 3.3 `scheduled.yml` — chaque lundi à 06:00 UTC
 
 - Tous les parcours sur **Chromium, Firefox et WebKit** (TESTING §3.4).
 - `pnpm audit` sur toutes les dépendances (seuil « élevé »).
-- **Contrôle des vrais fournisseurs** (TESTING §2.7) avec les clés de test de l'environnement `easads-provider-tests`.
+- **Contrôle des vrais fournisseurs** (TESTING §2.7) avec les clés de test de l'environnement `pubeka-provider-tests`.
 
 Un échec envoie l'e-mail de notification habituel de GitHub. Les trois contrôles peuvent aussi être lancés à la main.
 
@@ -236,7 +236,7 @@ Les paramètres utilisés (`node-version-file`, `cache`, `run_install`, `version
 1. Ajouter à `package.json` les scripts appelés par les fichiers (sinon la CI échoue avec « script introuvable ») :
    `format:check`, `lint`, `typecheck`, `openapi:lint`, `i18n:check`, `test:coverage`, `coverage:summary`, `test:db`, `test:int`, `test:routes-coverage`, `ci:env`, `build`, `e2e:ci`, `e2e:full`, `e2e:smoke`, `e2e:smoke:prod`, `test:smoke-providers`.
 2. `ci:env` (script `scripts/ci/write-test-env.mjs`) écrit dans `$GITHUB_ENV` : les clés de la pile Supabase locale (lues avec `supabase status -o env` 🧪 : vérifier les noms qu'affiche la CLI 2.118.0), plus `ADMIN_PATH`, `APP_SIGNING_SECRET`, `TOKEN_ENCRYPTION_KEYS` et `TOKEN_ENCRYPTION_ACTIVE_KEY_ID`, tirés au hasard à chaque exécution.
-3. `packages/shared/env.ts` n'exige `TRIGGER_SECRET_KEY` et `TRIGGER_PROJECT_REF` que si `EASADS_JOB_DISPATCH=trigger` (la CI tourne en `inline`).
+3. `packages/shared/env.ts` n'exige `TRIGGER_SECRET_KEY` et `TRIGGER_PROJECT_REF` que si `PUBEKA_JOB_DISPATCH=trigger` (la CI tourne en `inline`).
 4. Ajouter `vercel` **60.1.1** aux dépendances de développement de la racine.
 5. Dans `apps/web/vercel.json`, désactiver la publication automatique de `main` par Vercel 🔶 :
    ```json
@@ -249,7 +249,7 @@ Les paramètres utilisés (`node-version-file`, `cache`, `run_install`, `version
 
 1. Projet relié au dépôt, **Root Directory** = `apps/web`.
 2. **Deployment Protection** activée pour les préversions et la préproduction ; créer le secret **Protection Bypass for Automation**.
-3. Domaine de la préproduction (ex. `staging-app.easads.com`) 🔶 : ajouter l'enregistrement DNS demandé par Vercel chez l'hébergeur du domaine.
+3. Domaine de la préproduction (ex. `staging-app.pubeka.com`) 🔶 : ajouter l'enregistrement DNS demandé par Vercel chez l'hébergeur du domaine.
 4. Variables *Preview* : projet Supabase de développement, Trigger.dev *staging*, clés de test. Variables *Production* : ENV_SETUP §1.
 
 ### 9.3 Dans GitHub
@@ -258,13 +258,13 @@ Environnements, secrets et variables :
 
 | Environnement GitHub | Secrets | Variables |
 |---|---|---|
-| `easads-staging` | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` (développement), `TRIGGER_ACCESS_TOKEN`, `VERCEL_TOKEN`, `VERCEL_AUTOMATION_BYPASS_SECRET` | `SUPABASE_PROJECT_REF` (développement), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `STAGING_APP_HOST` |
-| `easads-production` | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` (production), `TRIGGER_ACCESS_TOKEN`, `VERCEL_TOKEN` | `SUPABASE_PROJECT_REF` (production), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` |
-| `easads-agents-bench` | `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `MISTRAL_API_KEY` | — |
-| `easads-provider-tests` | `FAL_KEY`, `HF_KEY`, `SASPAY_TEST_SECRET_KEY`, `META_TEST_ACCESS_TOKEN` | `META_TEST_AD_ACCOUNT_ID` |
-| (dépôt) | — | `EASADS_PIPELINE_ENABLED` = `true` **en dernier**, quand tout le reste est prêt |
+| `pubeka-staging` | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` (développement), `TRIGGER_ACCESS_TOKEN`, `VERCEL_TOKEN`, `VERCEL_AUTOMATION_BYPASS_SECRET` | `SUPABASE_PROJECT_REF` (développement), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `STAGING_APP_HOST` |
+| `pubeka-production` | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` (production), `TRIGGER_ACCESS_TOKEN`, `VERCEL_TOKEN` | `SUPABASE_PROJECT_REF` (production), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` |
+| `pubeka-agents-bench` | `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `MISTRAL_API_KEY` | — |
+| `pubeka-provider-tests` | `FAL_KEY`, `HF_KEY`, `SASPAY_TEST_SECRET_KEY`, `META_TEST_ACCESS_TOKEN` | `META_TEST_AD_ACCOUNT_ID` |
+| (dépôt) | — | `PUBEKA_PIPELINE_ENABLED` = `true` **en dernier**, quand tout le reste est prêt |
 
-🧪 Le dépôt est **privé** et possède déjà deux environnements créés par Vercel (`Preview`, `Production`). Les environnements EasAds ont des noms différents pour ne pas s'y mélanger. Si l'offre GitHub ne permet pas les environnements sur un dépôt privé, les mêmes secrets passent au niveau du dépôt, avec les préfixes `STAGING_` et `PROD_`.
+🧪 Le dépôt est **privé** et possède déjà deux environnements créés par Vercel (`Preview`, `Production`). Les environnements Pubeka ont des noms différents pour ne pas s'y mélanger. Si l'offre GitHub ne permet pas les environnements sur un dépôt privé, les mêmes secrets passent au niveau du dépôt, avec les préfixes `STAGING_` et `PROD_`.
 
 ### 9.4 Protection de la branche `main` 🧪
 
