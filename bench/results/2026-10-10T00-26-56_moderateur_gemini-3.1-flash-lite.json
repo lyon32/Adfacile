@@ -1,0 +1,233 @@
+[
+  {
+    "id": "r01",
+    "ms": 1914,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "can_fix": true,
+      "has_fix": true,
+      "culprit": true,
+      "report_short": true
+    },
+    "out": {
+      "rejection_category": "before_after",
+      "culprit": {
+        "where": "visual",
+        "excerpt": "silhouette avant/après"
+      },
+      "cause_certainty": "high",
+      "can_fix": true,
+      "fix": {
+        "field": "primary_text and visual",
+        "original": "Perdez 10 kg en 7 jours, résultat garanti ! / silhouette avant/après",
+        "suggested": "Découvrez notre thé naturel pour accompagner votre routine bien-être au quotidien. Commandez dès maintenant sur WhatsApp pour en savoir plus."
+      },
+      "appeal_recommended": false,
+      "report": "Meta interdit les promesses de résultats irréalistes comme '10 kg en 7 jours' ainsi que les visuels montrant un avant/après. Pour que ta publicité soit acceptée, tu dois retirer ces affirmations chiffrées et remplacer l'image par une photo naturelle du produit sans comparaison corporelle. Concentre-toi plutôt sur les ingrédients naturels ou le plaisir de consommer ton thé.",
+      "memory_pattern": "promesse de perte de poids rapide et utilisation d'images avant/après"
+    }
+  },
+  {
+    "id": "r02",
+    "ms": 2229,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "can_fix": true,
+      "has_fix": true,
+      "culprit": true,
+      "report_short": true
+    },
+    "out": {
+      "rejection_category": "personal_attributes",
+      "culprit": {
+        "where": "primary_text",
+        "excerpt": "Tu as de l'acné ?"
+      },
+      "cause_certainty": "high",
+      "can_fix": true,
+      "fix": {
+        "field": "primary_text",
+        "original": "Tu as de l'acné ? Notre crème règle ton problème de peau.",
+        "suggested": "Découvrez notre crème hydratante conçue pour apaiser et améliorer l'aspect des peaux à imperfections."
+      },
+      "appeal_recommended": false,
+      "report": "Meta refuse les publicités qui interpellent directement l'utilisateur sur ses problèmes de santé ou ses caractéristiques personnelles, comme l'acné. Pour corriger cela, il faut présenter les bienfaits de ton produit sans poser de question directe sur l'état de peau de la personne. Utilise une approche plus neutre en te concentrant sur les propriétés hydratantes et apaisantes de ta crème.",
+      "memory_pattern": "interpellation directe sur une caractéristique physique ou un problème de santé"
+    }
+  },
+  {
+    "id": "r03",
+    "ms": 1377,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "can_fix": false,
+      "has_fix": false,
+      "appeal": false,
+      "honest_certainty": false,
+      "report_short": true
+    },
+    "out": {
+      "rejection_category": "intellectual_property",
+      "culprit": {
+        "where": "primary_text",
+        "excerpt": "Nike Air Force 1"
+      },
+      "cause_certainty": "high",
+      "can_fix": false,
+      "fix": null,
+      "appeal_recommended": false,
+      "report": "Meta interdit la publicité pour des produits de marque sans autorisation officielle de la part de la marque concernée. Comme tu vends des Nike, le système détecte une utilisation non autorisée de la propriété intellectuelle. Malheureusement, il n'est pas possible de modifier cette publicité pour la rendre conforme, car la vente de produits de marque nécessite des documents justificatifs que Meta ne permet pas de soumettre facilement pour les petits comptes. Je te conseille de promouvoir tes services de vente sans citer explicitement les noms de marques protégées.",
+      "memory_pattern": "utilisation de noms de marques protégées sans autorisation"
+    }
+  },
+  {
+    "id": "r04",
+    "ms": 1219,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "can_fix": true,
+      "report_short": true
+    },
+    "out": {
+      "rejection_category": "prohibited_product",
+      "culprit": {
+        "where": "product",
+        "excerpt": "Puffs et cigarettes électroniques"
+      },
+      "cause_certainty": "high",
+      "can_fix": false,
+      "fix": null,
+      "appeal_recommended": false,
+      "report": "Meta interdit strictement la publicité pour les produits liés au tabac, y compris les cigarettes électroniques et les puffs, quel que soit leur arôme. Comme ton produit tombe directement sous cette restriction, il n'est malheureusement pas possible de modifier la publicité pour qu'elle soit acceptée. Je te conseille de te tourner vers d'autres canaux de communication pour promouvoir ces articles.",
+      "memory_pattern": "promotion de produits liés au tabac ou cigarettes électroniques"
+    }
+  },
+  {
+    "id": "r05",
+    "ms": 1961,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "can_fix": true,
+      "has_fix": true,
+      "report_short": true
+    },
+    "out": {
+      "rejection_category": "misleading_claims",
+      "culprit": {
+        "where": "primary_text",
+        "excerpt": "MAKE ₦500,000 EVERY WEEK FROM HOME!!! 100% GUARANTEED!!!"
+      },
+      "cause_certainty": "high",
+      "can_fix": true,
+      "fix": {
+        "field": "primary_text",
+        "original": "MAKE ₦500,000 EVERY WEEK FROM HOME!!! 100% GUARANTEED!!!",
+        "suggested": "Learn professional trading strategies with our online course. Develop your skills and understand the market at your own pace."
+      },
+      "appeal_recommended": false,
+      "report": "Meta rejected your ad because it makes unrealistic financial promises and uses sensational language, which is against their advertising rules. To get approved, remove all claims of guaranteed income and avoid showing excessive displays of wealth like cash or luxury cars. Focus your ad on the educational value of your course instead of promising specific financial results.",
+      "memory_pattern": "unrealistic financial gain promises and sensationalist imagery"
+    }
+  },
+  {
+    "id": "r06",
+    "ms": 1377,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "can_fix": true,
+      "has_fix": true,
+      "culprit_where": true,
+      "report_short": true
+    },
+    "out": {
+      "rejection_category": "landing_page",
+      "culprit": {
+        "where": "landing_page",
+        "excerpt": "https://chez-mama.cm"
+      },
+      "cause_certainty": "high",
+      "can_fix": true,
+      "fix": {
+        "field": "landing_page",
+        "original": "https://chez-mama.cm",
+        "suggested": "Vérifiez que votre lien redirige vers une page active et fonctionnelle de votre site."
+      },
+      "appeal_recommended": false,
+      "report": "Meta a refusé votre publicité car le lien vers votre site internet ne fonctionne pas et affiche une erreur. Les utilisateurs ne peuvent pas accéder à votre menu ou commander. Pour corriger cela, assurez-vous que votre site est bien en ligne et remplacez le lien par une adresse qui fonctionne correctement.",
+      "memory_pattern": "lien de destination non fonctionnel ou erreur 404"
+    }
+  },
+  {
+    "id": "r07",
+    "ms": 1783,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "can_fix": true,
+      "has_fix": true,
+      "culprit_where": true,
+      "report_short": true
+    },
+    "out": {
+      "rejection_category": "adult_content",
+      "culprit": {
+        "where": "visual",
+        "excerpt": "Mannequin en lingerie, pose suggestive, gros plan"
+      },
+      "cause_certainty": "high",
+      "can_fix": true,
+      "fix": {
+        "field": "visual",
+        "original": "Mannequin en lingerie, pose suggestive, gros plan",
+        "suggested": "Mannequin portant la lingerie en plan large, dans un environnement neutre et professionnel, sans mise en avant excessive des parties du corps."
+      },
+      "appeal_recommended": false,
+      "report": "Meta a refusé ta publicité car le visuel est jugé trop suggestif. Pour être accepté, ton image doit présenter les produits de manière plus sobre et moins centrée sur le corps du mannequin. Je te conseille de remplacer cette photo par un cliché plus professionnel et moins focalisé sur des détails intimes pour respecter les règles de la plateforme.",
+      "memory_pattern": "utilisation d'images de lingerie avec des poses suggestives ou des gros plans anatomiques"
+    }
+  },
+  {
+    "id": "r08",
+    "ms": 1519,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "can_fix": true,
+      "report_short": true
+    },
+    "out": {
+      "rejection_category": "prohibited_product",
+      "culprit": {
+        "where": "primary_text",
+        "excerpt": "Sacs Louis Vuitton first copy"
+      },
+      "cause_certainty": "high",
+      "can_fix": false,
+      "fix": null,
+      "appeal_recommended": false,
+      "report": "Meta a refusé ta publicité car elle propose des produits de contrefaçon, ce qui est strictement interdit sur leur plateforme. La vente de copies de marques protégées par le droit d'auteur n'est pas autorisée, quel que soit le prix ou la qualité annoncée. Malheureusement, il n'est pas possible de modifier cette publicité pour qu'elle soit acceptée, car le produit lui-même enfreint les règles de vente.",
+      "memory_pattern": "promotion de produits de contrefaçon ou de copies de marques de luxe"
+    }
+  }
+]

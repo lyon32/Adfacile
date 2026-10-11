@@ -1,0 +1,29 @@
+[
+  {
+    "id": "t01",
+    "ms": 294,
+    "cost": 0,
+    "error": "429 {\"object\":\"error\",\"message\":\"Rate limit exceeded\",\"type\":\"rate_limited\",\"param\":null,\"code\":\"1300\",\"raw_status_code\":429}",
+    "checks": {
+      "schema": false
+    }
+  },
+  {
+    "id": "t02",
+    "ms": 563,
+    "cost": 0,
+    "error": "429 {\"object\":\"error\",\"message\":\"Rate limit exceeded\",\"type\":\"rate_limited\",\"param\":null,\"code\":\"1300\",\"raw_status_code\":429}",
+    "checks": {
+      "schema": false
+    }
+  },
+  {
+    "id": "t03",
+    "ms": 275,
+    "cost": 0,
+    "error": "429 {\"object\":\"error\",\"message\":\"Rate limit exceeded\",\"type\":\"rate_limited\",\"param\":null,\"code\":\"1300\",\"raw_status_code\":429}",
+    "checks": {
+      "schema": false
+    }
+  }
+]

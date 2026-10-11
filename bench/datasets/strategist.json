@@ -1,0 +1,371 @@
+[
+  {
+    "id": "s01",
+    "lang": "fr",
+    "today": "2026-10-10",
+    "profile": {
+      "business_name": "Sneakers Cocody",
+      "sector": "fashion_shoes",
+      "offer_type": "product",
+      "products": [
+        {
+          "name": "Baskets Nike et Adidas",
+          "price": {
+            "amount": 25000,
+            "currency": "XOF"
+          }
+        }
+      ],
+      "value_props": [
+        "Livraison en 24 h à Abidjan"
+      ],
+      "locations": [
+        {
+          "country": "CI",
+          "city": "Abidjan",
+          "area": "Cocody",
+          "delivery": true
+        }
+      ],
+      "contacts": {
+        "whatsapp": "+2250707070707",
+        "website": null
+      }
+    },
+    "account_state": {
+      "has_whatsapp_linked": true,
+      "has_instagram_linked": true,
+      "pixels": []
+    },
+    "expect": {
+      "objective": [
+        "OUTCOME_ENGAGEMENT"
+      ],
+      "destination": [
+        "WHATSAPP"
+      ],
+      "allowed_numbers": [
+        "25000",
+        "25 000",
+        "24"
+      ]
+    }
+  },
+  {
+    "id": "s02",
+    "lang": "fr",
+    "today": "2026-10-10",
+    "profile": {
+      "business_name": "Sneakers Cocody",
+      "sector": "fashion_shoes",
+      "offer_type": "product",
+      "products": [
+        {
+          "name": "Baskets",
+          "price": null
+        }
+      ],
+      "value_props": [],
+      "locations": [
+        {
+          "country": "CI",
+          "city": "Abidjan",
+          "area": null,
+          "delivery": null
+        }
+      ],
+      "contacts": {
+        "whatsapp": "+2250707070707"
+      }
+    },
+    "account_state": {
+      "has_whatsapp_linked": false,
+      "has_instagram_linked": false,
+      "pixels": []
+    },
+    "expect": {
+      "destination": [
+        "MESSENGER"
+      ],
+      "warning": true,
+      "allowed_numbers": []
+    }
+  },
+  {
+    "id": "s03",
+    "lang": "en",
+    "today": "2026-10-10",
+    "profile": {
+      "business_name": "Lagos Gadgets",
+      "sector": "phones_accessories",
+      "offer_type": "product",
+      "products": [
+        {
+          "name": "iPhone 15",
+          "price": {
+            "amount": 950000,
+            "currency": "NGN"
+          }
+        }
+      ],
+      "value_props": [
+        "Free delivery in Lagos Island",
+        "Online checkout in 2 minutes"
+      ],
+      "locations": [
+        {
+          "country": "NG",
+          "city": "Lagos",
+          "delivery": true
+        }
+      ],
+      "contacts": {
+        "website": "https://lagosgadgets.ng"
+      },
+      "has_ecommerce_checkout": true
+    },
+    "account_state": {
+      "has_whatsapp_linked": false,
+      "pixels": [
+        {
+          "id": "111",
+          "name": "Main",
+          "active": true
+        }
+      ]
+    },
+    "expect": {
+      "objective": [
+        "OUTCOME_SALES"
+      ],
+      "destination": [
+        "WEBSITE"
+      ],
+      "pixel": "111",
+      "allowed_numbers": [
+        "950000",
+        "950,000",
+        "15",
+        "2"
+      ]
+    }
+  },
+  {
+    "id": "s04",
+    "lang": "fr",
+    "today": "2026-10-10",
+    "profile": {
+      "business_name": "EduPlus",
+      "sector": "education_training",
+      "offer_type": "service",
+      "products": [
+        {
+          "name": "Formation informatique 3 mois",
+          "price": {
+            "amount": 75000,
+            "currency": "XOF"
+          }
+        }
+      ],
+      "locations": [
+        {
+          "country": "BJ",
+          "city": "Cotonou"
+        }
+      ],
+      "contacts": {
+        "website": "https://eduplus.bj"
+      }
+    },
+    "account_state": {
+      "has_whatsapp_linked": false,
+      "pixels": []
+    },
+    "expect": {
+      "objective": [
+        "OUTCOME_TRAFFIC",
+        "OUTCOME_ENGAGEMENT"
+      ],
+      "allowed_numbers": [
+        "75000",
+        "75 000",
+        "3"
+      ]
+    }
+  },
+  {
+    "id": "s05",
+    "lang": "fr",
+    "today": "2026-10-10",
+    "profile": {
+      "business_name": "Chez Mama Ndolé",
+      "sector": "food_restaurant",
+      "offer_type": "product",
+      "products": [
+        {
+          "name": "Ndolé, poulet DG",
+          "price": null
+        }
+      ],
+      "locations": [
+        {
+          "country": "CM",
+          "city": "Douala",
+          "area": "Bonapriso",
+          "delivery": true
+        }
+      ],
+      "contacts": {
+        "whatsapp": "+237690123456"
+      }
+    },
+    "account_state": {
+      "has_whatsapp_linked": true,
+      "pixels": []
+    },
+    "user_constraints": {
+      "budget_daily_usd_cents": 50
+    },
+    "expect": {
+      "objective": [
+        "OUTCOME_ENGAGEMENT"
+      ],
+      "min_budget": 100,
+      "allowed_numbers": []
+    },
+    "ad_address": "tu"
+  },
+  {
+    "id": "s06",
+    "lang": "fr",
+    "today": "2026-10-10",
+    "profile": {
+      "business_name": "Festival Afro Beats",
+      "sector": "events",
+      "offer_type": "event",
+      "products": [
+        {
+          "name": "Concert 20 décembre",
+          "price": null
+        }
+      ],
+      "locations": [
+        {
+          "country": "SN",
+          "city": "Dakar"
+        }
+      ],
+      "contacts": {}
+    },
+    "account_state": {
+      "has_whatsapp_linked": false,
+      "pixels": []
+    },
+    "user_constraints": {
+      "objective": "OUTCOME_AWARENESS"
+    },
+    "expect": {
+      "objective": [
+        "OUTCOME_AWARENESS"
+      ],
+      "allowed_numbers": [
+        "20"
+      ]
+    }
+  },
+  {
+    "id": "s07",
+    "lang": "fr",
+    "today": "2026-10-10",
+    "profile": {
+      "business_name": "Belle Peau",
+      "sector": "beauty_cosmetics",
+      "offer_type": "product",
+      "products": [
+        {
+          "name": "Crème hydratante",
+          "price": {
+            "amount": 15000,
+            "currency": "XAF"
+          }
+        }
+      ],
+      "value_props": [
+        "Ingrédients naturels"
+      ],
+      "locations": [
+        {
+          "country": "CM",
+          "city": "Yaoundé",
+          "delivery": true
+        }
+      ],
+      "contacts": {
+        "whatsapp": "+237699000000"
+      }
+    },
+    "account_state": {
+      "has_whatsapp_linked": true,
+      "pixels": []
+    },
+    "previous_proposals": [
+      {
+        "copy": {
+          "angle": "price",
+          "primary_text": "Crème Belle Peau à 15 000 F, livrée à Yaoundé. Écris-nous !"
+        }
+      }
+    ],
+    "expect": {
+      "angle_not": "price",
+      "allowed_numbers": [
+        "15000",
+        "15 000"
+      ]
+    }
+  },
+  {
+    "id": "s08",
+    "lang": "en",
+    "today": "2026-10-10",
+    "profile": {
+      "business_name": "FarmLink",
+      "sector": "agriculture",
+      "offer_type": "app",
+      "products": [
+        {
+          "name": "FarmLink app",
+          "price": null
+        }
+      ],
+      "value_props": [
+        "Sell maize, beans and avocados directly to buyers",
+        "Free download"
+      ],
+      "locations": [
+        {
+          "country": "KE",
+          "city": null,
+          "delivery": null
+        }
+      ],
+      "contacts": {
+        "website": "https://play.google.com/store/apps/details?id=ke.farmlink"
+      }
+    },
+    "account_state": {
+      "has_whatsapp_linked": false,
+      "pixels": []
+    },
+    "expect": {
+      "objective": [
+        "OUTCOME_TRAFFIC"
+      ],
+      "destination": [
+        "APP",
+        "WEBSITE"
+      ],
+      "allowed_numbers": []
+    }
+  }
+]

@@ -1,0 +1,396 @@
+[
+  {
+    "id": "t01",
+    "ms": 47625,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "decision": true
+    },
+    "out": {
+      "decision": "approved",
+      "product_category": "allowed",
+      "issues": [],
+      "user_message": "Votre activité de maroquinerie (vente de sacs en cuir) est conforme aux règles publicitaires de Meta. Vous pouvez diffuser vos annonces.",
+      "flags": []
+    }
+  },
+  {
+    "id": "t02",
+    "ms": 13738,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "decision": true
+    },
+    "out": {
+      "decision": "blocked",
+      "product_category": "prohibited",
+      "issues": [
+        {
+          "severity": "block",
+          "where": "Je vends des puffs et cigarettes électroniques goût fruit à Douala, livraison rapide.",
+          "rule_id": "prohibited_tobacco_vape",
+          "explanation": "Meta interdit strictement la vente et la publicité de produits du tabac, cigarettes électroniques, puffs et accessoires de vapotage.",
+          "fix": null
+        }
+      ],
+      "user_message": "Votre publicité ne peut pas être diffusée. Les règles publicitaires de Meta interdisent formellement la promotion des cigarettes électroniques, vapes et puffs. Tenter de promouvoir ce type de produit risque d'entraîner le blocage définitif de votre compte publicitaire.",
+      "flags": [
+        "tobacco_and_related_products"
+      ]
+    }
+  },
+  {
+    "id": "t03",
+    "ms": 26077,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "decision": true
+    },
+    "out": {
+      "decision": "needs_changes",
+      "product_category": "restricted",
+      "issues": [
+        {
+          "severity": "fix",
+          "where": "text",
+          "rule_id": "unrealistic_outcomes",
+          "explanation": "Meta interdit strictement les promesses de perte de poids irréalistes ou accélérées (ex. '10 kg en 7 jours').",
+          "fix": {
+            "original": "perdez 10 kg en 7 jours",
+            "suggested": "accompagnez votre démarche bien-être"
+          }
+        },
+        {
+          "severity": "fix",
+          "where": "text",
+          "rule_id": "unverifiable_claims",
+          "explanation": "L'utilisation de promesses absolues comme 'résultat garanti' est interdite par les règles publicitaires de Meta.",
+          "fix": {
+            "original": "résultat garanti !",
+            "suggested": "pour vous sentir plus léger au quotidien !"
+          }
+        }
+      ],
+      "user_message": "Votre publicité concerne un produit minceur (catégorie restreinte). Meta interdit les promesses de perte de poids chiffrées rapides ainsi que les mentions de résultats 'garantis'. Pour que votre publicité soit validée, modifiez votre texte afin d'adopter un ton axé sur le bien-être sans promettre de résultats miraculeux.",
+      "flags": [
+        "weight_loss",
+        "unrealistic_claims",
+        "guaranteed_results"
+      ]
+    }
+  },
+  {
+    "id": "t04",
+    "ms": 4694,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "decision": true
+    },
+    "out": {
+      "decision": "blocked",
+      "product_category": "prohibited",
+      "issues": [
+        {
+          "severity": "block",
+          "where": "texte",
+          "rule_id": "multilevel_marketing_pyramid",
+          "explanation": "Meta interdit strictement la promotion de systèmes pyramidaux, de programmes d'enrichissement rapide et de parrainage financier garantissant des gains.",
+          "fix": null
+        },
+        {
+          "severity": "block",
+          "where": "texte",
+          "rule_id": "unrealistic_promises",
+          "explanation": "Les promesses de gains chiffrés et l'utilisation du mot 'garanti' pour des investissements financiers sont interdites par les règles publicitaires de Meta.",
+          "fix": null
+        }
+      ],
+      "user_message": "Votre publicité ne peut pas être diffusée. Les promesses de revenus garantis et les mécanismes de parrainage financier de type pyramidal sont strictement interdits sur Meta et risquent de bloquer définitivement votre compte publicitaire.",
+      "flags": [
+        "pyramid_scheme",
+        "unrealistic_financial_promise"
+      ]
+    }
+  },
+  {
+    "id": "t05",
+    "ms": 16713,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "decision": true
+    },
+    "out": {
+      "decision": "blocked",
+      "product_category": "prohibited",
+      "issues": [
+        {
+          "severity": "block",
+          "where": "Original-looking Gucci and Louis Vuitton bags, first copy, very cheap, Lagos.",
+          "rule_id": "counterfeit_goods",
+          "explanation": "Meta strictly prohibits the promotion or sale of counterfeit goods, replicas, or 'first copy' luxury items, as this infringes on trademark and intellectual property rights.",
+          "fix": null
+        }
+      ],
+      "user_message": "Your ad promotes replica or counterfeit goods ('first copy' Gucci and Louis Vuitton bags), which is strictly prohibited under Meta's advertising policies. Promoting counterfeit items will lead to ad rejection and risks getting your Meta ad account permanently banned.",
+      "flags": [
+        "counterfeit_goods",
+        "intellectual_property_infringement"
+      ]
+    }
+  },
+  {
+    "id": "t06",
+    "ms": 24678,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "decision": true
+    },
+    "out": {
+      "decision": "needs_changes",
+      "product_category": "restricted",
+      "issues": [
+        {
+          "severity": "fix",
+          "where": "sources[0].content",
+          "rule_id": "alcohol_restrictions",
+          "explanation": "La promotion d'alcool (vin, whisky) est soumise à des restrictions strictes par Meta. Vous devez vous assurer de cibler uniquement une audience ayant l'âge légal (18 ans ou 21 ans selon la juridiction) et respecter la législation locale.",
+          "fix": null
+        }
+      ],
+      "user_message": "Votre publicité concerne la vente d'alcool, une catégorie restreinte sur Meta. La campagne nécessite un ciblage d'âge approprié (adultes uniquement) pour pouvoir être diffusée sans risque de rejet.",
+      "flags": [
+        "alcohol_content",
+        "age_restriction_required"
+      ]
+    }
+  },
+  {
+    "id": "t07",
+    "ms": 38247,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "decision": true
+    },
+    "out": {
+      "decision": "approved",
+      "product_category": "allowed",
+      "issues": [],
+      "user_message": "Votre activité de vente de pagnes wax et tissus africains est tout à fait conforme aux règles publicitaires de Meta. Vous pouvez lancer votre campagne en toute sécurité.",
+      "flags": []
+    }
+  },
+  {
+    "id": "t08",
+    "ms": 33540,
+    "cost": 0,
+    "error": "503 {\"error\":{\"code\":503,\"message\":\"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\"status\":\"UNAVAILABLE\"}}",
+    "checks": {
+      "schema": false
+    }
+  },
+  {
+    "id": "b01",
+    "ms": 40198,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "decision": true
+    },
+    "out": {
+      "decision": "approved",
+      "product_category": "allowed",
+      "issues": [
+        {
+          "severity": "warn",
+          "where": "Nike et Adidas",
+          "rule_id": "intellectual_property_trademark",
+          "explanation": "L'utilisation directe de noms de grandes marques déposées (Nike, Adidas) peut déclencher une vérification automatique de Meta pour atteinte aux droits d'auteur ou suspicion de contrefaçon. Assurez-vous d'avoir les preuves d'authenticité de vos produits si Meta vous les demande.",
+          "fix": null
+        }
+      ],
+      "user_message": "Votre texte respecte les règles publicitaires de Meta. Attention toutefois : citer explicitement de grandes marques comme Nike et Adidas peut parfois attirer l'attention des filtres automatiques sur l'authenticité des articles.",
+      "flags": [
+        "brand_names_detected"
+      ]
+    }
+  },
+  {
+    "id": "b02",
+    "ms": 8412,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "decision": true
+    },
+    "out": {
+      "decision": "approved",
+      "product_category": "allowed",
+      "issues": [],
+      "user_message": "Votre activité de restauration et les informations fournies sont conformes aux règles publicitaires de Meta. Vous pouvez lancer votre campagne en toute sécurité.",
+      "flags": []
+    }
+  },
+  {
+    "id": "b03",
+    "ms": 25627,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "decision": true
+    },
+    "out": {
+      "decision": "approved",
+      "product_category": "allowed",
+      "issues": [],
+      "user_message": "Votre annonce pour un salon de coiffure est parfaitement conforme aux règles publicitaires de Meta. Elle peut être diffusée sans problème.",
+      "flags": []
+    }
+  },
+  {
+    "id": "b04",
+    "ms": 43909,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "decision": true
+    },
+    "out": {
+      "decision": "approved",
+      "product_category": "allowed",
+      "issues": [],
+      "user_message": "Your content complies with Meta advertising policies. Selling consumer electronics with standard pricing and delivery terms is fully authorized.",
+      "flags": []
+    }
+  },
+  {
+    "id": "b05",
+    "ms": 54951,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "decision": true
+    },
+    "out": {
+      "decision": "approved",
+      "product_category": "allowed",
+      "issues": [],
+      "user_message": "Votre activité de formation en informatique et bureautique est tout à fait autorisée par les règles publicitaires Meta. Aucun problème n'a été détecté dans les éléments fournis.",
+      "flags": []
+    }
+  },
+  {
+    "id": "b06",
+    "ms": 96504,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": false,
+      "decision": false
+    },
+    "out": {
+      "decision": "blocked",
+      "product_category": "prohibited",
+      "issues": [
+        {
+          "severity": "block",
+          "where": "Belle Peau — crème éclaircissante",
+          "rule_id": "illegal_products_or_services",
+          "explanation": "Les produits et crèmes éclaircissants sont formellement interdits à la commercialisation au Cameroun par le Ministère de la Santé Publique. Meta interdit la publicité pour des produits ou services illégaux selon la législation locale.",
+          "fix": null
+        }
+      ],
+      "user_message": "Votre publicité ne peut pas être diffusée. La vente de produits éclaircissants est interdite par la réglementation sanitaire au Cameroun. Promouvoir ce type de produit enfreint les règles de Meta sur les produits illégaux et expose votre compte publicitaire à un bannissement.",
+      "flags": [
+        "skin_lightening",
+        "illegal_product_cm",
+        "account_risk"
+      ]
+    }
+  },
+  {
+    "id": "b07",
+    "ms": 4995,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "decision": true
+    },
+    "out": {
+      "decision": "approved",
+      "product_category": "allowed",
+      "issues": [],
+      "user_message": "Votre annonce pour la location d'appartements meublés respecte les règles publicitaires de Meta. Elle est prête à être diffusée.",
+      "flags": []
+    }
+  },
+  {
+    "id": "b08",
+    "ms": 4691,
+    "cost": 0,
+    "retried": false,
+    "checks": {
+      "schema": true,
+      "category": true,
+      "decision": true
+    },
+    "out": {
+      "decision": "approved",
+      "product_category": "allowed",
+      "issues": [],
+      "user_message": "Your ad complies with Meta advertising policies. The product promotes an agricultural marketplace app with clear, factual messaging and no policy violations.",
+      "flags": []
+    }
+  },
+  {
+    "id": "b09",
+    "ms": 531,
+    "cost": 0,
+    "error": "429 {\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate",
+    "checks": {
+      "schema": false
+    }
+  },
+  {
+    "id": "b10",
+    "ms": 949,
+    "cost": 0,
+    "error": "429 {\"error\":{\"code\":429,\"message\":\"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate",
+    "checks": {
+      "schema": false
+    }
+  }
+]

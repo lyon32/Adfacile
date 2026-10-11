@@ -1,0 +1,11 @@
+# Avertissements volontairement ignorés par le contrôle OpenAPI (redocly lint).
+openapi.yaml:
+  # Code privé : pas de licence publique à déclarer.
+  info-license-strict:
+    - '#/info/license'
+  # Serveur de développement local (http://localhost:5173), voulu.
+  no-server-example.com:
+    - '#/servers/1/url'
+  # Retour de la fenêtre Facebook : toujours une redirection 302, jamais de 2xx.
+  operation-2xx-response:
+    - '#/paths/~1meta~1callback/get/responses'

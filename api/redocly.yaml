@@ -1,0 +1,6 @@
+# Configuration du contrôle OpenAPI : npx @redocly/cli@1 lint api/openapi.yaml
+extends:
+  - recommended
+apis:
+  pubeka@v1:
+    root: openapi.yaml

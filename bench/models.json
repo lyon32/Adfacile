@@ -1,0 +1,176 @@
+{
+  "_comment": "Modèles comparés. Prix en $ par million de tokens (entrée, sortie) : à vérifier sur la page tarifs de chaque fournisseur avant de conclure. Un modèle dont la clé est absente est ignoré. Prix à 0 = offre gratuite testée ; prix payants à renseigner.",
+  "models": [
+    {
+      "id": "gemini-3.8-flash",
+      "provider": "gemini",
+      "model": "gemini-3.8-flash",
+      "price": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "gemini-3.1-flash-lite",
+      "provider": "gemini",
+      "model": "gemini-3.1-flash-lite",
+      "price": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "gemini-3-flash",
+      "provider": "gemini",
+      "model": "gemini-3-flash-preview",
+      "price": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "gemini-3.5-flash",
+      "provider": "gemini",
+      "model": "gemini-3.5-flash",
+      "price": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "gemini-3.1-pro",
+      "provider": "gemini",
+      "model": "gemini-3.1-pro-preview",
+      "price": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "gemma-4-31b",
+      "provider": "gemini",
+      "model": "gemma-4-31b-it",
+      "price": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "claude-haiku",
+      "provider": "anthropic",
+      "model": "claude-haiku-5-5",
+      "price": [
+        1,
+        5
+      ]
+    },
+    {
+      "id": "claude-sonnet",
+      "provider": "anthropic",
+      "model": "claude-sonnet-5-5",
+      "price": [
+        3,
+        15
+      ]
+    },
+    {
+      "id": "gpt-mini",
+      "provider": "openai",
+      "model": "gpt-5-mini",
+      "price": [
+        0.25,
+        2
+      ]
+    },
+    {
+      "id": "gpt",
+      "provider": "openai",
+      "model": "gpt-5",
+      "price": [
+        1.25,
+        10
+      ]
+    },
+    {
+      "id": "mistral-medium",
+      "provider": "mistral",
+      "model": "mistral-medium-latest",
+      "price": [
+        0.4,
+        2
+      ]
+    },
+    {
+      "id": "kimi",
+      "provider": "kimi",
+      "model": "kimi-k2-0905-preview",
+      "price": [
+        0.6,
+        2.5
+      ]
+    },
+    {
+      "id": "mistral-small",
+      "provider": "mistral",
+      "model": "mistral-small-latest",
+      "price": [
+        0.1,
+        0.3
+      ]
+    },
+    {
+      "id": "groq-kimi",
+      "provider": "groq",
+      "model": "moonshotai/kimi-k2-instruct-0905",
+      "price": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "groq-llama",
+      "provider": "groq",
+      "model": "llama-3.3-70b-versatile",
+      "price": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "groq-gpt-oss",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "price": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "or-deepseek",
+      "provider": "openrouter",
+      "model": "deepseek/deepseek-chat-v3-0324:free",
+      "price": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cerebras-qwen",
+      "provider": "cerebras",
+      "model": "qwen-3-235b-a22b-instruct-2507",
+      "price": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "github-gpt",
+      "provider": "github",
+      "model": "openai/gpt-4.1",
+      "price": [
+        0,
+        0
+      ]
+    }
+  ]
+}

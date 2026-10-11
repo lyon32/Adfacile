@@ -1,0 +1,24 @@
+.pubeka-loader{position:fixed;inset:0;display:grid;place-items:center;background:#0A0A0A;z-index:9999;transition:opacity .25s}
+.pubeka-loader.done{opacity:0;pointer-events:none}
+.pubeka-loader .lg *{transform-box:fill-box}
+
+.pubeka-loader .rt{transform-origin:left center;animation:wipeX .45s .5s cubic-bezier(.87,0,.13,1) both}
+.pubeka-loader .rb{transform-origin:left center;animation:wipeX .4s 1.05s cubic-bezier(.87,0,.13,1) both}
+.pubeka-loader .c1{animation:blink .5s steps(1) both, caret1 .45s .5s cubic-bezier(.87,0,.13,1) both, fadeOut .1s 1s both}
+.pubeka-loader .c2{opacity:0;animation:show .01s .95s both, caret2 .4s 1.05s cubic-bezier(.87,0,.13,1) both, fadeOut .1s 1.5s both}
+.pubeka-loader .l{opacity:0;animation:type .01s both, rise .35s cubic-bezier(.16,1,.3,1) both}
+.pubeka-loader .t0{animation-delay:.62s}.pubeka-loader .t1{animation-delay:.72s}.pubeka-loader .t2{animation-delay:.82s}
+.pubeka-loader .b0{animation-delay:1.15s}.pubeka-loader .b1{animation-delay:1.24s}.pubeka-loader .b2{animation-delay:1.33s}
+.pubeka-loader .bot{transform-origin:center;animation:settle .5s 1.5s cubic-bezier(.16,1,.3,1) both}
+.pubeka-loader .lg{transform-origin:center;animation:tvOff .5s 2.45s cubic-bezier(.7,0,.84,0) both}
+@keyframes wipeX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes blink{0%,50%{opacity:1}25%,75%{opacity:0}}
+@keyframes caret1{from{transform:translateX(0)}to{transform:translateX(156px)}}
+@keyframes caret2{from{transform:translateX(0)}to{transform:translateX(156px)}}
+@keyframes show{to{opacity:1}}
+@keyframes type{to{opacity:1}}
+@keyframes settle{0%{transform:none}35%{transform:scale(1.04)}100%{transform:none}}
+@keyframes tvOff{0%{transform:none}55%{transform:scale(1,.02)}100%{transform:scale(0,.02)}}
+@keyframes rise{from{transform:translateY(64px)}to{transform:none}}
+@keyframes fadeOut{to{opacity:0}}
+@media (prefers-reduced-motion:reduce){.pubeka-loader *{animation-duration:.01s!important;animation-delay:0s!important}}

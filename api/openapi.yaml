@@ -1,0 +1,1912 @@
+openapi: 3.1.0
+info:
+  title: Pubeka API
+  version: 1.0.0
+  summary: API interne de Pubeka (application web, puis application mobile V3).
+  description: |
+    Source de vérité du contrat d'API. Règles communes : docs/architecture/API_SPEC.md.
+    - Toutes les erreurs suivent le format **Problem Details** (RFC 9457), type `application/problem+json`, avec un `code` stable.
+    - Toute ressource métier est rangée sous `/workspaces/{workspaceId}` : l'espace est explicite dans chaque appel.
+    - Les actions qui coûtent de l'argent ou des crédits exigent l'en-tête `Idempotency-Key`.
+  license:
+    name: Propriétaire — tous droits réservés
+  contact:
+    name: Pubeka
+    url: https://pubeka.com
+servers:
+  - url: https://app.pubeka.com/api/v1
+    description: Production
+  - url: http://localhost:5173/api/v1
+    description: Développement local
+
+security:
+  - sessionCookie: []
+  - bearerAuth: []
+
+tags:
+  - name: Public
+    description: 'Sans connexion : maintenance, formules, taux de change.'
+  - name: Compte
+    description: Profil de l'utilisateur connecté, export et suppression du compte.
+  - name: Espaces et équipe
+    description: Espaces de travail, membres, rôles et invitations.
+  - name: Meta
+    description: Connexion Meta, Pages, comptes publicitaires, kit de marque, bilan de santé.
+  - name: Sources et analyse
+    description: Envoi de fichiers et analyse des sources par l'Analyste.
+  - name: Campagnes
+    description: Brouillons, propositions du Stratège, publication, pause, statistiques, refus.
+  - name: Médias
+    description: Catalogue de modèles, générations, visuels, modifications et formats.
+  - name: Facturation et crédits
+    description: Abonnement, crédits, paiements SasPay et preuves de paiement.
+  - name: Optimiseur
+    description: Suggestions de l'Optimiseur (Pro, Business).
+  - name: Notifications
+    description: Notifications dans l’application et préférences.
+  - name: Support et aide
+    description: Tickets de support et bulle d'aide.
+  - name: Parrainage
+    description: Code de parrainage et filleuls.
+  - name: Webhooks
+    description: Événements entrants signés des fournisseurs.
+  - name: Administration
+    description: Réservé aux administrateurs en double vérification (aal2) ; 404 pour tous les autres.
+
+paths:
+  # ------------------------------------------------------------------ Public
+  /public/maintenance:
+    get:
+      tags: [ Public ]
+      operationId: getMaintenance
+      summary: État du mode maintenance
+      security: []
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Maintenance' } } } }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /public/plans:
+    get:
+      tags: [ Public ]
+      operationId: listPlans
+      summary: Formules et prix
+      security: []
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/Plan' } } } } } } }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /public/fx-rates:
+    get:
+      tags: [ Public ]
+      operationId: getFxRates
+      summary: Taux de change USD → XAF / XOF en vigueur
+      security: []
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/FxRate' } } } } } } }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  # ------------------------------------------------------------------ Compte
+  /me:
+    get:
+      tags: [ Compte ]
+      operationId: getMe
+      summary: Profil de l'utilisateur connecté
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Me' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    patch:
+      tags: [ Compte ]
+      operationId: updateMe
+      summary: Modifier son profil
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/MeUpdate' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Me' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [ Compte ]
+      operationId: deleteMe
+      summary: Supprimer son compte (définitif)
+      description: Exige une réauthentification récente (moins de 5 minutes) et la confirmation `SUPPRIMER`.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [ confirmation ], properties: { confirmation: { type: string, const: SUPPRIMER } } } } }
+      responses:
+        '202': { description: "Suppression programmée, e-mail de confirmation envoyé" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /me/export:
+    post:
+      tags: [ Compte ]
+      operationId: exportMyData
+      summary: Demander l'export de ses données (lien envoyé par e-mail)
+      responses:
+        '202': { description: Export en préparation }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ------------------------------------------------------------------ Espaces et équipe
+  /workspaces:
+    get:
+      tags: [ Espaces et équipe ]
+      operationId: listWorkspaces
+      summary: Espaces dont l'utilisateur est membre
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/Workspace' } } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    get:
+      tags: [ Espaces et équipe ]
+      operationId: getWorkspace
+      summary: Détail d'un espace (formule, statut, quotas)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Workspace' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    patch:
+      tags: [ Espaces et équipe ]
+      operationId: renameWorkspace
+      summary: Renommer l'espace (propriétaire)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [ name ], properties: { name: { type: string, minLength: 1, maxLength: 120 } } } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Workspace' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/members:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    get:
+      tags: [ Espaces et équipe ]
+      operationId: listMembers
+      summary: Membres de l'espace
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/Member' } } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/members/{profileId}:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { name: profileId, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      tags: [ Espaces et équipe ]
+      operationId: changeMemberRole
+      summary: Changer le rôle d'un membre (propriétaire)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [ role ], properties: { role: { type: string, enum: [ editor, viewer ] } } } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Member' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [ Espaces et équipe ]
+      operationId: removeMember
+      summary: Retirer un membre (propriétaire)
+      responses:
+        '204': { description: Retiré }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /workspaces/{workspaceId}/invitations:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    post:
+      tags: [ Espaces et équipe ]
+      operationId: inviteMember
+      summary: Inviter un membre par e-mail (selon la limite de la formule)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [ email, role ], properties: { email: { type: string, format: email, maxLength: 254 }, role: { type: string, enum: [ editor, viewer ] } } } } }
+      responses:
+        '201': { description: Invitation envoyée, content: { application/json: { schema: { $ref: '#/components/schemas/Invitation' } } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/transfer-ownership:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+    post:
+      tags: [ Espaces et équipe ]
+      operationId: transferOwnership
+      summary: Transférer la propriété de l'espace à un membre (propriétaire, réauthentification récente)
+      description: L'ancien propriétaire devient éditeur ; une seule transaction, journalisée. Proposé avant la suppression du compte du propriétaire (SECURITY_NOTES EC-TEAM-06).
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [ profile_id ], additionalProperties: false, properties: { profile_id: { type: string, format: uuid } } } } } }
+      responses:
+        '200': { description: Propriété transférée, content: { application/json: { schema: { $ref: '#/components/schemas/Workspace' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /invitations/accept:
+    post:
+      tags: [ Espaces et équipe ]
+      operationId: acceptInvitation
+      summary: Accepter une invitation (jeton reçu par e-mail)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [ token ], properties: { token: { type: string, minLength: 32, maxLength: 128 } } } } }
+      responses:
+        '200': { description: Membre ajouté, content: { application/json: { schema: { $ref: '#/components/schemas/Workspace' } } } }
+        '410': { $ref: '#/components/responses/Gone' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ------------------------------------------------------------------ Meta
+  /workspaces/{workspaceId}/meta/connect:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    post:
+      tags: [ Meta ]
+      operationId: startMetaConnect
+      summary: Démarrer la connexion Meta (renvoie l'URL de la fenêtre Facebook)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ authorize_url ], properties: { authorize_url: { type: string, format: uri } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /meta/callback:
+    get:
+      tags: [ Meta ]
+      operationId: metaCallback
+      summary: Retour de la fenêtre Facebook (redirection vers l'application)
+      description: Vérifie le paramètre `state` (anti-CSRF, lié à la session), échange le code, chiffre et stocke le jeton.
+      parameters:
+        - { name: code, in: query, required: false, schema: { type: string } }
+        - { name: state, in: query, required: true, schema: { type: string } }
+        - { name: error, in: query, required: false, schema: { type: string } }
+      responses:
+        '302': { description: Redirection vers /bienvenue/meta ou /reglages/comptes-meta }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/meta/connections:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    get:
+      tags: [ Meta ]
+      operationId: listMetaConnections
+      summary: Connexions Meta (sans jeton)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/MetaConnection' } } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/meta/connections/{connectionId}:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { name: connectionId, in: path, required: true, schema: { type: string, format: uuid } }
+    delete:
+      tags: [ Meta ]
+      operationId: disconnectMeta
+      summary: Déconnecter Meta (le jeton est révoqué et effacé)
+      responses:
+        '204': { description: Déconnecté }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/meta/connections/{connectionId}/health-check:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { name: connectionId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [ Meta ]
+      operationId: runHealthCheck
+      summary: Lancer le bilan de santé (F1)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/HealthCheck' } } } }
+        '502': { $ref: '#/components/responses/BadGateway' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/pages:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    get:
+      tags: [ Meta ]
+      operationId: listPages
+      summary: Pages Facebook connectées
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/Page' } } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/pages/{pageId}:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/PageId' }
+    patch:
+      tags: [ Meta ]
+      operationId: updatePage
+      summary: Activer une Page (selon la formule) ou régler la langue et le ton des pubs
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PageUpdate' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Page' } } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/pages/{pageId}/brand-kit:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/PageId' }
+    get:
+      tags: [ Meta ]
+      operationId: getBrandKit
+      summary: Kit de marque de la Page
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/BrandKit' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    put:
+      tags: [ Meta ]
+      operationId: putBrandKit
+      summary: Enregistrer le kit de marque
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/BrandKit' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/BrandKit' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/ad-accounts:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    get:
+      tags: [ Meta ]
+      operationId: listAdAccounts
+      summary: Comptes publicitaires
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/AdAccount' } } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/ad-accounts/{adAccountId}/activate:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { name: adAccountId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [ Meta ]
+      operationId: activateAdAccount
+      summary: Choisir le compte publicitaire actif
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AdAccount' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ------------------------------------------------------------------ Sources et analyse
+  /workspaces/{workspaceId}/uploads:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    post:
+      tags: [ Sources et analyse ]
+      operationId: createUploadUrl
+      summary: Obtenir une URL d'envoi signée (fichier envoyé directement au stockage privé)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/UploadRequest' } } }
+      responses:
+        '201': { description: URL signée valable 5 minutes, content: { application/json: { schema: { $ref: '#/components/schemas/UploadTicket' } } } }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/analyses:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    post:
+      tags: [ Sources et analyse ]
+      operationId: startAnalysis
+      summary: Analyser les sources (Analyste) — asynchrone
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AnalysisRequest' } } }
+      responses:
+        '202': { description: Analyse lancée, content: { application/json: { schema: { $ref: '#/components/schemas/Analysis' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/analyses/{analysisId}:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { name: analysisId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [ Sources et analyse ]
+      operationId: getAnalysis
+      summary: État et résultat de l'analyse (fiche + questions, ou refus pour produit illégal)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Analysis' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/analyses/{analysisId}/answers:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { name: analysisId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [ Sources et analyse ]
+      operationId: answerQuestions
+      summary: Répondre aux 3 à 5 questions
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [ answers ], properties: { answers: { type: array, minItems: 1, maxItems: 5, items: { $ref: '#/components/schemas/Answer' } } } } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Analysis' } } } }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ------------------------------------------------------------------ Campagnes
+  /workspaces/{workspaceId}/campaigns:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    get:
+      tags: [ Campagnes ]
+      operationId: listCampaigns
+      summary: Liste des campagnes
+      parameters:
+        - { name: status, in: query, required: false, schema: { $ref: '#/components/schemas/CampaignStatus' } }
+        - { name: page_id, in: query, required: false, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/CampaignList' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [ Campagnes ]
+      operationId: createCampaign
+      summary: Créer un brouillon de campagne à partir d'une analyse
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [ analysis_id, page_id, platform ], properties: { analysis_id: { type: string, format: uuid }, page_id: { type: string, format: uuid }, platform: { type: string, enum: [ meta ] } } } } }
+      responses:
+        '201': { description: Brouillon créé, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/campaigns/{campaignId}:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/CampaignId' }
+    get:
+      tags: [ Campagnes ]
+      operationId: getCampaign
+      summary: Détail d'une campagne
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    patch:
+      tags: [ Campagnes ]
+      operationId: updateCampaign
+      summary: Modifier un brouillon, ou une campagne publiée (renvoyée à Meta, peut relancer une vérification)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CampaignUpdate' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/campaigns/{campaignId}/proposals:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/CampaignId' }
+    get:
+      tags: [ Campagnes ]
+      operationId: listProposals
+      summary: Propositions IA de la campagne (toutes versions)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/Proposal' } } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [ Campagnes ]
+      operationId: generateProposal
+      summary: Générer une proposition (Stratège), avec affichage progressif
+      description: |
+        Avec `Accept: text/event-stream`, la réponse est un flux SSE : événements `field` (champ rempli), `done` (proposition complète), `error` (Problem Details en JSON).
+        Sans ce type, réponse JSON complète.
+      responses:
+        '201': { description: Proposition créée, content: { application/json: { schema: { $ref: '#/components/schemas/Proposal' } }, text/event-stream: { schema: { type: string } } } }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '502': { $ref: '#/components/responses/BadGateway' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/campaigns/{campaignId}/proposals/{version}/choose:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/CampaignId' }
+      - { name: version, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    post:
+      tags: [ Campagnes ]
+      operationId: chooseProposal
+      summary: Retenir une proposition (copiée dans la campagne)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/campaigns/{campaignId}/publish:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/CampaignId' }
+      - { $ref: '#/components/parameters/IdempotencyKey' }
+    post:
+      tags: [ Campagnes ]
+      operationId: publishCampaign
+      summary: Publier sur la plateforme (décompte le quota de campagnes)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [ accept_liability ], properties: { accept_liability: { type: boolean, description: 'Obligatoire à true pour la première publication du compte' } } } } }
+      responses:
+        '202': { description: Publication en cours (statut publishing puis in_review), content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '424': { $ref: '#/components/responses/FailedDependency' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/campaigns/{campaignId}/pause:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/CampaignId' }
+    post:
+      tags: [ Campagnes ]
+      operationId: pauseCampaign
+      summary: Mettre en pause (envoyé directement à Meta ; autorisé même en lecture seule)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '502': { $ref: '#/components/responses/BadGateway' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/campaigns/{campaignId}/resume:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/CampaignId' }
+    post:
+      tags: [ Campagnes ]
+      operationId: resumeCampaign
+      summary: Reprendre une campagne en pause
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/campaigns/{campaignId}/relaunch:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/CampaignId' }
+    post:
+      tags: [ Campagnes ]
+      operationId: relaunchCampaign
+      summary: Relancer (crée un nouveau brouillon à partir de la campagne)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [ visual_mode ], properties: { visual_mode: { type: string, enum: [ same, similar, change ] } } } } }
+      responses:
+        '201': { description: Nouveau brouillon, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/campaigns/{campaignId}/stats:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/CampaignId' }
+    get:
+      tags: [ Campagnes ]
+      operationId: getCampaignStats
+      summary: Statistiques (copiées toutes les heures)
+      parameters:
+        - { name: from, in: query, required: false, schema: { type: string, format: date } }
+        - { name: to, in: query, required: false, schema: { type: string, format: date } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/CampaignStats' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/campaigns/{campaignId}/stats/refresh:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/CampaignId' }
+    post:
+      tags: [ Campagnes ]
+      operationId: refreshCampaignStats
+      summary: Actualiser maintenant (limité à 1 fois toutes les 5 minutes)
+      responses:
+        '202': { description: Synchronisation lancée ; l'écran se met à jour en temps réel }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/campaigns/{campaignId}/rejections/{rejectionId}:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/CampaignId' }
+      - { name: rejectionId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [ Campagnes ]
+      operationId: getRejection
+      summary: Rapport du Modérateur sur un refus
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Rejection' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/campaigns/{campaignId}/rejections/{rejectionId}/apply-fix:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/CampaignId' }
+      - { name: rejectionId, in: path, required: true, schema: { type: string, format: uuid } }
+      - { $ref: '#/components/parameters/IdempotencyKey' }
+    post:
+      tags: [ Campagnes ]
+      operationId: applyRejectionFix
+      summary: Appliquer la correction et republier (sans quota)
+      responses:
+        '202': { description: Republiée, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ------------------------------------------------------------------ Médias
+  /media-models:
+    get:
+      tags: [ Médias ]
+      operationId: listMediaModels
+      summary: Modèles visibles (actifs et testés), avec niveaux et crédits
+      parameters:
+        - { name: capability, in: query, required: false, schema: { $ref: '#/components/schemas/Capability' } }
+        - { name: use_case, in: query, required: false, schema: { type: string, enum: [ product, text, edit, video ] } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/MediaModel' } } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/generations:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    post:
+      tags: [ Médias ]
+      operationId: createGeneration
+      summary: Lancer une génération (crédits réservés) — asynchrone
+      parameters: [ { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/GenerationRequest' } } }
+      responses:
+        '202': { description: En file d'attente, content: { application/json: { schema: { $ref: '#/components/schemas/Generation' } } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/generations/{generationId}:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/GenerationId' }
+    get:
+      tags: [ Médias ]
+      operationId: getGeneration
+      summary: État (position dans la file, visuels prêts, bascule proposée)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Generation' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/generations/{generationId}/cancel:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/GenerationId' }
+    post:
+      tags: [ Médias ]
+      operationId: cancelGeneration
+      summary: Annuler (possible tant que le traitement n'a pas commencé ; crédits rendus)
+      responses:
+        '200': { description: Annulée, content: { application/json: { schema: { $ref: '#/components/schemas/Generation' } } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/generations/{generationId}/fallback:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/GenerationId' }
+      - { $ref: '#/components/parameters/IdempotencyKey' }
+    post:
+      tags: [ Médias ]
+      operationId: acceptFallback
+      summary: Accepter le modèle équivalent proposé (après 60 s d'attente)
+      responses:
+        '202': { description: Relancée sur le modèle de secours, content: { application/json: { schema: { $ref: '#/components/schemas/Generation' } } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/visuals:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    get:
+      tags: [ Médias ]
+      operationId: listVisuals
+      summary: Atelier visuels
+      parameters:
+        - { name: filter, in: query, required: false, schema: { type: string, enum: [ chosen, used, expiring, video ] } }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/VisualList' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/visuals/{visualId}:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/VisualId' }
+    get:
+      tags: [ Médias ]
+      operationId: getVisual
+      summary: Détail d'un visuel (URL signées temporaires)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Visual' } } } }
+        '410': { $ref: '#/components/responses/Gone' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    patch:
+      tags: [ Médias ]
+      operationId: chooseVisual
+      summary: Marquer comme choisi (référence pour « similaire »)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [ chosen ], properties: { chosen: { type: boolean } } } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Visual' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/visuals/{visualId}/edit:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/VisualId' }
+      - { $ref: '#/components/parameters/IdempotencyKey' }
+    post:
+      tags: [ Médias ]
+      operationId: editVisual
+      summary: Modifier un visuel (texte/numéro/logo = instantané et gratuit ; scène = IA et crédits)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/VisualEditRequest' } } }
+      responses:
+        '200': { description: Modification de calque appliquée, content: { application/json: { schema: { $ref: '#/components/schemas/Visual' } } } }
+        '202': { description: Modification de scène lancée, content: { application/json: { schema: { $ref: '#/components/schemas/Generation' } } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/visuals/{visualId}/formats:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/VisualId' }
+    post:
+      tags: [ Médias ]
+      operationId: createVisualFormat
+      summary: Créer un autre format (inclus, sans crédit)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [ format ], properties: { format: { $ref: '#/components/schemas/Format' } } } } }
+      responses:
+        '202': { description: En cours, content: { application/json: { schema: { $ref: '#/components/schemas/Visual' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ------------------------------------------------------------------ Facturation
+  /workspaces/{workspaceId}/billing:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    get:
+      tags: [ Facturation et crédits ]
+      operationId: getBilling
+      summary: Abonnement, période, soldes de crédits, quotas (propriétaire)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Billing' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/credits/ledger:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    get:
+      tags: [ Facturation et crédits ]
+      operationId: getLedger
+      summary: Mouvements de crédits
+      parameters: [ { $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Cursor' } ]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/LedgerList' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/checkout:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/IdempotencyKey' }
+    post:
+      tags: [ Facturation et crédits ]
+      operationId: createCheckout
+      summary: Créer une session de paiement SasPay (formule, passage supérieur, crédits)
+      description: Le montant est **calculé par le serveur** ; le client n'envoie jamais de prix.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CheckoutRequest' } } }
+      responses:
+        '201': { description: Session créée, content: { application/json: { schema: { $ref: '#/components/schemas/Checkout' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '502': { $ref: '#/components/responses/BadGateway' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '200': { description: 'Une session de paiement en attente existe déjà pour cet objet : elle est renvoyée', content: { application/json: { schema: { $ref: '#/components/schemas/Checkout' } } } }
+  /workspaces/{workspaceId}/payments:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    get:
+      tags: [ Facturation et crédits ]
+      operationId: listPayments
+      summary: Historique des paiements (propriétaire)
+      parameters: [ { $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Cursor' } ]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/PaymentList' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/payments/{paymentId}:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { name: paymentId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [ Facturation et crédits ]
+      operationId: getPayment
+      summary: État d'un paiement (sondé par l'écran « Paiement en cours de vérification »)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Payment' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/payment-proofs:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    post:
+      tags: [ Facturation et crédits ]
+      operationId: submitPaymentProof
+      summary: Envoyer une preuve de paiement (crée aussi un ticket « Paiement »)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PaymentProofRequest' } } }
+      responses:
+        '201': { description: Reçue, content: { application/json: { schema: { $ref: '#/components/schemas/PaymentProof' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ------------------------------------------------------------------ Optimiseur
+  /workspaces/{workspaceId}/recommendations:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    get:
+      tags: [ Optimiseur ]
+      operationId: listRecommendations
+      summary: Suggestions de l'Optimiseur (Pro, Business)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/Recommendation' } } } } } } }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/recommendations/{recommendationId}/{decision}:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { name: recommendationId, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: decision, in: path, required: true, schema: { type: string, enum: [ apply, dismiss ] } }
+    post:
+      tags: [ Optimiseur ]
+      operationId: decideRecommendation
+      summary: Appliquer (action envoyée à Meta) ou ignorer
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Recommendation' } } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ------------------------------------------------------------------ Notifications
+  /notifications:
+    get:
+      tags: [ Notifications ]
+      operationId: listNotifications
+      summary: Notifications de l'utilisateur
+      parameters: [ { $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Cursor' } ]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/NotificationList' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /notifications/read:
+    post:
+      tags: [ Notifications ]
+      operationId: markNotificationsRead
+      summary: Marquer comme lues (liste d'identifiants, ou toutes)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, properties: { ids: { type: array, maxItems: 200, items: { type: string, format: uuid } }, all: { type: boolean } } } } }
+      responses:
+        '204': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /notifications/preferences:
+    get:
+      tags: [ Notifications ]
+      operationId: getNotificationPreferences
+      summary: Préférences par type
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/NotificationPreference' } } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    put:
+      tags: [ Notifications ]
+      operationId: putNotificationPreferences
+      summary: Enregistrer les préférences
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/NotificationPreference' } } } } } }
+      responses:
+        '204': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ------------------------------------------------------------------ Support et aide
+  /workspaces/{workspaceId}/tickets:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    get:
+      tags: [ Support et aide ]
+      operationId: listTickets
+      summary: Tickets de support
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/Ticket' } } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [ Support et aide ]
+      operationId: createTicket
+      summary: Ouvrir un ticket
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/TicketCreate' } } }
+      responses:
+        '201': { description: Créé, content: { application/json: { schema: { $ref: '#/components/schemas/Ticket' } } } }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/tickets/{ticketId}/messages:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { name: ticketId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [ Support et aide ]
+      operationId: listTicketMessages
+      summary: Messages du ticket
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/TicketMessage' } } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [ Support et aide ]
+      operationId: replyTicket
+      summary: Répondre au ticket
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/TicketMessageCreate' } } }
+      responses:
+        '201': { description: Envoyé, content: { application/json: { schema: { $ref: '#/components/schemas/TicketMessage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/assistant/messages:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    post:
+      tags: [ Support et aide ]
+      operationId: askAssistant
+      summary: Poser une question à la bulle d'aide (réponse en flux SSE)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [ message ], properties: { message: { type: string, minLength: 1, maxLength: 2000 }, conversation_id: { type: string, format: uuid }, current_screen: { type: string, maxLength: 60 } } } } }
+      responses:
+        '200': { description: Réponse, content: { application/json: { schema: { $ref: '#/components/schemas/AssistantAnswer' } }, text/event-stream: { schema: { type: string } } } }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ------------------------------------------------------------------ Parrainage
+  /workspaces/{workspaceId}/referral:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    get:
+      tags: [ Parrainage ]
+      operationId: getReferral
+      summary: Code, lien et filleuls
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Referral' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ------------------------------------------------------------------ Webhooks (entrants)
+  /webhooks/saspay:
+    post:
+      tags: [ Webhooks ]
+      operationId: saspayWebhook
+      summary: Événements de paiement SasPay
+      security: [ { webhookSignature: [] } ]
+      requestBody: { required: true, content: { application/json: { schema: { type: object } } } }
+      responses:
+        '200': { description: Traité (ou déjà traité — idempotent) }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /webhooks/meta:
+    get:
+      tags: [ Webhooks ]
+      operationId: metaWebhookVerify
+      summary: Vérification de l'abonnement Meta (hub.challenge)
+      security: []
+      parameters:
+        - { name: hub.mode, in: query, required: true, schema: { type: string } }
+        - { name: hub.verify_token, in: query, required: true, schema: { type: string } }
+        - { name: hub.challenge, in: query, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Renvoie hub.challenge, content: { text/plain: { schema: { type: string } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [ Webhooks ]
+      operationId: metaWebhook
+      summary: Événements Meta (statut des pubs) — signature X-Hub-Signature-256
+      security: [ { webhookSignature: [] } ]
+      requestBody: { required: true, content: { application/json: { schema: { type: object } } } }
+      responses:
+        '200': { description: Traité }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /webhooks/{provider}:
+    parameters:
+      - { name: provider, in: path, required: true, schema: { type: string, enum: [ higgsfield, fal, byteplus, resend ] } }
+    post:
+      tags: [ Webhooks ]
+      operationId: providerWebhook
+      summary: Fin de génération (fournisseurs médias) ou événements e-mail (Resend)
+      description: Signature vérifiée selon le fournisseur ; identifiant de requête associé à une seule génération (pas de double facturation).
+      security: [ { webhookSignature: [] } ]
+      requestBody: { required: true, content: { application/json: { schema: { type: object } } } }
+      responses:
+        '200': { description: Traité (ou déjà traité) }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ------------------------------------------------------------------ Administration (aal2 obligatoire ; 404 sinon)
+  /admin/users:
+    get:
+      tags: [ Administration ]
+      operationId: adminListUsers
+      summary: Rechercher des utilisateurs
+      security: [ { sessionCookie: [] } ]
+      parameters:
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 120 } }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/Me' } }, next_cursor: { type: [ string, 'null' ] } } } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /admin/workspaces/{workspaceId}:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    get:
+      tags: [ Administration ]
+      operationId: adminGetWorkspace
+      summary: Fiche complète d'un client (lecture seule, journalisée)
+      security: [ { sessionCookie: [] } ]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Workspace' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    patch:
+      tags: [ Administration ]
+      operationId: adminUpdateWorkspace
+      summary: Suspendre, réactiver, changer de formule, prolonger
+      security: [ { sessionCookie: [] } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AdminWorkspaceUpdate' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Workspace' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /admin/workspaces/{workspaceId}/credits:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    post:
+      tags: [ Administration ]
+      operationId: adminAdjustCredits
+      summary: Offrir ou retirer des crédits (motif obligatoire)
+      security: [ { sessionCookie: [] } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [ amount, reason ], properties: { amount: { type: integer, minimum: -500, maximum: 500, not: { const: 0 } }, reason: { type: string, minLength: 3, maxLength: 300 } } } } }
+      responses:
+        '201': { description: Mouvement ajouté au registre, content: { application/json: { schema: { $ref: '#/components/schemas/LedgerEntry' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /admin/payment-proofs/{proofId}/{decision}:
+    parameters:
+      - { name: proofId, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: decision, in: path, required: true, schema: { type: string, enum: [ accept, reject ] } }
+    post:
+      tags: [ Administration ]
+      operationId: adminReviewProof
+      summary: Valider (active l'abonnement ou les crédits) ou refuser une preuve de paiement
+      security: [ { sessionCookie: [] } ]
+      requestBody:
+        required: false
+        content: { application/json: { schema: { type: object, properties: { note: { type: string, maxLength: 1000 } } } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/PaymentProof' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /admin/tickets/{ticketId}/messages:
+    parameters: [ { name: ticketId, in: path, required: true, schema: { type: string, format: uuid } } ]
+    post:
+      tags: [ Administration ]
+      operationId: adminReplyTicket
+      summary: Répondre (dans l'application et par e-mail)
+      security: [ { sessionCookie: [] } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/TicketMessageCreate' } } }
+      responses:
+        '201': { description: Envoyé, content: { application/json: { schema: { $ref: '#/components/schemas/TicketMessage' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /admin/media-models/{modelId}:
+    parameters: [ { name: modelId, in: path, required: true, schema: { type: string, pattern: '^[a-z0-9-]+:[a-z0-9./_-]+$' } } ]
+    put:
+      tags: [ Administration ]
+      operationId: adminPutMediaModel
+      summary: Créer ou modifier un modèle du catalogue (statut, fiche, niveaux, crédits)
+      security: [ { sessionCookie: [] } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AdminMediaModel' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AdminMediaModel' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /admin/routing-rules/{capability}:
+    parameters: [ { name: capability, in: path, required: true, schema: { $ref: '#/components/schemas/Capability' } } ]
+    put:
+      tags: [ Administration ]
+      operationId: adminPutRoutingRule
+      summary: Modèle principal, secours, attente maximale
+      security: [ { sessionCookie: [] } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/RoutingRule' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/RoutingRule' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /admin/settings/{key}:
+    parameters: [ { name: key, in: path, required: true, schema: { type: string, enum: [ maintenance, credit_price_xaf, image_margin_threshold_xaf, trial, session_idle_minutes, login_lock, referral_bonus_credits, daily_generation_cap ] } } ]
+    put:
+      tags: [ Administration ]
+      operationId: adminPutSetting
+      summary: Modifier un paramètre (dont le mode maintenance)
+      security: [ { sessionCookie: [] } ]
+      requestBody: { required: true, content: { application/json: { schema: {} } } }
+      responses:
+        '204': { description: Enregistré et journalisé }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /admin/vat-rates/{countryCode}:
+    parameters: [ { name: countryCode, in: path, required: true, schema: { type: string, pattern: '^[A-Z]{2}$' } } ]
+    put:
+      tags: [ Administration ]
+      operationId: adminPutVatRate
+      summary: Fixer la TVA d'un pays
+      security: [ { sessionCookie: [] } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [ rate, valid_from ], properties: { rate: { type: number, minimum: 0, maximum: 0.5 }, valid_from: { type: string, format: date }, source_url: { type: string, format: uri } } } } }
+      responses:
+        '204': { description: Enregistré }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /admin/audit-log:
+    get:
+      tags: [ Administration ]
+      operationId: adminAuditLog
+      summary: Journal des actions d'administration
+      security: [ { sessionCookie: [] } ]
+      parameters: [ { $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Cursor' } ]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/AuditEntry' } }, next_cursor: { type: [ string, 'null' ] } } } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /admin/costs:
+    get:
+      tags: [ Administration ]
+      operationId: adminCosts
+      summary: Coûts IA et marges (par utilisateur, agent, modèle, fournisseur) et temps d'attente
+      security: [ { sessionCookie: [] } ]
+      parameters:
+        - { name: month, in: query, required: true, schema: { type: string, pattern: '^[0-9]{4}-[0-9]{2}$' } }
+        - { name: group_by, in: query, required: true, schema: { type: string, enum: [ workspace, agent, model, provider ] } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { type: object, additionalProperties: true } } } } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: sb-access-token
+      description: Session Supabase en cookie HttpOnly, Secure, SameSite=Lax (application web). Les requêtes qui modifient des données exigent aussi une origine Pubeka (contrôle Origin) — protection CSRF.
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Jeton d'accès Supabase (application mobile V3 et outils). Les routes /admin exigent un jeton de niveau aal2 (double vérification).
+    webhookSignature:
+      type: apiKey
+      in: header
+      name: X-Signature
+      description: Signature HMAC propre à chaque fournisseur (SasPay, Meta X-Hub-Signature-256, fal, Higgsfield, BytePlus, Resend/Svix), vérifiée avant tout traitement.
+
+  parameters:
+    WorkspaceId: { name: workspaceId, in: path, required: true, schema: { type: string, format: uuid } }
+    PageId: { name: pageId, in: path, required: true, schema: { type: string, format: uuid } }
+    CampaignId: { name: campaignId, in: path, required: true, schema: { type: string, format: uuid } }
+    GenerationId: { name: generationId, in: path, required: true, schema: { type: string, format: uuid } }
+    VisualId: { name: visualId, in: path, required: true, schema: { type: string, format: uuid } }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: UUID v4 généré par le client pour cette intention. Même clé + même corps = même réponse ; même clé + corps différent = 409.
+      schema: { type: string, format: uuid }
+    Limit: { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+    Cursor: { name: cursor, in: query, required: false, schema: { type: string, maxLength: 200 } }
+
+  responses:
+    BadRequest: { description: Requête mal formée ou champs invalides, content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    Unauthorized: { description: "Non connecté, session expirée ou signature de webhook invalide", content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    PaymentRequired: { description: "Crédits, quota ou formule insuffisants", content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    Forbidden: { description: "Connecté mais pas autorisé (rôle, lecture seule, espace suspendu)", content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    NotFound: { description: Introuvable — aussi renvoyé pour une ressource d'un autre espace et pour /admin sans droits, content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    Conflict: { description: "Conflit d'état (déjà publiée, déjà annulée, clé d'idempotence réutilisée…)", content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    Gone: { description: "Ressource expirée (fichier supprimé après 7 jours, invitation expirée)", content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    PayloadTooLarge: { description: Fichier trop lourd, content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    UnsupportedMediaType: { description: Type de fichier refusé, content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    Unprocessable: { description: Valide mais impossible (règle métier), content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    FailedDependency: { description: "Prérequis plateforme manquant (moyen de paiement Meta, jeton expiré)", content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    TooManyRequests: { description: Trop de requêtes ou plafond quotidien atteint, headers: { Retry-After: { schema: { type: integer } } }, content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    BadGateway: { description: "Erreur d'un service externe (Meta, SasPay, IA)", content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    ServiceUnavailable: { description: Maintenance ou fournisseur indisponible, headers: { Retry-After: { schema: { type: integer } } }, content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+
+  schemas:
+    # ---------- Erreurs
+    Problem:
+      type: object
+      description: Format d'erreur unique (RFC 9457 Problem Details) + extensions Pubeka.
+      required: [ type, title, status, code, request_id ]
+      properties:
+        type: { type: string, format: uri, examples: [ 'https://pubeka.com/errors/insufficient-credits' ] }
+        title: { type: string, description: "Résumé court, en anglais, stable" }
+        status: { type: integer, minimum: 400, maximum: 599 }
+        detail: { type: string, description: "Message pour l'utilisateur, dans sa langue (fr/en)" }
+        instance: { type: string, description: Chemin de la requête }
+        code: { $ref: '#/components/schemas/ErrorCode' }
+        request_id: { type: string, description: Identifiant à communiquer au support (Sentry) }
+        errors: { type: array, items: { $ref: '#/components/schemas/FieldError' } }
+        retry_after_s: { type: integer }
+        meta: { type: object, additionalProperties: true, description: 'Données utiles (ex. credits_missing, upgrade_to)' }
+      additionalProperties: false
+    FieldError:
+      type: object
+      required: [ field, code, message ]
+      properties:
+        field: { type: string, examples: [ 'copy.primary_text' ] }
+        code: { type: string, examples: [ too_long, required, invalid_format ] }
+        message: { type: string }
+    ErrorCode:
+      type: string
+      enum:
+        - validation_failed
+        - unauthenticated
+        - session_expired
+        - mfa_required
+        - forbidden
+        - role_insufficient
+        - workspace_read_only
+        - workspace_suspended
+        - not_found
+        - conflict
+        - idempotency_key_reused
+        - already_published
+        - gone
+        - file_too_large
+        - unsupported_file_type
+        - insufficient_credits
+        - campaign_quota_reached
+        - page_limit_reached
+        - member_limit_reached
+        - plan_feature_locked
+        - trial_already_used
+        - illegal_product
+        - source_unreadable
+        - unsafe_url
+        - meta_not_connected
+        - meta_token_expired
+        - meta_payment_method_missing
+        - meta_error
+        - budget_too_low
+        - rate_limited
+        - daily_generation_cap
+        - provider_unavailable
+        - payment_provider_error
+        - webhook_signature_invalid
+        - maintenance
+        - internal_error
+
+    # ---------- Public
+    Maintenance:
+      type: object
+      required: [ active ]
+      properties: { active: { type: boolean }, message: { type: [ string, 'null' ] } }
+    Plan:
+      type: object
+      required: [ code, price_xaf, monthly_credits, campaigns_per_period, max_pages, max_members ]
+      properties:
+        code: { type: string, enum: [ starter, pro, business ] }
+        price_xaf: { type: integer }
+        monthly_credits: { type: integer }
+        campaigns_per_period: { type: integer }
+        max_pages: { type: integer }
+        max_members: { type: integer }
+        features: { type: object, additionalProperties: { type: boolean } }
+    FxRate:
+      type: object
+      required: [ base, quote, rate, fetched_at ]
+      properties:
+        base: { type: string, const: USD }
+        quote: { type: string, enum: [ XAF, XOF ] }
+        rate: { type: number }
+        source: { type: string, enum: [ saspay, fallback, manual ] }
+        fetched_at: { type: string, format: date-time }
+    Money:
+      type: object
+      description: Montant affiché en FCFA avec l'équivalent en dollars.
+      required: [ xaf, usd_cents ]
+      properties: { xaf: { type: integer }, usd_cents: { type: integer }, currency: { type: string, enum: [ XAF, XOF ] } }
+
+    # ---------- Compte et espaces
+    Me:
+      type: object
+      required: [ id, email, ui_language, timezone, currency_display ]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        first_name: { type: [ string, 'null' ] }
+        last_name: { type: [ string, 'null' ] }
+        phone: { type: [ string, 'null' ], pattern: '^\+[1-9][0-9]{6,14}$' }
+        ui_language: { type: string, enum: [ fr, en ] }
+        country_code: { type: [ string, 'null' ], pattern: '^[A-Z]{2}$' }
+        city: { type: [ string, 'null' ] }
+        timezone: { type: string }
+        currency_display: { type: string, enum: [ XAF, XOF ] }
+        theme: { type: string, enum: [ light, dark, system ] }
+        greeting: { type: string, enum: [ bonjour, bonsoir, hello, good_evening ], description: Calculé selon l'heure locale }
+    MeUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        first_name: { type: string, maxLength: 80 }
+        last_name: { type: string, maxLength: 80 }
+        phone: { type: string, pattern: '^\+[1-9][0-9]{6,14}$' }
+        ui_language: { type: string, enum: [ fr, en ] }
+        country_code: { type: string, pattern: '^[A-Z]{2}$' }
+        city: { type: string, maxLength: 120 }
+        currency_display: { type: string, enum: [ XAF, XOF ] }
+        theme: { type: string, enum: [ light, dark, system ] }
+    Workspace:
+      type: object
+      required: [ id, name, status, role, plan ]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        status: { type: string, enum: [ active, read_only, suspended ] }
+        role: { type: string, enum: [ owner, editor, viewer ] }
+        plan: { type: string, enum: [ trial, starter, pro, business ] }
+        period_end: { type: [ string, 'null' ], format: date-time }
+        grace_until: { type: [ string, 'null' ], format: date-time }
+        quotas: { $ref: '#/components/schemas/Quotas' }
+    Quotas:
+      type: object
+      properties:
+        campaigns_used: { type: integer }
+        campaigns_limit: { type: integer }
+        pages_active: { type: integer }
+        pages_limit: { type: integer }
+        members: { type: integer }
+        members_limit: { type: integer }
+        credits_available: { type: integer }
+    Member:
+      type: object
+      required: [ profile_id, role ]
+      properties:
+        profile_id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        name: { type: string }
+        role: { type: string, enum: [ owner, editor, viewer ] }
+        joined_at: { type: string, format: date-time }
+    Invitation:
+      type: object
+      required: [ id, email, role, expires_at ]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role: { type: string, enum: [ editor, viewer ] }
+        expires_at: { type: string, format: date-time }
+
+    # ---------- Meta
+    MetaConnection:
+      type: object
+      required: [ id, token_type, status ]
+      properties:
+        id: { type: string, format: uuid }
+        token_type: { type: string, enum: [ system_user, user ] }
+        status: { type: string, enum: [ ok, expiring, expired, revoked ] }
+        expires_at: { type: [ string, 'null' ], format: date-time }
+        business_id: { type: [ string, 'null' ] }
+    HealthCheck:
+      type: object
+      required: [ items ]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required: [ key, ok ]
+            properties:
+              key: { type: string, enum: [ business_portfolio, ad_account, payment_method, page, instagram, whatsapp, pixel ] }
+              ok: { type: boolean }
+              required: { type: boolean }
+              guide_slug: { type: string }
+    Page:
+      type: object
+      required: [ id, meta_page_id, name, active ]
+      properties:
+        id: { type: string, format: uuid }
+        meta_page_id: { type: string }
+        name: { type: string }
+        active: { type: boolean }
+        locked_for_period: { type: boolean }
+        instagram_linked: { type: boolean }
+        whatsapp_linked: { type: boolean }
+        ad_language: { type: string, enum: [ fr, en ] }
+        ad_address: { type: string, enum: [ vous, tu ] }
+    PageUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        active: { type: boolean }
+        ad_language: { type: string, enum: [ fr, en ] }
+        ad_address: { type: string, enum: [ vous, tu ] }
+    AdAccount:
+      type: object
+      required: [ id, meta_ad_account_id, is_active ]
+      properties:
+        id: { type: string, format: uuid }
+        meta_ad_account_id: { type: string, pattern: '^act_[0-9]+$' }
+        name: { type: string }
+        currency: { type: string }
+        has_payment_method: { type: [ boolean, 'null' ] }
+        is_active: { type: boolean }
+    BrandKit:
+      type: object
+      additionalProperties: false
+      properties:
+        logo_path: { type: [ string, 'null' ] }
+        colors: { type: object, properties: { primary: { type: string, pattern: '^#[0-9A-Fa-f]{6}$' }, secondary: { type: string, pattern: '^#[0-9A-Fa-f]{6}$' }, accent: { type: string, pattern: '^#[0-9A-Fa-f]{6}$' } } }
+        font: { type: [ string, 'null' ], maxLength: 60 }
+        phone: { type: [ string, 'null' ], pattern: '^\+[1-9][0-9]{6,14}$' }
+        whatsapp: { type: [ string, 'null' ], pattern: '^\+[1-9][0-9]{6,14}$' }
+        tagline: { type: [ string, 'null' ], maxLength: 120 }
+        tone: { type: [ string, 'null' ], enum: [ premium, friendly, bold, serious, playful, null ] }
+        show_number_on_visuals: { type: boolean }
+
+    # ---------- Sources et analyse
+    UploadRequest:
+      type: object
+      required: [ purpose, mime, size ]
+      additionalProperties: false
+      properties:
+        purpose: { type: string, enum: [ source, reference, brand_logo, support_attachment, payment_proof ] }
+        mime: { type: string, enum: [ image/png, image/jpeg, image/webp, application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document ] }
+        size: { type: integer, minimum: 1, maximum: 20971520, description: 'Octets. Image (PNG, JPEG, WebP) : 10 Mo maximum (10485760) ; PDF et DOCX : 20 Mo maximum. Vérifié par le serveur selon le type.' }
+    UploadTicket:
+      type: object
+      required: [ upload_url, file_path, expires_at ]
+      properties:
+        upload_url: { type: string, format: uri }
+        file_path: { type: string }
+        expires_at: { type: string, format: date-time }
+    AnalysisRequest:
+      type: object
+      required: [ sources ]
+      additionalProperties: false
+      properties:
+        page_id: { type: string, format: uuid }
+        user_intent: { type: string, maxLength: 1000 }
+        sources:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            type: object
+            required: [ type ]
+            additionalProperties: false
+            properties:
+              type: { type: string, enum: [ website, app_link, image, social_post, document, text ] }
+              url: { type: string, format: uri, pattern: '^https?://', maxLength: 2048 }
+              file_path: { type: string, maxLength: 300 }
+              text: { type: string, maxLength: 5000 }
+    Analysis:
+      type: object
+      required: [ id, status ]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [ queued, reading, analysing, questions, ready, blocked, failed ] }
+        blocked_reason: { type: [ string, 'null' ], enum: [ illegal_product, null ] }
+        profile: { type: [ object, 'null' ], description: BusinessProfile de l'Analyste (docs/agents/01) }
+        questions: { type: array, items: { $ref: '#/components/schemas/Question' } }
+        unreadable_sources: { type: array, items: { type: integer } }
+    Question:
+      type: object
+      required: [ id, text, input, required ]
+      properties:
+        id: { type: string }
+        field: { type: string }
+        text: { type: string }
+        why: { type: string }
+        input: { type: string, enum: [ phone, text, single_choice, multi_choice, location, number ] }
+        options: { type: [ array, 'null' ], items: { type: string } }
+        required: { type: boolean }
+    Answer:
+      type: object
+      required: [ question_id, answer ]
+      properties:
+        question_id: { type: string, maxLength: 20 }
+        answer: { type: string, maxLength: 500 }
+
+    # ---------- Campagnes
+    CampaignStatus:
+      type: string
+      enum: [ draft, publishing, in_review, active, paused, rejected, ended, stopped, error ]
+    Campaign:
+      type: object
+      required: [ id, name, platform, status, version ]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        platform: { type: string, enum: [ meta, google, tiktok ] }
+        page_id: { type: [ string, 'null' ], format: uuid }
+        status: { $ref: '#/components/schemas/CampaignStatus' }
+        objective: { type: [ string, 'null' ], enum: [ OUTCOME_ENGAGEMENT, OUTCOME_TRAFFIC, OUTCOME_AWARENESS, OUTCOME_SALES, null ] }
+        destination: { type: [ string, 'null' ], enum: [ WHATSAPP, MESSENGER, INSTAGRAM_DIRECT, WEBSITE, APP, ON_POST, NONE, null ] }
+        geo: { type: object }
+        daily_budget: { $ref: '#/components/schemas/Money' }
+        total_cost: { $ref: '#/components/schemas/Money' }
+        vat_rate: { type: [ number, 'null' ] }
+        start_date: { type: [ string, 'null' ], format: date }
+        end_date: { type: [ string, 'null' ], format: date }
+        copy: { $ref: '#/components/schemas/AdCopy' }
+        ab_test: { type: boolean }
+        editable: { type: boolean }
+        status_message: { type: string, description: "Texte affiché (ex. « Meta vérifie ta pub, en général sous 24 heures »)" }
+        published_at: { type: [ string, 'null' ], format: date-time }
+        version: { type: integer, minimum: 1, description: Augmente à chaque modification ; à renvoyer dans PATCH (SECURITY_NOTES EC-TEAM-08) }
+    CampaignUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        objective: { type: string, enum: [ OUTCOME_ENGAGEMENT, OUTCOME_TRAFFIC, OUTCOME_AWARENESS, OUTCOME_SALES ] }
+        destination: { type: string, enum: [ WHATSAPP, MESSENGER, INSTAGRAM_DIRECT, WEBSITE, APP, ON_POST, NONE ] }
+        geo: { type: object }
+        targeting: { type: object, properties: { age_min: { type: integer, minimum: 18, maximum: 65 }, age_max: { type: integer, minimum: 18, maximum: 65 }, genders: { type: string, enum: [ all, male, female ] } } }
+        daily_budget_usd_cents: { type: integer, minimum: 100 }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+        copy: { $ref: '#/components/schemas/AdCopy' }
+        tracking: { type: [ object, 'null' ], properties: { pixel_id: { type: string, pattern: '^[0-9]{5,25}$' } } }
+        ab_test: { type: boolean }
+        visual_ids: { type: array, minItems: 1, maxItems: 2, items: { type: string, format: uuid } }
+        version: { type: integer, minimum: 1, description: Version lue ; périmée → 409 conflict avec meta.current_version }
+      required: [ version ]
+    AdCopy:
+      type: object
+      properties:
+        primary_text: { type: string, maxLength: 125 }
+        headline: { type: string, maxLength: 40 }
+        description: { type: [ string, 'null' ], maxLength: 30 }
+        cta: { type: string, enum: [ SEND_WHATSAPP_MESSAGE, SEND_MESSAGE, LEARN_MORE, SHOP_NOW, ORDER_NOW, CONTACT_US, BOOK_NOW, SIGN_UP, GET_OFFER ] }
+        angle: { type: string, enum: [ price, quality, speed, scarcity, social_proof, novelty, convenience ] }
+    CampaignList:
+      type: object
+      required: [ data ]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Campaign' } }
+        next_cursor: { type: [ string, 'null' ] }
+    Proposal:
+      type: object
+      required: [ version, proposal ]
+      properties:
+        version: { type: integer }
+        chosen: { type: boolean }
+        proposal: { type: object, description: CampaignProposal du Stratège (docs/agents/02) }
+        estimate: { type: object, properties: { reach_min: { type: integer }, reach_max: { type: integer } } }
+        created_at: { type: string, format: date-time }
+    CampaignStats:
+      type: object
+      required: [ summary, daily ]
+      properties:
+        summary:
+          type: object
+          properties:
+            spend: { $ref: '#/components/schemas/Money' }
+            results: { type: integer }
+            result_type: { type: string }
+            cost_per_result: { $ref: '#/components/schemas/Money' }
+            reach: { type: integer }
+            impressions: { type: integer }
+            clicks: { type: integer }
+            ctr: { type: number }
+            plain_text: { type: string, description: "« 42 messages WhatsApp, soit 357 FCFA par client potentiel »" }
+        daily: { type: array, items: { type: object, additionalProperties: true } }
+        synced_at: { type: string, format: date-time }
+    Rejection:
+      type: object
+      required: [ id, report ]
+      properties:
+        id: { type: string, format: uuid }
+        meta_reason: { type: string }
+        report: { type: object, description: Sortie du Modérateur (docs/agents/04) }
+        can_fix: { type: boolean }
+        appeal_recommended: { type: boolean }
+
+    # ---------- Médias
+    Capability:
+      type: string
+      enum: [ c1_text_to_image, c2_reference_to_image, c3_edit, c4_extend, cutout, c5_image_to_video, c6_text_to_video, c7_reference_to_video ]
+    Format:
+      type: string
+      enum: [ '4:5', '9:16', '1:1', '1.91:1' ]
+    MediaModel:
+      type: object
+      required: [ id, display_name, provider, capabilities, levels ]
+      properties:
+        id: { type: string }
+        display_name: { type: string }
+        provider: { type: string, enum: [ fal, higgsfield, byteplus ] }
+        capabilities: { type: array, items: { $ref: '#/components/schemas/Capability' } }
+        recommended: { type: boolean }
+        card: { type: object, properties: { for: { type: string }, pros: { type: array, items: { type: string } }, cons: { type: array, items: { type: string } } } }
+        max_references: { type: integer }
+        status: { type: string, enum: [ active, unavailable ] }
+        levels:
+          type: array
+          items:
+            type: object
+            required: [ level, credits ]
+            properties:
+              level: { type: string, enum: [ standard, high ] }
+              credits: { type: integer, description: Par image (ou durée minimale en vidéo) }
+              credits_by_duration: { type: object, additionalProperties: { type: integer } }
+              est_seconds: { type: integer }
+    GenerationRequest:
+      type: object
+      required: [ capability, model_id, level ]
+      additionalProperties: false
+      properties:
+        capability: { $ref: '#/components/schemas/Capability' }
+        model_id: { type: string }
+        level: { type: string, enum: [ standard, high ] }
+        count: { type: integer, minimum: 1, maximum: 6, default: 3 }
+        format: { $ref: '#/components/schemas/Format' }
+        duration_s: { type: integer, enum: [ 5, 10, 15, 30 ] }
+        page_id: { type: string, format: uuid }
+        campaign_id: { type: string, format: uuid }
+        product_image_path: { type: string, maxLength: 300 }
+        reference_paths: { type: array, maxItems: 10, items: { type: string, maxLength: 300 } }
+        similar_to_visual_id: { type: string, format: uuid }
+        answers: { type: array, maxItems: 5, items: { $ref: '#/components/schemas/Answer' } }
+    Generation:
+      type: object
+      required: [ id, status, model_id, credits_reserved ]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [ queued, running, completed, partial, failed, nsfw, canceled ] }
+        model_id: { type: string }
+        credits_reserved: { type: integer }
+        credits_refunded: { type: integer }
+        queue_position: { type: [ integer, 'null' ] }
+        eta_seconds: { type: [ integer, 'null' ] }
+        fallback_offer: { type: [ object, 'null' ], properties: { model_id: { type: string }, display_name: { type: string }, credits: { type: integer } } }
+        visuals: { type: array, items: { $ref: '#/components/schemas/Visual' } }
+    Visual:
+      type: object
+      required: [ id, kind, status ]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [ image, video ] }
+        status: { type: string, enum: [ pending, ready, failed, expired ] }
+        formats: { type: object, additionalProperties: { type: string, format: uri }, description: "URL signées valables 15 minutes, par format" }
+        chosen: { type: boolean }
+        used_in_campaign: { type: boolean }
+        files_expire_at: { type: [ string, 'null' ], format: date-time }
+        concept: { type: string }
+    VisualList:
+      type: object
+      required: [ data ]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Visual' } }
+        next_cursor: { type: [ string, 'null' ] }
+    VisualEditRequest:
+      type: object
+      required: [ instruction ]
+      additionalProperties: false
+      properties:
+        instruction: { type: string, minLength: 3, maxLength: 500 }
+        model_id: { type: string, description: Obligatoire si la modification touche la scène }
+        level: { type: string, enum: [ standard, high ] }
+
+    # ---------- Facturation
+    Billing:
+      type: object
+      required: [ plan, status, credits ]
+      properties:
+        plan: { type: string, enum: [ trial, starter, pro, business ] }
+        status: { type: string, enum: [ trialing, active, grace, read_only, canceled ] }
+        period_start: { type: string, format: date-time }
+        period_end: { type: string, format: date-time }
+        grace_until: { type: [ string, 'null' ], format: date-time }
+        credits: { type: object, properties: { monthly: { type: integer }, bonus: { type: integer }, purchased: { type: integer }, total: { type: integer } } }
+        quotas: { $ref: '#/components/schemas/Quotas' }
+    LedgerEntry:
+      type: object
+      required: [ id, bucket, kind, amount, created_at ]
+      properties:
+        id: { type: integer }
+        bucket: { type: string, enum: [ monthly, bonus, purchased ] }
+        kind: { type: string, enum: [ grant_monthly, purchase, reserve, consume, release, expire, admin_grant, admin_revoke, referral, trial ] }
+        amount: { type: integer }
+        reason: { type: [ string, 'null' ] }
+        created_at: { type: string, format: date-time }
+    LedgerList:
+      type: object
+      required: [ data ]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/LedgerEntry' } }
+        next_cursor: { type: [ string, 'null' ] }
+    CheckoutRequest:
+      type: object
+      required: [ purpose ]
+      additionalProperties: false
+      properties:
+        purpose: { type: string, enum: [ subscription, upgrade, credits ] }
+        plan_code: { type: string, enum: [ starter, pro, business ] }
+        credits_qty: { type: integer, minimum: 1, maximum: 1000 }
+    Checkout:
+      type: object
+      required: [ payment_id, checkout_url, amount, fees_xaf, total_xaf ]
+      properties:
+        payment_id: { type: string, format: uuid }
+        checkout_url: { type: string, format: uri }
+        amount: { $ref: '#/components/schemas/Money' }
+        fees_xaf: { type: integer }
+        total_xaf: { type: integer }
+        expires_at: { type: string, format: date-time }
+    Payment:
+      type: object
+      required: [ id, purpose, amount_xaf, status ]
+      properties:
+        id: { type: string, format: uuid }
+        purpose: { type: string, enum: [ subscription, upgrade, credits ] }
+        amount_xaf: { type: integer }
+        fees_xaf: { type: integer }
+        status: { type: string, enum: [ pending, succeeded, failed, expired, manual ] }
+        paid_at: { type: [ string, 'null' ], format: date-time }
+        receipt_url: { type: [ string, 'null' ], format: uri }
+    PaymentList:
+      type: object
+      required: [ data ]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Payment' } }
+        next_cursor: { type: [ string, 'null' ] }
+    PaymentProofRequest:
+      type: object
+      required: [ transaction_ref, file_path ]
+      additionalProperties: false
+      properties:
+        payment_id: { type: string, format: uuid }
+        transaction_ref: { type: string, minLength: 3, maxLength: 80 }
+        file_path: { type: string, maxLength: 300 }
+    PaymentProof:
+      type: object
+      required: [ id, status ]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [ submitted, accepted, rejected ] }
+        note: { type: [ string, 'null' ] }
+
+    # ---------- Optimiseur, notifications, support, parrainage
+    Recommendation:
+      type: object
+      required: [ id, action, message, status ]
+      properties:
+        id: { type: string, format: uuid }
+        campaign_id: { type: string, format: uuid }
+        action: { type: string, enum: [ pause, resume, budget_up, budget_down, new_visual, extend, wait ] }
+        message: { type: string }
+        evidence: { type: string }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        status: { type: string, enum: [ proposed, applied, dismissed ] }
+    Notification:
+      type: object
+      required: [ id, type, title, created_at ]
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string }
+        title: { type: string }
+        body: { type: [ string, 'null' ] }
+        link: { type: [ string, 'null' ], pattern: '^/' }
+        read_at: { type: [ string, 'null' ], format: date-time }
+        created_at: { type: string, format: date-time }
+    NotificationList:
+      type: object
+      required: [ data, unread ]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Notification' } }
+        unread: { type: integer }
+        next_cursor: { type: [ string, 'null' ] }
+    NotificationPreference:
+      type: object
+      required: [ type, in_app, email ]
+      properties: { type: { type: string }, in_app: { type: boolean }, email: { type: boolean } }
+    Ticket:
+      type: object
+      required: [ id, subject, category, status ]
+      properties:
+        id: { type: string, format: uuid }
+        subject: { type: string }
+        category: { type: string, enum: [ payment, campaign, account, other ] }
+        status: { type: string, enum: [ open, waiting_user, closed ] }
+        created_at: { type: string, format: date-time }
+    TicketCreate:
+      type: object
+      required: [ subject, category, body ]
+      additionalProperties: false
+      properties:
+        subject: { type: string, minLength: 3, maxLength: 200 }
+        category: { type: string, enum: [ payment, campaign, account, other ] }
+        body: { type: string, minLength: 1, maxLength: 10000 }
+        attachment_paths: { type: array, maxItems: 5, items: { type: string, maxLength: 300 } }
+    TicketMessage:
+      type: object
+      required: [ id, author_type, body, created_at ]
+      properties:
+        id: { type: string, format: uuid }
+        author_type: { type: string, enum: [ user, admin ] }
+        body: { type: string }
+        attachments: { type: array, items: { type: string, format: uri } }
+        created_at: { type: string, format: date-time }
+    TicketMessageCreate:
+      type: object
+      required: [ body ]
+      additionalProperties: false
+      properties:
+        body: { type: string, minLength: 1, maxLength: 10000 }
+        attachment_paths: { type: array, maxItems: 5, items: { type: string, maxLength: 300 } }
+    AssistantAnswer:
+      type: object
+      required: [ answer ]
+      properties:
+        conversation_id: { type: string, format: uuid }
+        answer: { type: string }
+        steps: { type: [ array, 'null' ], items: { type: string } }
+        links: { type: array, items: { type: object, properties: { label: { type: string }, route: { type: string, pattern: '^/' } } } }
+        detected_issue: { type: [ string, 'null' ] }
+        escalate_to_support: { type: boolean }
+    Referral:
+      type: object
+      required: [ code, link, bonus_credits ]
+      properties:
+        code: { type: string }
+        link: { type: string, format: uri }
+        bonus_credits: { type: integer, const: 2 }
+        referrals: { type: array, items: { type: object, properties: { status: { type: string, enum: [ signed_up, paid, rewarded ] }, created_at: { type: string, format: date-time } } } }
+
+    # ---------- Administration
+    AdminWorkspaceUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        status: { type: string, enum: [ active, read_only, suspended ] }
+        plan_code: { type: string, enum: [ starter, pro, business ] }
+        extend_days: { type: integer, minimum: 1, maximum: 90 }
+        reason: { type: string, minLength: 3, maxLength: 300 }
+      required: [ reason ]
+    AdminMediaModel:
+      type: object
+      required: [ provider_code, endpoint, capabilities, display_name, status, levels ]
+      properties:
+        provider_code: { type: string, enum: [ fal, higgsfield, byteplus ] }
+        endpoint: { type: string }
+        capabilities: { type: array, items: { $ref: '#/components/schemas/Capability' } }
+        display_name: { type: string }
+        card: { type: object }
+        max_references: { type: integer, minimum: 0, maximum: 50 }
+        status: { type: string, enum: [ testing, active, disabled ] }
+        recommended_for: { type: array, items: { type: string } }
+        levels:
+          type: array
+          maxItems: 2
+          items:
+            type: object
+            required: [ level, provider_params, unit, cost_usd, min_margin, min_credits ]
+            properties:
+              level: { type: string, enum: [ standard, high ] }
+              provider_params: { type: object }
+              unit: { type: string, enum: [ image, second ] }
+              cost_usd: { type: number, minimum: 0 }
+              min_margin: { type: number, minimum: 0, maximum: 0.95 }
+              min_credits: { type: integer, minimum: 1 }
+              durations_allowed: { type: array, items: { type: integer } }
+    RoutingRule:
+      type: object
+      required: [ primary_model_id, max_wait_seconds ]
+      properties:
+        primary_model_id: { type: string }
+        fallback_model_id: { type: [ string, 'null' ] }
+        max_wait_seconds: { type: integer, minimum: 10, maximum: 600 }
+        active: { type: boolean }
+    AuditEntry:
+      type: object
+      required: [ id, admin_id, action, created_at ]
+      properties:
+        id: { type: integer }
+        admin_id: { type: string, format: uuid }
+        action: { type: string }
+        target_type: { type: [ string, 'null' ] }
+        target_id: { type: [ string, 'null' ] }
+        before: { type: [ object, 'null' ] }
+        after: { type: [ object, 'null' ] }
+        created_at: { type: string, format: date-time }
