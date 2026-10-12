@@ -2,17 +2,17 @@
 // (migrations appliquées dans PGlite). Usage : node supabase/scripts/gen-data-model.mjs <dossier pglite> > sortie.md
 import { readFileSync, readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const require = createRequire(join(process.argv[2], 'package.json'));
+const require = createRequire(join(resolve(process.argv[2] ?? '.'), 'package.json'));
 const { PGlite } = require('@electric-sql/pglite');
 const db = new PGlite();
 
 await db.exec(`
   create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
-  create schema auth; create table auth.users (id uuid primary key);
+  create schema auth; create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb);
   create function auth.uid() returns uuid language sql stable as $$ select null::uuid $$;
   create function auth.jwt() returns jsonb language sql stable as $$ select '{}'::jsonb $$;
 `);
