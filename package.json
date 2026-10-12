@@ -18,6 +18,7 @@
     "test:routes-coverage": "turbo run test:routes-coverage",
     "test:smoke-providers": "turbo run test:smoke-providers",
     "openapi:lint": "turbo run openapi:lint",
+    "api:types": "turbo run api:types",
     "i18n:check": "turbo run i18n:check",
     "e2e:ci": "turbo run e2e:ci",
     "e2e:full": "turbo run e2e:full",

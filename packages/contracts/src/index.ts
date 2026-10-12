@@ -1,2 +1,2 @@
-// Module @pubeka/contracts : vide jusqu'à sa session (docs/ROADMAP.md §3).
-export {};
+export * from './errors';
+export type { components, operations, paths } from './generated/openapi';

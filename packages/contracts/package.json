@@ -7,11 +7,25 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "api:types": "openapi-typescript ../../api/openapi.yaml -o src/generated/openapi.d.ts",
+    "openapi:lint": "redocly lint ../../api/openapi.yaml --config ../../api/redocly.yaml"
   },
   "devDependencies": {
     "@pubeka/config": "workspace:*",
+    "@redocly/cli": "2.54.3",
+    "@types/node": "24.19.0",
+    "@vitest/coverage-v8": "5.0.2",
     "eslint": "10.11.0",
-    "typescript": "6.0.3"
+    "openapi-typescript": "7.13.0",
+    "typescript": "6.0.3",
+    "vitest": "5.0.2",
+    "yaml": "2.9.1"
+  },
+  "dependencies": {
+    "@pubeka/shared": "workspace:*",
+    "zod": "4.6.5"
   }
 }
