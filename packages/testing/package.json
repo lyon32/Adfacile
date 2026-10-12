@@ -7,11 +7,19 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@pubeka/config": "workspace:*",
+    "@types/node": "24.19.0",
+    "@types/pg": "8.23.1",
     "eslint": "10.11.0",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "vitest": "5.0.2"
+  },
+  "dependencies": {
+    "@pubeka/db": "workspace:*",
+    "pg": "8.23.0"
   }
 }
