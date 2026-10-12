@@ -18,6 +18,15 @@
 
 ## Sessions terminées
 
+### S05 · Couche HTTP commune — ✅ 2026-10-13
+- **PR** : #16, #17, #18 (fusionnées en squash). La PR d'origine #15 est fermée : 48 fichiers et environ 3 800 lignes dépassaient les plafonds de ROADMAP §1.2. Elle a été coupée en trois parties successives par le chef de projet (§8.5), sans changer le code.
+- **Fait** : `server/http` (`api()`, `problem()`, contrôle d'`Origin`, limites de débit, idempotence, SSE) ; `packages/testing` (horloge, fabriques, `seedWorkspace`, `seedAdmin`, `describeRoute`) ; `Ctx` et premiers cas d'usage de `core` ; scripts `ci:env`, `test:int`, `test:routes-coverage` ; routes `/public/*` et `/me`.
+- **Preuves** : 45 tests unitaires de `api()` ; `pnpm test:int` 26/26 sur la base locale ; `test:routes-coverage` couvre les 5 opérations codées ; couverture de `server/http` 99,6 % des lignes ; « CI terminée » verte sur les trois PR.
+- **Problèmes et cause** : sous-agent coupé une fois par la limite d'utilisation, puis repris. Le premier contrôle d'`Origin` répondait 403 au lieu de 401 sans authentification ; le test d'intégration l'a détecté. Zod 4 ne renvoie pas la valeur reçue dans ses erreurs, d'où une relecture de l'entrée. Dans la partie 2, `test:int` a été retiré tant qu'aucun fichier d'intégration n'existait (vitest échoue sans fichier).
+- **Décisions prises** : le contrôle d'`Origin` ne s'applique qu'aux écritures avec cookie ; limites de débit par utilisateur, par IP pour `/public/*` et par espace pour la génération et l'IA ; corps de plus de 1 Mo → 413 ; accès `admin` en 404 jusqu'à S30 ; `DELETE /me` et l'export en S34. Hors chemins mais exigé : `packages/core` (dont `core/account`, de S34) et les réponses 403, 413, 429 et 503 dans `openapi.yaml`.
+- **Remarqué hors périmètre** : `proxy.ts` ne rafraîchit pas la session pour `/api` ; règle de salutation en double (`features/auth` et `core/account`) ; `private.rate_limits` sans purge planifiée.
+
+
 ### S04 · Connexion et inscription — ✅ 2026-10-12
 - **PR** : #13 (fusionnée en squash, commit eee4cd0)
 - **Fait** : écrans `/inscription`, `/connexion`, `/mot-de-passe-oublie` (sans habillage final) ; session `@supabase/ssr` dans `proxy.ts` ; e-mail, lien magique, Google et Apple via Supabase Auth ; CAPTCHA Turnstile ; blocage 15 min après 5 échecs par couple e-mail + IP (migration 0004) ; déconnexion après 10 min d'inactivité avec alerte ; salutation selon le fuseau.
