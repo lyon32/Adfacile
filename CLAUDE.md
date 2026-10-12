@@ -11,10 +11,10 @@ Lu au début de **chaque** session. Court par principe : le détail est dans `do
 ## 1. Ta tâche dans cette session
 
 1. La personne te donne une session : « Session SNN ». Lis sa fiche dans [`docs/ROADMAP.md`](docs/ROADMAP.md) §3 : **But**, **Lire**, **Livrables**, **Fait quand**, **Hors périmètre**.
-2. **Aucune session donnée ?** Demande laquelle. Ne choisis pas toi-même, ne commence pas « au plus utile ».
+2. **Aucune session donnée ?** Demande laquelle. Ne choisis pas toi-même, ne commence pas « au plus utile ». **Exception : le mode continu** ([ROADMAP §8](docs/ROADMAP.md#8-mode-continu--enchaîner-les-sessions-jusquà-la-fin)), où le chef de projet prend la session suivante **dans l'ordre strict** (S01, S02, S03…), sans jamais en sauter une.
 3. Avant de coder : les sessions de « Après » sont fusionnées, et les décisions ❓ de la fiche sont prises. Sinon, **arrête-toi** et dis ce qui manque.
 4. Tu ne modifies **que** les chemins du tableau §5 pour ta session (plus ses tests et la documentation qu'elle cite). Ce que tu remarques ailleurs va dans la description de la PR, pas dans le code.
-5. Branche `feat/sNN-<sujet>`, une pull request, la CI au vert.
+5. Branche `feat/sNN-<sujet>`, une pull request, la CI au vert. **On ne coche une session ✅ dans ROADMAP §2 que si « CI terminée » est vert et chaque « Fait quand » prouvé** ; chaque coche a son entrée dans [`docs/JOURNAL.md`](docs/JOURNAL.md).
 
 ---
 
@@ -50,6 +50,7 @@ Lu au début de **chaque** session. Court par principe : le détail est dans `do
 - Inventer un point d'entrée, un champ ou un événement d'un fournisseur : sa documentation fait foi (SasPay : `docs.saspay.me`).
 - Ajouter une dépendance sans version exacte publiée depuis **au moins 14 jours** ni justification dans la PR (CONVENTIONS §1).
 - Changer de port : l'application tourne **toujours sur 5173**.
+- **Faire passer la CI en trichant** : désactiver, ignorer ou supprimer un test, baisser un seuil de couverture, `skip`, `only`, `continue-on-error`. Un problème se diagnostique et se corrige (ROADMAP §8.3).
 - `git push --force` sur `main`, `--no-verify`, fusionner avec une CI rouge, **lancer une mise en production** (c'est la personne qui lance `release.yml`).
 - **Toucher aux couleurs** (voir ci-dessous).
 - Écrire « Facebook » dans le nom ou la marque de Pubeka (on dit « Meta » ; « Page Facebook » reste le nom de l'objet), ou mentionner AdFacile dans le produit.
