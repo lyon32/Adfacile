@@ -18,6 +18,7 @@
 5. [Décisions à prendre et quand](#5-décisions-à-prendre-et-quand)
 6. [Après le MVP](#6-après-le-mvp)
 7. [Message de lancement d'une session](#7-message-de-lancement-dune-session)
+8. [Mode continu : enchaîner les sessions jusqu'à la fin](#8-mode-continu--enchaîner-les-sessions-jusquà-la-fin)
 
 ---
 
@@ -28,7 +29,8 @@
 3. **Toujours lire avant de coder** : [`CLAUDE.md`](../CLAUDE.md) (règles et périmètre de chaque session), [CONVENTIONS](architecture/CONVENTIONS.md), [LLD §2-3](architecture/LLD.md), puis les documents listés dans « Lire ».
 4. **Le contrat d'abord** : une nouvelle route entre dans `api/openapi.yaml` avant le code ; une nouvelle table entre dans une nouvelle migration avant le code.
 5. **« Fait quand » est vérifié, pas supposé** : commandes lancées, tests au vert, capture d'écran à 390 px et à 1280 px pour tout écran (règle du projet : rien n'est annoncé fonctionnel sans preuve à l'écran).
-6. Branche `feat/sNN-sujet`, commits au format de CONVENTIONS §4, pull request qui cite la session (`S12`) et coche sa case en §2.
+6. Branche `feat/sNN-sujet`, commits au format de CONVENTIONS §4, pull request qui cite la session (`S12`).
+6 bis. **Cocher une session (⬜ → ✅) seulement quand elle est vraiment finie** (règles strictes : §8.1) : chaque « Fait quand » prouvé dans la PR **et** « CI terminée » au vert. La coche se fait dans la PR de la session et arrive dans `main` avec la fusion. Une PR dont la CI est rouge ne coche rien. Chaque coche a sa ligne dans [`JOURNAL.md`](JOURNAL.md).
 7. **Hors périmètre = interdit** pendant la session. Un problème découvert ailleurs devient une note dans la PR, pas une correction en passant.
 8. Interface : la session commence par charger la compétence de design du projet ; tout écran respecte le [design system](design/DESIGN-SYSTEM.md).
 
@@ -385,4 +387,82 @@ Session SNN de docs/ROADMAP.md.
 4. Ne modifie que les chemins de SNN dans CLAUDE.md §5. Charge les compétences de CLAUDE.md §6 avant de coder.
 5. Termine quand tout « Fait quand » est prouvé : commandes lancées, tests au vert, captures 390 et 1280 px pour les écrans.
 6. Ouvre la pull request, coche SNN dans ROADMAP §2, et liste ce que tu as remarqué hors périmètre.
+```
+
+---
+
+## 8. Mode continu : enchaîner les sessions jusqu'à la fin
+
+Pour ne pas relancer l'agent à chaque session. Un agent **chef de projet** fait les sessions **une par une, dans l'ordre**, confie chacune à un **sous-agent neuf** (contexte vierge, comme une nouvelle conversation), vérifie le travail, fusionne, coche, écrit le journal, puis passe à la suivante. Il ne te sollicite que pour les cas du §8.4.
+
+### 8.1 Règles strictes (aucune exception)
+
+1. **Ordre strict : S01, S02, S03… S35.** Jamais de session sautée, jamais de phase sautée, jamais deux sessions en même temps. L'ordre des numéros respecte toutes les dépendances « Après » (vérifié le 12/10/2026).
+2. **Une session commence seulement quand la précédente est ✅** (fusionnée, CI verte, journal écrit).
+3. **Une session bloquée bloque la suite** : on ne passe pas à la suivante « en attendant ». Le chef de projet résout le blocage (§8.3) ou te pose la question (§8.4), puis reprend **la même** session.
+4. **Coche ✅ = preuve complète** : chaque « Fait quand » prouvé dans la PR et « CI terminée » au vert. Jamais de coche partielle, jamais « presque fini ».
+5. **Interdit pour faire passer la CI** : désactiver, ignorer ou supprimer un test ; baisser un seuil de couverture ; ajouter `--no-verify`, `skip`, `only`, `continue-on-error` ou un `// eslint-disable` sans raison ; modifier une migration existante ; sortir du périmètre de la session pour contourner le problème.
+6. Le périmètre de la session (CLAUDE.md §5) est respecté à la lettre ; les fichiers modifiés sont comparés au tableau avant la fusion.
+
+### 8.2 Le cycle d'une session
+
+1. **Prendre** la session suivante dans l'ordre.
+2. **Confier** la session à un sous-agent neuf avec le message du §7. Le sous-agent ne fusionne jamais et ne pose pas de question à la personne : s'il est bloqué, il s'arrête et rend la raison au chef de projet.
+3. **Vérifier** avant toute fusion :
+   - « CI terminée » est au vert sur le dernier commit de la PR ;
+   - les fichiers modifiés sont tous dans le périmètre de la session : comparer `gh pr diff --name-only` au tableau de CLAUDE.md §5 ;
+   - la description de la PR contient la preuve de **chaque** ligne de « Fait quand » ;
+   - aucun secret dans le diff ; aucune règle du §8.1 enfreinte.
+
+   Un point manque → correction sur la même branche (§8.3), puis nouvelle vérification.
+4. **Fusionner** en *squash* (CONVENTIONS §4.3), seulement la PR de la session ; puis mettre à jour `main` en local.
+5. **Écrire le journal** ([JOURNAL.md](JOURNAL.md)) : ce qui a été fait, la PR, les preuves, les problèmes rencontrés et leur cause, les décisions prises, les remarques hors périmètre. La coche ✅ du §2 est dans la PR fusionnée.
+6. Recommencer à l'étape 1 avec la session suivante.
+
+### 8.3 Un problème ou un conflit : chercher la cause et corriger
+
+Face à une erreur (CI rouge, test qui échoue, build cassé, conflit de fusion, comportement inattendu, document qui contredit le code), le chef de projet ne s'arrête pas et ne contourne pas : **il cherche la cause et la corrige.**
+
+1. **Lire l'erreur en entier** (journal de la CI, trace complète), puis reproduire en local.
+2. **Trouver la cause racine** avec la compétence `superpowers:systematic-debugging` : une hypothèse à la fois, vérifiée par une commande ou un test, jamais une correction au hasard.
+3. **Écrire d'abord un test qui échoue** quand le problème est un défaut du code, puis corriger.
+4. **Corriger au bon endroit** :
+   - dans le périmètre de la session → sur la branche de la session ;
+   - hors périmètre (pipeline, documentation, défaut d'une session déjà fusionnée) → **petite PR séparée** `fix/<sujet>`, vérifiée et fusionnée selon le §8.2, notée au journal, puis reprise de la session.
+5. **Conflit de fusion avec `main`** : fusionner `main` dans la branche et résoudre en gardant **les deux intentions** ; ne jamais écraser le travail de quelqu'un d'autre. Si le conflit touche une PR ou un fichier de la personne et que les deux versions s'opposent, c'est une question (§8.4).
+6. **Prouver la correction** : la commande ou le test qui échouait passe, la CI est verte. La cause et la correction vont dans la PR et dans le journal.
+7. **Garde-fou** : après **3 approches différentes** sans succès sur la même cause, arrêt et rapport (§8.4) : la cause supposée, les 3 essais, ce qu'il faudrait décider.
+
+### 8.4 Quand il s'arrête pour te demander
+
+| Situation | Ce qu'il fait |
+|---|---|
+| Une décision ❓ de la fiche n'est pas prise (§5 : D-1 CAPTCHA avant S04, D-2 passerelle IA avant S13, D-6 domaine de préproduction avant S07) | question avec 2 ou 3 options et sa recommandation |
+| Une action 👤 est nécessaire (compte, clé, DNS, paiement, relecture juridique : §4) | demande précise : quoi faire, où, et comment le vérifier |
+| Deux documents se contredisent sur un choix **produit**, ou une règle produit manque | question avec options et recommandation |
+| Un choix à fort enjeu non prévu par les documents (sécurité, argent, données, migration destructive) | question, jamais de choix seul |
+| Le garde-fou du §8.3 (3 approches sans succès) | rapport et question |
+| Avant **S36** (mise en production) | arrêt complet : la production est lancée par la personne |
+
+La question est inscrite au journal (« Questions en attente ») et une notification est envoyée si l'outil existe. **Il attend ta réponse, puis reprend la même session.**
+
+### 8.5 Ce que le chef de projet a le droit de faire seul
+
+- Créer les branches, ouvrir **et fusionner les PR qu'il a lui-même ouvertes** (sessions et corrections du §8.3), quand le §8.2 étape 3 est entièrement vrai.
+- Reprendre une PR de session déjà ouverte par une session précédente (ex. S01, PR #5) : la vérifier selon le §8.2, la corriger si besoin, puis la fusionner.
+- Couper une session trop grosse en deux parties faites **à la suite** (§1 règle 2), en le notant au journal.
+
+Il n'a **jamais** le droit de : fusionner une PR ouverte par la personne (ex. #4, logo et design system v3), fusionner avec une CI rouge, lancer `release.yml` (mise en production), dépenser de l'argent réel, créer un compte, toucher aux couleurs.
+
+### 8.6 Message à coller pour lancer le mode continu
+
+```
+Mode continu de docs/ROADMAP.md §8.
+1. Lis CLAUDE.md, docs/ROADMAP.md (en entier) et docs/JOURNAL.md.
+2. Tu es le chef de projet. Applique les règles strictes du §8.1 : sessions dans l'ordre S01 → S35, aucune sautée, une à la fois, jamais de coche sans preuve complète et CI verte.
+3. Commence par S01 : sa PR est déjà ouverte (#5) mais sa CI est rouge ; vérifie-la et corrige-la selon les §8.2 et §8.3 avant de la fusionner.
+4. Chaque session suivante est faite par un sous-agent neuf avec le message du §7 ; toi, tu vérifies (§8.2), fusionnes, coches et écris le journal, puis tu passes à la suivante sans attendre que je relance.
+5. Un problème ou un conflit : cherche la cause et corrige selon le §8.3, sans jamais contourner (§8.1 règle 5).
+6. Tu ne m'interroges que pour les cas du §8.4, puis tu reprends la même session après ma réponse.
+7. Arrête-toi avant S36. Réponds-moi en français, court.
 ```
