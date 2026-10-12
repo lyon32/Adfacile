@@ -2,7 +2,7 @@
 
 > Version 1 · 10 octobre 2026 · **Document de référence des données.** Remplace l'ancien `MODELE-DE-DONNEES.md`.
 > Source de vérité : les migrations SQL [`supabase/migrations/`](../../supabase/migrations/). La section 6 (schémas des tables) est **générée automatiquement** à partir de la base réelle par [`supabase/scripts/gen-data-model.mjs`](../../supabase/scripts/gen-data-model.mjs) : elle ne peut pas diverger du SQL.
-> Sécurité des données : [SECURITE-BACKEND.md](SECURITE-BACKEND.md) · tests : [`supabase/tests/security.test.mjs`](../../supabase/tests/security.test.mjs) (44/44) et [`api-support.test.mjs`](../../supabase/tests/api-support.test.mjs) (migration 0003).
+> Sécurité des données : [SECURITE-BACKEND.md](SECURITE-BACKEND.md) · tests : [`supabase/tests/security.test.mjs`](../../supabase/tests/security.test.mjs) (44/44), [`api-support.test.mjs`](../../supabase/tests/api-support.test.mjs) (migration 0003) et [`login-attempts.test.mjs`](../../supabase/tests/login-attempts.test.mjs) (migration 0004).
 
 ---
 
@@ -153,7 +153,7 @@ Légende : `||--||` exactement un · `||--o|` zéro ou un · `||--|{` un ou plus
 ## 5. Migrations et versions
 
 ### 5.1 Principe
-- **Une migration = un fichier SQL numéroté** dans `supabase/migrations/` : `0001_init.sql`, `0002_storage.sql`, `0003_api_support.sql`. Ordre d'application = ordre des numéros.
+- **Une migration = un fichier SQL numéroté** dans `supabase/migrations/` : `0001_init.sql`, `0002_storage.sql`, `0003_api_support.sql`, `0004_login_attempts.sql`. Ordre d'application = ordre des numéros.
 - **Une migration appliquée n'est jamais modifiée.** Toute correction = **nouvelle migration**.
 - Chaque migration est **transactionnelle** (`begin` … `commit`) : tout ou rien.
 - Application avec l'outil de migration Supabase, sur **développement d'abord**, puis production.
@@ -215,7 +215,7 @@ Puis remplacer la section 6 par le contenu de `/tmp/schema.md`.
 | ticket_status | open · waiting_user · closed |
 | workspace_status | active · read_only · suspended |
 
-### Tables (57)
+### Tables (58)
 
 #### `audit.admin_log`
 
@@ -299,6 +299,28 @@ RLS : activée · 0 politique(s) · schéma non exposé par l’API
 | n | `NOT NULL updated_at` |
 | n | `NOT NULL value` |
 | Clé primaire | `PRIMARY KEY (key)` |
+
+RLS : activée · 0 politique(s) · schéma non exposé par l’API
+
+#### `private.login_failures`
+
+| Colonne | Type | Null | Défaut |
+|---|---|---|---|
+| id | bigint | non | identity |
+| key_hash | text | non |  |
+| failed_at | timestamp with time zone | non | now() |
+
+| Contrainte | Définition |
+|---|---|
+| Contrôle | `CHECK ((key_hash ~ '^[0-9a-f]{64}$'::text))` |
+| n | `NOT NULL failed_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL key_hash` |
+| Clé primaire | `PRIMARY KEY (id)` |
+
+| Index | Définition |
+|---|---|
+| login_failures_key_hash_failed_at_idx | `private.login_failures USING btree (key_hash, failed_at)` |
 
 RLS : activée · 0 politique(s) · schéma non exposé par l’API
 
@@ -1969,3 +1991,4 @@ RLS : activée · 1 politique(s)
 | Unique | `UNIQUE (referral_code)` |
 
 RLS : activée · 2 politique(s)
+

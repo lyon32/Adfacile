@@ -2426,6 +2426,7 @@ export type Database = {
       };
     };
     Functions: {
+      clear_login_failures: { Args: { p_key: string }; Returns: undefined };
       consume_credits: { Args: { job: string }; Returns: undefined };
       hit_rate_limit: {
         Args: { p_key: string; p_limit: number; p_window_s: number };
@@ -2435,8 +2436,24 @@ export type Database = {
           retry_after_s: number;
         }[];
       };
+      login_lock_status: {
+        Args: { p_key: string; p_now?: string };
+        Returns: {
+          failures: number;
+          locked: boolean;
+          retry_after_s: number;
+        }[];
+      };
       maintenance_status: { Args: Record<PropertyKey, never>; Returns: Json };
       purge_idempotency_keys: { Args: Record<PropertyKey, never>; Returns: number };
+      record_login_failure: {
+        Args: { p_key: string; p_now?: string };
+        Returns: {
+          failures: number;
+          locked: boolean;
+          retry_after_s: number;
+        }[];
+      };
       record_webhook_event: { Args: { p_event_id: string; p_provider: string }; Returns: boolean };
       release_credits: { Args: { amount?: number; job: string }; Returns: number };
       reserve_credits: { Args: { job: string; needed: number; ws: string }; Returns: boolean };
