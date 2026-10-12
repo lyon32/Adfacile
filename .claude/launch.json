@@ -2,17 +2,18 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "adsfacile-frontend",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "name": "pubeka-web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
       "port": 5173,
+      "url": "http://app.localhost:5173",
       "autoPort": false
     },
     {
-      "name": "adsfacile-backend",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "backend", "run", "dev"],
-      "port": 5000,
+      "name": "docs-design",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5180", "--directory", "docs/design"],
+      "port": 5180,
       "autoPort": false
     }
   ]

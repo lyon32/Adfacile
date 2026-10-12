@@ -1,0 +1,17 @@
+{
+  "name": "@pubeka/platforms",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@pubeka/config": "workspace:*",
+    "eslint": "10.11.0",
+    "typescript": "6.0.3"
+  }
+}

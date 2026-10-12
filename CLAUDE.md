@@ -186,7 +186,7 @@ Compétences du dépôt utiles à Pubeka : `turborepo` (monodépôt, S01), `shad
 
 ## 8. Commandes
 
-Une fois le monodépôt créé (S01) :
+Monodépôt créé en S01 (les commandes sans contenu réussissent à vide jusqu'à leur session) :
 
 
 | Commande                                                   | Effet                                                                                  |
@@ -197,4 +197,4 @@ Une fois le monodépôt créé (S01) :
 | `pnpm test:db` · `pnpm test:int` · `pnpm e2e`            | base (PGlite) · intégration · parcours                                              |
 | `pnpm openapi:lint` · `pnpm api:types` · `pnpm db:types` | contrat · types de l'API · types de la base                                          |
 
-Avant S01, le seul code exécutable est le banc des agents (`node bench/run.mjs`) et les tests de la base (`node db/tests/security.test.mjs <dossier pglite>`).
+Depuis S01, les tests de la base se lancent avec `pnpm test:db` (script `supabase/tests/security.test.mjs`, PGlite de `packages/db`) ; les migrations sont dans `supabase/migrations/`. Le banc des agents reste `node bench/run.mjs`.
