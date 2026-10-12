@@ -14,8 +14,23 @@
 | Date | Session | Décision |
 |---|---|---|
 | 2026-10-12 | S03 | E10 : le déclencheur d'inscription ne crée **pas** l'essai. L'essai (abonnement `trialing`, crédits `trial`) démarre au clic sur [Commencer] de `/bienvenue/essai` (APPFLOW §5, étape 3) et sera fait en S24. LLD §10 et la fiche S03 sont corrigés. Contradiction relevée par le sous-agent S03 : LLD E10 contre APPFLOW étape 3. |
+| 2026-10-12 | S04 | D-1 : CAPTCHA **Cloudflare Turnstile**. Google et Apple passent par Supabase Auth (docs supabase.com/docs/guides/auth/social-login/auth-google et auth-apple). S04 démarre avec de faux fournisseurs ; la connexion devient réelle quand la personne ajoute les identifiants (👤, avant S07). |
 
 ## Sessions terminées
+
+### S03 · Base de données : migration 0003 et module `db` — ✅ 2026-10-12
+- **PR** : #11 (fusionnée en squash, commit 1cc2bcf)
+- **Fait** : migration `0003_api_support.sql` (E1 à E4, E7 à E10) ; `seed.sql` (pays de la zone franc CFA) ; `packages/db` (clients utilisateur et service, types générés, crédits, limites de débit, webhooks, dépôts) ; `DATA_MODEL.md` regénéré (57 tables).
+- **Preuves** : `pnpm test:db` donne 44/44 pour les tests existants et 53/53 pour la 0003 ; `supabase db reset` passe en local ; une inscription réelle crée profil, espace, membre `owner` et code de parrainage, sans abonnement ni crédit ; `pnpm db:types` ne produit aucune différence ; `packages/db` couvert à 100 % des lignes ; « CI terminée » verte sur 755a8fd.
+- **Problèmes et cause** : arrêt de la session sur la contradiction E10 (LLD contre APPFLOW), tranchée par la personne (#10). Docker Desktop plantait au démarrage à cause d'anciens fichiers de socket dans `%LOCALAPPDATA%/Docker/run` et `docker-secrets-engine`. Le sous-agent a **renommé** ces dossiers en `*.old-*` sans rien supprimer ; ils sont à effacer à la main. `gen-data-model.mjs` recevait un chemin relatif : ajout de `resolve()`.
+- **Décisions prises** :
+  - E4 : une seule libération par génération ; les crédits sont rendus d'abord dans le compartiment acheté, puis bonus, puis mensuel, dans la limite de ce qui a été réservé dans chacun. La réservation suit l'ordre inverse (0001). Les crédits mensuels sont rendus en bonus quand le dernier `period_end` est passé (EC-CRED-12).
+  - E8 : chaque transfert de propriété est journalisé dans `audit.workspace_log`, en ajout seul.
+  - Fonctions `public.*` réservées à `service_role`, pour appeler les fonctions de `private` par `rpc()`.
+  - `seed.sql` ne contient ni TVA ni taux de change, pour ne rien inventer.
+  - Hors des chemins de S03 mais exigé : script `db:types` dans le `package.json` racine.
+- **Remarqué hors périmètre** : `config.toml` a `site_url` sur le port 3000 (à corriger en S04) ; SECURITE-BACKEND cite encore `db/` ; `packages/db` n'importe pas `server-only`, car le module sert aussi à `jobs`, et un garde-fou à l'exécution le remplace.
+
 
 ### S02 · Briques partagées et contrat — ✅ 2026-10-12
 - **PR** : #8 (fusionnée en squash, commit 05a3368)
