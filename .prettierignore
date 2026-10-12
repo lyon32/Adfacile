@@ -1,7 +1,7 @@
 # Ancien code AdFacile (référence jusqu'à S12, LLD §2.3) et dossiers non formatés par Prettier
-src/
-backend/
-public/
+/src/
+/backend/
+/public/
 bench/
 docs/
 logs/
@@ -28,3 +28,4 @@ pnpm-lock.yaml
 .next/
 coverage/
 .turbo/
+**/src/generated/
