@@ -95,7 +95,7 @@
 - Le sélecteur de Page passe dans l'onglet Compte et en tête de l'écran Campagnes.
 
 ### 2.3 Loader
-- **Ouverture de l'application** (première page d'une session) : animation complète « Saisie » (3 s, logo EAS/ADS), puis fondu.
+- **Ouverture de l'application** (première page d'une session) : animation d'ouverture (3 s : le « p » du logo se dessine, puis le soulignement file sous « pubeka »), puis fondu.
 - **Changement de page** : rien si la page arrive en moins de 300 ms ; sinon version courte en boucle (les deux blocs qui se dessinent) jusqu'à l'affichage.
 - « Réduire les animations » activé : logo fixe, pas d'animation.
 
