@@ -18,6 +18,19 @@
 
 ## Sessions terminées
 
+### S06 · Espaces de travail et équipe — ✅ 2026-10-13
+- **PR** : #20 (espaces, membres, transfert) et #21 (invitations, e-mail d'invitation), fusionnées en squash. Le sous-agent a coupé la session lui-même (ROADMAP §1.2).
+- **Fait** : cas d'usage `core/workspaces` ; routes `/workspaces`, `members`, `invitations`, `invitations/accept` et `transfer-ownership` ; e-mail d'invitation en texte simple, FR et EN, par un faux fournisseur ou par Resend.
+- **Preuves** : `test:routes-coverage` couvre 14 opérations, dont les 9 de S06 ; EC-TEAM-01 à 06 en intégration et 07 en test unitaire ; limite de membres par formule testée (Starter, Pro, Business) ; `test:int` 82/82 ; `packages/core` couvert à 100 % des lignes ; « CI terminée » verte sur #20 et #21.
+- **Problèmes et cause** : un test de `listMembers` échouait au hasard, parce que deux membres avaient la même date d'arrivée ; un second tri par identifiant a été ajouté. Après la fusion en squash de #20, la PR empilée #21 a eu des conflits ; ils ont été résolus en gardant sa version, qui contient déjà #20, et son diff est resté identique.
+- **Décisions prises** :
+  - Le propriétaire compte dans la limite de membres (plans-et-credits : Starter = 1). Un espace sans abonnement suit les limites de Starter.
+  - EC-TEAM-07 répond 402 `member_limit_reached`, selon la liste fermée d'API_SPEC §4 ; SECURITY_NOTES dit 409 et est à harmoniser.
+  - Le transfert de propriété exige une connexion de moins de 5 minutes et est refusé en lecture seule.
+  - Invitation valable 7 jours ; les invitations en attente comptent dans la limite ; le jeton est dans le fragment du lien et n'est jamais journalisé.
+- **Remarqué hors périmètre** : aucun écran `/invitation` n'est prévu (à ajouter en S09 ou S27) ; dans `turbo.json`, `openapi:lint` et `api:types` ne surveillent pas `api/openapi.yaml` (cache périmé) ; pas de dépôts `db` pour les membres et les invitations ; aucune route pour lister ou annuler les invitations ; pas de purge des invitations expirées ; pas d'état `grace` pour les espaces avant S19.
+
+
 ### S05 · Couche HTTP commune — ✅ 2026-10-13
 - **PR** : #16, #17, #18 (fusionnées en squash). La PR d'origine #15 est fermée : 48 fichiers et environ 3 800 lignes dépassaient les plafonds de ROADMAP §1.2. Elle a été coupée en trois parties successives par le chef de projet (§8.5), sans changer le code.
 - **Fait** : `server/http` (`api()`, `problem()`, contrôle d'`Origin`, limites de débit, idempotence, SSE) ; `packages/testing` (horloge, fabriques, `seedWorkspace`, `seedAdmin`, `describeRoute`) ; `Ctx` et premiers cas d'usage de `core` ; scripts `ci:env`, `test:int`, `test:routes-coverage` ; routes `/public/*` et `/me`.
