@@ -7,7 +7,7 @@
 
 | Session | Question ou action 👤 | Depuis le |
 |---|---|---|
-| — | — | — |
+| S07 | 👤 Créer les identifiants Google OAuth et Apple (Services ID et clé), puis les mettre dans `supabase/.env` ; marche à suivre dans la PR #13 | 2026-10-12 |
 
 ## Décisions de la personne
 
@@ -17,6 +17,20 @@
 | 2026-10-12 | S04 | D-1 : CAPTCHA **Cloudflare Turnstile**. Google et Apple passent par Supabase Auth (docs supabase.com/docs/guides/auth/social-login/auth-google et auth-apple). S04 démarre avec de faux fournisseurs ; la connexion devient réelle quand la personne ajoute les identifiants (👤, avant S07). |
 
 ## Sessions terminées
+
+### S04 · Connexion et inscription — ✅ 2026-10-12
+- **PR** : #13 (fusionnée en squash, commit eee4cd0)
+- **Fait** : écrans `/inscription`, `/connexion`, `/mot-de-passe-oublie` (sans habillage final) ; session `@supabase/ssr` dans `proxy.ts` ; e-mail, lien magique, Google et Apple via Supabase Auth ; CAPTCHA Turnstile ; blocage 15 min après 5 échecs par couple e-mail + IP (migration 0004) ; déconnexion après 10 min d'inactivité avec alerte ; salutation selon le fuseau.
+- **Preuves** : 102 tests web et 14 tests PGlite (EC-AUTH-01 à 06) ; couverture de `server/` 99 % des lignes ; blocage vérifié sur la pile locale (401 ×4 puis 429, une autre IP passe, une autre origine reçoit 403, « mot de passe oublié » répond dans le même délai pour un e-mail connu ou inconnu) ; inscription réelle par e-mail jusqu'à l'accueil ; 32 captures 390/1280 px, clair et sombre (branche `captures/s04`) ; « CI terminée » verte sur 9eaad7d.
+- **Problèmes et cause** : une première règle de blocage en fenêtre glissante débloquait à la 14ᵉ minute ; le test PGlite l'a détecté. La fenêtre d'inactivité était décalée à 390 px par la mise en page par défaut de `<dialog>`.
+- **Décisions prises** :
+  - Migration 0004 : `private.login_failures` stocke seulement une empreinte SHA-256 de l'e-mail et de l'IP.
+  - Le CAPTCHA est demandé à chaque connexion (Supabase l'exige une fois activé).
+  - « E-mail déjà utilisé » s'affiche à l'inscription, comme le prévoit APPFLOW §4. Cela révèle qu'un compte existe : **à revoir par la personne** si elle préfère un message neutre.
+  - Le lien magique ne crée pas de compte. Salutation « Bonsoir » de 18 h à 3 h 59. Actions `/auth/*` hors de `/api/v1`. Textes dans `features/auth/messages.ts` jusqu'à S09.
+- **Action 👤 en attente** : créer les identifiants Google et Apple et les mettre dans `supabase/.env` (marche à suivre dans la PR #13), avant S07.
+- **Remarqué hors périmètre** : un nouveau mot de passe identique à l'ancien (`same_password`) affiche un message générique ; `private.login_failures` n'a pas de purge planifiée ; pas de `.env.example` à la racine ; la clé de test Turnstile accepte un faux jeton (le refus est prouvé par des tests unitaires).
+
 
 ### S03 · Base de données : migration 0003 et module `db` — ✅ 2026-10-12
 - **PR** : #11 (fusionnée en squash, commit 1cc2bcf)
