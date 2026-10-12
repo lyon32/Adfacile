@@ -73,6 +73,7 @@ paths:
       responses:
         '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/Plan' } } } } } } }
         '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /public/fx-rates:
     get:
       tags: [ Public ]
@@ -82,6 +83,7 @@ paths:
       responses:
         '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/FxRate' } } } } } } }
         '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
   # ------------------------------------------------------------------ Compte
   /me:
@@ -92,6 +94,8 @@ paths:
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Me' } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
     patch:
       tags: [ Compte ]
       operationId: updateMe
@@ -103,6 +107,10 @@ paths:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Me' } } } }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
     delete:
       tags: [ Compte ]
       operationId: deleteMe
