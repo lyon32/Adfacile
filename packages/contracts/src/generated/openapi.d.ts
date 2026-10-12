@@ -140,7 +140,7 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Membres de l'espace */
+        /** Membres de l'espace (le propriétaire d'abord, puis par date d'arrivée) */
         get: operations["listMembers"];
         put?: never;
         post?: never;
@@ -163,11 +163,17 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Retirer un membre (propriétaire) */
+        /**
+         * Retirer un membre (propriétaire)
+         * @description Le propriétaire ne peut pas se retirer lui-même (409, EC-TEAM-05). Le membre retiré reçoit 404 à sa requête suivante sur l'espace (EC-TEAM-04).
+         */
         delete: operations["removeMember"];
         options?: never;
         head?: never;
-        /** Changer le rôle d'un membre (propriétaire) */
+        /**
+         * Changer le rôle d'un membre (propriétaire)
+         * @description Le propriétaire ne peut pas changer son propre rôle (409, SECURITY_NOTES EC-TEAM-05) ; la propriété se transfère par `transfer-ownership`.
+         */
         patch: operations["changeMemberRole"];
         trace?: never;
     };
@@ -182,7 +188,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Inviter un membre par e-mail (selon la limite de la formule) */
+        /**
+         * Inviter un membre par e-mail (selon la limite de la formule)
+         * @description Envoie un e-mail avec un lien d'acceptation valable 7 jours ; seul le hachage du jeton est stocké. Une nouvelle invitation à la même adresse remplace la précédente.
+         *     La limite de membres de la formule compte le propriétaire, les membres et les invitations en attente (402 `member_limit_reached`). Personne déjà membre : 409 (EC-TEAM-01).
+         */
         post: operations["inviteMember"];
         delete?: never;
         options?: never;
@@ -203,7 +213,7 @@ export interface paths {
         put?: never;
         /**
          * Transférer la propriété de l'espace à un membre (propriétaire, réauthentification récente)
-         * @description L'ancien propriétaire devient éditeur ; une seule transaction, journalisée. Proposé avant la suppression du compte du propriétaire (SECURITY_NOTES EC-TEAM-06).
+         * @description L'ancien propriétaire devient éditeur ; une seule transaction, journalisée. Proposé avant la suppression du compte du propriétaire (SECURITY_NOTES EC-TEAM-06). Dernière connexion de plus de 5 minutes → 403 `mfa_required` avec `meta.reason = "recent_login_required"` (API_SPEC §2.2 règle 6).
          */
         post: operations["transferOwnership"];
         delete?: never;
@@ -221,7 +231,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Accepter une invitation (jeton reçu par e-mail) */
+        /**
+         * Accepter une invitation (jeton reçu par e-mail)
+         * @description Jeton inconnu → 404. Compte dont l'e-mail diffère de l'e-mail invité → 403 `forbidden` (EC-TEAM-02). Invitation expirée ou déjà utilisée → 410 (EC-TEAM-03).
+         *     Limite de membres de la formule atteinte → 402 `member_limit_reached` ; espace en lecture seule ou suspendu → 403.
+         */
         post: operations["acceptInvitation"];
         delete?: never;
         options?: never;
@@ -1614,7 +1628,10 @@ export interface components {
             status: "active" | "read_only" | "suspended";
             /** @enum {string} */
             role: "owner" | "editor" | "viewer";
-            /** @enum {string} */
+            /**
+             * @description Formule de l'abonnement le plus récent ; `trial` pendant l'essai et tant qu'aucune formule n'a été choisie (limites de Starter)
+             * @enum {string}
+             */
             plan: "trial" | "starter" | "pro" | "business";
             /** Format: date-time */
             period_end?: string | null;
@@ -2541,6 +2558,8 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     getWorkspace: {
@@ -2563,8 +2582,11 @@ export interface operations {
                     "application/json": components["schemas"]["Workspace"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     renameWorkspace: {
@@ -2593,8 +2615,13 @@ export interface operations {
                     "application/json": components["schemas"]["Workspace"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            413: components["responses"]["PayloadTooLarge"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     listMembers: {
@@ -2619,7 +2646,11 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     removeMember: {
@@ -2641,9 +2672,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     changeMemberRole: {
@@ -2674,9 +2709,14 @@ export interface operations {
                     "application/json": components["schemas"]["Member"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     inviteMember: {
@@ -2708,9 +2748,15 @@ export interface operations {
                     "application/json": components["schemas"]["Invitation"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             402: components["responses"]["PaymentRequired"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     transferOwnership: {
@@ -2740,10 +2786,14 @@ export interface operations {
                     "application/json": components["schemas"]["Workspace"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     acceptInvitation: {
@@ -2770,9 +2820,15 @@ export interface operations {
                     "application/json": components["schemas"]["Workspace"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            402: components["responses"]["PaymentRequired"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             410: components["responses"]["Gone"];
+            413: components["responses"]["PayloadTooLarge"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     startMetaConnect: {
