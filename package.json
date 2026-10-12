@@ -14,7 +14,7 @@
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
     "test:db": "turbo run test:db",
-    "test:int": "turbo run test:int",
+    "test:int": "pnpm --filter @pubeka/web test:int",
     "test:routes-coverage": "node --test scripts/ci/*.test.mjs && node scripts/ci/routes-coverage.mjs",
     "test:smoke-providers": "turbo run test:smoke-providers",
     "openapi:lint": "turbo run openapi:lint",
