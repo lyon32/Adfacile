@@ -9,25 +9,58 @@
     "PUBEKA_JOB_DISPATCH"
   ],
   "tasks": {
-    "transit": { "dependsOn": ["^transit"] },
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
-    "dev": { "cache": false, "persistent": true },
-    "lint": { "dependsOn": ["transit"] },
-    "typecheck": { "dependsOn": ["transit"] },
-    "test": { "dependsOn": ["transit"] },
-    "test:coverage": { "dependsOn": ["transit"], "outputs": ["coverage/**"] },
-    "test:db": { "cache": false },
-    "test:int": { "cache": false },
-    "test:routes-coverage": { "cache": false },
-    "test:smoke-providers": { "cache": false },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["transit"]
+    },
+    "typecheck": {
+      "dependsOn": ["transit"]
+    },
+    "test": {
+      "dependsOn": ["transit"]
+    },
+    "test:coverage": {
+      "dependsOn": ["transit"],
+      "outputs": ["coverage/**"]
+    },
+    "test:db": {
+      "cache": false
+    },
+    "test:int": {
+      "cache": false
+    },
+    "test:routes-coverage": {
+      "cache": false
+    },
+    "test:smoke-providers": {
+      "cache": false
+    },
     "openapi:lint": {},
+    "api:types": {
+      "outputs": ["src/generated/**"]
+    },
     "i18n:check": {},
-    "e2e:ci": { "cache": false },
-    "e2e:full": { "cache": false },
-    "e2e:smoke": { "cache": false },
-    "e2e:smoke:prod": { "cache": false }
+    "e2e:ci": {
+      "cache": false
+    },
+    "e2e:full": {
+      "cache": false
+    },
+    "e2e:smoke": {
+      "cache": false
+    },
+    "e2e:smoke:prod": {
+      "cache": false
+    }
   }
 }

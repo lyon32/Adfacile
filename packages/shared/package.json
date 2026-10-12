@@ -7,11 +7,19 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@pubeka/config": "workspace:*",
+    "@types/node": "24.19.0",
+    "@vitest/coverage-v8": "5.0.2",
     "eslint": "10.11.0",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "vitest": "5.0.2"
+  },
+  "dependencies": {
+    "zod": "4.6.5"
   }
 }
