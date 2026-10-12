@@ -8,12 +8,22 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test:db": "node ../../supabase/tests/security.test.mjs ."
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:db": "node ../../supabase/tests/security.test.mjs . && node ../../supabase/tests/api-support.test.mjs .",
+    "db:types": "supabase gen types typescript --local --schema public --workdir ../.. > src/database.types.ts && prettier --write src/database.types.ts",
+    "db:data-model": "node ../../supabase/scripts/gen-data-model.mjs ."
+  },
+  "dependencies": {
+    "@pubeka/contracts": "workspace:*",
+    "@supabase/supabase-js": "2.117.2"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",
     "@pubeka/config": "workspace:*",
+    "@vitest/coverage-v8": "5.0.2",
     "eslint": "10.11.0",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "vitest": "5.0.2"
   }
 }

@@ -1,7 +1,7 @@
 // Tests de sécurité de la base Pubeka — exécutés sur un vrai PostgreSQL (PGlite).
 // Usage : node supabase/tests/security.test.mjs <dossier contenant node_modules/@electric-sql/pglite>
 // Simule les rôles Supabase (anon, authenticated, service_role) et les fonctions auth.uid() / auth.jwt().
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,18 +22,22 @@ const ids = {
 await db.exec(`
   create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
   create schema auth; grant usage on schema auth to anon, authenticated, service_role;
-  create table auth.users (id uuid primary key);
+  create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb);
   create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
   grant execute on function auth.uid(), auth.jwt() to anon, authenticated, service_role;
   grant usage on schema public to anon, authenticated, service_role;
 `);
-await db.exec(readFileSync(join(here, '..', 'migrations', '0001_init.sql'), 'utf8'));
+// Toutes les migrations, dans l'ordre, sauf celles du stockage (le schéma « storage » n'existe que dans Supabase).
+const migDir = join(here, '..', 'migrations');
+for (const f of readdirSync(migDir).filter((f) => f.endsWith('.sql') && !f.includes('storage')).sort()) {
+  await db.exec(readFileSync(join(migDir, f), 'utf8'));
+}
 
 // --- Données de test (superutilisateur) --------------------------------
 await db.exec(`
-  insert into auth.users values ('${ids.A}'),('${ids.B}'),('${ids.ADM}'),('${ids.V}');
-  insert into public.profiles (id,email) values ('${ids.A}','a@test.cm'),('${ids.B}','b@test.cm'),('${ids.ADM}','adm@pubeka.com'),('${ids.V}','v@test.cm');
+  -- L'inscription crée le profil et un espace personnel (0003, E10) ; les espaces de test sont ajoutés ensuite.
+  insert into auth.users (id,email) values ('${ids.A}','a@test.cm'),('${ids.B}','b@test.cm'),('${ids.ADM}','adm@pubeka.com'),('${ids.V}','v@test.cm');
   insert into public.workspaces (id,name,owner_id) values ('${ids.WA}','Boutique A','${ids.A}'),('${ids.WB}','Boutique B','${ids.B}');
   insert into public.workspace_members values ('${ids.WA}','${ids.A}','owner',null,now()),('${ids.WB}','${ids.B}','owner',null,now()),('${ids.WA}','${ids.V}','viewer',null,now());
   insert into public.campaigns (id,workspace_id,name,created_by) values ('${ids.CA}','${ids.WA}','Campagne A','${ids.A}'),('${ids.CB}','${ids.WB}','Campagne SECRETE B','${ids.B}');

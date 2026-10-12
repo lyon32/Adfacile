@@ -1,8 +1,8 @@
 # DATA_MODEL — Modèle de données Pubeka
 
 > Version 1 · 10 octobre 2026 · **Document de référence des données.** Remplace l'ancien `MODELE-DE-DONNEES.md`.
-> Source de vérité : les migrations SQL [`db/migrations/`](../../db/migrations/). La section 6 (schémas des tables) est **générée automatiquement** à partir de la base réelle par [`db/scripts/gen-data-model.mjs`](../../db/scripts/gen-data-model.mjs) : elle ne peut pas diverger du SQL.
-> Sécurité des données : [SECURITE-BACKEND.md](SECURITE-BACKEND.md) · tests : [`db/tests/security.test.mjs`](../../db/tests/security.test.mjs) (44/44).
+> Source de vérité : les migrations SQL [`supabase/migrations/`](../../supabase/migrations/). La section 6 (schémas des tables) est **générée automatiquement** à partir de la base réelle par [`supabase/scripts/gen-data-model.mjs`](../../supabase/scripts/gen-data-model.mjs) : elle ne peut pas diverger du SQL.
+> Sécurité des données : [SECURITE-BACKEND.md](SECURITE-BACKEND.md) · tests : [`supabase/tests/security.test.mjs`](../../supabase/tests/security.test.mjs) (44/44) et [`api-support.test.mjs`](../../supabase/tests/api-support.test.mjs) (migration 0003).
 
 ---
 
@@ -153,7 +153,7 @@ Légende : `||--||` exactement un · `||--o|` zéro ou un · `||--|{` un ou plus
 ## 5. Migrations et versions
 
 ### 5.1 Principe
-- **Une migration = un fichier SQL numéroté** dans `db/migrations/` : `0001_init.sql`, `0002_storage.sql`, `0003_…`. Ordre d'application = ordre des numéros.
+- **Une migration = un fichier SQL numéroté** dans `supabase/migrations/` : `0001_init.sql`, `0002_storage.sql`, `0003_api_support.sql`. Ordre d'application = ordre des numéros.
 - **Une migration appliquée n'est jamais modifiée.** Toute correction = **nouvelle migration**.
 - Chaque migration est **transactionnelle** (`begin` … `commit`) : tout ou rien.
 - Application avec l'outil de migration Supabase, sur **développement d'abord**, puis production.
@@ -188,14 +188,14 @@ Formules, fournisseurs et réglages initiaux sont insérés par la migration `00
 
 ### 5.7 Régénérer la section 6
 ```bash
-node db/scripts/gen-data-model.mjs /chemin/vers/pglite > /tmp/schema.md
+pnpm --filter @pubeka/db db:data-model > /tmp/schema.md
 ```
 Puis remplacer la section 6 par le contenu de `/tmp/schema.md`.
 
 ---
 
 ## 6. Schémas des tables (générés depuis la base)
-<!-- GÉNÉRÉ PAR db/scripts/gen-data-model.mjs — ne pas modifier à la main -->
+<!-- GÉNÉRÉ PAR supabase/scripts/gen-data-model.mjs — ne pas modifier à la main -->
 ### Énumérations
 
 | Énumération | Valeurs |
@@ -215,7 +215,7 @@ Puis remplacer la section 6 par le contenu de `/tmp/schema.md`.
 | ticket_status | open · waiting_user · closed |
 | workspace_status | active · read_only · suspended |
 
-### Tables (52)
+### Tables (57)
 
 #### `audit.admin_log`
 
@@ -233,6 +233,34 @@ Puis remplacer la section 6 par le contenu de `/tmp/schema.md`.
 
 | Contrainte | Définition |
 |---|---|
+| n | `NOT NULL action` |
+| n | `NOT NULL admin_id` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL id` |
+| Clé primaire | `PRIMARY KEY (id)` |
+
+RLS : activée · 0 politique(s) · schéma non exposé par l’API
+
+#### `audit.workspace_log`
+
+| Colonne | Type | Null | Défaut |
+|---|---|---|---|
+| id | bigint | non | identity |
+| workspace_id | uuid | non |  |
+| actor_id | uuid | non |  |
+| action | text | non |  |
+| before | jsonb | oui |  |
+| after | jsonb | oui |  |
+| created_at | timestamp with time zone | non | now() |
+
+| Contrainte | Définition |
+|---|---|
+| Contrôle | `CHECK ((char_length(action) <= 60))` |
+| n | `NOT NULL action` |
+| n | `NOT NULL actor_id` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 0 politique(s) · schéma non exposé par l’API
@@ -250,6 +278,9 @@ RLS : activée · 0 politique(s) · schéma non exposé par l’API
 | Contrainte | Définition |
 |---|---|
 | Clé étrangère | `FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL failed_attempts` |
+| n | `NOT NULL profile_id` |
 | Clé primaire | `PRIMARY KEY (profile_id)` |
 
 RLS : activée · 0 politique(s) · schéma non exposé par l’API
@@ -264,6 +295,9 @@ RLS : activée · 0 politique(s) · schéma non exposé par l’API
 
 | Contrainte | Définition |
 |---|---|
+| n | `NOT NULL key` |
+| n | `NOT NULL updated_at` |
+| n | `NOT NULL value` |
 | Clé primaire | `PRIMARY KEY (key)` |
 
 RLS : activée · 0 politique(s) · schéma non exposé par l’API
@@ -285,6 +319,12 @@ RLS : activée · 0 politique(s) · schéma non exposé par l’API
 | Contrôle | `CHECK ((octet_length(iv) = 12))` |
 | Contrôle | `CHECK ((key_version >= 1))` |
 | Clé étrangère | `FOREIGN KEY (connection_id) REFERENCES meta_connections(id) ON DELETE CASCADE` |
+| n | `NOT NULL auth_tag` |
+| n | `NOT NULL ciphertext` |
+| n | `NOT NULL connection_id` |
+| n | `NOT NULL iv` |
+| n | `NOT NULL key_version` |
+| n | `NOT NULL updated_at` |
 | Clé primaire | `PRIMARY KEY (connection_id)` |
 
 RLS : activée · 0 politique(s) · schéma non exposé par l’API
@@ -300,6 +340,7 @@ RLS : activée · 0 politique(s) · schéma non exposé par l’API
 | Contrainte | Définition |
 |---|---|
 | Clé étrangère | `FOREIGN KEY (provider_code) REFERENCES media_providers(code)` |
+| n | `NOT NULL provider_code` |
 | Clé primaire | `PRIMARY KEY (provider_code)` |
 
 RLS : activée · 0 politique(s) · schéma non exposé par l’API
@@ -317,7 +358,29 @@ RLS : activée · 0 politique(s) · schéma non exposé par l’API
 |---|---|
 | Clé étrangère | `FOREIGN KEY (generation_job_id) REFERENCES generation_jobs(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (provider_code) REFERENCES media_providers(code)` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL generation_job_id` |
+| n | `NOT NULL provider_code` |
+| n | `NOT NULL request_id` |
 | Clé primaire | `PRIMARY KEY (provider_code, request_id)` |
+
+RLS : activée · 0 politique(s) · schéma non exposé par l’API
+
+#### `private.rate_limits`
+
+| Colonne | Type | Null | Défaut |
+|---|---|---|---|
+| bucket_key | text | non |  |
+| window_start | timestamp with time zone | non |  |
+| hits | integer | non | 0 |
+
+| Contrainte | Définition |
+|---|---|
+| Contrôle | `CHECK (((char_length(bucket_key) >= 1) AND (char_length(bucket_key) <= 200)))` |
+| n | `NOT NULL bucket_key` |
+| n | `NOT NULL hits` |
+| n | `NOT NULL window_start` |
+| Clé primaire | `PRIMARY KEY (bucket_key, window_start)` |
 
 RLS : activée · 0 politique(s) · schéma non exposé par l’API
 
@@ -332,7 +395,29 @@ RLS : activée · 0 politique(s) · schéma non exposé par l’API
 
 | Contrainte | Définition |
 |---|---|
+| n | `NOT NULL count` |
+| n | `NOT NULL last_seen` |
+| n | `NOT NULL pattern` |
 | Clé primaire | `PRIMARY KEY (pattern)` |
+
+RLS : activée · 0 politique(s) · schéma non exposé par l’API
+
+#### `private.webhook_events`
+
+| Colonne | Type | Null | Défaut |
+|---|---|---|---|
+| provider | text | non |  |
+| event_id | text | non |  |
+| received_at | timestamp with time zone | non | now() |
+
+| Contrainte | Définition |
+|---|---|
+| Contrôle | `CHECK (((char_length(event_id) >= 1) AND (char_length(event_id) <= 200)))` |
+| Contrôle | `CHECK (((char_length(provider) >= 1) AND (char_length(provider) <= 40)))` |
+| n | `NOT NULL event_id` |
+| n | `NOT NULL provider` |
+| n | `NOT NULL received_at` |
+| Clé primaire | `PRIMARY KEY (provider, event_id)` |
 
 RLS : activée · 0 politique(s) · schéma non exposé par l’API
 
@@ -356,6 +441,11 @@ RLS : activée · 0 politique(s) · schéma non exposé par l’API
 | Contrôle | `CHECK ((char_length(name) <= 200))` |
 | Clé étrangère | `FOREIGN KEY (meta_connection_id) REFERENCES meta_connections(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL id` |
+| n | `NOT NULL is_active` |
+| n | `NOT NULL meta_ad_account_id` |
+| n | `NOT NULL meta_connection_id` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 | Unique | `UNIQUE (workspace_id, meta_ad_account_id)` |
 
@@ -384,6 +474,9 @@ RLS : activée · 1 politique(s)
 | Clé étrangère | `FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (visual_id) REFERENCES visuals(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL campaign_id` |
+| n | `NOT NULL id` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 1 politique(s)
@@ -413,9 +506,99 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK ((char_length(model) <= 120))` |
 | Contrôle | `CHECK ((char_length(prompt_version) <= 40))` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE SET NULL` |
+| n | `NOT NULL agent` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL model` |
+| n | `NOT NULL prompt_version` |
+| n | `NOT NULL retried` |
+| n | `NOT NULL valid_schema` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 1 politique(s)
+
+#### `public.analyses`
+
+| Colonne | Type | Null | Défaut |
+|---|---|---|---|
+| id | uuid | non | gen_random_uuid() |
+| workspace_id | uuid | non |  |
+| page_id | uuid | oui |  |
+| created_by | uuid | oui |  |
+| status | text | non | 'queued'::text |
+| user_intent | text | oui |  |
+| source_ids | uuid[] | non | '{}'::uuid[] |
+| unreadable_sources | int4[] | non | '{}'::integer[] |
+| business_profile_id | uuid | oui |  |
+| blocked_reason | text | oui |  |
+| error_code | text | oui |  |
+| created_at | timestamp with time zone | non | now() |
+| updated_at | timestamp with time zone | non | now() |
+
+| Contrainte | Définition |
+|---|---|
+| Contrôle | `CHECK ((blocked_reason = 'illegal_product'::text))` |
+| Contrôle | `CHECK (((status <> 'blocked'::text) OR (blocked_reason IS NOT NULL)))` |
+| Contrôle | `CHECK (((status <> 'ready'::text) OR (business_profile_id IS NOT NULL)))` |
+| Contrôle | `CHECK ((char_length(error_code) <= 60))` |
+| Contrôle | `CHECK ((cardinality(source_ids) <= 12))` |
+| Contrôle | `CHECK ((status = ANY (ARRAY['queued'::text, 'reading'::text, 'analysing'::text, 'questions'::text, 'ready'::text, 'blocked'::text, 'failed'::text])))` |
+| Contrôle | `CHECK ((char_length(user_intent) <= 1000))` |
+| Clé étrangère | `FOREIGN KEY (business_profile_id) REFERENCES business_profiles(id) ON DELETE SET NULL` |
+| Clé étrangère | `FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL` |
+| Clé étrangère | `FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE SET NULL` |
+| Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL source_ids` |
+| n | `NOT NULL status` |
+| n | `NOT NULL unreadable_sources` |
+| n | `NOT NULL updated_at` |
+| n | `NOT NULL workspace_id` |
+| Clé primaire | `PRIMARY KEY (id)` |
+
+| Index | Définition |
+|---|---|
+| analyses_workspace_id_created_at_idx | `public.analyses USING btree (workspace_id, created_at DESC)` |
+
+RLS : activée · 1 politique(s)
+
+#### `public.api_idempotency_keys`
+
+| Colonne | Type | Null | Défaut |
+|---|---|---|---|
+| workspace_id | uuid | non |  |
+| key | uuid | non |  |
+| route | text | non |  |
+| body_hash | text | non |  |
+| state | text | non | 'running'::text |
+| response_status | integer | oui |  |
+| response_body | jsonb | oui |  |
+| created_at | timestamp with time zone | non | now() |
+| expires_at | timestamp with time zone | non | (now() + '24:00:00'::interval) |
+
+| Contrainte | Définition |
+|---|---|
+| Contrôle | `CHECK ((body_hash ~ '^[0-9a-f]{64}$'::text))` |
+| Contrôle | `CHECK (((state <> 'done'::text) OR (response_status IS NOT NULL)))` |
+| Contrôle | `CHECK (((response_status >= 100) AND (response_status <= 599)))` |
+| Contrôle | `CHECK ((char_length(route) <= 200))` |
+| Contrôle | `CHECK ((state = ANY (ARRAY['running'::text, 'done'::text])))` |
+| Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL body_hash` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL expires_at` |
+| n | `NOT NULL key` |
+| n | `NOT NULL route` |
+| n | `NOT NULL state` |
+| n | `NOT NULL workspace_id` |
+| Clé primaire | `PRIMARY KEY (workspace_id, key)` |
+
+| Index | Définition |
+|---|---|
+| api_idempotency_keys_expires_at_idx | `public.api_idempotency_keys USING btree (expires_at)` |
+
+RLS : activée · 0 politique(s)
 
 #### `public.attachments`
 
@@ -434,6 +617,12 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK (((size >= 1) AND (size <= 20971520)))` |
 | Clé étrangère | `FOREIGN KEY (ticket_message_id) REFERENCES ticket_messages(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL file_path` |
+| n | `NOT NULL id` |
+| n | `NOT NULL mime` |
+| n | `NOT NULL size` |
+| n | `NOT NULL ticket_message_id` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 1 politique(s)
@@ -457,6 +646,13 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK ((locale = ANY (ARRAY['fr'::text, 'en'::text])))` |
 | Contrôle | `CHECK ((slug ~ '^[a-z0-9-]{3,120}$'::text))` |
 | Contrôle | `CHECK ((status = ANY (ARRAY['draft_ai'::text, 'reviewed'::text, 'published'::text])))` |
+| n | `NOT NULL body_md` |
+| n | `NOT NULL id` |
+| n | `NOT NULL keywords` |
+| n | `NOT NULL locale` |
+| n | `NOT NULL slug` |
+| n | `NOT NULL status` |
+| n | `NOT NULL title` |
 | Clé primaire | `PRIMARY KEY (id)` |
 | Unique | `UNIQUE (locale, slug)` |
 
@@ -488,6 +684,11 @@ RLS : activée · 2 politique(s)
 | Contrôle | `CHECK ((whatsapp ~ '^\+[1-9][0-9]{6,14}$'::text))` |
 | Clé étrangère | `FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL colors` |
+| n | `NOT NULL page_id` |
+| n | `NOT NULL show_number_on_visuals` |
+| n | `NOT NULL updated_at` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (page_id)` |
 
 RLS : activée · 3 politique(s)
@@ -512,6 +713,16 @@ RLS : activée · 3 politique(s)
 |---|---|
 | Clé étrangère | `FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL answers` |
+| n | `NOT NULL conflicts` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL flags` |
+| n | `NOT NULL id` |
+| n | `NOT NULL profile` |
+| n | `NOT NULL questions` |
+| n | `NOT NULL sensitive_signals` |
+| n | `NOT NULL version` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 1 politique(s)
@@ -534,6 +745,13 @@ RLS : activée · 1 politique(s)
 | Clé étrangère | `FOREIGN KEY (agent_run_id) REFERENCES agent_runs(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL campaign_id` |
+| n | `NOT NULL chosen` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL proposal` |
+| n | `NOT NULL version` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 | Unique | `UNIQUE (campaign_id, version)` |
 
@@ -558,6 +776,12 @@ RLS : activée · 1 politique(s)
 | Clé étrangère | `FOREIGN KEY (ad_id) REFERENCES ads(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL campaign_id` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL source` |
+| n | `NOT NULL status` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 1 politique(s)
@@ -592,6 +816,7 @@ RLS : activée · 1 politique(s)
 | editable | boolean | non | true |
 | created_at | timestamp with time zone | non | now() |
 | updated_at | timestamp with time zone | non | now() |
+| version | integer | non | 1 |
 
 | Contrainte | Définition |
 |---|---|
@@ -604,10 +829,24 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK (((char_length(name) >= 1) AND (char_length(name) <= 200)))` |
 | Contrôle | `CHECK ((objective = ANY (ARRAY['OUTCOME_ENGAGEMENT'::text, 'OUTCOME_TRAFFIC'::text, 'OUTCOME_AWARENESS'::text, 'OUTCOME_SALES'::text])))` |
 | Contrôle | `CHECK (((vat_rate >= (0)::numeric) AND (vat_rate <= 0.5)))` |
+| Contrôle | `CHECK ((version >= 1))` |
 | Clé étrangère | `FOREIGN KEY (ad_account_id) REFERENCES ad_accounts(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (created_by) REFERENCES profiles(id)` |
 | Clé étrangère | `FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL ab_test` |
+| n | `NOT NULL copy` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL editable` |
+| n | `NOT NULL geo` |
+| n | `NOT NULL id` |
+| n | `NOT NULL name` |
+| n | `NOT NULL platform` |
+| n | `NOT NULL status` |
+| n | `NOT NULL targeting` |
+| n | `NOT NULL updated_at` |
+| n | `NOT NULL version` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 | Index | Définition |
@@ -631,6 +870,12 @@ RLS : activée · 3 politique(s)
 | Contrainte | Définition |
 |---|---|
 | Contrôle | `CHECK ((code ~ '^[A-Z]{2}$'::text))` |
+| n | `NOT NULL active` |
+| n | `NOT NULL code` |
+| n | `NOT NULL currency` |
+| n | `NOT NULL name_en` |
+| n | `NOT NULL name_fr` |
+| n | `NOT NULL timezone_default` |
 | Clé primaire | `PRIMARY KEY (code)` |
 
 RLS : activée · 1 politique(s)
@@ -659,6 +904,12 @@ RLS : activée · 1 politique(s)
 | Clé étrangère | `FOREIGN KEY (admin_id) REFERENCES profiles(id)` |
 | Clé étrangère | `FOREIGN KEY (payment_id) REFERENCES payments(id)` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL amount` |
+| n | `NOT NULL bucket` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL kind` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 | Index | Définition |
@@ -684,6 +935,12 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK ((quote = ANY (ARRAY['XAF'::bpchar, 'XOF'::bpchar])))` |
 | Contrôle | `CHECK ((rate > (0)::numeric))` |
 | Contrôle | `CHECK ((source = ANY (ARRAY['saspay'::text, 'fallback'::text, 'manual'::text])))` |
+| n | `NOT NULL base` |
+| n | `NOT NULL fetched_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL quote` |
+| n | `NOT NULL rate` |
+| n | `NOT NULL source` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 1 politique(s)
@@ -723,6 +980,18 @@ RLS : activée · 1 politique(s)
 | Clé étrangère | `FOREIGN KEY (model_id) REFERENCES media_models(id)` |
 | Clé étrangère | `FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL capability` |
+| n | `NOT NULL count` |
+| n | `NOT NULL credits_reserved` |
+| n | `NOT NULL fallback_accepted` |
+| n | `NOT NULL fallback_offered` |
+| n | `NOT NULL id` |
+| n | `NOT NULL level` |
+| n | `NOT NULL model_id` |
+| n | `NOT NULL provider_request_ids` |
+| n | `NOT NULL queued_at` |
+| n | `NOT NULL status` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 | Index | Définition |
@@ -749,6 +1018,14 @@ RLS : activée · 1 politique(s)
 |---|---|
 | Contrôle | `CHECK ((locale = ANY (ARRAY['fr'::text, 'en'::text])))` |
 | Contrôle | `CHECK ((slug ~ '^[a-z0-9-]{3,120}$'::text))` |
+| n | `NOT NULL body_md` |
+| n | `NOT NULL category` |
+| n | `NOT NULL id` |
+| n | `NOT NULL locale` |
+| n | `NOT NULL public` |
+| n | `NOT NULL slug` |
+| n | `NOT NULL title` |
+| n | `NOT NULL updated_at` |
 | Clé primaire | `PRIMARY KEY (id)` |
 | Unique | `UNIQUE (locale, slug)` |
 
@@ -772,6 +1049,13 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK ((char_length(email) <= 254))` |
 | Contrôle | `CHECK ((role <> 'owner'::member_role))` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL email` |
+| n | `NOT NULL expires_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL role` |
+| n | `NOT NULL token_hash` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 | Unique | `UNIQUE (token_hash)` |
 
@@ -799,6 +1083,17 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK ((id ~ '^[a-z0-9-]+:[a-z0-9./_-]+$'::text))` |
 | Contrôle | `CHECK (((max_references >= 0) AND (max_references <= 50)))` |
 | Clé étrangère | `FOREIGN KEY (provider_code) REFERENCES media_providers(code)` |
+| n | `NOT NULL aspect_ratios` |
+| n | `NOT NULL capabilities` |
+| n | `NOT NULL card` |
+| n | `NOT NULL display_name` |
+| n | `NOT NULL endpoint` |
+| n | `NOT NULL id` |
+| n | `NOT NULL max_references` |
+| n | `NOT NULL provider_code` |
+| n | `NOT NULL recommended_for` |
+| n | `NOT NULL sort_order` |
+| n | `NOT NULL status` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 1 politique(s)
@@ -819,6 +1114,11 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK ((concurrency_limit >= 1))` |
 | Contrôle | `CHECK ((retention_hours >= 1))` |
 | Contrôle | `CHECK ((status = ANY (ARRAY['active'::text, 'paused'::text])))` |
+| n | `NOT NULL code` |
+| n | `NOT NULL concurrency_limit` |
+| n | `NOT NULL monthly_budget_usd` |
+| n | `NOT NULL retention_hours` |
+| n | `NOT NULL status` |
 | Clé primaire | `PRIMARY KEY (code)` |
 
 RLS : activée · 1 politique(s)
@@ -844,6 +1144,13 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK ((status = ANY (ARRAY['ok'::text, 'expiring'::text, 'expired'::text, 'revoked'::text])))` |
 | Contrôle | `CHECK ((token_type = ANY (ARRAY['system_user'::text, 'user'::text])))` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL scopes` |
+| n | `NOT NULL status` |
+| n | `NOT NULL token_type` |
+| n | `NOT NULL updated_at` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 | Index | Définition |
@@ -876,6 +1183,14 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK (((min_margin >= (0)::numeric) AND (min_margin <= 0.95)))` |
 | Contrôle | `CHECK ((unit = ANY (ARRAY['image'::text, 'second'::text])))` |
 | Clé étrangère | `FOREIGN KEY (model_id) REFERENCES media_models(id) ON DELETE CASCADE` |
+| n | `NOT NULL cost_usd` |
+| n | `NOT NULL credits` |
+| n | `NOT NULL level` |
+| n | `NOT NULL min_credits` |
+| n | `NOT NULL min_margin` |
+| n | `NOT NULL model_id` |
+| n | `NOT NULL provider_params` |
+| n | `NOT NULL unit` |
 | Clé primaire | `PRIMARY KEY (model_id, level)` |
 
 RLS : activée · 1 politique(s)
@@ -892,6 +1207,10 @@ RLS : activée · 1 politique(s)
 | Contrainte | Définition |
 |---|---|
 | Clé étrangère | `FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE` |
+| n | `NOT NULL email` |
+| n | `NOT NULL in_app` |
+| n | `NOT NULL profile_id` |
+| n | `NOT NULL type` |
 | Clé primaire | `PRIMARY KEY (profile_id, type)` |
 
 RLS : activée · 1 politique(s)
@@ -919,6 +1238,12 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK ((char_length(type) <= 60))` |
 | Clé étrangère | `FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL profile_id` |
+| n | `NOT NULL title` |
+| n | `NOT NULL type` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 | Index | Définition |
@@ -952,6 +1277,12 @@ RLS : activée · 2 politique(s)
 | Clé étrangère | `FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (decided_by) REFERENCES profiles(id)` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL action` |
+| n | `NOT NULL campaign_id` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL status` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 1 politique(s)
@@ -969,6 +1300,9 @@ RLS : activée · 1 politique(s)
 |---|---|
 | Clé étrangère | `FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL page_id` |
+| n | `NOT NULL period_start` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (workspace_id, page_id, period_start)` |
 
 RLS : activée · 1 politique(s)
@@ -998,6 +1332,14 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK ((char_length(name) <= 200))` |
 | Contrôle | `CHECK ((whatsapp_number ~ '^\+[1-9][0-9]{6,14}$'::text))` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL active` |
+| n | `NOT NULL ad_address` |
+| n | `NOT NULL ad_language` |
+| n | `NOT NULL id` |
+| n | `NOT NULL meta_page_id` |
+| n | `NOT NULL pixel_ids` |
+| n | `NOT NULL whatsapp_linked` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 | Unique | `UNIQUE (workspace_id, meta_page_id)` |
 
@@ -1027,6 +1369,12 @@ RLS : activée · 2 politique(s)
 | Clé étrangère | `FOREIGN KEY (payment_id) REFERENCES payments(id)` |
 | Clé étrangère | `FOREIGN KEY (reviewed_by) REFERENCES profiles(id)` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL file_path` |
+| n | `NOT NULL id` |
+| n | `NOT NULL status` |
+| n | `NOT NULL transaction_ref` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 2 politique(s)
@@ -1062,6 +1410,16 @@ RLS : activée · 2 politique(s)
 | Contrôle | `CHECK ((provider = 'saspay'::text))` |
 | Clé étrangère | `FOREIGN KEY (plan_code) REFERENCES plans(code)` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE RESTRICT` |
+| n | `NOT NULL amount_xaf` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL fees_xaf` |
+| n | `NOT NULL id` |
+| n | `NOT NULL idempotency_key` |
+| n | `NOT NULL provider` |
+| n | `NOT NULL purpose` |
+| n | `NOT NULL status` |
+| n | `NOT NULL updated_at` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 | Unique | `UNIQUE (idempotency_key)` |
 | Unique | `UNIQUE (provider_payment_id)` |
@@ -1093,6 +1451,14 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK ((max_pages >= 1))` |
 | Contrôle | `CHECK ((monthly_credits >= 0))` |
 | Contrôle | `CHECK ((price_xaf > 0))` |
+| n | `NOT NULL active` |
+| n | `NOT NULL campaigns_per_period` |
+| n | `NOT NULL code` |
+| n | `NOT NULL features` |
+| n | `NOT NULL max_members` |
+| n | `NOT NULL max_pages` |
+| n | `NOT NULL monthly_credits` |
+| n | `NOT NULL price_xaf` |
 | Clé primaire | `PRIMARY KEY (code)` |
 
 RLS : activée · 1 politique(s)
@@ -1129,6 +1495,15 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK ((char_length(timezone) <= 64))` |
 | Contrôle | `CHECK ((ui_language = ANY (ARRAY['fr'::text, 'en'::text])))` |
 | Clé étrangère | `FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL currency_display` |
+| n | `NOT NULL email` |
+| n | `NOT NULL id` |
+| n | `NOT NULL theme` |
+| n | `NOT NULL timezone` |
+| n | `NOT NULL trial_used` |
+| n | `NOT NULL ui_language` |
+| n | `NOT NULL updated_at` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 2 politique(s)
@@ -1148,6 +1523,11 @@ RLS : activée · 2 politique(s)
 | Contrainte | Définition |
 |---|---|
 | Clé étrangère | `FOREIGN KEY (provider_code) REFERENCES media_providers(code)` |
+| n | `NOT NULL failures` |
+| n | `NOT NULL month` |
+| n | `NOT NULL provider_code` |
+| n | `NOT NULL requests` |
+| n | `NOT NULL spent_usd` |
 | Clé primaire | `PRIMARY KEY (provider_code, month)` |
 
 RLS : activée · 1 politique(s)
@@ -1168,6 +1548,9 @@ RLS : activée · 1 politique(s)
 | Contrainte | Définition |
 |---|---|
 | Contrôle | `CHECK (((score >= (0)::numeric) AND (score <= (5)::numeric)))` |
+| n | `NOT NULL active` |
+| n | `NOT NULL file_path` |
+| n | `NOT NULL id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 1 politique(s)
@@ -1188,6 +1571,10 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK ((status = ANY (ARRAY['signed_up'::text, 'paid'::text, 'rewarded'::text])))` |
 | Clé étrangère | `FOREIGN KEY (referred_workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (referrer_workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL id` |
+| n | `NOT NULL referred_workspace_id` |
+| n | `NOT NULL referrer_workspace_id` |
+| n | `NOT NULL status` |
 | Clé primaire | `PRIMARY KEY (id)` |
 | Unique | `UNIQUE (referred_workspace_id)` |
 
@@ -1212,6 +1599,11 @@ RLS : activée · 1 politique(s)
 | Clé étrangère | `FOREIGN KEY (ad_id) REFERENCES ads(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL campaign_id` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL fixed_and_republished` |
+| n | `NOT NULL id` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 1 politique(s)
@@ -1231,6 +1623,10 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK (((max_wait_seconds >= 10) AND (max_wait_seconds <= 600)))` |
 | Clé étrangère | `FOREIGN KEY (fallback_model_id) REFERENCES media_models(id)` |
 | Clé étrangère | `FOREIGN KEY (primary_model_id) REFERENCES media_models(id)` |
+| n | `NOT NULL active` |
+| n | `NOT NULL capability` |
+| n | `NOT NULL max_wait_seconds` |
+| n | `NOT NULL primary_model_id` |
 | Clé primaire | `PRIMARY KEY (capability)` |
 
 RLS : activée · 1 politique(s)
@@ -1260,6 +1656,11 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK (((url IS NULL) OR ((url ~* '^https?://'::text) AND (char_length(url) <= 2048))))` |
 | Clé étrangère | `FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL status` |
+| n | `NOT NULL type` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 1 politique(s)
@@ -1289,6 +1690,15 @@ RLS : activée · 1 politique(s)
 | Clé étrangère | `FOREIGN KEY (ad_id) REFERENCES ads(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL campaign_id` |
+| n | `NOT NULL clicks` |
+| n | `NOT NULL date` |
+| n | `NOT NULL impressions` |
+| n | `NOT NULL reach` |
+| n | `NOT NULL results` |
+| n | `NOT NULL spend_usd_cents` |
+| n | `NOT NULL synced_at` |
+| n | `NOT NULL workspace_id` |
 
 | Index | Définition |
 |---|---|
@@ -1317,6 +1727,14 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK ((period_end > period_start))` |
 | Clé étrangère | `FOREIGN KEY (plan_code) REFERENCES plans(code)` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL period_end` |
+| n | `NOT NULL period_start` |
+| n | `NOT NULL plan_code` |
+| n | `NOT NULL status` |
+| n | `NOT NULL updated_at` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 1 politique(s)
@@ -1341,6 +1759,13 @@ RLS : activée · 1 politique(s)
 | Clé étrangère | `FOREIGN KEY (author_id) REFERENCES profiles(id)` |
 | Clé étrangère | `FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL author_id` |
+| n | `NOT NULL author_type` |
+| n | `NOT NULL body` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL ticket_id` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 2 politique(s)
@@ -1364,6 +1789,14 @@ RLS : activée · 2 politique(s)
 | Contrôle | `CHECK (((char_length(subject) >= 3) AND (char_length(subject) <= 200)))` |
 | Clé étrangère | `FOREIGN KEY (created_by) REFERENCES profiles(id)` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL category` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL created_by` |
+| n | `NOT NULL id` |
+| n | `NOT NULL status` |
+| n | `NOT NULL subject` |
+| n | `NOT NULL updated_at` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 2 politique(s)
@@ -1383,6 +1816,10 @@ RLS : activée · 2 politique(s)
 | Contrôle | `CHECK ((campaigns_published >= 0))` |
 | Contrôle | `CHECK ((generations_today >= 0))` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL campaigns_published` |
+| n | `NOT NULL generations_today` |
+| n | `NOT NULL period_start` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (workspace_id, period_start)` |
 
 RLS : activée · 1 politique(s)
@@ -1401,6 +1838,9 @@ RLS : activée · 1 politique(s)
 |---|---|
 | Contrôle | `CHECK (((rate >= (0)::numeric) AND (rate <= 0.5)))` |
 | Clé étrangère | `FOREIGN KEY (country_code) REFERENCES countries(code)` |
+| n | `NOT NULL country_code` |
+| n | `NOT NULL rate` |
+| n | `NOT NULL valid_from` |
 | Clé primaire | `PRIMARY KEY (country_code, valid_from)` |
 
 RLS : activée · 1 politique(s)
@@ -1423,6 +1863,10 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK ((char_length(takeaway) <= 300))` |
 | Clé étrangère | `FOREIGN KEY (visual_id) REFERENCES visuals(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL id` |
+| n | `NOT NULL source` |
+| n | `NOT NULL visual_id` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 1 politique(s)
@@ -1452,6 +1896,15 @@ RLS : activée · 1 politique(s)
 | Clé étrangère | `FOREIGN KEY (generation_job_id) REFERENCES generation_jobs(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL chosen` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL kind` |
+| n | `NOT NULL layers` |
+| n | `NOT NULL render_paths` |
+| n | `NOT NULL spec` |
+| n | `NOT NULL used_in_campaign` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
 | Index | Définition |
@@ -1475,6 +1928,10 @@ RLS : activée · 2 politique(s)
 | Clé étrangère | `FOREIGN KEY (invited_by) REFERENCES profiles(id)` |
 | Clé étrangère | `FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL joined_at` |
+| n | `NOT NULL profile_id` |
+| n | `NOT NULL role` |
+| n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (workspace_id, profile_id)` |
 
 | Index | Définition |
@@ -1502,8 +1959,13 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK ((referral_code ~ '^[A-Z0-9]{6,12}$'::text))` |
 | Clé étrangère | `FOREIGN KEY (owner_id) REFERENCES profiles(id)` |
 | Clé étrangère | `FOREIGN KEY (referred_by_workspace_id) REFERENCES workspaces(id)` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL id` |
+| n | `NOT NULL name` |
+| n | `NOT NULL owner_id` |
+| n | `NOT NULL status` |
+| n | `NOT NULL updated_at` |
 | Clé primaire | `PRIMARY KEY (id)` |
 | Unique | `UNIQUE (referral_code)` |
 
 RLS : activée · 2 politique(s)
-
