@@ -12,6 +12,11 @@ export const ChangeMemberRoleSchema = z.strictObject({
   role: z.enum(['editor', 'viewer']),
 });
 
+export const InviteMemberSchema = z.strictObject({
+  email: z.email().max(254),
+  role: z.enum(['editor', 'viewer']),
+});
+
 export const TransferOwnershipSchema = z.strictObject({
   profile_id: z.uuid(),
 });
