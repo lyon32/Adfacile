@@ -453,7 +453,7 @@ Source unique des versions du projet. Règles d'épinglage : [CONVENTIONS §1](C
 |---|---|---|
 | Supabase | Base, Auth, Storage, Realtime (Irlande) | 2 projets : développement, production |
 | Vercel | Hébergement Next.js | existant |
-| Trigger.dev | Tâches de fond | gratuit, puis Hobby |
+| Trigger.dev | Tâches de fond | **gratuit en ce moment** (projet `proj_wnjyspfoeknisnyzygkj`), Hobby au plus tard à S13 (ARCHITECTURE §2) |
 | SasPay | Paiement | compte marchand (clés test et production) |
 | Meta for Developers | Application Meta, webhooks | existant |
 | fal, Higgsfield | Images (et vidéo) | budget 15 $/mois chacun |
