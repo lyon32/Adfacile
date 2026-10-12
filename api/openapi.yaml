@@ -142,6 +142,8 @@ paths:
       responses:
         '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/Workspace' } } } } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /workspaces/{workspaceId}:
     parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
     get:
@@ -150,28 +152,40 @@ paths:
       summary: Détail d'un espace (formule, statut, quotas)
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Workspace' } } } }
-        '404': { $ref: '#/components/responses/NotFound' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
     patch:
       tags: [ Espaces et équipe ]
       operationId: renameWorkspace
       summary: Renommer l'espace (propriétaire)
       requestBody:
         required: true
-        content: { application/json: { schema: { type: object, required: [ name ], properties: { name: { type: string, minLength: 1, maxLength: 120 } } } } }
+        content: { application/json: { schema: { type: object, required: [ name ], additionalProperties: false, properties: { name: { type: string, minLength: 1, maxLength: 120 } } } } }
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Workspace' } } } }
-        '403': { $ref: '#/components/responses/Forbidden' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /workspaces/{workspaceId}/members:
     parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
     get:
       tags: [ Espaces et équipe ]
       operationId: listMembers
-      summary: Membres de l'espace
+      summary: Membres de l'espace (le propriétaire d'abord, puis par date d'arrivée)
       responses:
         '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/Member' } } } } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /workspaces/{workspaceId}/members/{profileId}:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -180,37 +194,57 @@ paths:
       tags: [ Espaces et équipe ]
       operationId: changeMemberRole
       summary: Changer le rôle d'un membre (propriétaire)
+      description: Le propriétaire ne peut pas changer son propre rôle (409, SECURITY_NOTES EC-TEAM-05) ; la propriété se transfère par `transfer-ownership`.
       requestBody:
         required: true
-        content: { application/json: { schema: { type: object, required: [ role ], properties: { role: { type: string, enum: [ editor, viewer ] } } } } }
+        content: { application/json: { schema: { type: object, required: [ role ], additionalProperties: false, properties: { role: { type: string, enum: [ editor, viewer ] } } } } }
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Member' } } } }
-        '403': { $ref: '#/components/responses/Forbidden' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
     delete:
       tags: [ Espaces et équipe ]
       operationId: removeMember
       summary: Retirer un membre (propriétaire)
+      description: Le propriétaire ne peut pas se retirer lui-même (409, EC-TEAM-05). Le membre retiré reçoit 404 à sa requête suivante sur l'espace (EC-TEAM-04).
       responses:
         '204': { description: Retiré }
-        '403': { $ref: '#/components/responses/Forbidden' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /workspaces/{workspaceId}/invitations:
     parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
     post:
       tags: [ Espaces et équipe ]
       operationId: inviteMember
       summary: Inviter un membre par e-mail (selon la limite de la formule)
+      description: |
+        Envoie un e-mail avec un lien d'acceptation valable 7 jours ; seul le hachage du jeton est stocké. Une nouvelle invitation à la même adresse remplace la précédente.
+        La limite de membres de la formule compte le propriétaire, les membres et les invitations en attente (402 `member_limit_reached`). Personne déjà membre : 409 (EC-TEAM-01).
       requestBody:
         required: true
-        content: { application/json: { schema: { type: object, required: [ email, role ], properties: { email: { type: string, format: email, maxLength: 254 }, role: { type: string, enum: [ editor, viewer ] } } } } }
+        content: { application/json: { schema: { type: object, required: [ email, role ], additionalProperties: false, properties: { email: { type: string, format: email, maxLength: 254 }, role: { type: string, enum: [ editor, viewer ] } } } } }
       responses:
         '201': { description: Invitation envoyée, content: { application/json: { schema: { $ref: '#/components/schemas/Invitation' } } } }
-        '402': { $ref: '#/components/responses/PaymentRequired' }
-        '409': { $ref: '#/components/responses/Conflict' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /workspaces/{workspaceId}/transfer-ownership:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -218,27 +252,40 @@ paths:
       tags: [ Espaces et équipe ]
       operationId: transferOwnership
       summary: Transférer la propriété de l'espace à un membre (propriétaire, réauthentification récente)
-      description: L'ancien propriétaire devient éditeur ; une seule transaction, journalisée. Proposé avant la suppression du compte du propriétaire (SECURITY_NOTES EC-TEAM-06).
+      description: L'ancien propriétaire devient éditeur ; une seule transaction, journalisée. Proposé avant la suppression du compte du propriétaire (SECURITY_NOTES EC-TEAM-06). Dernière connexion de plus de 5 minutes → 403 `mfa_required` avec `meta.reason = "recent_login_required"` (API_SPEC §2.2 règle 6).
       requestBody: { required: true, content: { application/json: { schema: { type: object, required: [ profile_id ], additionalProperties: false, properties: { profile_id: { type: string, format: uuid } } } } } }
       responses:
         '200': { description: Propriété transférée, content: { application/json: { schema: { $ref: '#/components/schemas/Workspace' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /invitations/accept:
     post:
       tags: [ Espaces et équipe ]
       operationId: acceptInvitation
       summary: Accepter une invitation (jeton reçu par e-mail)
+      description: |
+        Jeton inconnu → 404. Compte dont l'e-mail diffère de l'e-mail invité → 403 `forbidden` (EC-TEAM-02). Invitation expirée ou déjà utilisée → 410 (EC-TEAM-03).
+        Limite de membres de la formule atteinte → 402 `member_limit_reached` ; espace en lecture seule ou suspendu → 403.
       requestBody:
         required: true
-        content: { application/json: { schema: { type: object, required: [ token ], properties: { token: { type: string, minLength: 32, maxLength: 128 } } } } }
+        content: { application/json: { schema: { type: object, required: [ token ], additionalProperties: false, properties: { token: { type: string, minLength: 32, maxLength: 128 } } } } }
       responses:
         '200': { description: Membre ajouté, content: { application/json: { schema: { $ref: '#/components/schemas/Workspace' } } } }
-        '410': { $ref: '#/components/responses/Gone' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '410': { $ref: '#/components/responses/Gone' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
   # ------------------------------------------------------------------ Meta
   /workspaces/{workspaceId}/meta/connect:
@@ -1351,7 +1398,7 @@ components:
         name: { type: string }
         status: { type: string, enum: [ active, read_only, suspended ] }
         role: { type: string, enum: [ owner, editor, viewer ] }
-        plan: { type: string, enum: [ trial, starter, pro, business ] }
+        plan: { type: string, enum: [ trial, starter, pro, business ], description: "Formule de l'abonnement le plus récent ; `trial` pendant l'essai et tant qu'aucune formule n'a été choisie (limites de Starter)" }
         period_end: { type: [ string, 'null' ], format: date-time }
         grace_until: { type: [ string, 'null' ], format: date-time }
         quotas: { $ref: '#/components/schemas/Quotas' }
