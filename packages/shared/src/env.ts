@@ -41,7 +41,10 @@ const encryptionKeys = z.string().refine(
     try {
       const parsed: unknown = JSON.parse(v);
       return z
-        .record(z.string().min(1), z.base64().refine((k) => Buffer.from(k, 'base64').length === 32))
+        .record(
+          z.string().min(1),
+          z.base64().refine((k) => Buffer.from(k, 'base64').length === 32),
+        )
         .refine((o) => Object.keys(o).length > 0)
         .safeParse(parsed).success;
     } catch {

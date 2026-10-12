@@ -70,7 +70,12 @@ export function createLogger(options: LoggerOptions = {}): Logger {
 
   const write = (level: LogLevel, msg: string, fields: LogFields = {}): void => {
     if (LEVEL_ORDER[level] < LEVEL_ORDER[minLevel]) return;
-    sink({ level, msg, time: now().toISOString(), fields: redactFields({ ...base, ...fields }, 0) });
+    sink({
+      level,
+      msg,
+      time: now().toISOString(),
+      fields: redactFields({ ...base, ...fields }, 0),
+    });
   };
 
   return {
