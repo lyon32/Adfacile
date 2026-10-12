@@ -287,7 +287,7 @@ Installer l'application Renovate sur le dépôt, avec un `renovate.json` à la r
 |---|---|---|
 | Minutes GitHub Actions | ~45 min par exécution complète de la CI ; ~70 min par semaine pour les contrôles planifiés | 🧪 Dépôt privé : quota mensuel inclus selon l'offre (2 000 min/mois sur l'offre gratuite d'après la grille publique de GitHub, à confirmer dans **Settings → Billing**). Au-delà : facturé à la minute |
 | Leviers si le quota est dépassé | 1. tâches lourdes uniquement quand la PR est prête (déjà en place) · 2. annulation des exécutions remplacées (déjà en place) · 3. parcours seulement si `apps/web` ou `packages/core` changent · 4. cache de l'image Docker de Supabase | à activer dans l'ordre |
-| Trigger.dev | **Hobby (10 $/mois) obligatoire pour l'environnement `staging`** (documentation Trigger.dev) | ARCHITECTURE prévoyait gratuit puis Hobby : le passage à Hobby arrive dès la mise en place de la préproduction |
+| Trigger.dev | **Offre gratuite en ce moment (12/10/2026).** **Hobby (10 $/mois) obligatoire pour l'environnement `staging`** (documentation Trigger.dev), à prendre au plus tard à S13 | ARCHITECTURE prévoyait gratuit puis Hobby : le passage à Hobby arrive dès la mise en place de la préproduction |
 | Contrôle des vrais fournisseurs | une génération Standard par fournisseur et par semaine | compte dans le budget de 15 $/mois par fournisseur |
 | Banc des agents | seulement quand un prompt change | coût selon les modèles testés |
 | Vercel, Supabase | inchangés (ARCHITECTURE §17) | la préproduction utilise le projet Supabase de développement existant |

@@ -51,7 +51,7 @@
 | Région des données | **Irlande** (`eu-west-1`) | ✅ | Q50 |
 | Environnements | **2 projets Supabase** (développement, production) + Vercel Preview/Production | ✅ | Q23 |
 | Sauvegardes | Supabase Pro (sauvegardes quotidiennes) **en production, quand l'offre Pro est payée** | ✅ | Q43 |
-| Tâches en arrière-plan | **Trigger.dev** (gratuit au départ, puis Hobby 10 $/mois) | ✅ | Sans limite de durée ; code ouvert ; files avec limite de simultanéité |
+| Tâches en arrière-plan | **Trigger.dev** — **offre gratuite (Free) en ce moment** (12/10/2026, projet `proj_wnjyspfoeknisnyzygkj`), Hobby 10 $/mois plus tard (voir la note ci-dessous) | ✅ | Sans limite de durée ; code ouvert ; files avec limite de simultanéité |
 | IA texte | **Passerelle IA** (choix entre OpenRouter et Vercel AI Gateway à faire après comparaison vérifiée) | ✅ principe · ❓ outil | Changer de modèle sans toucher au code, coût par client |
 | IA médias | **Aiguilleur interne** + catalogue de modèles ; **fal + Higgsfield au lancement**, BytePlus avec la vidéo | ✅ | [capacites-medias.md](capacites-medias.md) |
 | Lecture des sources | Notre propre lecture d'abord, **Jina Reader** en secours (sites, PDF) | ✅ | Q36 |
@@ -60,6 +60,17 @@
 | Mesure produit | **PostHog** (statistiques, revisionnage de sessions, interrupteurs de fonctionnalités) | ✅ | Q41 |
 | Erreurs | **Sentry** | ✅ | Q15 |
 | Page de statut | `status.pubeka.com` + alertes e-mail à l'administrateur | ✅ | Q56 |
+
+
+**Note Trigger.dev (12/10/2026) : nous sommes sur l'offre gratuite.** Limites relevées dans la documentation Trigger.dev :
+
+| | Free (actuel) | Hobby (10 $/mois) | Besoin de Pubeka |
+|---|---|---|---|
+| Environnement « staging » (préproduction) | ❌ | ✅ | préproduction (CI_CD §4) |
+| Tâches planifiées par projet | 10 | 100 | environ 15 (§10) |
+| Tâches en même temps | 10 | 25 | Higgsfield 20, fal jusqu'à 40 (§8.4) |
+
+Free suffit tant qu'aucune tâche de fond n'existe. **Passer à Hobby au plus tard à S13** (premières tâches de fond), et dans tous les cas **avant le lancement** : au-delà de 10 tâches planifiées, l'offre gratuite ne suffit plus.
 
 ---
 

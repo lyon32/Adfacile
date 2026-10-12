@@ -341,7 +341,7 @@ Certaines prennent **des semaines** : à lancer tôt, pendant que le code avance
 | Vérification du Business Manager Meta | App Review, production | dès l'immatriculation |
 | **App Review Meta** (`ads_management`, `ads_read`, `business_management`, `pages_show_list`, `pages_read_engagement`…) avec vidéo de démonstration | production (TRD §17, critère 5) | dès que S16 et S17 sont fusionnées (il faut montrer le parcours qui fonctionne) |
 | Compte marchand SasPay (vérification d'identité) | S25 (test), S36 (production) | avant S25 |
-| Projets Supabase dev et production, Vercel, Trigger.dev **Hobby** (10 $/mois, requis pour la préproduction) | S07 | avant S07 |
+| Projets Supabase dev et production, Vercel, Trigger.dev (**offre gratuite pour l'instant**, projet créé le 12/10/2026 ; **Hobby 10 $/mois** à prendre au plus tard à S13 : environnement staging, plus de 10 tâches planifiées — ARCHITECTURE §2) | S07, S13 | avant S07 ; Hobby avant S13 |
 | Identifiants Google OAuth et Apple (compte développeur Apple, payant) | S04 | avant S04 |
 | Domaine d'envoi Resend (enregistrements DNS) | S27 | avant S27 |
 | Clés fal et Higgsfield (budget 15 $/mois chacun) | S21 | avant S21 |
