@@ -9,6 +9,12 @@
 |---|---|---|
 | — | — | — |
 
+## Décisions de la personne
+
+| Date | Session | Décision |
+|---|---|---|
+| 2026-10-12 | S03 | E10 : le déclencheur d'inscription ne crée **pas** l'essai. L'essai (abonnement `trialing`, crédits `trial`) démarre au clic sur [Commencer] de `/bienvenue/essai` (APPFLOW §5, étape 3) et sera fait en S24. LLD §10 et la fiche S03 sont corrigés. Contradiction relevée par le sous-agent S03 : LLD E10 contre APPFLOW étape 3. |
+
 ## Sessions terminées
 
 ### S02 · Briques partagées et contrat — ✅ 2026-10-12
