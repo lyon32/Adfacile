@@ -6,7 +6,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['**/*.test.{ts,tsx}'],
-    exclude: ['node_modules/**', '.next/**', 'e2e/**'],
+    exclude: ['node_modules/**', '.next/**', 'e2e/**', '**/*.int.test.ts'],
     environment: 'node',
     coverage: {
       provider: 'v8',
@@ -19,6 +19,9 @@ export default defineConfig({
         'features/auth/request-locale.ts',
         'features/auth/signed-in-home.tsx',
         'server/auth/testing/**',
+        'server/http/deps.ts',
+        'server/http/routes.ts',
+        'server/http/testing/**',
       ],
       reporter: ['text', 'json-summary'],
       thresholds: {

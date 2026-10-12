@@ -14,8 +14,8 @@
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
     "test:db": "turbo run test:db",
-    "test:int": "turbo run test:int",
-    "test:routes-coverage": "turbo run test:routes-coverage",
+    "test:int": "pnpm --filter @pubeka/web test:int",
+    "test:routes-coverage": "node --test scripts/ci/*.test.mjs && node scripts/ci/routes-coverage.mjs",
     "test:smoke-providers": "turbo run test:smoke-providers",
     "openapi:lint": "turbo run openapi:lint",
     "api:types": "turbo run api:types",
@@ -28,7 +28,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "coverage:summary": "node scripts/noop.mjs",
-    "ci:env": "node scripts/noop.mjs",
+    "ci:env": "node scripts/ci/write-test-env.mjs",
     "supabase": "supabase"
   },
   "devDependencies": {

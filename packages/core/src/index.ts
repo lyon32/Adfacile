@@ -1,2 +1,4 @@
-// Module @pubeka/core : vide jusqu'à sa session (docs/ROADMAP.md §3).
-export {};
+// Module @pubeka/core : cas d'usage (LLD §4).
+export * from './context';
+export * from './account/me';
+export * from './public/public-info';
