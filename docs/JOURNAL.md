@@ -14,6 +14,7 @@
 | Date | Session | Décision |
 |---|---|---|
 | 2026-10-12 | S03 | E10 : le déclencheur d'inscription ne crée **pas** l'essai. L'essai (abonnement `trialing`, crédits `trial`) démarre au clic sur [Commencer] de `/bienvenue/essai` (APPFLOW §5, étape 3) et sera fait en S24. LLD §10 et la fiche S03 sont corrigés. Contradiction relevée par le sous-agent S03 : LLD E10 contre APPFLOW étape 3. |
+| 2026-10-12 | S04 | D-1 : CAPTCHA **Cloudflare Turnstile**. Google et Apple passent par Supabase Auth (docs supabase.com/docs/guides/auth/social-login/auth-google et auth-apple). S04 démarre avec de faux fournisseurs ; la connexion devient réelle quand la personne ajoute les identifiants (👤, avant S07). |
 
 ## Sessions terminées
 
