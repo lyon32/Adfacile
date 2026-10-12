@@ -76,7 +76,7 @@
 #### S03 · Base de données : migration 0003 et module `db` · M · après : S02
 - **But** : combler les écarts entre l'API et la base, puis donner l'accès typé à la base.
 - **Lire** : LLD §10 (E1 à E10) · DATA_MODEL · SECURITE-BACKEND §2 · SECURITY_NOTES §6.
-- **Livrables** : `supabase/config.toml`, `seed.sql` ; migration `0003_api_support.sql` : `analyses` (E1), `api_idempotency_keys` (E2), `private.webhook_events` (E3), libération partielle des crédits et retour en bonus après la période (E4), `private.hit_rate_limit` (E7), `private.transfer_ownership` (E8), `campaigns.version` (E9), **création du profil et de l'espace de travail à l'inscription** (E10 : aucun déclencheur aujourd'hui) ; `packages/db` (clients utilisateur et service, types générés, premiers dépôts) ; `DATA_MODEL.md` regénéré.
+- **Livrables** : `supabase/config.toml`, `seed.sql` ; migration `0003_api_support.sql` : `analyses` (E1), `api_idempotency_keys` (E2), `private.webhook_events` (E3), libération partielle des crédits et retour en bonus après la période (E4), `private.hit_rate_limit` (E7), `private.transfer_ownership` (E8), `campaigns.version` (E9), **création du profil, de l'espace de travail, du membre `owner` et du code de parrainage à l'inscription** (E10 : aucun déclencheur aujourd'hui ; **l'essai n'est pas créé ici**, il démarre au clic en S24) ; `packages/db` (clients utilisateur et service, types générés, premiers dépôts) ; `DATA_MODEL.md` regénéré.
 - **Fait quand** : tests PGlite des nouveaux objets (accès croisé, ajout seul, crédits partiels, bonus) + les 44 existants au vert ; `supabase db reset` passe en local ; `pnpm db:types` sans différence.
 - **Hors périmètre** : routes HTTP.
 
