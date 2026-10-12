@@ -1,10 +1,8 @@
 import type { ReactNode } from 'react';
+import { SignedInHome } from '../../features/auth/signed-in-home';
 
-// Page vide de l'application (S01) ; le tableau de bord arrive en S09 dans console/(shell).
+// Accueil provisoire (S04 : connexion obligatoire, salutation, déconnexion) ; le tableau de
+// bord arrive en S09 dans console/(shell).
 export default function ConsolePage(): ReactNode {
-  return (
-    <main data-zone="console">
-      <h1>app.pubeka.com</h1>
-    </main>
-  );
+  return <SignedInHome />;
 }

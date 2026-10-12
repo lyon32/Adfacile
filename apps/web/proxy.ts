@@ -3,6 +3,8 @@
 // ne sont jamais accessibles directement : ils répondent 404.
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getEnv } from '@pubeka/shared';
+import { withSession } from './server/auth/proxy-session';
 
 const LOCALES = ['fr', 'en'] as const;
 const DEFAULT_LOCALE = 'fr';
@@ -36,7 +38,7 @@ function notFound(request: NextRequest): NextResponse {
   return rewriteTo(request, NOT_FOUND_PATH);
 }
 
-export function proxy(request: NextRequest): NextResponse {
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
   const host = (request.headers.get('host') ?? '').toLowerCase();
 
@@ -61,7 +63,17 @@ export function proxy(request: NextRequest): NextResponse {
   if (adminPath !== undefined && adminPath !== '' && hasPrefix(pathname, `/${adminPath}`)) {
     return rewriteTo(request, `/admin${pathname.slice(adminPath.length + 1)}`);
   }
-  return rewriteTo(request, `/console${pathname === '/' ? '' : pathname}`);
+  // Application : session Supabase rafraîchie, connexion obligatoire hors écrans d'accès (S04).
+  const env = getEnv();
+  return withSession(
+    request,
+    {
+      supabaseUrl: env.NEXT_PUBLIC_SUPABASE_URL,
+      publishableKey: env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+      appUrl: env.NEXT_PUBLIC_APP_URL,
+    },
+    () => rewriteTo(request, `/console${pathname === '/' ? '' : pathname}`),
+  );
 }
 
 export const config = {
