@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+  - jobs
+
+# Paquets autorisés à lancer un script d'installation (binaires natifs).
+allowBuilds:
+  esbuild: true
+  supabase: true
+  unrs-resolver: true

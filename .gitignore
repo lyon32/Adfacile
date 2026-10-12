@@ -38,3 +38,11 @@ dist-ssr
 .tools/
 tmp/
 bench/results/images/
+
+# Monodépôt Pubeka
+.next/
+.turbo/
+next-env.d.ts
+coverage/
+playwright-report/
+test-results/

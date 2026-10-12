@@ -1,0 +1,17 @@
+{
+  "name": "@pubeka/config",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./prettier": "./prettier.config.mjs",
+    "./eslint": "./eslint.config.mjs"
+  },
+  "dependencies": {
+    "typescript-eslint": "8.70.1"
+  },
+  "peerDependencies": {
+    "eslint": "10.11.0",
+    "typescript": "6.0.3"
+  }
+}

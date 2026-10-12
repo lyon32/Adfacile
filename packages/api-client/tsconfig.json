@@ -1,0 +1,4 @@
+{
+  "extends": "@pubeka/config/tsconfig.base.json",
+  "include": ["src"]
+}

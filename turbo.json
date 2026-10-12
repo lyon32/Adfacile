@@ -1,0 +1,33 @@
+{
+  "$schema": "https://turborepo.dev/schema.v2.json",
+  "globalEnv": [
+    "NEXT_PUBLIC_APP_ENV",
+    "NEXT_PUBLIC_SITE_URL",
+    "NEXT_PUBLIC_APP_URL",
+    "SITE_HOSTS",
+    "PUBEKA_FAKE_PROVIDERS",
+    "PUBEKA_JOB_DISPATCH"
+  ],
+  "tasks": {
+    "transit": { "dependsOn": ["^transit"] },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    },
+    "dev": { "cache": false, "persistent": true },
+    "lint": { "dependsOn": ["transit"] },
+    "typecheck": { "dependsOn": ["transit"] },
+    "test": { "dependsOn": ["transit"] },
+    "test:coverage": { "dependsOn": ["transit"], "outputs": ["coverage/**"] },
+    "test:db": { "cache": false },
+    "test:int": { "cache": false },
+    "test:routes-coverage": { "cache": false },
+    "test:smoke-providers": { "cache": false },
+    "openapi:lint": {},
+    "i18n:check": {},
+    "e2e:ci": { "cache": false },
+    "e2e:full": { "cache": false },
+    "e2e:smoke": { "cache": false },
+    "e2e:smoke:prod": { "cache": false }
+  }
+}
