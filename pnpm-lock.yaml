@@ -199,6 +199,9 @@ importers:
       '@pubeka/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@pubeka/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@pubeka/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -233,6 +236,9 @@ importers:
       '@pubeka/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@pubeka/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
       '@testing-library/dom':
         specifier: 10.4.2
         version: 10.4.2
