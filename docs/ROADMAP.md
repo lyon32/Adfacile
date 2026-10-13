@@ -41,7 +41,7 @@
 | Phase | Sessions | État |
 |---|---|---|
 | 0. Socle du dépôt | S01-S03 | ✅ ✅ ✅ |
-| 1. Base, authentification, API | S04-S07 | ✅ ✅ ✅ ⬜ |
+| 1. Base, authentification, API | S04-S07 | ✅ ✅ ✅ ✅ |
 | 2. Interface de base | S08-S09 | ⬜ ⬜ |
 | 3. Meta | S10-S12 | ⬜ ⬜ ⬜ |
 | 4. Agents et création de campagne | S13-S16 | ⬜ ⬜ ⬜ ⬜ |

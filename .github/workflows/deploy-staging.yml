@@ -1,6 +1,8 @@
 # Déploiement automatique en préproduction après une CI réussie sur main — docs/architecture/CI_CD.md §4.
-# Ordre fixe : migrations (projet Supabase de développement) → tâches Trigger.dev (staging) → Vercel → tests de fumée.
+# Ordre fixe : migrations (projet Supabase de développement) → tâches Trigger.dev → Vercel → tests de fumée.
 # Actif seulement si la variable de dépôt PUBEKA_PIPELINE_ENABLED vaut true.
+# Secrets et variables au niveau du dépôt (CI_CD §9.3) ; l'environnement GitHub `pubeka-staging`
+# sert à suivre les déploiements, les secrets du dépôt y restent lisibles.
 name: Déploiement préproduction
 
 on:
@@ -31,15 +33,34 @@ jobs:
       url: https://${{ vars.STAGING_APP_HOST }}
     env:
       SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
-      TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      VERCEL_TELEMETRY_DISABLED: '1'
+      # Adresses fixes de la préproduction (décision D-6) : application et site public.
       STAGING_APP_HOST: ${{ vars.STAGING_APP_HOST }}
+      STAGING_SITE_HOST: ${{ vars.STAGING_SITE_HOST || 'pubeka-staging-site.vercel.app' }}
     steps:
+      - name: Réglages présents (noms seulement, jamais les valeurs)
+        env:
+          HAS_SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+          HAS_SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD != '' }}
+          HAS_VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN != '' }}
+          HAS_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET != '' }}
+        run: |
+          missing=""
+          for name in SUPABASE_PROJECT_REF VERCEL_ORG_ID VERCEL_PROJECT_ID STAGING_APP_HOST STAGING_SITE_HOST; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          for name in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD VERCEL_TOKEN VERCEL_AUTOMATION_BYPASS_SECRET; do
+            flag="HAS_$name"
+            [ "${!flag}" = "true" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Réglages manquants (CI_CD §9.3) :$missing"
+            exit 1
+          fi
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.SHA }}
@@ -50,29 +71,67 @@ jobs:
           version: 2.118.0
 
       - name: 1. Migrations — aperçu
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
           supabase link --project-ref "$SUPABASE_PROJECT_REF"
           supabase db push --dry-run
       - name: 1. Migrations — application
-        run: supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase db push --yes
+      - name: 1. Migrations — état du projet de développement
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase migration list --linked
 
-      - name: 2. Tâches Trigger.dev (environnement staging)
-        run: pnpm --filter @pubeka/jobs exec trigger.dev deploy --env staging --external-id "$SHA"
+      # Trigger.dev arrive en S13 (jobs/trigger.config.ts). D'ici là, l'étape est sautée, sans erreur.
+      # Offre gratuite : la préproduction utilise l'environnement « prod » du projet Trigger.dev
+      # de préproduction (TRIGGER_PROJECT_REF), distinct du projet de production (CI_CD §4).
+      - name: 2. Tâches Trigger.dev — sautées (jobs/trigger.config.ts absent avant S13)
+        if: hashFiles('jobs/trigger.config.ts') == ''
+        run: |
+          echo "::notice::Pas de jobs/trigger.config.ts (S13) : aucune tâche Trigger.dev à déployer."
+      - name: 2. Tâches Trigger.dev (projet de préproduction, environnement prod)
+        if: hashFiles('jobs/trigger.config.ts') != ''
+        env:
+          TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+          TRIGGER_PROJECT_REF: ${{ vars.TRIGGER_PROJECT_REF }}
+        run: >-
+          pnpm --filter @pubeka/jobs exec trigger.dev deploy --env prod
+          --project-ref "$TRIGGER_PROJECT_REF" --external-id "$SHA"
 
+      # La CLI Vercel lit VERCEL_TOKEN dans l'environnement : jamais d'option --token (journaux).
       - name: 3. Vercel — construction (variables de l'environnement Preview)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          pnpm exec vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
-          pnpm exec vercel build --token="$VERCEL_TOKEN"
-      - name: 3. Vercel — mise en ligne et adresse fixe de préproduction
+          pnpm exec vercel pull --yes --environment=preview
+          pnpm exec vercel build
+      - name: 3. Vercel — mise en ligne et adresses fixes de préproduction
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          url="$(pnpm exec vercel deploy --prebuilt --token="$VERCEL_TOKEN")"
+          url="$(pnpm exec vercel deploy --prebuilt)"
           echo "Déploiement : $url"
-          pnpm exec vercel alias set "$url" "$STAGING_APP_HOST" --token="$VERCEL_TOKEN"
+          pnpm exec vercel alias set "$url" "$STAGING_APP_HOST"
+          pnpm exec vercel alias set "$url" "$STAGING_SITE_HOST"
 
       - name: 4. Tests de fumée sur la préproduction
         env:
-          BASE_URL: https://${{ vars.STAGING_APP_HOST }}
+          BASE_URL: https://${{ env.STAGING_APP_HOST }}
+          SITE_BASE_URL: https://${{ env.STAGING_SITE_HOST }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
           pnpm --filter @pubeka/web exec playwright install --with-deps chromium
           pnpm e2e:smoke
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: fumee-preproduction
+          path: apps/web/test-results/smoke
+          if-no-files-found: ignore
+          retention-days: 14
