@@ -424,6 +424,7 @@ Pour ne pas relancer l'agent à chaque session. Un agent **chef de projet** fait
 Face à une erreur (CI rouge, test qui échoue, build cassé, conflit de fusion, comportement inattendu, document qui contredit le code), le chef de projet ne s'arrête pas et ne contourne pas : **il cherche la cause et la corrige.**
 
 1. **Lire l'erreur en entier** (journal de la CI, trace complète), puis reproduire en local.
+1 bis. **Une erreur qui vient d'un logiciel ou d'un service externe** (Supabase, Vercel, Trigger.dev, GitHub…) : lire d'abord sa **documentation officielle** sur ce point précis, appliquer ce qu'elle dit et citer le lien (CLAUDE.md §2). Jamais d'essais au hasard sur des permissions ou des réglages.
 2. **Trouver la cause racine** avec la compétence `superpowers:systematic-debugging` : une hypothèse à la fois, vérifiée par une commande ou un test, jamais une correction au hasard.
 3. **Écrire d'abord un test qui échoue** quand le problème est un défaut du code, puis corriger.
 4. **Corriger au bon endroit** :
