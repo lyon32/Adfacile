@@ -1,0 +1,5 @@
+-- 0005 — Migration vide de test de la préproduction (S07, CI_CD §4).
+-- Elle ne change rien à la base. Elle sert à prouver que `deploy-staging.yml` applique bien
+-- les nouvelles migrations sur le projet Supabase de développement : après le déploiement,
+-- la version 0005 apparaît dans `supabase_migrations.schema_migrations` (`supabase migration list`).
+-- Comme toute migration fusionnée, elle ne sera jamais modifiée ni supprimée (CI_CD §6.1).

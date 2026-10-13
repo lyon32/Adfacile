@@ -39,8 +39,8 @@
       ▼
  CI sur main ──► réussie ──► PRÉPRODUCTION automatique (deploy-staging.yml)
                               1. migrations → Supabase de développement
-                              2. tâches → Trigger.dev « staging »
-                              3. application → Vercel, adresse fixe de préproduction
+                              2. tâches → Trigger.dev, projet de préproduction (env. « prod »)
+                              3. application → Vercel, deux adresses fixes (application, site)
                               4. tests de fumée
       │
       ▼
@@ -65,10 +65,10 @@
 |---|---|---|---|---|---|
 | Déclenchement | `pnpm dev` | chaque PR et chaque push sur `main` | automatique, intégration Git de Vercel | après la CI réussie sur `main` | à la main |
 | Supabase | local (Docker) | local (Docker, dans la CI) | projet **développement** | projet **développement** | projet **production** |
-| Trigger.dev | `trigger.dev dev` | tâches dans le processus (`inline`) | aucune 🔶 | environnement **staging** (offre Hobby, §10) | environnement **prod** |
+| Trigger.dev | `trigger.dev dev` | tâches dans le processus (`inline`) | aucune 🔶 | projet **`pubeka-staging`**, environnement **prod** (offre gratuite, §4) | projet de production, environnement **prod** |
 | Services externes | faux (`PUBEKA_FAKE_PROVIDERS=all`) | faux | clés de **test** | clés de **test** (SasPay `sk_test_`) | clés de production |
-| Adresse | `app.localhost:5173` | — | adresse générée par Vercel | adresse fixe 🔶, ex. `staging-app.pubeka.com` | `app.pubeka.com`, `pubeka.com` |
-| Variables d'application | `.env.local` | valeurs publiques + secrets aléatoires | Vercel *Preview* | Vercel *Preview* + Trigger.dev *staging* | Vercel *Production* + Trigger.dev *prod* |
+| Adresse | `app.localhost:5173` | — | adresse générée par Vercel | ✅ D-6 : `pubeka-staging.vercel.app` (application), `pubeka-staging-site.vercel.app` (site) | `app.pubeka.com`, `pubeka.com` |
+| Variables d'application | `.env.local` | valeurs publiques + secrets aléatoires | Vercel *Preview* | Vercel *Preview* + Trigger.dev projet `pubeka-staging` *prod* | Vercel *Production* + Trigger.dev projet de production *prod* |
 
 Les secrets **de l'application** vivent dans Vercel et Trigger.dev (ENV_SETUP §2). GitHub ne garde que les jetons qui servent à **déployer** (§9.3).
 
@@ -116,10 +116,19 @@ Un échec envoie l'e-mail de notification habituel de GitHub. Les trois contrôl
 
 | Étape | Commande | En cas d'échec |
 |---|---|---|
-| 1. Migrations | `supabase link`, `supabase db push --dry-run` (affiché), puis `supabase db push` | arrêt : ni tâches ni application déployées |
-| 2. Tâches | `trigger.dev deploy --env staging --external-id <sha>` | arrêt |
-| 3. Application | `vercel pull --environment=preview`, `vercel build`, `vercel deploy --prebuilt`, puis `vercel alias set` vers l'adresse fixe | arrêt |
-| 4. Tests de fumée | `pnpm e2e:smoke` contre l'adresse fixe, avec l'en-tête de contournement de la protection Vercel (`VERCEL_AUTOMATION_BYPASS_SECRET`) | la préproduction est marquée en échec ; **ce commit ne peut pas partir en production** |
+| 0. Réglages | vérifie que chaque secret et chaque variable du §9.3 existe (noms seulement, jamais les valeurs) | arrêt, avec la liste des noms manquants |
+| 1. Migrations | `supabase link`, `supabase db push --dry-run` (affiché), `supabase db push --yes`, puis `supabase migration list --linked` (état affiché) | arrêt : ni tâches ni application déployées |
+| 2. Tâches | `trigger.dev deploy --env prod --project-ref <TRIGGER_PROJECT_REF> --external-id <sha>` sur le projet Trigger.dev **de préproduction**. **Sautée** (avec une note, sans erreur) tant que `jobs/trigger.config.ts` n'existe pas (S13) | arrêt |
+| 3. Application | `vercel pull --environment=preview`, `vercel build`, `vercel deploy --prebuilt`, puis **deux** `vercel alias set` : application (`STAGING_APP_HOST`) et site public (`STAGING_SITE_HOST`). La CLI lit `VERCEL_TOKEN` dans l'environnement (jamais d'option `--token`) | arrêt |
+| 4. Tests de fumée | `pnpm e2e:smoke` (`apps/web/e2e/smoke`) : page publique, écran de connexion, `/api/v1/public/maintenance`, à 390 et 1280 px, en lecture seule. Adresses : `BASE_URL` (application) et `SITE_BASE_URL` (site) ; en-tête `x-vercel-protection-bypass` (secret `VERCEL_AUTOMATION_BYPASS_SECRET`) envoyé **seulement** à ces deux adresses, jamais à un tiers ; pas de trace Playwright (elle contiendrait le secret) | la préproduction est marquée en échec ; **ce commit ne peut pas partir en production** |
+
+**Trigger.dev en offre gratuite** ✅ (décision du 13/10/2026) : l'offre gratuite n'a que les environnements *Dev* et *Prod* (pas de *staging*), avec 10 projets par organisation. La préproduction utilise donc un **deuxième projet**, `pubeka-staging` (variable `TRIGGER_PROJECT_REF`), dont l'environnement **prod** sert de préproduction ; le premier projet est réservé à la production. Passer à Hobby plus tard ne change que cette étape (`--env staging` sur le projet de production). `trigger.dev init` n'est **jamais** lancé : Trigger.dev est mis en place en S13 (LLD, `jobs/`, version 4.6.4).
+
+**Adresses fixes** ✅ (D-6) : pas de domaine, deux adresses Vercel : `pubeka-staging.vercel.app` (variable GitHub `STAGING_APP_HOST`) et `pubeka-staging-site.vercel.app` (variable `STAGING_SITE_HOST`, facultative : valeur par défaut dans le fichier ; l'adresse doit figurer dans `SITE_HOSTS` des variables *Preview* de Vercel).
+
+**Preuve de la migration** : `0005_preproduction_test.sql` est une migration **vide** (commentaires seulement) ; après un déploiement, l'étape « état du projet de développement » affiche `0005` dans les colonnes *local* et *remote*.
+
+Lancer les tests de fumée sur un poste : application démarrée (`pnpm dev`), puis `pnpm e2e:smoke` (adresses locales par défaut : `http://app.localhost:5173` et `http://localhost:5173`).
 
 **L'ordre est fixe** : base → tâches → application. Le nouveau code ne tourne jamais sur une base qui n'a pas encore ses migrations. L'inverse (ancien code sur une base déjà migrée) arrive pendant quelques minutes : c'est pour cela que les migrations doivent rester compatibles avec la version précédente (§6).
 
@@ -249,8 +258,9 @@ Les paramètres utilisés (`node-version-file`, `cache`, `run_install`, `version
 
 1. Projet relié au dépôt, **Root Directory** = `apps/web`.
 2. **Deployment Protection** activée pour les préversions et la préproduction ; créer le secret **Protection Bypass for Automation**.
-3. Domaine de la préproduction (ex. `staging-app.pubeka.com`) 🔶 : ajouter l'enregistrement DNS demandé par Vercel chez l'hébergeur du domaine.
-4. Variables *Preview* : projet Supabase de développement, Trigger.dev *staging*, clés de test. Variables *Production* : ENV_SETUP §1.
+3. Adresses de la préproduction ✅ (D-6) : pas de domaine, `pubeka-staging.vercel.app` et `pubeka-staging-site.vercel.app`, posées par `vercel alias set` à chaque déploiement (§4). Aucun DNS.
+4. Variables *Preview* : projet Supabase de développement, clés de test, `NEXT_PUBLIC_APP_ENV=preview`, `NEXT_PUBLIC_APP_URL` et `NEXT_PUBLIC_SITE_URL` sur les adresses ci-dessus, `SITE_HOSTS=pubeka-staging-site.vercel.app`, `PUBEKA_FAKE_PROVIDERS=all`, `PUBEKA_JOB_DISPATCH=inline` (jusqu'à S13). Variables *Production* : ENV_SETUP §1.
+5. `apps/web/vercel.json` coupe la publication automatique de `main` (§9.1, point 5) : la préproduction ne passe que par `deploy-staging.yml`.
 
 ### 9.3 Dans GitHub
 
@@ -258,13 +268,15 @@ Environnements, secrets et variables :
 
 | Environnement GitHub | Secrets | Variables |
 |---|---|---|
-| `pubeka-staging` | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` (développement), `TRIGGER_ACCESS_TOKEN`, `VERCEL_TOKEN`, `VERCEL_AUTOMATION_BYPASS_SECRET` | `SUPABASE_PROJECT_REF` (développement), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `STAGING_APP_HOST` |
+| `pubeka-staging` (**en place : au niveau du dépôt**, voir ci-dessous) | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` (développement), `TRIGGER_ACCESS_TOKEN`, `VERCEL_TOKEN`, `VERCEL_AUTOMATION_BYPASS_SECRET` | `SUPABASE_PROJECT_REF` (développement), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `STAGING_APP_HOST`, `TRIGGER_PROJECT_REF` (projet Trigger.dev de préproduction), `STAGING_SITE_HOST` (facultative) |
 | `pubeka-production` | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` (production), `TRIGGER_ACCESS_TOKEN`, `VERCEL_TOKEN` | `SUPABASE_PROJECT_REF` (production), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` |
 | `pubeka-agents-bench` | `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `MISTRAL_API_KEY` | — |
 | `pubeka-provider-tests` | `FAL_KEY`, `HF_KEY`, `SASPAY_TEST_SECRET_KEY`, `META_TEST_ACCESS_TOKEN` | `META_TEST_AD_ACCOUNT_ID` |
 | (dépôt) | — | `PUBEKA_PIPELINE_ENABLED` = `true` **en dernier**, quand tout le reste est prêt |
 
 🧪 Le dépôt est **privé** et possède déjà deux environnements créés par Vercel (`Preview`, `Production`). Les environnements Pubeka ont des noms différents pour ne pas s'y mélanger. Si l'offre GitHub ne permet pas les environnements sur un dépôt privé, les mêmes secrets passent au niveau du dépôt, avec les préfixes `STAGING_` et `PROD_`.
+
+**État au 13/10/2026 (S07)** : les secrets et variables de la préproduction sont **au niveau du dépôt**, sans préfixe. `deploy-staging.yml` garde `environment: pubeka-staging` : un secret du dépôt reste lisible par une tâche qui déclare un environnement (l'environnement ne fait qu'**ajouter** ses propres secrets), et l'environnement sert à suivre les déploiements et leur adresse. Conséquence : ces secrets sont aussi lisibles par `release.yml`. Avant S36, ranger les secrets de production à part (environnement `pubeka-production`, ou préfixe `PROD_`) pour qu'un jeton de production ne soit jamais lisible par la préproduction (§8).
 
 ### 9.4 Protection de la branche `main` 🧪
 
@@ -287,7 +299,7 @@ Installer l'application Renovate sur le dépôt, avec un `renovate.json` à la r
 |---|---|---|
 | Minutes GitHub Actions | ~45 min par exécution complète de la CI ; ~70 min par semaine pour les contrôles planifiés | 🧪 Dépôt privé : quota mensuel inclus selon l'offre (2 000 min/mois sur l'offre gratuite d'après la grille publique de GitHub, à confirmer dans **Settings → Billing**). Au-delà : facturé à la minute |
 | Leviers si le quota est dépassé | 1. tâches lourdes uniquement quand la PR est prête (déjà en place) · 2. annulation des exécutions remplacées (déjà en place) · 3. parcours seulement si `apps/web` ou `packages/core` changent · 4. cache de l'image Docker de Supabase | à activer dans l'ordre |
-| Trigger.dev | **Offre gratuite en ce moment (12/10/2026).** **Hobby (10 $/mois) obligatoire pour l'environnement `staging`** (documentation Trigger.dev), à prendre au plus tard à S13 | ARCHITECTURE prévoyait gratuit puis Hobby : le passage à Hobby arrive dès la mise en place de la préproduction |
+| Trigger.dev | **Offre gratuite en ce moment (12/10/2026).** L'environnement `staging` demande Hobby (10 $/mois) ; la préproduction utilise à la place un deuxième projet gratuit (§4). Hobby reste nécessaire au-delà de 10 tâches planifiées (ARCHITECTURE §2), au plus tard à S13 | — |
 | Contrôle des vrais fournisseurs | une génération Standard par fournisseur et par semaine | compte dans le budget de 15 $/mois par fournisseur |
 | Banc des agents | seulement quand un prompt change | coût selon les modèles testés |
 | Vercel, Supabase | inchangés (ARCHITECTURE §17) | la préproduction utilise le projet Supabase de développement existant |
