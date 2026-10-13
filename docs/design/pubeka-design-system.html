@@ -30,14 +30,23 @@ a{color:inherit}
 .ref{font-size:12px;color:var(--ard7)}
 
 /* Couverture */
-.cover{background:var(--o);color:var(--craie);border-radius:var(--r-app);padding:clamp(28px,6vw,72px);display:grid;grid-template-columns:auto 1fr;gap:clamp(24px,5vw,64px);align-items:center;position:relative;overflow:hidden}
+.cover{background:var(--o);color:var(--craie);border-radius:var(--r-app);padding:clamp(28px,6vw,72px);display:grid;grid-template-columns:1fr;gap:clamp(24px,5vw,48px);align-items:start;position:relative;overflow:hidden}
 .cover::after{content:"";position:absolute;left:-10%;right:-10%;bottom:-62%;height:80%;border-radius:50%;background:radial-gradient(closest-side,rgba(198,244,50,.28),rgba(198,244,50,0));pointer-events:none}
 .cover h1{margin:0;font-size:clamp(40px,7vw,84px);font-weight:800;letter-spacing:-.04em;line-height:1}
 .cover h1 em{font-style:normal;color:var(--lime)}
 .cover p{color:var(--ard);margin:16px 0 0;max-width:520px}
-.logo{display:grid;gap:6px;width:clamp(96px,14vw,168px)}
-.logo span{display:flex;align-items:center;justify-content:center;aspect-ratio:160/72;border-radius:10px;font-weight:800;font-size:clamp(20px,3vw,34px);letter-spacing:-.02em}
-.logo .t{background:var(--g);color:var(--craie)}.logo .b{background:var(--lime);color:var(--o)}
+.logo{display:block;width:clamp(180px,30vw,340px);height:auto}
+
+/* Logo */
+.logos{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.lt{border-radius:var(--r-lg);min-height:150px;display:flex;flex-direction:column;justify-content:space-between;gap:16px;padding:20px;border:1px solid rgba(10,10,10,.08)}
+.lt img{display:block;width:100%;max-width:240px;height:auto;margin:auto}
+.lt small{font-size:12px}
+.sizes{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end}
+.sizes div{display:flex;flex-direction:column;gap:8px;align-items:flex-start;font-size:12px;color:var(--ard7)}
+.donts{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.donts .lt{min-height:130px;background:var(--o);color:var(--craie)}
+.donts small{color:#FF8A73;font-weight:700}
 
 /* Tokens */
 .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
@@ -163,7 +172,7 @@ td small{display:block;font-size:12px;color:var(--muted)}
 .hero::before{content:"";position:absolute;left:50%;transform:translateX(-50%);bottom:-340px;width:1400px;height:520px;border-radius:50%;border-top:1px solid rgba(198,244,50,.55);background:radial-gradient(60% 55% at 50% 0%,rgba(198,244,50,.22),rgba(10,10,10,0) 70%)}
 .hnav{position:absolute;top:18px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--ard)}
 .hnav .lk{display:flex;gap:22px}
-.hnav .logo{width:auto;display:flex;gap:4px}.hnav .logo span{aspect-ratio:auto;padding:2px 8px;font-size:14px;border-radius:5px}
+.hnav .logo{width:auto;height:24px}
 .announce{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--g600);border-radius:999px;padding:4px 12px 4px 4px;font-size:12px;color:var(--ard);margin-top:36px}
 .announce b{background:var(--lime);color:var(--o);padding:2px 8px;border-radius:999px;font-size:11px}
 .hero h2{text-wrap:balance;overflow-wrap:break-word;font-size:clamp(34px,8vw,96px);font-weight:800;letter-spacing:-.045em;line-height:.98;margin:22px auto 0;max-width:980px}
@@ -222,7 +231,7 @@ td small{display:block;font-size:12px;color:var(--muted)}
 .phones{display:flex;gap:28px;flex-wrap:wrap;justify-content:center}
 .phone{width:340px;max-width:100%;background:var(--craie);border:8px solid var(--o);border-radius:44px;padding:18px 14px;display:flex;flex-direction:column;gap:12px;color:var(--o)}
 .ph-top{display:flex;justify-content:space-between;align-items:center;font-size:13px}
-.ph-top .logo{width:auto;display:flex;gap:3px}.ph-top .logo span{aspect-ratio:auto;padding:1px 6px;font-size:12px;border-radius:4px}
+.ph-top .logo{width:auto;height:22px}
 .ph-h{font-size:22px;font-weight:700;letter-spacing:-.02em;margin:4px 0 0}
 .ph-h + small{color:var(--ard7);font-size:12px}
 .btn-full{width:100%;justify-content:center;height:52px;border-radius:14px}
@@ -279,11 +288,43 @@ td small{display:block;font-size:12px;color:var(--muted)}
 
 <!-- COUVERTURE -->
 <section class="cover" aria-label="Couverture">
-  <div class="logo" aria-label="Logo Pubeka"><span class="t">EAS</span><span class="b">ADS</span></div>
+  <img class="logo" src="logo/pubeka-logo-sombre.svg" alt="Pubeka">
   <div>
-    <div class="eyebrow" style="color:var(--ard)">Design system · v2 · octobre 2026</div>
-    <h1>Même palette.<br><em>Des écrans</em> de vrai produit.</h1>
-    <p>La v1 posait le logo, les couleurs et Sora. La v2 ajoute ce qui manquait pour construire l'application : nuances de surfaces, composants, gabarits d'écrans, version mobile, thème clair.</p>
+    <div class="eyebrow" style="color:var(--ard)">Design system · v3 · octobre 2026</div>
+    <h1>Même palette.<br><em>Un nouveau</em> logo.</h1>
+    <p>La v3 remplace l'ancien logo à deux blocs par le logo Pubeka : un « p » Lime dont la queue part vers la gauche, et un soulignement séparé sous le nom. Couleurs, Sora, composants et écrans ne changent pas.</p>
+  </div>
+</section>
+
+<!-- 00 LOGO -->
+<section>
+  <div class="doc-h"><span class="eyebrow">Logo</span><h2>Un « p » qui parle, un trait qui souligne</h2><p>La queue du « p » part vers la gauche ; le soulignement commence à sa droite et file sous tout le nom. Les deux ne se touchent jamais : cet espace fait partie du logo. Fichiers dans <code>docs/design/logo/</code>, lettres vectorisées (Sora ExtraBold).</p></div>
+  <div class="logos">
+    <div class="lt" style="background:#0A0A0A;color:#8A9088"><img src="logo/pubeka-logo-sombre.svg" alt="Pubeka, version principale sur fond sombre"><small>Principal · sur Obsidienne ou Graphite · <code>pubeka-logo-sombre.svg</code></small></div>
+    <div class="lt" style="background:#F4F4EF;color:#5C625B"><img src="logo/pubeka-logo-clair.svg" alt="Pubeka, version sur fond clair"><small>Sur fond clair · tracé en Lime foncé · <code>pubeka-logo-clair.svg</code></small></div>
+    <div class="lt" style="background:#C6F432;color:#0A0A0A"><img src="logo/pubeka-logo-noir.svg" alt="Pubeka, version noire"><small>Sur Lime, impression une couleur · <code>pubeka-logo-noir.svg</code></small></div>
+    <div class="lt" style="background:#1F2421;color:#8A9088"><img src="logo/pubeka-logo-craie.svg" alt="Pubeka, version craie"><small>Monochrome clair (photo, vidéo) · <code>pubeka-logo-craie.svg</code></small></div>
+    <div class="lt" style="background:#0A0A0A;color:#8A9088"><img src="logo/pubeka-symbole.svg" alt="Symbole Pubeka" style="max-width:72px"><small>Symbole seul, sans le soulignement · <code>pubeka-symbole.svg</code></small></div>
+    <div class="lt" style="background:#E8E8E1;color:#5C625B"><img src="logo/pubeka-icone.svg" alt="Icône d'application Pubeka" style="max-width:96px"><small>Icône d'application et favicon · <code>pubeka-icone.svg</code></small></div>
+  </div>
+  <div class="box" style="margin-top:12px">
+    <span class="lab">Tailles minimales et zone de protection</span>
+    <div class="sizes">
+      <div><img src="logo/pubeka-logo-clair.svg" alt="" style="height:40px">Site, documents · 40 px de haut</div>
+      <div><img src="logo/pubeka-logo-clair.svg" alt="" style="height:24px">Barre de navigation · 24 px</div>
+      <div><img src="logo/pubeka-logo-clair.svg" alt="" style="height:18px">Minimum · 18 px (≈ 66 px de large)</div>
+      <div><img src="logo/pubeka-icone.svg" alt="" style="height:32px">En dessous : l'icône · 32 px</div>
+    </div>
+    <p style="margin:16px 0 0;color:var(--ard7);font-size:13px">Autour du logo, garde un espace vide au moins égal à la hauteur de la boucle du « p » divisée par deux.</p>
+  </div>
+  <div class="box" style="margin-top:12px">
+    <span class="lab">À éviter</span>
+    <div class="donts">
+      <div class="lt"><img src="logo/pubeka-logo-sombre.svg" alt="" style="transform:rotate(-10deg)"><small>Tourner le logo</small></div>
+      <div class="lt"><img src="logo/pubeka-logo-sombre.svg" alt="" style="transform:scaleX(1.4);max-width:170px"><small>Le déformer</small></div>
+      <div class="lt" style="background:#C6F432"><img src="logo/pubeka-logo-sombre.svg" alt=""><small style="color:#0A0A0A">Lime sur Lime (prendre la version noire)</small></div>
+      <div class="lt"><img src="logo/pubeka-logo-sombre.svg" alt="" style="filter:hue-rotate(160deg)"><small>Changer les couleurs</small></div>
+    </div>
   </div>
 </section>
 
@@ -355,7 +396,7 @@ td small{display:block;font-size:12px;color:var(--muted)}
       <div class="kpi"><span class="k">Dépensé ce mois</span><div class="v num">45 000 <div class="spark" aria-hidden="true"><i style="height:30%"></i><i style="height:50%"></i><i style="height:40%"></i><i style="height:70%"></i><i style="height:55%"></i><i style="height:85%"></i><i class="on" style="height:100%"></i></div></div><span class="d num">FCFA · ≈ 74,30 $ · <b>+12 %</b> vs septembre</span></div>
     </div>
     <div class="box">
-      <span class="lab">Signature · le bloc empilé</span>
+      <span class="lab">Carte de proposition · deux étages</span>
       <div class="stack">
         <div class="top">
           <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--ard)">Proposition 1 · par l'IA</span><button class="edit" type="button">Modifier</button></div>
@@ -463,7 +504,7 @@ td small{display:block;font-size:12px;color:var(--muted)}
   <div class="doc-h"><span class="eyebrow">Gabarit · site public</span><h2>Page d'accueil</h2><p>L'action du hero n'est pas « S'inscrire » : c'est le champ où l'on colle le lien de son site. La promesse de Pubeka se démontre dès la première seconde.</p><span class="ref">Références 01 Manila · 02 One Task · 06 Nicepay · 07 Guardbase · 08 Saasify</span></div>
   <div class="mk">
     <div class="hero">
-      <div class="hnav"><div class="logo" aria-label="Pubeka"><span class="t">EAS</span><span class="b">ADS</span></div><div class="lk"><span>Fonctionnement</span><span>Tarifs</span><span>Aide</span></div><span style="color:var(--craie)">Se connecter</span></div>
+      <div class="hnav"><img class="logo" src="logo/pubeka-logo-sombre.svg" alt="Pubeka"><div class="lk"><span>Fonctionnement</span><span>Tarifs</span><span>Aide</span></div><span style="color:var(--craie)">Se connecter</span></div>
       <div class="announce"><b>Nouveau</b>Les visuels générés par l'IA arrivent</div>
       <h2>Tes pubs en ligne,<br><em>prêtes</em> en quelques clics.</h2>
       <p>Colle le lien de ton site. Pubeka écrit la campagne, crée le visuel et la publie sur la plateforme de ton choix. Tu valides, c'est tout.</p>
@@ -513,7 +554,7 @@ td small{display:block;font-size:12px;color:var(--muted)}
   <div class="doc-h"><span class="eyebrow">Gabarit · mobile</span><h2>Sur téléphone</h2><p>Cartes empilées, une action principale pleine largeur, barre d'onglets en bas. C'est la vue la plus utilisée : elle se conçoit en premier.</p><span class="ref">Référence 14 Testora</span></div>
   <div class="phones">
     <div class="phone">
-      <div class="ph-top"><div class="logo" aria-label="Pubeka"><span class="t">EAS</span><span class="b">ADS</span></div><svg class="ico" style="stroke:var(--o)"><use href="#i-bell"/></svg></div>
+      <div class="ph-top"><img class="logo" src="logo/pubeka-logo-clair.svg" alt="Pubeka"><svg class="ico" style="stroke:var(--o)"><use href="#i-bell"/></svg></div>
       <div><div class="ph-h">Bonjour Awa</div><small>Vendredi 10 octobre</small></div>
       <button class="btn btn-p btn-full" type="button">Nouvelle campagne</button>
       <div class="tiles">

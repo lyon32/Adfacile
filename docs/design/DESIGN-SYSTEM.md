@@ -1,6 +1,6 @@
-# Pubeka — Design system v2
+# Pubeka — Design system v3
 
-> v1 : [pubeka-direction-artistique-v1.html](pubeka-direction-artistique-v1.html) (logo, palette, typo Sora, tokens).
+> v3 (12/10/2026) : **nouveau logo Pubeka** (§6), fichiers dans [logo/](logo/). Palette, typographie, composants et écrans inchangés. La page de la v1 (ancien logo à deux blocs) est retirée : son contenu utile est dans la démonstration ci-dessous.
 > v2 : la v1 **sans changement de palette**, enrichie avec les règles de mise en page, les composants et les écrans tirés des références ([references/](references/)).
 > Démonstration visuelle : [pubeka-design-system.html](pubeka-design-system.html).
 
@@ -105,20 +105,38 @@ Montants : **FCFA en grand, dollars en petit dessous**. Séparateur de milliers 
 | Tableau | En-tête 12/600 capitales sur fond `craie-200`, lignes 56 px, séparateurs 1 px, état en pastille |
 | **Barre latérale** | Sélecteur de business en haut (nom + Page Facebook), sections titrées, élément actif = fond panneau + bordure ; carte « Passer à Pro » ; carte utilisateur en bas (réf. 11-13) |
 | **Bandeau budget** (PRD §10.1) | 3 informations max : Campagnes actives · Dépensé ce mois · Quota restant |
-| Carte proposition IA | Bloc empilé à deux étages, rappel du logo : étage Graphite = ce que l'IA propose, étage Lime = l'action « Publier » |
+| Carte proposition IA | Carte à deux étages : étage Graphite = ce que l'IA propose, étage Lime = l'action « Publier » |
 | Carte « Passer à Pro » | Fond Obsidienne, texte Craie, bouton Lime (réf. 13) |
 | État vide | Phrase qui dit quoi faire + bouton. « Aucune campagne. Colle le lien de ton site pour en créer une. » |
 | Notification | Fond Obsidienne, texte Craie, icône d'état, disparaît après 5 s |
 
 ---
 
-## 6. Signature Pubeka : le bloc empilé
+## 6. Logo et signature
 
-Le logo empile deux blocs : **EAS** (Graphite) sur **ADS** (Lime). On réutilise cette forme, et seulement elle, comme élément mémorable :
-- la **carte de proposition de campagne** : étage du haut = la proposition de l'IA, étage du bas en Lime = « Publier » ;
-- les **cartes chiffres importantes** : chiffre en haut, action en bas ;
-- l'**icône d'application** (v1).
+### 6.1 Le logo
+Le « p » Lime est une boucle dont la queue descend et part vers la gauche, avec un bout légèrement relevé. Le **soulignement** Lime est un élément séparé : il commence à droite de cette queue et file sous tout le nom. **Le « p » et le soulignement ne se touchent jamais** : l'espace entre les deux doit rester visible dans toutes les reproductions. Les lettres « ubeka » sont en Sora ExtraBold, **vectorisées** : les fichiers s'affichent pareil partout, même sans la police.
 
+| Fichier ([logo/](logo/)) | Usage |
+|---|---|
+| `pubeka-logo-sombre.svg` | **Principal**. « p » et soulignement Lime, lettres Craie. Sur Obsidienne ou Graphite |
+| `pubeka-logo-clair.svg` | Sur fond clair (Craie, blanc). Tracé **Lime foncé**, lettres Obsidienne (la Lime est invisible sur fond clair) |
+| `pubeka-logo-noir.svg` | Tout Obsidienne. Sur fond Lime, impression une couleur |
+| `pubeka-logo-craie.svg` | Tout Craie. Sur photo ou vidéo sombre |
+| `pubeka-symbole.svg` | Le « p » seul (boucle et queue), Lime, **sans le soulignement**. Quand le nom est déjà écrit à côté |
+| `pubeka-icone.svg` | Icône d'application, favicon, photo de profil : « p » Lime sur carré Obsidienne arrondi (rayon 22 %) |
+
+**Tailles** : 40 px de haut sur le site et les documents ; 24 px dans une barre de navigation ; **18 px minimum** (≈ 66 px de large). En dessous, utiliser l'icône (32 px minimum).
+**Zone de protection** : un espace vide autour du logo au moins égal à la moitié de la hauteur de la boucle du « p ».
+**Interdit** : relier le « p » au soulignement, tourner, déformer, changer les couleurs, ajouter une ombre, un dégradé ou un contour, mettre la version sombre sur fond Lime (prendre la version noire), recomposer les lettres dans une autre police.
+
+### 6.2 La signature dans l'interface
+Le **trait Lime qui souligne** est l'élément mémorable. On le réutilise, et seulement lui :
+- l'**élément actif** de la navigation et des onglets : souligné par un trait Lime à bouts arrondis (sur sombre) ou Lime foncé (sur clair) ;
+- le **mot mis en avant** d'un titre marketing peut être souligné de la même façon, au lieu d'être coloré ;
+- l'**animation d'ouverture** ([loader/](loader/)) : le « p » se dessine, puis le soulignement file sous le nom pendant que « ubeka » apparaît (3 s, aucune animation si `prefers-reduced-motion`).
+
+La **carte de proposition** garde ses deux étages (proposition en haut, « Publier » en Lime en bas) : c'est un composant, plus un rappel du logo.
 Tout le reste est sobre : bordures fines, beaucoup d'espace, pas de décoration.
 
 ---
@@ -199,3 +217,4 @@ APPLICATION (bureau)                               APPLICATION (mobile)
 1. **Application en thème clair par défaut**, thème sombre en option (les références d'application sont claires ; la v1 était entièrement sombre).
 2. **Deux couleurs d'état** ajoutées (attention, erreur), uniquement pour les statuts.
 3. **`ardoise-700`** pour le texte secondaire en thème clair (contraste).
+4. **Logo sur fond clair en Lime foncé** (`#8DB01C`) : couleur déjà dans la palette, mais contraste faible (≈ 2,3:1 sur Craie). Si le logo doit être plus lisible sur fond clair, utiliser la version noire.
