@@ -44,12 +44,16 @@ export function smokeTargets(env: Env): SmokeTargets {
  * En-têtes à ajouter aux requêtes vers nos propres adresses. `x-vercel-set-bypass-cookie`
  * demande à Vercel un cookie, pour que les requêtes suivantes du navigateur passent aussi.
  */
-export function bypassHeaders(targets: SmokeTargets): Record<string, string> {
+export function bypassHeaders(
+  targets: SmokeTargets,
+  { setCookie = true }: { setCookie?: boolean } = {},
+): Record<string, string> {
   if (targets.bypassSecret === undefined) return {};
-  return {
-    'x-vercel-protection-bypass': targets.bypassSecret,
-    'x-vercel-set-bypass-cookie': 'true',
-  };
+  // Avec `x-vercel-set-bypass-cookie`, Vercel répond d'abord par sa propre redirection 307
+  // pour poser le cookie : une requête qui vérifie NOTRE code de redirection ne le demande pas.
+  return setCookie
+    ? { 'x-vercel-protection-bypass': targets.bypassSecret, 'x-vercel-set-bypass-cookie': 'true' }
+    : { 'x-vercel-protection-bypass': targets.bypassSecret };
 }
 
 /**

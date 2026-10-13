@@ -10,7 +10,10 @@ test.describe('TR-DSP-01 · la préproduction répond', () => {
     request,
   }) => {
     const root = await request.get(`${targets.siteUrl}/`, {
-      headers: { ...bypassHeaders(targets), 'accept-language': 'fr-FR,fr;q=0.9' },
+      headers: {
+        ...bypassHeaders(targets, { setCookie: false }),
+        'accept-language': 'fr-FR,fr;q=0.9',
+      },
       maxRedirects: 0,
     });
     expect(root.status()).toBe(308);
