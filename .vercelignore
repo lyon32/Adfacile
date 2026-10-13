@@ -1,10 +1,14 @@
-# Vercel ne sert que le frontend (Vite). Sans ce fichier, la CLI enverrait
-# aussi le backend, dont backend/.env et ses secrets.
+# Fichiers jamais envoyés à Vercel par la CLI (`vercel deploy --prebuilt`, CI_CD §4) :
+# secrets locaux et ancien code AdFacile (retiré en S12).
 backend/
 .env
 .env.*
 **/.env
 **/.env.*
+# Les modèles sans valeur restent : Next.js les inclut dans les fichiers des fonctions,
+# et la mise en ligne échoue s'ils manquent (« .vercelignore excludes 1 file the
+# prebuilt functions need », erreur de la CLI Vercel 60.1.1).
+!**/.env.example
 .playwright-mcp/
 .tools/
 .claude/
