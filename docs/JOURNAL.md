@@ -18,6 +18,40 @@
 
 ## Sessions terminées
 
+### S07 · Préproduction en ligne — ✅ 2026-10-13
+- **PR** : #24 (fusionnée en squash, commit c68f567)
+- **Fait** : chaque fusion dans `main` est mise en ligne en préproduction, automatiquement :
+  - migrations appliquées sur `pubeka-dev` ;
+  - étape Trigger.dev sautée tant que `jobs/` n'existe pas ;
+  - construction Vercel ;
+  - deux adresses fixes : `pubeka-staging.vercel.app` (application) et `pubeka-staging-site.vercel.app` (site) ;
+  - tests de fumée. `apps/web/vercel.json` coupe la mise en ligne automatique de `main` par Vercel.
+- **Preuves** :
+  - déploiement manuel 38438206070 : tout est vert, 6/6 tests de fumée, migration `0005` présente sur `pubeka-dev` ;
+  - déploiement **déclenché par la fusion** 38439376305 (`workflow_run` sur c68f567) : 6/6 ;
+  - « CI terminée » verte.
+- **Problèmes et cause** (toutes les solutions viennent de la documentation officielle ; règle ajoutée par #25) :
+  - jeton Supabase : format, puis permissions. `link` a besoin de Project Settings, API Keys, API Key Secrets et Data API Config en lecture, plus Connection Pooling pour passer en IPv4, car les runners GitHub n'ont pas d'IPv6 ;
+  - une panne 502 passagère de Supabase ;
+  - `VERCEL_TOKEN` : collé avec un retour à la ligne, puis enregistré vide, puis limité au projet au lieu de l'équipe ;
+  - `.vercelignore` d'AdFacile qui excluait `apps/web/.env.example` ;
+  - secret de contournement erroné ;
+  - `ADMIN_PATH` : la commande donnée par le chef de projet produisait `-` et `_`, refusés par `env.ts` ;
+  - `TOKEN_ENCRYPTION_KEYS` et `TOKEN_ENCRYPTION_ACTIVE_KEY_ID` abîmées au collage ; corrigées avec `vercel env update` en lisant l'entrée standard ;
+  - test de la racine qui lisait la redirection 307 de Vercel (cookie de contournement) au lieu de notre 308.
+- **Décisions prises** :
+  - D-6 : adresses Vercel, pas de domaine ;
+  - Trigger.dev en offre gratuite : un 2ᵉ projet `pubeka-staging`, dont l'environnement prod sert de préproduction ; `proj_wnjyspfoeknisnyzygkj` est réservé à la production ;
+  - nouveau projet Vercel `pubeka` (l'ancien `adsfacile` est à débrancher) ;
+  - secrets au niveau du dépôt GitHub ;
+  - `PUBEKA_PIPELINE_ENABLED=true` activée par le chef de projet.
+- **Remarqué hors périmètre** :
+  - `release.yml` : `trigger.dev deploy` sans `--project-ref`, `--token` passé à Vercel, secrets de production à séparer avant S36 ;
+  - `e2e:ci` et `e2e:smoke:prod` n'existent dans aucun paquet : la tâche « Parcours critiques » est verte sans rien tester tant que P1 n'existe pas ;
+  - `actionlint` n'est pas lancé en CI ;
+  - les identifiants Google et Apple restent en attente (👤).
+
+
 ### S06 · Espaces de travail et équipe — ✅ 2026-10-13
 - **PR** : #20 (espaces, membres, transfert) et #21 (invitations, e-mail d'invitation), fusionnées en squash. Le sous-agent a coupé la session lui-même (ROADMAP §1.2).
 - **Fait** : cas d'usage `core/workspaces` ; routes `/workspaces`, `members`, `invitations`, `invitations/accept` et `transfer-ownership` ; e-mail d'invitation en texte simple, FR et EN, par un faux fournisseur ou par Resend.
