@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:int": "vitest run --config vitest.int.config.mjs"
+    "test:int": "vitest run --config vitest.int.config.mjs",
+    "e2e:smoke": "playwright test --config e2e/smoke/playwright.config.ts"
   },
   "dependencies": {
     "@pubeka/contracts": "workspace:*",

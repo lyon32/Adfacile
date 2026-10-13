@@ -57,7 +57,8 @@
       "cache": false
     },
     "e2e:smoke": {
-      "cache": false
+      "cache": false,
+      "passThroughEnv": ["BASE_URL", "SITE_BASE_URL", "VERCEL_AUTOMATION_BYPASS_SECRET"]
     },
     "e2e:smoke:prod": {
       "cache": false
