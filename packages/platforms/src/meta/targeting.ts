@@ -110,10 +110,11 @@ export function buildTargeting(targeting: PublishTargeting): MetaTargeting {
   }
 
   // Intérêts et comportements vivent dans le même flexible_spec.
-  const interests = withId(targeting.interests);
   const behaviors = withId(targeting.behaviors);
   const spec: NonNullable<MetaTargeting['flexible_spec']>[number] = {};
-  if (interests.length > 0) spec.interests = interests;
+  // Comme AdFacile : des intérêts fournis mais sans identifiant donnent `interests: []` (envoyé tel quel) ;
+  // les comportements sans identifiant, eux, sont écartés pour ne pas faire échouer toute la campagne.
+  if ((targeting.interests?.length ?? 0) > 0) spec.interests = withId(targeting.interests);
   if (behaviors.length > 0) spec.behaviors = behaviors;
   if (Object.keys(spec).length > 0) result.flexible_spec = [spec];
 

@@ -23,3 +23,4 @@ export * from './meta/create-campaign';
 export * from './meta/meta-connector';
 export * from './fake/fake-meta-connector';
 export * from './contract/platform-connector.contract';
+export * from './meta/ssrf';

@@ -82,23 +82,32 @@ const pageSchema = z.looseObject({
   category: z.string().optional(),
 });
 
-/**
- * Pages du jeton. Le jeton de Page (`access_token`) n'est volontairement pas demandé : les publicités
- * partent avec le jeton de l'utilisateur, et ne pas lire un secret qu'on n'utilise pas réduit les fuites.
- */
-export async function getUserPages(
-  graph: GraphClient,
-  accessToken: string,
-): Promise<PlatformPage[]> {
+/** Page avec son jeton propre, lu comme AdFacile le lisait : il sert à chercher Instagram sur cette Page. */
+export interface MetaPage extends PlatformPage {
+  /** Jeton de la Page (secret : ne sort jamais du serveur, `listPages` du connecteur le retire). */
+  accessToken: string | null;
+}
+
+/** Le jeton de la Page s'il existe, sinon celui de l'utilisateur (repli d'AdFacile). */
+export function pageTokenOrUser(
+  page: Pick<MetaPage, 'accessToken'> | undefined,
+  userToken: string,
+): string {
+  return page?.accessToken ?? userToken;
+}
+
+/** Pages du jeton, avec leur jeton propre quand Meta le fournit. */
+export async function getUserPages(graph: GraphClient, accessToken: string): Promise<MetaPage[]> {
   try {
     const raw = await graph.get('me/accounts', {
-      fields: 'id,name,category,tasks',
+      fields: 'id,name,access_token,category,tasks',
       access_token: accessToken,
     });
     return (dataOf(pageSchema).parse(raw).data ?? []).map((p) => ({
       id: p.id,
       name: p.name ?? p.id,
       category: p.category ?? null,
+      accessToken: typeof p.access_token === 'string' ? p.access_token : null,
     }));
   } catch (error) {
     throw new MetaOperationError('Impossible de récupérer les pages Facebook', error);

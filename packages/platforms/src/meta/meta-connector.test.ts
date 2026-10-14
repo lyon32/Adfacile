@@ -28,6 +28,8 @@ function connecteur(
       appSecret: 'secret-de-test',
       now: NOW,
       fetch: graph.fetch,
+      allowedMediaHosts: ['cdn.test'],
+      xafPerUsd: 610,
       ...extra,
     }),
   };
@@ -90,6 +92,55 @@ describe('MetaConnector.authorizeUrl', () => {
   });
 });
 
+// Porté de backend/src/config/facebook.test.js : la partie qui relève du connecteur (version de la Graph API,
+// configuration incomplète). La validation de l'adresse de retour (chemin du callback, https) revient à S11.
+describe('MetaConnector — configuration', () => {
+  it('utilise la version de la Graph API configurée pour le dialogue OAuth et les appels', async () => {
+    const { graph, meta } = connecteur(() => ({ data: [] }), { graphVersion: 'v42.0' });
+    expect(new URL(meta.authorizeUrl('e', REDIRECT_URI)).pathname).toBe('/v42.0/dialog/oauth');
+    await meta.listPages(TOKEN);
+    expect(graph.calls).toHaveLength(1);
+  });
+
+  it('retombe sur une version par défaut en l’absence de configuration', () => {
+    expect(new URL(connecteur().meta.authorizeUrl('e', REDIRECT_URI)).pathname).toMatch(
+      /^\/v\d+\.\d+\/dialog\/oauth$/,
+    );
+  });
+
+  it.each([
+    ['appId', { appId: '' }],
+    ['appSecret', { appSecret: '' }],
+  ])('refuse de démarrer sans %s, en le nommant', (nom, extra) => {
+    expect(() => connecteur(undefined, extra)).toThrow(AppError);
+    try {
+      connecteur(undefined, extra);
+    } catch (error) {
+      expect(String((error as AppError).cause)).toContain(nom);
+    }
+  });
+
+  it('refuse de démarrer sans hôtes de médias ni taux de change (obligatoires)', () => {
+    expect(() => connecteur(undefined, { allowedMediaHosts: [] })).toThrow(AppError);
+    expect(() => connecteur(undefined, { xafPerUsd: 0 })).toThrow(AppError);
+    // @ts-expect-error les deux paramètres sont obligatoires
+    expect(() => new MetaConnector({ appId: APP_ID, appSecret: 's', now: NOW })).toThrow(AppError);
+  });
+
+  it('transmet les hôtes de médias à la création : un média hors liste est refusé', async () => {
+    const { meta } = connecteur(
+      (call) => (call.method === 'POST' ? { id: 'X' } : { timezone_name: 'UTC' }),
+      { allowedMediaHosts: ['stockage.pubeka.test'] },
+    );
+    await expect(
+      meta.createCampaign(TOKEN, {
+        ...CONTRACT_SPEC,
+        creative: { mediaType: 'image', mediaUrl: 'https://cdn.test/a.jpg', message: 'x' },
+      }),
+    ).rejects.toMatchObject({ code: 'validation_failed' });
+  });
+});
+
 describe('MetaConnector.exchangeCode', () => {
   it('échange le code puis le jeton court contre un jeton de 60 jours', async () => {
     const { graph, meta } = connecteur((call) =>
@@ -135,6 +186,12 @@ describe('MetaConnector — comptes et Pages', () => {
       pixelsCount: 1,
     });
     expect(await meta.listPages(TOKEN)).toEqual([{ id: 'P1', name: 'Page', category: null }]);
+    const avecJeton = connecteur((call) =>
+      call.path === 'me/accounts'
+        ? { data: [{ id: 'P1', name: 'Page', access_token: 'JETON-PAGE' }] }
+        : {},
+    );
+    expect(JSON.stringify(await avecJeton.meta.listPages(TOKEN))).not.toContain('JETON-PAGE');
   });
 
   it('jeton révoqué → meta_token_expired', async () => {
@@ -152,16 +209,33 @@ describe('MetaConnector.healthCheck (F1)', () => {
   const sante: GraphHandler = (call) => {
     if (call.path === 'me/adaccounts')
       return { data: [{ id: 'act_1', name: 'Lyon', account_status: 1 }] };
-    if (call.path === 'me/accounts') return { data: [{ id: 'P1', name: 'Page' }] };
+    if (call.path === 'me/accounts')
+      return { data: [{ id: 'P1', name: 'Page', access_token: 'JETON-PAGE' }] };
+    if (call.path === 'me/businesses') return { data: [{ id: 'B1' }] };
+    if (call.path === 'B1/owned_whatsapp_business_accounts') return { data: [{ id: 'WA' }] };
     if (call.path === 'act_1' && call.params.fields === 'funding_source')
       return { funding_source: '123' };
-    if (call.path === 'P1')
-      return { instagram_business_account: { id: 'IG' }, whatsapp_business_account: { id: 'WA' } };
+    if (call.path === 'P1') return { instagram_business_account: { id: 'IG' } };
     if (call.path.endsWith('adspixels')) return { data: [{ id: 'px' }] };
     if (call.path === 'me/permissions')
       return { data: META_SCOPES.map((permission) => ({ permission, status: 'granted' })) };
     return { data: [] };
   };
+
+  it('cherche Instagram avec le jeton de la Page et WhatsApp avec celui de l’utilisateur, comme AdFacile', async () => {
+    const { graph, meta } = connecteur(sante);
+    await meta.healthCheck(TOKEN, '1', 'P1');
+    expect(graph.find('GET', 'P1')[0]?.params.access_token).toBe('JETON-PAGE');
+    expect(graph.find('GET', 'me/businesses')[0]?.params.access_token).toBe('JETON');
+  });
+
+  it('retombe sur le jeton de l’utilisateur quand la Page n’a pas de jeton propre', async () => {
+    const { graph, meta } = connecteur((call) =>
+      call.path === 'me/accounts' ? { data: [{ id: 'P1', name: 'Page' }] } : sante(call),
+    );
+    await meta.healthCheck(TOKEN, '1', 'P1');
+    expect(graph.find('GET', 'P1')[0]?.params.access_token).toBe('JETON');
+  });
 
   it('rend tout au vert pour un compte complet, sans jeton dans le détail', async () => {
     const items = await connecteur(sante).meta.healthCheck(TOKEN, '1', 'P1');

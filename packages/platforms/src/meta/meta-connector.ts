@@ -5,6 +5,7 @@
 //                 https://developers.facebook.com/docs/facebook-login/guides/access-tokens/get-long-lived
 //                 https://developers.facebook.com/docs/marketing-api/insights
 //                 https://developers.facebook.com/docs/marketing-api/reference/adgroup (effective_status)
+import { AppError } from '@pubeka/contracts';
 import { z } from 'zod';
 import type {
   DailyStats,
@@ -23,14 +24,17 @@ import type {
 import {
   actId,
   getConnectedInstagramAccount,
-  getConnectedWhatsAppAccount,
+  getWhatsAppAccounts,
   getGrantedPermissions,
   getPixelsOverview,
   getUserPages,
+  pageTokenOrUser,
   listAdAccountsWithPixels,
 } from './accounts';
 import { deleteCampaignOnMeta, patchCampaign, updateCampaignStatus } from './campaign-actions';
 import { createFullCampaign } from './create-campaign';
+import { minDailyBudgetFcfa } from './currency';
+import { assertMediaHostsConfigured } from './ssrf';
 import { toAppError } from './errors';
 import { GraphClient, type FetchLike } from './graph';
 import type { UploadOptions } from './media-upload';
@@ -62,9 +66,18 @@ export interface MetaConnectorConfig {
   fetch?: FetchLike | undefined;
   /** L'heure (`ctx.now()`). */
   now: () => Date;
-  upload?: UploadOptions | undefined;
-  /** Taux FCFA pour 1 $ (messages de budget minimum). */
-  xafPerUsd?: number | undefined;
+  /**
+   * Hôtes des médias que le serveur peut télécharger (le stockage de Pubeka) : OBLIGATOIRE et non vide
+   * (anti-SSRF). Le connecteur refuse de démarrer sans elle.
+   */
+  allowedMediaHosts: readonly string[];
+  /** Attente des vidéos (tests). */
+  upload?: Omit<UploadOptions, 'allowedMediaHosts'> | undefined;
+  /**
+   * Taux FCFA pour 1 $ : OBLIGATOIRE, fourni par `core` (table des taux de `billing`). Aucun défaut silencieux,
+   * contrairement à `XAF_PER_USD` d'AdFacile qui retombait sur 610.
+   */
+  xafPerUsd: number;
   onStep?: ((name: string, detail?: { current: number; total: number }) => void) | undefined;
 }
 
@@ -167,6 +180,20 @@ export class MetaConnector implements PlatformConnector {
   private readonly graph: GraphClient;
 
   constructor(private readonly config: MetaConnectorConfig) {
+    // Porté de validateFacebookConfig (backend/src/config/facebook.js) : échouer tôt, avec ce qui manque, plutôt
+    // que d'envoyer à Meta une URL qu'il rejette (« Impossible de charger cette URL »). La validation de l'adresse de
+    // retour (chemin, https) relève de S11, qui possède la route de callback.
+    const missing = [
+      ...(config.appId ? [] : ['appId']),
+      ...(config.appSecret ? [] : ['appSecret']),
+    ];
+    if (missing.length > 0) {
+      throw new AppError('internal_error', {
+        cause: new Error(`Configuration Meta incomplète : ${missing.join(', ')} absent`),
+      });
+    }
+    assertMediaHostsConfigured(config.allowedMediaHosts);
+    minDailyBudgetFcfa(config.xafPerUsd);
     this.graph = new GraphClient({
       ...(config.fetch ? { fetch: config.fetch } : {}),
       ...(config.graphVersion ? { version: config.graphVersion } : {}),
@@ -233,7 +260,14 @@ export class MetaConnector implements PlatformConnector {
   }
 
   listPages(token: PlatformToken): Promise<PlatformPage[]> {
-    return this.run(() => getUserPages(this.graph, token.accessToken));
+    // Le jeton propre de la Page ne sort jamais du connecteur.
+    return this.run(async () =>
+      (await getUserPages(this.graph, token.accessToken)).map(({ id, name, category }) => ({
+        id,
+        name,
+        category,
+      })),
+    );
   }
 
   /** Bilan de santé (F1) : Pubeka détecte et guide, ne crée rien à la place du client. */
@@ -271,14 +305,21 @@ export class MetaConnector implements PlatformConnector {
 
       items.push({ key: 'page', status: pages.some((p) => p.id === pageId) ? 'ok' : 'missing' });
 
-      const instagram = await getConnectedInstagramAccount(this.graph, pageId, t);
+      // Comme AdFacile : Instagram se cherche avec le jeton de la Page quand il existe, sinon celui de l'utilisateur.
+      const page = pages.find((p) => p.id === pageId);
+      const instagram = await getConnectedInstagramAccount(
+        this.graph,
+        pageId,
+        pageTokenOrUser(page, t),
+      );
       items.push(
         instagram
           ? { key: 'instagram', status: 'ok', detail: { id: instagram.id } }
           : { key: 'instagram', status: 'missing' },
       );
 
-      const whatsapp = await getConnectedWhatsAppAccount(this.graph, pageId, t);
+      // WhatsApp est lié au Business Manager, pas à la Page : recherche avec le jeton de l'utilisateur (comme AdFacile).
+      const whatsapp = await getWhatsAppAccounts(this.graph, t);
       items.push(
         whatsapp
           ? { key: 'whatsapp', status: 'ok', detail: { id: whatsapp.id } }
@@ -317,9 +358,9 @@ export class MetaConnector implements PlatformConnector {
         {
           graph: this.graph,
           now: this.config.now,
-          ...(this.config.upload ? { upload: this.config.upload } : {}),
+          upload: { ...this.config.upload, allowedMediaHosts: this.config.allowedMediaHosts },
           ...(this.config.onStep ? { onStep: this.config.onStep } : {}),
-          ...(this.config.xafPerUsd === undefined ? {} : { xafPerUsd: this.config.xafPerUsd }),
+          xafPerUsd: this.config.xafPerUsd,
         },
         token.accessToken,
         spec,

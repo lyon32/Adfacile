@@ -10,12 +10,12 @@ import type { AppError } from '@pubeka/contracts';
 
 export interface ValidationOptions {
   /** Taux FCFA pour 1 $, pour exprimer le minimum de budget dans la monnaie de l'utilisateur. */
-  xafPerUsd?: number;
+  xafPerUsd: number;
 }
 
 export function validateCampaignData(
   data: PublishSpec,
-  options: ValidationOptions = {},
+  options: ValidationOptions,
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
@@ -81,7 +81,7 @@ export function validateCampaignData(
 }
 
 /** Même contrôle, qui lève `validation_failed` (avec une entrée par message) si la campagne est invalide. */
-export function assertValidCampaign(data: PublishSpec, options: ValidationOptions = {}): void {
+export function assertValidCampaign(data: PublishSpec, options: ValidationOptions): void {
   const { valid, errors } = validateCampaignData(data, options);
   if (!valid) {
     const error: AppError = toAppError(

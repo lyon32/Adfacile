@@ -21,6 +21,13 @@ describe('buildTargeting — données auparavant perdues', () => {
     expect(buildTargeting({ ...BASE, genders: ['autre', 3] })).not.toHaveProperty('genders');
   });
 
+  it("envoie `interests: []` quand aucun intérêt n'a d'identifiant, comme AdFacile", () => {
+    // Comportement d'origine rétabli : le champ part vide, il n'est pas retiré.
+    const r = buildTargeting({ ...BASE, interests: [{ name: 'Mode' }] });
+    expect(r.flexible_spec).toEqual([{ interests: [] }]);
+    expect(buildTargeting({ ...BASE, interests: [] }).flexible_spec).toBeUndefined();
+  });
+
   it('transmet les comportements aux côtés des intérêts', () => {
     const r = buildTargeting({
       ...BASE,

@@ -25,6 +25,8 @@ const PAGE: MetaPageContext = {
 };
 
 const NOW = () => new Date('2026-10-01T00:00:00Z');
+// Taux et hôtes de médias sont obligatoires : valeurs d'AdFacile (610 FCFA pour 1 $, médias sur cdn.test).
+const DEPS = { now: NOW, xafPerUsd: 610, upload: { allowedMediaHosts: ['cdn.test'] } };
 
 interface Setup {
   graph: FakeGraph;
@@ -76,8 +78,15 @@ function donnees({
   };
 }
 
+const patcher = (
+  graph: Parameters<typeof patchCampaign>[0],
+  token: string,
+  refs: Parameters<typeof patchCampaign>[2],
+  patch: Parameters<typeof patchCampaign>[3],
+) => patchCampaign(graph, token, refs, patch, 610);
+
 const lancer = (setup: Setup, spec: PublishSpec) =>
-  createFullCampaign({ graph: setup.graph.client(), now: NOW }, 'TOKEN', spec);
+  createFullCampaign({ graph: setup.graph.client(), ...DEPS }, 'TOKEN', spec);
 
 describe('createFullCampaign — budget', () => {
   it("place le budget quotidien sur l'ensemble de publicités", async () => {
@@ -143,6 +152,62 @@ describe('createFullCampaign — budget', () => {
   });
 });
 
+describe('createFullCampaign — configuration obligatoire', () => {
+  it('refuse sans liste d’hôtes de médias, avant tout appel à Meta (anti-SSRF)', async () => {
+    const s = preparer();
+    for (const allowedMediaHosts of [[], ['']]) {
+      await expect(
+        createFullCampaign(
+          { graph: s.graph.client(), now: NOW, xafPerUsd: 610, upload: { allowedMediaHosts } },
+          'T',
+          donnees(),
+        ),
+      ).rejects.toMatchObject({ code: 'internal_error' });
+    }
+    expect(s.graph.calls).toHaveLength(0);
+  });
+
+  it('refuse un taux de change absent ou invalide : aucun taux par défaut silencieux', async () => {
+    const s = preparer();
+    for (const xafPerUsd of [0, -1, Number.NaN]) {
+      await expect(
+        createFullCampaign(
+          { graph: s.graph.client(), now: NOW, xafPerUsd, upload: DEPS.upload },
+          'T',
+          donnees(),
+        ),
+      ).rejects.toMatchObject({ code: 'internal_error' });
+    }
+    expect(s.graph.calls).toHaveLength(0);
+  });
+
+  it('exprime le minimum de budget en FCFA au taux fourni', async () => {
+    const s = preparer();
+    const erreur = await createFullCampaign(
+      { ...DEPS, graph: s.graph.client(), xafPerUsd: 600 },
+      'T',
+      donnees({ dailyBudgetUsdCents: 10 }),
+    ).catch((e: unknown) => e);
+    expect(erreur).toMatchObject({ code: 'budget_too_low', opts: { meta: { minXaf: 600 } } });
+  });
+
+  it('un média hors des hôtes autorisés est refusé et la campagne déjà créée est annulée', async () => {
+    const s = preparer();
+    await expect(
+      lancer(
+        s,
+        donnees({
+          creative: { mediaType: 'image', mediaUrl: 'https://autre.test/a.jpg', message: 'x' },
+        }),
+      ),
+    ).rejects.toThrow(/téléversé/);
+    expect(s.graph.calls.filter((c) => c.method === 'DELETE').map((c) => c.path)).toEqual([
+      'adsets-id',
+      'campaigns-id',
+    ]);
+  });
+});
+
 describe('createFullCampaign — dates dans le fuseau du compte', () => {
   it('démarre au début du jour choisi dans le fuseau du compte', async () => {
     const s = preparer();
@@ -163,7 +228,7 @@ describe('createFullCampaign — résultat et enchaînement', () => {
     const s = preparer();
     const etapes: string[] = [];
     const refs = await createFullCampaign(
-      { graph: s.graph.client(), now: NOW, onStep: (n) => etapes.push(n) },
+      { graph: s.graph.client(), ...DEPS, onStep: (n) => etapes.push(n) },
       'TOKEN',
       donnees(),
     );
@@ -195,7 +260,7 @@ describe('createFullCampaign — résultat et enchaînement', () => {
       createFullCampaign(
         {
           graph: s.graph.client(),
-          now: NOW,
+          ...DEPS,
           onStep: () => {
             throw new Error('écran fermé');
           },
@@ -809,6 +874,19 @@ describe('deleteCampaignOnMeta — création publicitaire', () => {
 });
 
 describe('patchCampaign', () => {
+  it('exige le taux de change : un taux invalide lève une erreur', async () => {
+    const graph = new FakeGraph(() => ({}));
+    await expect(
+      patchCampaign(
+        graph.client(),
+        'j',
+        { campaignId: 'C1', adsetId: 'A1', adId: null, creativeId: null },
+        { dailyBudgetUsdCents: 5 },
+        0,
+      ),
+    ).rejects.toMatchObject({ code: 'internal_error' });
+  });
+
   const REFS = {
     campaignId: 'C1',
     adsetId: 'A1',
@@ -821,7 +899,7 @@ describe('patchCampaign', () => {
     const graph = new FakeGraph((call) =>
       call.method === 'GET' ? { timezone_name: 'Africa/Douala' } : { success: true },
     );
-    await patchCampaign(graph.client(), 'jeton', REFS, {
+    await patcher(graph.client(), 'jeton', REFS, {
       name: 'Nouveau',
       dailyBudgetUsdCents: 300,
       endDate: '2026-11-01',
@@ -837,13 +915,13 @@ describe('patchCampaign', () => {
   it('refuse un budget sous 1 $, une date illisible, et un ensemble introuvable', async () => {
     const graph = new FakeGraph(() => ({ timezone_name: 'UTC' }));
     await expect(
-      patchCampaign(graph.client(), 'j', REFS, { dailyBudgetUsdCents: 50 }),
+      patcher(graph.client(), 'j', REFS, { dailyBudgetUsdCents: 50 }),
     ).rejects.toMatchObject({ code: 'budget_too_low' });
-    await expect(patchCampaign(graph.client(), 'j', REFS, { endDate: 'demain' })).rejects.toThrow(
+    await expect(patcher(graph.client(), 'j', REFS, { endDate: 'demain' })).rejects.toThrow(
       /illisible/,
     );
     await expect(
-      patchCampaign(
+      patcher(
         graph.client(),
         'j',
         { campaignId: 'C1', adsetId: 'A1', adId: 'AD1', creativeId: null },
@@ -851,14 +929,14 @@ describe('patchCampaign', () => {
       ),
     ).rejects.toThrow(/compte publicitaire/);
     await expect(
-      patchCampaign(graph.client(), 'j', { ...REFS, adsetId: null }, { dailyBudgetUsdCents: 200 }),
+      patcher(graph.client(), 'j', { ...REFS, adsetId: null }, { dailyBudgetUsdCents: 200 }),
     ).rejects.toThrow(/ensemble de publicités/);
     expect(graph.calls.filter((c) => c.method === 'POST')).toHaveLength(0);
   });
 
   it("n'appelle rien quand il n'y a rien à modifier", async () => {
     const graph = new FakeGraph(() => ({}));
-    await patchCampaign(graph.client(), 'j', REFS, {});
+    await patcher(graph.client(), 'j', REFS, {});
     expect(graph.calls).toHaveLength(0);
   });
 });
