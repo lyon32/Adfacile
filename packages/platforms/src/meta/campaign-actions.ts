@@ -74,7 +74,7 @@ export async function patchCampaign(
   accessToken: string,
   refs: PlatformCampaignRefs,
   patch: PublishPatch,
-  xafPerUsd?: number,
+  xafPerUsd: number,
 ): Promise<void> {
   const auth = { access_token: accessToken };
 

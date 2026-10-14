@@ -38,6 +38,7 @@ import {
   type UploadOptions,
 } from './media-upload';
 import { buildMessageExtensions, firstFilled } from './messaging-destinations';
+import { assertMediaHostsConfigured } from './ssrf';
 import { buildTargeting } from './targeting';
 
 /** Fuseau retenu si Meta ne renvoie pas celui du compte. */
@@ -47,11 +48,15 @@ export interface CreateCampaignDeps {
   graph: GraphClient;
   /** L'instant présent (`ctx.now()`). */
   now: () => Date;
-  upload?: UploadOptions;
+  /** Hôtes de médias autorisés (obligatoire, anti-SSRF) et réglages d'attente des vidéos. */
+  upload: UploadOptions;
   /** Avancement pour l'écran (campagne, ensemble, medias, video, publicite). Ne doit jamais faire échouer la création. */
   onStep?: (name: string, detail?: { current: number; total: number }) => void;
-  /** Taux FCFA pour 1 $, pour exprimer le minimum de budget dans la monnaie de l'utilisateur. */
-  xafPerUsd?: number;
+  /**
+   * Taux FCFA pour 1 $ : OBLIGATOIRE, fourni par `core` (table des taux de `billing`). Aucun taux par défaut :
+   * il sert à exprimer en FCFA le minimum de budget dans les messages.
+   */
+  xafPerUsd: number;
 }
 
 const idSchema = z.looseObject({ id: z.string().optional() });
@@ -104,10 +109,10 @@ export function normalizeObjective(objective: string): string {
     : objective;
 }
 
-function assertBudget(cents: number | undefined, deps: CreateCampaignDeps): number {
+function assertBudget(cents: number | undefined, minXaf: number): number {
   if (cents === undefined || !Number.isInteger(cents) || cents < FB_MIN_DAILY_BUDGET_CENTS) {
     throw new AppError('budget_too_low', {
-      meta: { minUsdCents: FB_MIN_DAILY_BUDGET_CENTS, minXaf: minDailyBudgetFcfa(deps.xafPerUsd) },
+      meta: { minUsdCents: FB_MIN_DAILY_BUDGET_CENTS, minXaf },
     });
   }
   return cents;
@@ -136,6 +141,10 @@ export async function createFullCampaign(
     }
   };
 
+  // Configuration obligatoire, vérifiée avant tout appel : hôtes de médias (anti-SSRF) et taux de change.
+  assertMediaHostsConfigured(deps.upload.allowedMediaHosts);
+  const minXaf = minDailyBudgetFcfa(deps.xafPerUsd);
+
   const objective = normalizeObjective(spec.objective);
   const adAccountId = spec.adAccountId.startsWith('act_')
     ? spec.adAccountId
@@ -153,10 +162,10 @@ export async function createFullCampaign(
   }
   // L'utilisateur saisit des FCFA ; le compte publicitaire est en USD et Meta attend des centimes. Le
   // minimum est celui de Meta (1 $/jour, TR-PLA-10).
-  const dailyBudgetUsdCents = assertBudget(spec.dailyBudgetUsdCents, deps);
+  const dailyBudgetUsdCents = assertBudget(spec.dailyBudgetUsdCents, minXaf);
   const lifetime = spec.budgetType === 'lifetime' && Boolean(spec.endDate);
   const lifetimeBudgetUsdCents = lifetime
-    ? assertBudget(spec.lifetimeBudgetUsdCents ?? dailyBudgetUsdCents, deps)
+    ? assertBudget(spec.lifetimeBudgetUsdCents ?? dailyBudgetUsdCents, minXaf)
     : null;
   const mediaType = spec.creative.mediaType;
   const items = mediaItemsOf(spec);

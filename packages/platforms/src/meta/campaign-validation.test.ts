@@ -25,15 +25,23 @@ const BASE: PublishSpec = {
   creative: { message: 'Texte', headline: 'Titre', link: 'https://exemple.com' },
 };
 
-const erreurs = (data: PublishSpec): string => validateCampaignData(data).errors.join(' ');
+// Le taux de change est obligatoire : ces tests reprennent le cours d'AdFacile (610 FCFA pour 1 $).
+const OPT = { xafPerUsd: 610 };
+const valider = (data: PublishSpec, options: { xafPerUsd: number } = OPT) =>
+  validateCampaignData(data, options);
+const assertValide = (data: PublishSpec) => {
+  assertValidCampaign(data, OPT);
+};
+
+const erreurs = (data: PublishSpec): string => valider(data).errors.join(' ');
 
 describe('validation de campagne — règles auparavant absentes', () => {
   it('accepte la campagne minimale valide', () => {
-    expect(validateCampaignData(BASE)).toEqual({ valid: true, errors: [] });
+    expect(valider(BASE)).toEqual({ valid: true, errors: [] });
   });
 
   it('refuse un âge minimum supérieur au maximum', () => {
-    const r = validateCampaignData({
+    const r = valider({
       ...BASE,
       targeting: { ...BASE.targeting, ageMin: 60, ageMax: 20 },
     });
@@ -53,17 +61,19 @@ describe('validation de campagne — règles auparavant absentes', () => {
   });
 
   it('emploie le minimum de budget réellement appliqué, pas 1000 en dur (TR-PLA-10)', () => {
-    expect(erreurs({ ...BASE, dailyBudgetUsdCents: 99 })).toContain(String(minDailyBudgetFcfa()));
-    expect(validateCampaignData({ ...BASE, dailyBudgetUsdCents: 100 }).valid).toBe(true);
+    expect(erreurs({ ...BASE, dailyBudgetUsdCents: 99 })).toContain(
+      String(minDailyBudgetFcfa(610)),
+    );
+    expect(valider({ ...BASE, dailyBudgetUsdCents: 100 }).valid).toBe(true);
   });
 
   it('exprime le minimum de budget au taux fourni', () => {
-    const r = validateCampaignData({ ...BASE, dailyBudgetUsdCents: 1 }, { xafPerUsd: 600 });
+    const r = valider({ ...BASE, dailyBudgetUsdCents: 1 }, { xafPerUsd: 600 });
     expect(r.errors.join(' ')).toContain('600 FCFA');
   });
 
   it("n'exige pas de titre pour une publicité de messagerie", () => {
-    const r = validateCampaignData({
+    const r = valider({
       ...BASE,
       destinationType: 'MESSENGER',
       messagingDestinations: ['messenger'],
@@ -124,7 +134,7 @@ describe('validation de campagne — médias multiples', () => {
 describe('assertValidCampaign', () => {
   it('lève validation_failed avec une entrée par message', () => {
     try {
-      assertValidCampaign({ ...BASE, dailyBudgetUsdCents: 0 });
+      assertValide({ ...BASE, dailyBudgetUsdCents: 0 });
       expect.unreachable();
     } catch (err) {
       expect(err).toMatchObject({ code: 'validation_failed', status: 400 });
@@ -133,7 +143,7 @@ describe('assertValidCampaign', () => {
 
   it('ne lève rien pour une campagne valide', () => {
     expect(() => {
-      assertValidCampaign(BASE);
+      assertValide(BASE);
     }).not.toThrow();
   });
 });

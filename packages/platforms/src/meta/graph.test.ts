@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GraphClient } from './graph';
+import { DEFAULT_GRAPH_VERSION, GraphClient, MAX_DOWNLOAD_BYTES } from './graph';
 import { MetaGraphError } from './errors';
 import { failure, FakeGraph, file, GraphReply } from './fake-graph.test-helper';
 
@@ -86,5 +86,59 @@ describe('GraphClient', () => {
 
   it('utilise le fetch global quand aucun n’est fourni', () => {
     expect(new GraphClient().baseUrl).toBe('https://graph.facebook.com/v26.0');
+  });
+
+  // Porté de backend/src/config/facebook.test.js (« version de la Graph API »).
+  it('utilise la version configurée quand elle est définie', () => {
+    expect(new GraphClient({ version: 'v42.0' }).baseUrl).toBe('https://graph.facebook.com/v42.0');
+  });
+
+  it('retombe sur une version par défaut en l’absence de configuration', () => {
+    expect(DEFAULT_GRAPH_VERSION).toMatch(/^v\d+\.\d+$/);
+    expect(new GraphClient().baseUrl).toContain(DEFAULT_GRAPH_VERSION);
+  });
+
+  describe('download — garde-fous', () => {
+    it('ne suit aucune redirection (une redirection pourrait mener à une adresse interne)', async () => {
+      let init: RequestInit | undefined;
+      const client = new GraphClient({
+        fetch: (_url, i) => {
+          init = i;
+          return Promise.resolve(new Response('x'));
+        },
+      });
+      await client.download('https://cdn.test/a.png', 1000);
+      expect(init?.redirect).toBe('error');
+    });
+
+    it('refuse un fichier dont Content-Length dépasse la taille maximale', async () => {
+      const client = new GraphClient({
+        fetch: () => Promise.resolve(new Response('x', { headers: { 'content-length': '100' } })),
+      });
+      await expect(client.download('https://cdn.test/a.png', 1000, 10)).rejects.toThrow(
+        /trop volumineux/,
+      );
+    });
+
+    it('refuse un fichier qui dépasse la taille maximale en cours de lecture, même sans Content-Length', async () => {
+      const client = new GraphClient({
+        fetch: () => Promise.resolve(new Response('0123456789ABC')),
+      });
+      await expect(client.download('https://cdn.test/a.png', 1000, 10)).rejects.toThrow(
+        /trop volumineux/,
+      );
+      await expect(client.download('https://cdn.test/a.png', 1000, 13)).resolves.toBeDefined();
+    });
+
+    it('fixe la taille maximale par défaut à 50 Mo', () => {
+      expect(MAX_DOWNLOAD_BYTES).toBe(50 * 1024 * 1024);
+    });
+
+    it('accepte une réponse sans corps', async () => {
+      const client = new GraphClient({
+        fetch: () => Promise.resolve(new Response(null, { status: 200 })),
+      });
+      expect((await client.download('https://cdn.test/a.png', 1000)).bytes).toHaveLength(0);
+    });
   });
 });
