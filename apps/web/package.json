@@ -12,7 +12,7 @@
     "test:coverage": "vitest run --coverage",
     "test:int": "vitest run --config vitest.int.config.mjs",
     "e2e:smoke": "playwright test --config e2e/smoke/playwright.config.ts",
-    "e2e:ci": "next build && playwright test --config e2e/journeys/playwright.config.ts",
+    "e2e:ci": "node e2e/journeys/run-ci.mjs",
     "e2e:journeys": "playwright test --config e2e/journeys/playwright.config.ts"
   },
   "dependencies": {
