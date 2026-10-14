@@ -1,9 +1,12 @@
 // Formule de l'espace pour les Pages : limite (1 / 3 / 10) et début de la période en cours,
 // qui sert au verrouillage d'une Page (APPFLOW §6.2).
 import { unwrap, type ServiceClient } from '@pubeka/db';
+import type { PlanCode } from '../context';
 import { limitsFor, planLimits, subscriptionsOf } from '../workspaces/plan-limits';
 
 export interface PagePlan {
+  /** Formule dont les limites s'appliquent (Starter sans abonnement). */
+  plan: PlanCode;
   maxPages: number;
   /** Début de la période de l'abonnement le plus récent ; `null` sans abonnement. */
   periodStart: string | null;
@@ -12,7 +15,8 @@ export interface PagePlan {
 export async function pagePlanOf(svc: ServiceClient, workspaceId: string): Promise<PagePlan> {
   const sub = (await subscriptionsOf(svc, [workspaceId])).get(workspaceId);
   const limits = await planLimits(svc);
-  const maxPages = limitsFor(limits, sub?.limitsOf ?? 'starter').max_pages;
+  const plan = sub?.limitsOf ?? 'starter';
+  const maxPages = limitsFor(limits, plan).max_pages;
   const latest = unwrap<{ period_start: string } | null>(
     await svc
       .from('subscriptions')
@@ -22,5 +26,5 @@ export async function pagePlanOf(svc: ServiceClient, workspaceId: string): Promi
       .limit(1)
       .maybeSingle(),
   );
-  return { maxPages, periodStart: latest?.period_start ?? null };
+  return { plan, maxPages, periodStart: latest?.period_start ?? null };
 }

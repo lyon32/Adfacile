@@ -17,3 +17,6 @@ export * from './meta/health';
 export * from './meta/oauth-state';
 export * from './meta/redirect-uri';
 export * from './meta/view';
+export * from './meta/ad-accounts';
+export * from './meta/brand-kit';
+export * from './meta/pages';
