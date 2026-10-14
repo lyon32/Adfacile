@@ -2461,6 +2461,7 @@ export type Database = {
           retry_after_s: number;
         }[];
       };
+      record_meta_webhook: { Args: { p_event_id: string; p_events: Json }; Returns: number };
       record_webhook_event: { Args: { p_event_id: string; p_provider: string }; Returns: boolean };
       release_credits: { Args: { amount?: number; job: string }; Returns: number };
       reserve_credits: { Args: { job: string; needed: number; ws: string }; Returns: boolean };
