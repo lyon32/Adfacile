@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import type { Locale } from '@pubeka/i18n';
+import { ConnectionPanel, useMetaReadiness } from '../meta-connection/connection-panel';
+import type { ConnectNotice } from '../meta-connection/notice';
 import { SelectField } from '../settings/select-field';
 import type { CountryOption } from '../shell/countries';
 import { useUpdateMe } from '../shell/use-update-me';
@@ -208,6 +210,49 @@ function Actions({
   );
 }
 
+export interface OnboardingWorkspace {
+  id: string;
+  role: 'owner' | 'editor' | 'viewer';
+}
+
+/** Étape 4 : connexion Meta et bilan de santé. « Continuer » sauf si le compte publicitaire manque. */
+function MetaStep({
+  workspace,
+  notice,
+  onNext,
+}: {
+  workspace: OnboardingWorkspace;
+  notice: ConnectNotice | null;
+  onNext: () => void;
+}): ReactNode {
+  const t = useTranslations('onboarding');
+  const common = useTranslations('common');
+  const ready = useMetaReadiness(workspace.id);
+  return (
+    <div className="flex flex-col gap-5">
+      <ConnectionPanel
+        workspaceId={workspace.id}
+        isOwner={workspace.role === 'owner'}
+        variant="onboarding"
+        notice={notice}
+      />
+      <div className="flex flex-col gap-3 sm:flex-row-reverse">
+        <Button
+          type="button"
+          disabled={!ready.canContinue}
+          onClick={onNext}
+          className="w-full sm:w-auto"
+        >
+          {ready.hasWarnings ? t('meta.continue_anyway') : common('continue')}
+        </Button>
+        <Button type="button" variant="quiet" onClick={onNext} className="w-full sm:w-auto">
+          {common('later')}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function PlainStep({
   step,
   onNext,
@@ -224,11 +269,11 @@ function PlainStep({
         onNext();
       }}
     >
-      {step === 'essai' ? null : (
+      {step === 'marque' ? (
         <p className="border-line text-meta text-muted rounded-md border border-dashed px-4 py-3 font-semibold">
-          {step === 'meta' ? t('meta.pending') : t('brand.pending')}
+          {t('brand.pending')}
         </p>
-      )}
+      ) : null}
       <Actions
         pending={false}
         failed={false}
@@ -244,10 +289,15 @@ export function OnboardingFlow({
   step,
   countries,
   profile,
+  workspace,
+  notice,
 }: {
   step: Step;
   countries: readonly CountryOption[];
   profile: OnboardingProfile;
+  workspace: OnboardingWorkspace | null;
+  /** Retour de Facebook (`?meta=`), lu par la page serveur. */
+  notice: ConnectNotice | null;
 }): ReactNode {
   const t = useTranslations('onboarding');
   const router = useRouter();
@@ -270,6 +320,8 @@ export function OnboardingFlow({
           <CountryStep countries={countries} profile={profile} onSaved={goNext} />
         ) : step === 'langue' ? (
           <LanguageStep profile={profile} onSaved={goNext} />
+        ) : step === 'meta' && workspace !== null ? (
+          <MetaStep workspace={workspace} notice={notice} onNext={goNext} />
         ) : (
           <PlainStep step={step} onNext={goNext} />
         )}

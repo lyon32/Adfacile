@@ -111,9 +111,9 @@
       "cta": "Commencer"
     },
     "meta": {
-      "title": "Connecte ta Page Meta",
-      "body": "Pubeka publie tes pubs sur ta Page et ton compte publicitaire Meta. Cette connexion arrive très bientôt : tu peux continuer sans elle et la faire plus tard.",
-      "pending": "Connexion Meta : bientôt disponible"
+      "title": "Connecte ton compte Meta",
+      "body": "Pubeka publie tes pubs sur ta Page et ton compte publicitaire Meta. Tu peux aussi le faire plus tard.",
+      "continue_anyway": "Continuer quand même"
     },
     "brand": {
       "title": "Ton kit de marque",
@@ -127,7 +127,8 @@
     "nav": {
       "profile": "Profil",
       "team": "Équipe",
-      "notifications": "Notifications"
+      "notifications": "Notifications",
+      "meta_accounts": "Comptes Meta"
     },
     "saved": "Modifications enregistrées.",
     "save_failed": "Impossible d’enregistrer pour le moment. Réessaie dans quelques instants.",
@@ -205,6 +206,10 @@
         "weekly_summary": "Résumé du lundi",
         "optimizer_suggestion": "Suggestion de l’Optimiseur"
       }
+    },
+    "meta_accounts": {
+      "title": "Comptes Meta",
+      "body": "Ta connexion à Meta, ton compte publicitaire et la santé de ton compte."
     }
   },
   "auth": {
@@ -273,6 +278,210 @@
       "title": "Tu es toujours là ?",
       "body": "Tu vas être déconnecté dans {seconds} s pour ta sécurité.",
       "stay": "Rester connecté"
+    }
+  },
+  "meta": {
+    "connect": {
+      "eyebrow": "Meta",
+      "title": "Connecte ton compte Meta",
+      "body": "Une fenêtre Facebook s’ouvre : tu choisis ton portefeuille business, tes Pages et ton compte publicitaire.",
+      "can_title": "Pubeka pourra",
+      "can_1": "créer et suivre tes campagnes",
+      "can_2": "lire les résultats de tes pubs",
+      "can_3": "mettre une campagne en pause pour toi",
+      "never_title": "Pubeka ne fera jamais",
+      "never_1": "publier sans ton accord",
+      "never_2": "lire tes messages",
+      "never_3": "partager tes données avec d’autres",
+      "cta": "Connecter mon compte Meta",
+      "connecting": "Ouverture de Facebook…",
+      "retry": "Réessayer",
+      "only_owner": "Seul le propriétaire de l’espace peut connecter Meta.",
+      "connected_notice": "Ton compte Meta est connecté. Voici le bilan de santé de ton compte.",
+      "failed_title": "La connexion n’a pas abouti.",
+      "failed": {
+        "denied": "Sans accès à ton compte publicitaire, Pubeka ne peut pas publier. Réessaie et accepte les autorisations demandées.",
+        "state": "La demande de connexion a expiré ou a déjà servi. Relance la connexion.",
+        "forbidden": "Seul le propriétaire de l’espace peut connecter Meta. Demande-lui de le faire.",
+        "meta": "Meta n’a pas pu valider la connexion. Réessaie dans quelques instants."
+      },
+      "errors": {
+        "expired": "La connexion Meta a expiré. Reconnecte ton compte.",
+        "forbidden": "Seul le propriétaire de l’espace peut faire cela.",
+        "unavailable": "La connexion Meta n’est pas disponible pour le moment. Réessaie plus tard.",
+        "generic": "Impossible d’ouvrir Facebook pour le moment. Réessaie dans quelques instants."
+      }
+    },
+    "connection": {
+      "title": "Connexion Meta",
+      "body": "Le compte Facebook relié à cet espace.",
+      "loading": "Chargement de la connexion…",
+      "load_failed": "La connexion Meta n’a pas pu être chargée.",
+      "status": {
+        "ok": "Connecté",
+        "expiring": "Bientôt expirée",
+        "expired": "Expirée",
+        "revoked": "Autorisation retirée"
+      },
+      "type_user": "Compte Facebook",
+      "type_system": "Utilisateur système",
+      "expires_on": "expire le {date}",
+      "expired_on": "a expiré le {date}",
+      "expired_banner": "Ta connexion Meta a expiré : la publication est bloquée et les statistiques ne se mettent plus à jour. Reconnecte ton compte.",
+      "revoked_banner": "Tu as retiré l’autorisation de Pubeka dans Facebook. Tes campagnes déjà publiées restent actives chez Meta. Reconnecte ton compte pour les gérer.",
+      "reconnect": "Reconnecter",
+      "recheck": "Revérifier",
+      "rechecking": "Vérification…",
+      "disconnect": "Déconnecter",
+      "disconnect_title": "Déconnecter Meta ?",
+      "disconnect_body": "Pubeka n’aura plus accès à ton compte et tes Pages seront désactivées. Tes campagnes déjà publiées restent actives chez Meta. Tu peux aussi retirer l’autorisation dans les réglages de Facebook.",
+      "disconnect_confirm": "Déconnecter",
+      "only_owner": "Seul le propriétaire de l’espace gère la connexion Meta.",
+      "errors": {
+        "expired": "La connexion Meta a expiré. Reconnecte ton compte.",
+        "forbidden": "Seul le propriétaire de l’espace peut faire cela.",
+        "unavailable": "Meta n’est pas disponible pour le moment. Réessaie plus tard.",
+        "generic": "Meta ne répond pas. Réessaie dans quelques instants."
+      }
+    },
+    "ad_accounts": {
+      "title": "Compte publicitaire",
+      "body": "Le compte qui paie et diffuse tes pubs. Tu peux en changer à tout moment.",
+      "loading": "Chargement des comptes…",
+      "empty": "Aucun compte publicitaire trouvé. Le bilan de santé t’explique comment en créer un.",
+      "select_label": "Compte actif",
+      "select_placeholder": "Choisis un compte",
+      "payment_ok": "Moyen de paiement ajouté",
+      "payment_missing": "Aucun moyen de paiement sur ce compte",
+      "payment_unknown": "Moyen de paiement pas encore vérifié",
+      "error": "Impossible de changer de compte pour le moment.",
+      "only_owner": "Seul le propriétaire de l’espace choisit le compte publicitaire."
+    },
+    "health": {
+      "title": "Bilan de santé",
+      "never_checked": "Pas encore vérifié.",
+      "checked_at": "Vérifié le {date} (UTC)",
+      "running": "Vérification de ton compte…",
+      "how": "Comment faire",
+      "ignore": "Ignorer",
+      "ignored": "Ignoré pour l’instant",
+      "whatsapp_banner": "Lie un WhatsApp Business : c’est fortement recommandé, car beaucoup de clients te répondent par WhatsApp.",
+      "items": {
+        "business_portfolio": {
+          "label": "Portefeuille business",
+          "ok": "Portefeuille trouvé",
+          "ko": "Aucun portefeuille business détecté"
+        },
+        "ad_account": {
+          "label": "Compte publicitaire",
+          "ok": "Compte actif et utilisable",
+          "ko": "Aucun compte publicitaire utilisable : obligatoire"
+        },
+        "payment_method": {
+          "label": "Moyen de paiement Meta",
+          "ok": "Moyen de paiement ajouté",
+          "ko": "Aucun moyen de paiement sur le compte"
+        },
+        "page": {
+          "label": "Page Facebook",
+          "ok": "Page trouvée",
+          "ko": "Aucune Page trouvée"
+        },
+        "instagram": {
+          "label": "Instagram lié",
+          "ok": "Compte Instagram lié",
+          "ko": "Pas de compte Instagram lié (facultatif)"
+        },
+        "whatsapp": {
+          "label": "WhatsApp Business lié",
+          "ok": "WhatsApp Business lié",
+          "ko": "Pas de WhatsApp Business lié (fortement recommandé)"
+        },
+        "pixel": {
+          "label": "Pixel",
+          "ok": "Pixel installé",
+          "ko": "Pas de pixel (facultatif)"
+        },
+        "permissions": {
+          "label": "Autorisations",
+          "ok": "Toutes les autorisations sont accordées",
+          "ko": "Des autorisations manquent : reconnecte ton compte"
+        }
+      }
+    },
+    "guides": {
+      "business-portfolio": {
+        "title": "Créer un portefeuille business",
+        "intro": "Le portefeuille business regroupe tes Pages et tes comptes publicitaires chez Meta.",
+        "step_1": "Ouvre business.facebook.com et connecte-toi avec ton compte Facebook.",
+        "step_2": "Crée un portefeuille business avec le nom de ton activité.",
+        "step_3": "Ajoute ta Page et ton compte publicitaire dans ce portefeuille.",
+        "step_4": "Reviens ici et appuie sur « Revérifier ».",
+        "note": "Cette étape se fait sur Facebook : Pubeka ne crée rien à ta place."
+      },
+      "ad-account": {
+        "title": "Créer un compte publicitaire",
+        "intro": "Sans compte publicitaire, Pubeka ne peut pas publier. C’est le seul élément obligatoire.",
+        "step_1": "Ouvre le gestionnaire de publicités de Meta depuis ton portefeuille business.",
+        "step_2": "Crée un compte publicitaire : choisis ton pays, ton fuseau horaire et ta monnaie.",
+        "step_3": "Vérifie qu’il est actif (ni désactivé, ni impayé).",
+        "step_4": "Reviens ici et appuie sur « Revérifier ».",
+        "note": "Cette étape se fait sur Facebook : Pubeka ne crée rien à ta place."
+      },
+      "payment-method": {
+        "title": "Ajouter un moyen de paiement",
+        "intro": "Meta facture tes pubs sur ton compte publicitaire : sans moyen de paiement, elles ne sont pas diffusées.",
+        "step_1": "Dans le gestionnaire de publicités, ouvre « Paramètres de paiement ».",
+        "step_2": "Ajoute une carte bancaire ou des fonds prépayés.",
+        "step_3": "Pas de carte internationale ? Une carte virtuelle prépayée, comme celles de Keecash, peut convenir.",
+        "step_4": "Reviens ici et appuie sur « Revérifier ».",
+        "note": "Le paiement des pubs se fait chez Meta, en dollars. Pubeka ne prend jamais ta carte."
+      },
+      "facebook-page": {
+        "title": "Créer une Page Facebook",
+        "intro": "Tes pubs sont publiées au nom d’une Page Facebook.",
+        "step_1": "Sur Facebook, ouvre le menu « Pages » puis « Créer une Page ».",
+        "step_2": "Donne le nom de ton activité, choisis une catégorie et ajoute ton logo.",
+        "step_3": "Ajoute la Page à ton portefeuille business.",
+        "step_4": "Reviens ici et appuie sur « Revérifier ».",
+        "note": "Cette étape se fait sur Facebook : Pubeka ne crée rien à ta place."
+      },
+      "instagram": {
+        "title": "Lier Instagram",
+        "intro": "Facultatif : tes pubs peuvent aussi apparaître sur Instagram.",
+        "step_1": "Passe ton compte Instagram en compte professionnel.",
+        "step_2": "Dans les paramètres de ta Page Facebook, relie ce compte Instagram.",
+        "step_3": "Confirme la liaison dans la fenêtre Facebook.",
+        "step_4": "Reviens ici et appuie sur « Revérifier ».",
+        "note": "Instagram est facultatif : tu peux publier sans."
+      },
+      "whatsapp-business": {
+        "title": "Lier WhatsApp Business",
+        "intro": "Fortement recommandé : les clients te contactent d’un clic sur ta pub.",
+        "step_1": "Installe l’application WhatsApp Business et crée ton compte avec ton numéro.",
+        "step_2": "Dans ton portefeuille business, ajoute ton compte WhatsApp Business.",
+        "step_3": "Relie le numéro à ta Page Facebook.",
+        "step_4": "Reviens ici et appuie sur « Revérifier ».",
+        "note": "Pubeka ne lit jamais tes messages."
+      },
+      "pixel": {
+        "title": "Installer un pixel",
+        "intro": "Facultatif : le pixel mesure ce que font les visiteurs de ton site après avoir cliqué sur ta pub.",
+        "step_1": "Dans le gestionnaire d’événements de Meta, crée un pixel (ou un ensemble de données).",
+        "step_2": "Installe-le sur ton site : Shopify, WordPress et Wix ont chacun un champ prévu pour le code du pixel.",
+        "step_3": "Pour un site sur mesure, colle le code dans l’en-tête de chaque page.",
+        "step_4": "Reviens ici et appuie sur « Revérifier ».",
+        "note": "Sans pixel, Pubeka publie quand même."
+      },
+      "permissions": {
+        "title": "Accorder les autorisations",
+        "intro": "Pubeka a besoin de toutes les autorisations demandées pour créer et suivre tes campagnes.",
+        "step_1": "Appuie sur « Reconnecter ».",
+        "step_2": "Dans la fenêtre Facebook, garde toutes les autorisations activées.",
+        "step_3": "Si une autorisation manque encore, retire Pubeka dans les réglages de Facebook, puis reconnecte-toi.",
+        "step_4": "Reviens ici et appuie sur « Revérifier ».",
+        "note": "Pubeka ne demande que ce qui sert à créer et suivre tes campagnes."
+      }
     }
   }
 }

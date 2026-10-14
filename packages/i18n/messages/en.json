@@ -111,9 +111,9 @@
       "cta": "Start"
     },
     "meta": {
-      "title": "Connect your Meta Page",
-      "body": "Pubeka publishes your ads on your Page and your Meta ad account. This connection is coming very soon: you can continue without it and do it later.",
-      "pending": "Meta connection: coming soon"
+      "title": "Connect your Meta account",
+      "body": "Pubeka publishes your ads on your Page and your Meta ad account. You can also do this later.",
+      "continue_anyway": "Continue anyway"
     },
     "brand": {
       "title": "Your brand kit",
@@ -127,7 +127,8 @@
     "nav": {
       "profile": "Profile",
       "team": "Team",
-      "notifications": "Notifications"
+      "notifications": "Notifications",
+      "meta_accounts": "Meta accounts"
     },
     "saved": "Changes saved.",
     "save_failed": "We could not save right now. Try again in a moment.",
@@ -205,6 +206,10 @@
         "weekly_summary": "Monday summary",
         "optimizer_suggestion": "Optimizer suggestion"
       }
+    },
+    "meta_accounts": {
+      "title": "Meta accounts",
+      "body": "Your Meta connection, your ad account and the health of your account."
     }
   },
   "auth": {
@@ -273,6 +278,210 @@
       "title": "Are you still there?",
       "body": "You will be signed out in {seconds} s for your security.",
       "stay": "Stay signed in"
+    }
+  },
+  "meta": {
+    "connect": {
+      "eyebrow": "Meta",
+      "title": "Connect your Meta account",
+      "body": "A Facebook window opens: you choose your business portfolio, your Pages and your ad account.",
+      "can_title": "Pubeka will be able to",
+      "can_1": "create and track your campaigns",
+      "can_2": "read your ad results",
+      "can_3": "pause a campaign for you",
+      "never_title": "Pubeka will never",
+      "never_1": "publish without your approval",
+      "never_2": "read your messages",
+      "never_3": "share your data with others",
+      "cta": "Connect my Meta account",
+      "connecting": "Opening Facebook…",
+      "retry": "Try again",
+      "only_owner": "Only the workspace owner can connect Meta.",
+      "connected_notice": "Your Meta account is connected. Here is your account health check.",
+      "failed_title": "The connection did not go through.",
+      "failed": {
+        "denied": "Without access to your ad account, Pubeka cannot publish. Try again and accept the permissions requested.",
+        "state": "The connection request expired or was already used. Start the connection again.",
+        "forbidden": "Only the workspace owner can connect Meta. Ask them to do it.",
+        "meta": "Meta could not validate the connection. Try again in a few moments."
+      },
+      "errors": {
+        "expired": "The Meta connection has expired. Reconnect your account.",
+        "forbidden": "Only the workspace owner can do this.",
+        "unavailable": "The Meta connection is not available right now. Try again later.",
+        "generic": "Unable to open Facebook right now. Try again in a few moments."
+      }
+    },
+    "connection": {
+      "title": "Meta connection",
+      "body": "The Facebook account linked to this workspace.",
+      "loading": "Loading the connection…",
+      "load_failed": "The Meta connection could not be loaded.",
+      "status": {
+        "ok": "Connected",
+        "expiring": "Expiring soon",
+        "expired": "Expired",
+        "revoked": "Access removed"
+      },
+      "type_user": "Facebook account",
+      "type_system": "System user",
+      "expires_on": "expires on {date}",
+      "expired_on": "expired on {date}",
+      "expired_banner": "Your Meta connection has expired: publishing is blocked and statistics are no longer updated. Reconnect your account.",
+      "revoked_banner": "You removed Pubeka’s access in Facebook. Campaigns already published stay active at Meta. Reconnect your account to manage them.",
+      "reconnect": "Reconnect",
+      "recheck": "Check again",
+      "rechecking": "Checking…",
+      "disconnect": "Disconnect",
+      "disconnect_title": "Disconnect Meta?",
+      "disconnect_body": "Pubeka will no longer have access to your account and your Pages will be deactivated. Campaigns already published stay active at Meta. You can also remove access in Facebook’s settings.",
+      "disconnect_confirm": "Disconnect",
+      "only_owner": "Only the workspace owner manages the Meta connection.",
+      "errors": {
+        "expired": "The Meta connection has expired. Reconnect your account.",
+        "forbidden": "Only the workspace owner can do this.",
+        "unavailable": "Meta is not available right now. Try again later.",
+        "generic": "Meta is not responding. Try again in a few moments."
+      }
+    },
+    "ad_accounts": {
+      "title": "Ad account",
+      "body": "The account that pays for and runs your ads. You can change it at any time.",
+      "loading": "Loading accounts…",
+      "empty": "No ad account found. The health check explains how to create one.",
+      "select_label": "Active account",
+      "select_placeholder": "Choose an account",
+      "payment_ok": "Payment method added",
+      "payment_missing": "No payment method on this account",
+      "payment_unknown": "Payment method not checked yet",
+      "error": "Unable to change account right now.",
+      "only_owner": "Only the workspace owner chooses the ad account."
+    },
+    "health": {
+      "title": "Health check",
+      "never_checked": "Not checked yet.",
+      "checked_at": "Checked on {date} (UTC)",
+      "running": "Checking your account…",
+      "how": "How to fix",
+      "ignore": "Ignore",
+      "ignored": "Ignored for now",
+      "whatsapp_banner": "Link a WhatsApp Business account: it is strongly recommended, because many customers reply to you on WhatsApp.",
+      "items": {
+        "business_portfolio": {
+          "label": "Business portfolio",
+          "ok": "Portfolio found",
+          "ko": "No business portfolio detected"
+        },
+        "ad_account": {
+          "label": "Ad account",
+          "ok": "Account active and usable",
+          "ko": "No usable ad account: required"
+        },
+        "payment_method": {
+          "label": "Meta payment method",
+          "ok": "Payment method added",
+          "ko": "No payment method on the account"
+        },
+        "page": {
+          "label": "Facebook Page",
+          "ok": "Page found",
+          "ko": "No Page found"
+        },
+        "instagram": {
+          "label": "Instagram linked",
+          "ok": "Instagram account linked",
+          "ko": "No Instagram account linked (optional)"
+        },
+        "whatsapp": {
+          "label": "WhatsApp Business linked",
+          "ok": "WhatsApp Business linked",
+          "ko": "No WhatsApp Business linked (strongly recommended)"
+        },
+        "pixel": {
+          "label": "Pixel",
+          "ok": "Pixel installed",
+          "ko": "No pixel (optional)"
+        },
+        "permissions": {
+          "label": "Permissions",
+          "ok": "All permissions granted",
+          "ko": "Some permissions are missing: reconnect your account"
+        }
+      }
+    },
+    "guides": {
+      "business-portfolio": {
+        "title": "Create a business portfolio",
+        "intro": "The business portfolio groups your Pages and ad accounts at Meta.",
+        "step_1": "Open business.facebook.com and sign in with your Facebook account.",
+        "step_2": "Create a business portfolio named after your business.",
+        "step_3": "Add your Page and your ad account to this portfolio.",
+        "step_4": "Come back here and press “Check again”.",
+        "note": "This step happens on Facebook: Pubeka does not create anything for you."
+      },
+      "ad-account": {
+        "title": "Create an ad account",
+        "intro": "Without an ad account, Pubeka cannot publish. It is the only required item.",
+        "step_1": "Open Meta’s ads manager from your business portfolio.",
+        "step_2": "Create an ad account: choose your country, time zone and currency.",
+        "step_3": "Check that it is active (not disabled, not unpaid).",
+        "step_4": "Come back here and press “Check again”.",
+        "note": "This step happens on Facebook: Pubeka does not create anything for you."
+      },
+      "payment-method": {
+        "title": "Add a payment method",
+        "intro": "Meta bills your ads to your ad account: without a payment method, they do not run.",
+        "step_1": "In the ads manager, open “Payment settings”.",
+        "step_2": "Add a bank card or prepaid funds.",
+        "step_3": "No international card? A prepaid virtual card, such as those from Keecash, can work.",
+        "step_4": "Come back here and press “Check again”.",
+        "note": "Ads are paid at Meta, in dollars. Pubeka never takes your card."
+      },
+      "facebook-page": {
+        "title": "Create a Facebook Page",
+        "intro": "Your ads are published in the name of a Facebook Page.",
+        "step_1": "On Facebook, open the “Pages” menu then “Create a Page”.",
+        "step_2": "Enter your business name, pick a category and add your logo.",
+        "step_3": "Add the Page to your business portfolio.",
+        "step_4": "Come back here and press “Check again”.",
+        "note": "This step happens on Facebook: Pubeka does not create anything for you."
+      },
+      "instagram": {
+        "title": "Link Instagram",
+        "intro": "Optional: your ads can also appear on Instagram.",
+        "step_1": "Switch your Instagram account to a professional account.",
+        "step_2": "In your Facebook Page settings, link this Instagram account.",
+        "step_3": "Confirm the link in the Facebook window.",
+        "step_4": "Come back here and press “Check again”.",
+        "note": "Instagram is optional: you can publish without it."
+      },
+      "whatsapp-business": {
+        "title": "Link WhatsApp Business",
+        "intro": "Strongly recommended: customers contact you in one tap from your ad.",
+        "step_1": "Install the WhatsApp Business app and create your account with your number.",
+        "step_2": "In your business portfolio, add your WhatsApp Business account.",
+        "step_3": "Link the number to your Facebook Page.",
+        "step_4": "Come back here and press “Check again”.",
+        "note": "Pubeka never reads your messages."
+      },
+      "pixel": {
+        "title": "Install a pixel",
+        "intro": "Optional: the pixel measures what visitors do on your site after clicking your ad.",
+        "step_1": "In Meta’s events manager, create a pixel (or a dataset).",
+        "step_2": "Install it on your site: Shopify, WordPress and Wix each have a field for the pixel code.",
+        "step_3": "For a custom site, paste the code in the header of every page.",
+        "step_4": "Come back here and press “Check again”.",
+        "note": "Without a pixel, Pubeka still publishes."
+      },
+      "permissions": {
+        "title": "Grant the permissions",
+        "intro": "Pubeka needs all the permissions requested to create and track your campaigns.",
+        "step_1": "Press “Reconnect”.",
+        "step_2": "In the Facebook window, keep every permission turned on.",
+        "step_3": "If a permission is still missing, remove Pubeka in Facebook’s settings, then reconnect.",
+        "step_4": "Come back here and press “Check again”.",
+        "note": "Pubeka only asks for what is needed to create and track your campaigns."
+      }
     }
   }
 }

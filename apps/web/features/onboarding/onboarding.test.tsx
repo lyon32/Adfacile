@@ -24,6 +24,8 @@ function renderStep(step: (typeof STEPS)[number], locale: Locale = 'fr') {
           step={step}
           countries={COUNTRIES}
           profile={{ countryCode: null, city: null, currency: 'XAF', locale }}
+          workspace={{ id: '44444444-4444-4444-8444-444444444444', role: 'owner' }}
+          notice={null}
         />
       </QueryClientProvider>
     </NextIntlClientProvider>,
@@ -64,6 +66,11 @@ describe('écran de la première configuration', () => {
     renderStep('essai');
     expect(screen.queryByRole('button', { name: 'Plus tard' })).toBeNull();
     cleanup();
+    // Sans connexion Meta, la liste des connexions est vide.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(Response.json({ data: [] }))),
+    );
     renderStep('meta');
     fireEvent.click(screen.getByRole('button', { name: 'Plus tard' }));
     expect(router.push).toHaveBeenCalledWith('/bienvenue/marque');
