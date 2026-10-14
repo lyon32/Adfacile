@@ -2,6 +2,7 @@
 // production (LLD §3).
 export * from './builders';
 export * from './clock';
+export * from './db';
 export * from './env';
 export * from './factories/users';
 export * from './ids';
