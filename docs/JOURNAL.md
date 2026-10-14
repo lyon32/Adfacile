@@ -18,6 +18,13 @@
 
 ## Sessions terminées
 
+### S08 · Design system en composants — ✅ 2026-10-14
+- **PR** : #27
+- **Fait** : `packages/ui` : jetons du design system (copie exacte de §9, clair et sombre), Button, Field, Switch, Card, Dialog habillés ; Montant, Badge de statut, Carte de modèle ; loader « Saisie » (complet une fois par session, court après 300 ms) ; page de démonstration interne (Vite, port 5180).
+- **Preuves** : Playwright 14/14 (axe sans erreur clair/sombre à 390 et 1280 px, réduire les animations, TR-PRF-04) ; Vitest 14/14 ; captures dans `packages/ui/e2e/captures/`.
+- **Décisions prises** : démonstration dans `packages/ui` plutôt que dans `apps/web` ; tracé « ubeka » repris du logo SVG ; nouvelles dépendances `vite` 8.3.1, `@vitejs/plugin-react` 6.1.1, `@tailwindcss/vite` 4.3.3.
+- **Remarqué hors périmètre** : tracé « ubeka » cassé dans `docs/design/loader/` ; ENV_SETUP §4 à compléter avec les dépendances de la démonstration.
+
 ### S07 · Préproduction en ligne — ✅ 2026-10-13
 - **PR** : #24 (fusionnée en squash, commit c68f567)
 - **Fait** : chaque fusion dans `main` est mise en ligne en préproduction, automatiquement :
