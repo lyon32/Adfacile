@@ -1,12 +1,7 @@
-// Webhook Meta : signature (TR-SEC-04), jeton d'abonnement, événements reconnus, anti-rejeu.
+// Webhook Meta : signature (TR-SEC-04), jeton d'abonnement, événements reconnus.
 import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import {
-  extractStatusEvents,
-  hasStaleEntry,
-  MetaWebhookSchema,
-  WEBHOOK_TOLERANCE_MS,
-} from './events';
+import { extractStatusEvents, MetaWebhookSchema } from './events';
 import {
   safeEqualText,
   verifyMetaSignature,
@@ -145,31 +140,5 @@ describe('extractStatusEvents', () => {
       events: [],
       ignored: 0,
     });
-  });
-});
-
-describe('hasStaleEntry (anti-rejeu, ±5 min)', () => {
-  const now = new Date('2026-10-14T10:00:00Z');
-  const at = (offsetMs: number) =>
-    MetaWebhookSchema.parse({
-      object: 'ad_account',
-      entry: [{ id: '1', time: (now.getTime() + offsetMs) / 1000 }],
-    });
-
-  it('accepte jusqu’à 5 minutes d’écart, dans les deux sens', () => {
-    expect(hasStaleEntry(at(0), now)).toBe(false);
-    expect(hasStaleEntry(at(-WEBHOOK_TOLERANCE_MS), now)).toBe(false);
-    expect(hasStaleEntry(at(WEBHOOK_TOLERANCE_MS), now)).toBe(false);
-  });
-
-  it('refuse au-delà', () => {
-    expect(hasStaleEntry(at(-WEBHOOK_TOLERANCE_MS - 1000), now)).toBe(true);
-    expect(hasStaleEntry(at(WEBHOOK_TOLERANCE_MS + 1000), now)).toBe(true);
-  });
-
-  it('sans heure d’envoi, rien à contrôler', () => {
-    expect(
-      hasStaleEntry(MetaWebhookSchema.parse({ object: 'ad_account', entry: [{ id: '1' }] }), now),
-    ).toBe(false);
   });
 });

@@ -10,7 +10,6 @@ const Id = z.union([z.string(), z.number()]).transform(String);
 const Change = z.looseObject({ field: z.string(), value: z.unknown() });
 const Entry = z.looseObject({
   id: Id,
-  time: z.number().optional(),
   changes: z.array(Change).max(1000).optional(),
 });
 export const MetaWebhookSchema = z.looseObject({
@@ -76,15 +75,4 @@ export function extractStatusEvents(payload: MetaWebhookPayload): {
     }
   }
   return { events, ignored };
-}
-
-/** Anti-rejeu : une notification dont l'heure d'envoi s'écarte de plus de 5 minutes est refusée. */
-export const WEBHOOK_TOLERANCE_MS = 5 * 60 * 1000;
-
-export function hasStaleEntry(payload: MetaWebhookPayload, now: Date): boolean {
-  return payload.entry.some(
-    (entry) =>
-      entry.time !== undefined &&
-      Math.abs(now.getTime() - entry.time * 1000) > WEBHOOK_TOLERANCE_MS,
-  );
 }
