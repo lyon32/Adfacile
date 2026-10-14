@@ -46,3 +46,7 @@ next-env.d.ts
 coverage/
 playwright-report/
 test-results/
+
+# Générés par `next dev` (option agentRules), jamais versionnés
+apps/web/AGENTS.md
+apps/web/CLAUDE.md

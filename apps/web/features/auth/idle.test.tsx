@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen } from '@testing-library/react';
+import { renderIntl } from '../../test-support-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IDLE_LIMIT_MS, idlePhase, idleSignInPath } from './idle';
 import { IdleLogout } from './idle-logout';
@@ -49,7 +50,7 @@ describe('TR-SEC-13 : déconnexion après 10 minutes d’inactivité', () => {
   };
 
   it('avertit à 9 minutes avec un compte à rebours de 60 s', () => {
-    render(<IdleLogout locale="fr" />);
+    renderIntl(<IdleLogout />);
     advance(8 * 60_000 + 58_000);
     expect(screen.queryByRole('alertdialog')).toBeNull();
     advance(2000);
@@ -57,7 +58,7 @@ describe('TR-SEC-13 : déconnexion après 10 minutes d’inactivité', () => {
   });
 
   it('[Rester connecté] repousse la déconnexion', () => {
-    render(<IdleLogout locale="fr" />);
+    renderIntl(<IdleLogout />);
     advance(9 * 60_000 + 1000);
     fireEvent.click(screen.getByRole('button', { name: 'Rester connecté' }));
     expect(screen.queryByRole('alertdialog')).toBeNull();
@@ -66,7 +67,7 @@ describe('TR-SEC-13 : déconnexion après 10 minutes d’inactivité', () => {
   });
 
   it('une activité (clavier, clic) remet le compteur à zéro', () => {
-    render(<IdleLogout locale="fr" />);
+    renderIntl(<IdleLogout />);
     advance(8 * 60_000);
     fireEvent.keyDown(window, { key: 'a' });
     advance(8 * 60_000);
@@ -74,7 +75,7 @@ describe('TR-SEC-13 : déconnexion après 10 minutes d’inactivité', () => {
   });
 
   it('EC-AUTH-03 : à 10 minutes, ferme seulement la session puis renvoie à la connexion', async () => {
-    render(<IdleLogout locale="fr" />);
+    renderIntl(<IdleLogout />);
     advance(10 * 60_000 + 1000);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]).toEqual([
@@ -88,7 +89,7 @@ describe('TR-SEC-13 : déconnexion après 10 minutes d’inactivité', () => {
   });
 
   it('un autre onglet actif garde celui-ci ouvert', () => {
-    render(<IdleLogout locale="fr" />);
+    renderIntl(<IdleLogout />);
     advance(8 * 60_000);
     window.localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(Date.now()));
     advance(8 * 60_000);

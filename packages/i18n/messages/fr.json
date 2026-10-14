@@ -206,5 +206,73 @@
         "optimizer_suggestion": "Suggestion de l’Optimiseur"
       }
     }
+  },
+  "auth": {
+    "common": {
+      "or": "ou",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "google": "Continuer avec Google",
+      "apple": "Continuer avec Apple",
+      "sending": "Envoi…",
+      "captcha_wait": "Vérification anti-robot en cours…"
+    },
+    "sign_in": {
+      "title": "Connexion",
+      "submit": "Se connecter",
+      "forgot": "Mot de passe oublié ?",
+      "magic_link": "Recevoir un lien de connexion par e-mail",
+      "magic_link_sent": "Si un compte existe avec cet e-mail, un lien de connexion vient d’y être envoyé.",
+      "no_account": "Pas encore de compte ?",
+      "to_sign_up": "Créer un compte",
+      "idle_notice": "Tu as été déconnecté après 10 minutes sans activité. Reconnecte-toi pour reprendre."
+    },
+    "sign_up": {
+      "title": "Créer ton compte",
+      "password_hint": "8 caractères minimum.",
+      "terms": "J’accepte les conditions d’utilisation et la politique de confidentialité",
+      "terms_required": "Accepte les conditions pour continuer.",
+      "submit": "Créer mon compte",
+      "has_account": "Déjà un compte ?",
+      "to_sign_in": "Se connecter"
+    },
+    "check_email": {
+      "title": "Vérifie ta boîte mail",
+      "body": "Un lien de confirmation a été envoyé à {email}. Ouvre-le pour activer ton compte.",
+      "resend": "Renvoyer le lien",
+      "resend_in": "Renvoyer le lien dans {seconds} s",
+      "resent": "Lien renvoyé."
+    },
+    "forgot": {
+      "title": "Mot de passe oublié",
+      "body": "Indique ton e-mail : tu recevras un lien pour choisir un nouveau mot de passe (valable 1 heure).",
+      "submit": "Recevoir le lien",
+      "sent": "Si un compte existe avec cet e-mail, un lien de réinitialisation vient d’y être envoyé. Il est valable 1 heure.",
+      "back": "Retour à la connexion"
+    },
+    "new_password": {
+      "title": "Nouveau mot de passe",
+      "submit": "Enregistrer et me connecter"
+    },
+    "errors": {
+      "invalid_credentials": "E-mail ou mot de passe incorrect.",
+      "locked": "Trop d’essais. Réessaie dans 15 minutes ou réinitialise ton mot de passe.",
+      "email_not_confirmed": "Confirme d’abord ton e-mail : ouvre le lien reçu à l’inscription.",
+      "captcha_failed": "La vérification anti-robot a échoué. Réessaie.",
+      "email_taken": "Un compte existe déjà avec cet e-mail.",
+      "email_taken_link": "Se connecter",
+      "weak_password": "Ce mot de passe est trop faible ou déjà apparu dans une fuite de données. Choisis-en un autre.",
+      "password_too_short": "8 caractères minimum.",
+      "invalid_email": "Indique une adresse e-mail valide.",
+      "rate_limited": "Trop de demandes. Patiente une minute puis réessaie.",
+      "link_expired": "Ce lien a expiré.",
+      "link_expired_action": "Recevoir un nouveau lien",
+      "unavailable": "Connexion impossible pour le moment. Réessaie dans quelques instants."
+    },
+    "idle": {
+      "title": "Tu es toujours là ?",
+      "body": "Tu vas être déconnecté dans {seconds} s pour ta sécurité.",
+      "stay": "Rester connecté"
+    }
   }
 }

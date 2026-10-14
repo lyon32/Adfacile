@@ -38,7 +38,7 @@ export default async function ShellLayout({
       }}
     >
       <Opening />
-      <AppShell idle={<IdleLogout locale={me.ui_language} />} banner={<TopBanner />}>
+      <AppShell idle={<IdleLogout />} banner={<TopBanner />}>
         {children}
       </AppShell>
     </SessionProvider>

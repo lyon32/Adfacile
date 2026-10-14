@@ -1,16 +1,15 @@
 'use client';
 // Connexion : Google, Apple, e-mail + mot de passe, lien magique (APPFLOW §4.2).
+import { Button, Field } from '@pubeka/ui';
+import { useTranslations } from 'next-intl';
 import { useState, type SubmitEvent, type ReactNode } from 'react';
 import { safeNext } from '../../server/auth/safe-next';
-import { translator, type Locale } from './messages';
 import { OAuthButtons } from './oauth-buttons';
-import { OutcomeMessage } from './outcome-message';
+import { LINK_CLASS, OutcomeMessage } from './outcome-message';
 import { postAuth, type Outcome } from './post-auth';
 import { useTurnstile } from './use-turnstile';
-import styles from './auth.module.css';
 
 export interface SignInFormProps {
-  locale: Locale;
   captchaSiteKey: string | undefined;
   /** Chemin de retour après connexion (`?retour=`). */
   next: string;
@@ -19,7 +18,7 @@ export interface SignInFormProps {
 }
 
 export function SignInForm(props: SignInFormProps): ReactNode {
-  const t = translator(props.locale);
+  const t = useTranslations('auth');
   const { mountCaptcha, captchaToken, resetCaptcha } = useTurnstile(props.captchaSiteKey);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -61,71 +60,72 @@ export function SignInForm(props: SignInFormProps): ReactNode {
   return (
     <>
       {props.idleNotice && (
-        <p role="status" className={styles.alert}>
-          {t('auth.sign_in.idle_notice')}
+        <p
+          role="status"
+          className="border-line bg-bg rounded-md border px-3 py-2 text-sm font-semibold"
+        >
+          {t('sign_in.idle_notice')}
         </p>
       )}
-      <OAuthButtons t={t} />
+      <OAuthButtons />
       <form
-        className={styles.form}
+        className="flex flex-col gap-5"
         onSubmit={(e) => {
           void handleSubmit(e);
         }}
       >
-        <div className={styles.field}>
-          <label htmlFor="email">{t('auth.common.email')}</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-            }}
-          />
-        </div>
-        <div className={styles.field}>
-          <label htmlFor="password">{t('auth.common.password')}</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-            }}
-          />
-        </div>
-        <div ref={mountCaptcha} className={styles.captcha} />
-        <OutcomeMessage outcome={outcome} t={t} />
-        {magicSent && <p role="status">{t('auth.sign_in.magic_link_sent')}</p>}
-        <button type="submit" className={styles.primary} disabled={pending || !isReady}>
-          {pending ? t('auth.common.sending') : t('auth.sign_in.submit')}
-        </button>
-        {!isReady && <p className={styles.hint}>{t('auth.common.captcha_wait')}</p>}
-        <button
+        <Field
+          label={t('common.email')}
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+          }}
+        />
+        <Field
+          label={t('common.password')}
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+          }}
+        />
+        <div ref={mountCaptcha} className="empty:hidden" />
+        <OutcomeMessage outcome={outcome} />
+        {magicSent && (
+          <p role="status" className="text-sm font-semibold">
+            {t('sign_in.magic_link_sent')}
+          </p>
+        )}
+        <Button type="submit" disabled={pending || !isReady}>
+          {pending ? t('common.sending') : t('sign_in.submit')}
+        </Button>
+        {!isReady && <p className="text-meta text-muted">{t('common.captcha_wait')}</p>}
+        <Button
           type="button"
-          className={styles.secondary}
+          variant="quiet"
           disabled={pending || !isReady || email === ''}
           onClick={() => {
             void handleMagicLink();
           }}
         >
-          {t('auth.sign_in.magic_link')}
-        </button>
+          {t('sign_in.magic_link')}
+        </Button>
       </form>
-      <div className={styles.links}>
-        <a className={styles.link} href="/mot-de-passe-oublie">
-          {t('auth.sign_in.forgot')}
+      <div className="flex flex-col gap-1 text-[15px]">
+        <a className={LINK_CLASS} href="/mot-de-passe-oublie">
+          {t('sign_in.forgot')}
         </a>
-        <span>
-          {t('auth.sign_in.no_account')}{' '}
-          <a className={styles.link} href="/inscription">
-            {t('auth.sign_in.to_sign_up')}
+        <span className="text-muted">
+          {t('sign_in.no_account')}{' '}
+          <a className={LINK_CLASS} href="/inscription">
+            {t('sign_in.to_sign_up')}
           </a>
         </span>
       </div>

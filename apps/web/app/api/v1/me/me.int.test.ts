@@ -160,23 +160,14 @@ describeRoute('updateMe', {
         expect.objectContaining({ field: 'first_name', code: 'too_long' }),
       ]);
     },
-    'TR-PLT-04 : changer de pays recalcule le fuseau ; un pays inconnu est refusé (400)':
-      async () => {
-        const ok = await PATCH(
-          call('PATCH', awa.headers, { country_code: 'SN', currency_display: 'XOF' }),
-        );
-        expect(ok.status).toBe(200);
-        expect(await json(ok)).toMatchObject({
-          country_code: 'SN',
-          timezone: 'Africa/Dakar',
-          currency_display: 'XOF',
-        });
-        const unknown = await PATCH(call('PATCH', awa.headers, { country_code: 'ZZ' }));
-        expect(unknown.status).toBe(400);
-        expect((await json(unknown)).errors).toEqual([
-          expect.objectContaining({ field: 'country_code', code: 'unknown_country' }),
-        ]);
-      },
+    'TR-PLT-04 : changer de pays recalcule le fuseau ; un pays inconnu est refusé (400)': async () => {
+      const ok = await PATCH(call('PATCH', awa.headers, { country_code: 'SN', currency_display: 'XOF' }));
+      expect(ok.status).toBe(200);
+      expect(await json(ok)).toMatchObject({ country_code: 'SN', timezone: 'Africa/Dakar', currency_display: 'XOF' });
+      const unknown = await PATCH(call('PATCH', awa.headers, { country_code: 'ZZ' }));
+      expect(unknown.status).toBe(400);
+      expect((await json(unknown)).errors).toEqual([expect.objectContaining({ field: 'country_code', code: 'unknown_country' })]);
+    },
     '413 corps de plus de 1 Mo': async () => {
       const res = await PATCH(call('PATCH', awa.headers, { city: 'a'.repeat(1024 * 1024) }));
       expect(res.status).toBe(413);

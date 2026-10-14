@@ -1,23 +1,23 @@
 'use client';
 // Inscription (APPFLOW §4.1) : Google, Apple, ou e-mail + mot de passe avec conditions
 // obligatoires ; puis « Vérifie ta boîte mail » avec [Renvoyer le lien] actif après 60 s.
+import { Button, Field } from '@pubeka/ui';
+import { useLocale, useTranslations } from 'next-intl';
 import { useState, type SubmitEvent, type ReactNode } from 'react';
 import { PASSWORD_MIN_LENGTH } from '../../server/auth/schemas';
 import { CheckEmail } from './check-email';
-import { translator, type Locale } from './messages';
 import { OAuthButtons } from './oauth-buttons';
-import { OutcomeMessage } from './outcome-message';
+import { LINK_CLASS, OutcomeMessage } from './outcome-message';
 import { postAuth, type Outcome } from './post-auth';
 import { useTurnstile } from './use-turnstile';
-import styles from './auth.module.css';
 
 export interface SignUpFormProps {
-  locale: Locale;
   captchaSiteKey: string | undefined;
 }
 
 export function SignUpForm(props: SignUpFormProps): ReactNode {
-  const t = translator(props.locale);
+  const t = useTranslations('auth');
+  const locale = useLocale();
   const { mountCaptcha, captchaToken, resetCaptcha } = useTurnstile(props.captchaSiteKey);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,7 +36,7 @@ export function SignUpForm(props: SignUpFormProps): ReactNode {
       password,
       captcha_token: captchaToken ?? '',
       accept_terms: accepted,
-      locale: props.locale,
+      locale,
     });
     resetCaptcha();
     setPending(false);
@@ -45,84 +45,68 @@ export function SignUpForm(props: SignUpFormProps): ReactNode {
   }
 
   if (sentTo !== null) {
-    return (
-      <CheckEmail email={sentTo} locale={props.locale} captchaSiteKey={props.captchaSiteKey} />
-    );
+    return <CheckEmail email={sentTo} captchaSiteKey={props.captchaSiteKey} />;
   }
 
   return (
     <>
-      <OAuthButtons t={t} />
+      <OAuthButtons />
       <form
-        className={styles.form}
+        className="flex flex-col gap-5"
         onSubmit={(e) => {
           void handleSubmit(e);
         }}
       >
-        <div className={styles.field}>
-          <label htmlFor="email">{t('auth.common.email')}</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-            }}
-          />
-        </div>
-        <div className={styles.field}>
-          <label htmlFor="password">{t('auth.common.password')}</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            minLength={PASSWORD_MIN_LENGTH}
-            aria-describedby="password-hint"
-            aria-invalid={isTooShort}
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-            }}
-          />
-          <p id="password-hint" className={styles.hint}>
-            {isTooShort ? t('auth.errors.password_too_short') : t('auth.sign_up.password_hint')}
-          </p>
-        </div>
-        <label className={styles.check}>
+        <Field
+          label={t('common.email')}
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+          }}
+        />
+        <Field
+          label={t('common.password')}
+          name="password"
+          type="password"
+          autoComplete="new-password"
+          required
+          minLength={PASSWORD_MIN_LENGTH}
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+          }}
+          hint={isTooShort ? undefined : t('sign_up.password_hint')}
+          error={isTooShort ? t('errors.password_too_short') : undefined}
+        />
+        <label className="flex min-h-11 items-start gap-3 text-[15px]">
           <input
             type="checkbox"
             checked={accepted}
+            className="accent-ink mt-0.5 size-5 shrink-0"
             onChange={(e) => {
               setAccepted(e.target.checked);
             }}
           />
-          <span>{t('auth.sign_up.terms')}</span>
+          <span>{t('sign_up.terms')}</span>
         </label>
-        {!accepted && <p className={styles.hint}>{t('auth.sign_up.terms_required')}</p>}
-        <div ref={mountCaptcha} className={styles.captcha} />
-        <OutcomeMessage outcome={outcome} t={t} />
-        <button
-          type="submit"
-          className={styles.primary}
-          disabled={pending || !accepted || !isReady}
-        >
-          {pending ? t('auth.common.sending') : t('auth.sign_up.submit')}
-        </button>
-        {!isReady && <p className={styles.hint}>{t('auth.common.captcha_wait')}</p>}
+        {!accepted && <p className="text-meta text-muted -mt-3">{t('sign_up.terms_required')}</p>}
+        <div ref={mountCaptcha} className="empty:hidden" />
+        <OutcomeMessage outcome={outcome} />
+        <Button type="submit" disabled={pending || !accepted || !isReady}>
+          {pending ? t('common.sending') : t('sign_up.submit')}
+        </Button>
+        {!isReady && <p className="text-meta text-muted">{t('common.captcha_wait')}</p>}
       </form>
-      <div className={styles.links}>
-        <span>
-          {t('auth.sign_up.has_account')}{' '}
-          <a className={styles.link} href="/connexion">
-            {t('auth.sign_up.to_sign_in')}
-          </a>
-        </span>
-      </div>
+      <p className="text-muted text-[15px]">
+        {t('sign_up.has_account')}{' '}
+        <a className={LINK_CLASS} href="/connexion">
+          {t('sign_up.to_sign_in')}
+        </a>
+      </p>
     </>
   );
 }
