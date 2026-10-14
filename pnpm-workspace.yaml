@@ -8,3 +8,6 @@ allowBuilds:
   esbuild: true
   supabase: true
   unrs-resolver: true
+  # Dépendances de next-intl, inutiles ici (extraction des textes par SWC, surveillance de fichiers).
+  '@parcel/watcher': false
+  '@swc/core': false

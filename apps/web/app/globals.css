@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+@import '@pubeka/ui/styles.css';
+
+/* Sora est chargée par next/font (app/layout.tsx) ; le jeton garde sa pile de repli. */
+:root {
+  --pubeka-font: var(--font-sora), 'Sora', system-ui, sans-serif;
+}

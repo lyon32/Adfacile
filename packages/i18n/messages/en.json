@@ -1,0 +1,89 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "saved": "Saved",
+    "cancel": "Cancel",
+    "close": "Close",
+    "continue": "Continue",
+    "later": "Later",
+    "back": "Back",
+    "retry": "Try again",
+    "error": "Something went wrong. Try again in a moment.",
+    "optional": "optional"
+  },
+  "shell": {
+    "skip_link": "Skip to content",
+    "opening": "Opening Pubeka",
+    "page_loading": "Loading the page",
+    "brand": "Pubeka",
+    "nav": {
+      "main_label": "Main navigation",
+      "menu_title": "Menu",
+      "account_title": "Account",
+      "home": "Home",
+      "campaigns": "Campaigns",
+      "visuals": "Visuals",
+      "stats": "Statistics",
+      "billing": "Subscription",
+      "settings": "Settings",
+      "help": "Help"
+    },
+    "tabs": {
+      "label": "Navigation",
+      "home": "Home",
+      "campaigns": "Campaigns",
+      "visuals": "Visuals",
+      "account": "Account"
+    },
+    "page_selector": {
+      "label": "Active Page",
+      "empty_title": "No Page connected",
+      "empty_hint": "Connect your Page to publish your ads.",
+      "connect": "Connect a Page"
+    },
+    "upgrade": {
+      "title": "Upgrade to Pro",
+      "body": "More Pages, more campaigns and more visuals every month.",
+      "cta": "See plans"
+    },
+    "plan": {
+      "starter": "Starter plan",
+      "pro": "Pro plan",
+      "business": "Business plan",
+      "trial": "Free trial"
+    },
+    "banner": {
+      "empty_title": "Your first campaign is waiting",
+      "empty_body": "Paste the link to your website or Page: Pubeka prepares the ad.",
+      "empty_cta": "Create a campaign"
+    },
+    "account": {
+      "open": "Open the account menu",
+      "title": "Your account",
+      "settings": "Settings",
+      "language": "Language",
+      "theme": "Theme",
+      "theme_light": "Light",
+      "theme_dark": "Dark",
+      "theme_system": "System",
+      "sign_out": "Sign out",
+      "close": "Close",
+      "update_failed": "The change was not saved. Try again."
+    }
+  },
+  "dashboard": {
+    "greeting": {
+      "bonjour": "Bonjour",
+      "bonsoir": "Bonsoir",
+      "hello": "Hello",
+      "good_evening": "Good evening"
+    },
+    "home": {
+      "title": "Home",
+      "first_campaign_title": "Create your first ad",
+      "first_campaign_body": "Paste the link to your website or Page. Pubeka prepares the text, the visual and the budget; you review, then publish.",
+      "first_campaign_cta": "New campaign"
+    }
+  }
+}
