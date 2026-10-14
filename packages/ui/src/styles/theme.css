@@ -1,0 +1,221 @@
+/*
+ * Jetons Pubeka (docs/design/DESIGN-SYSTEM.md §9), repris À L'IDENTIQUE.
+ * Aucune autre couleur n'est autorisée : les composants n'utilisent que les classes ci-dessous.
+ * L'application importe Tailwind, puis ce fichier : `@import "tailwindcss"; @import "@pubeka/ui/styles.css";`
+ */
+@source '../';
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  /* v1, inchangés */
+  --pubeka-obsidienne: #0a0a0a;
+  --pubeka-graphite: #1f2421;
+  --pubeka-lime: #c6f432;
+  --pubeka-lime-fonce: #8db01c;
+  --pubeka-ardoise: #8a9088;
+  --pubeka-craie: #f4f4ef;
+  --pubeka-font: 'Sora', system-ui, sans-serif;
+  --pubeka-radius-sm: 6px;
+  --pubeka-radius-md: 12px;
+  --pubeka-radius-lg: 20px;
+  --pubeka-radius-app: 28px;
+  --pubeka-radius-pill: 999px;
+  --pubeka-space: 4px;
+  /* v2, nuances dérivées et états */
+  --pubeka-craie-50: #fbfbf8;
+  --pubeka-craie-200: #e8e8e1;
+  --pubeka-craie-300: #d6d7cf;
+  --pubeka-graphite-700: #2a302b;
+  --pubeka-graphite-600: #3a4038;
+  --pubeka-ardoise-700: #5c625b;
+  --pubeka-warn: #8a5a0f;
+  --pubeka-error: #c2410c;
+  --pubeka-shadow-float: 0 12px 32px rgba(10, 10, 10, 0.12);
+}
+
+/* Rôles sémantiques : thème clair (application par défaut) */
+:root,
+[data-theme='light'] {
+  --bg: var(--pubeka-craie);
+  --panel: var(--pubeka-craie-50);
+  --line: var(--pubeka-craie-200);
+  --field-line: var(--pubeka-craie-300);
+  --text: var(--pubeka-obsidienne);
+  --muted: var(--pubeka-ardoise-700);
+  --accent: var(--pubeka-lime);
+  --on-accent: var(--pubeka-obsidienne);
+  --focus: var(--pubeka-obsidienne);
+  /* DS §2.2 : point « succès » Lime foncé en clair, Lime en sombre */
+  --success-dot: var(--pubeka-lime-fonce);
+  color-scheme: light;
+}
+[data-theme='dark'] {
+  --bg: var(--pubeka-obsidienne);
+  --panel: var(--pubeka-graphite);
+  --line: var(--pubeka-graphite-700);
+  --field-line: var(--pubeka-graphite-600);
+  --text: var(--pubeka-craie);
+  --muted: var(--pubeka-ardoise);
+  --accent: var(--pubeka-lime);
+  --on-accent: var(--pubeka-obsidienne);
+  --focus: var(--pubeka-lime);
+  --pubeka-warn: #f2b53a;
+  --pubeka-error: #ff8a73;
+  --success-dot: var(--pubeka-lime);
+  color-scheme: dark;
+}
+
+/* Classes Tailwind : bg-bg, bg-panel, border-line, text-ink, text-muted, bg-accent… */
+@theme inline {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-field-line: var(--field-line);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--pubeka-lime-fonce);
+  --color-on-accent: var(--on-accent);
+  --color-focus: var(--focus);
+  --color-warn: var(--pubeka-warn);
+  --color-error: var(--pubeka-error);
+  --color-success: var(--success-dot);
+  --color-obsidienne: var(--pubeka-obsidienne);
+  --color-graphite: var(--pubeka-graphite);
+  --color-craie: var(--pubeka-craie);
+  --color-lime: var(--pubeka-lime);
+  --color-lime-fonce: var(--pubeka-lime-fonce);
+  --color-ardoise: var(--pubeka-ardoise);
+  --font-sans: var(--pubeka-font);
+  --radius-sm: var(--pubeka-radius-sm);
+  --radius-md: var(--pubeka-radius-md);
+  --radius-lg: var(--pubeka-radius-lg);
+  --radius-app: var(--pubeka-radius-app);
+  --radius-pill: var(--pubeka-radius-pill);
+  --shadow-float: var(--pubeka-shadow-float);
+  --text-meta: 13px;
+  --text-title: 15px;
+  --tracking-eyebrow: 0.12em;
+}
+
+@layer base {
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--pubeka-font);
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Loader « Saisie » (docs/design/loader/react/PubekaLoader.css), couleurs passées en jetons */
+  .pubeka-loader {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: var(--pubeka-obsidienne);
+    z-index: 9999;
+    transition: opacity 0.25s;
+  }
+  .pubeka-loader.done {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .pubeka-loader .lg {
+    width: min(320px, 70vw);
+    height: auto;
+    overflow: visible;
+    animation: pubeka-out 0.35s 2.5s ease-in forwards;
+  }
+  .pubeka-loader .mk,
+  .pubeka-loader .ln {
+    fill: none;
+    stroke: var(--pubeka-lime);
+    stroke-width: 11;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .pubeka-loader .mk {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: pubeka-draw 0.7s 0.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  }
+  .pubeka-loader .ln {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: pubeka-draw 0.7s 0.8s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  }
+  .pubeka-loader .tx {
+    fill: var(--pubeka-craie);
+    opacity: 0;
+    transform-box: fill-box;
+    transform: translateY(12px);
+    animation: pubeka-rise 0.45s 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  /* Version courte : le « p » seul se redessine en boucle */
+  .pubeka-loader-short {
+    display: inline-grid;
+    place-items: center;
+  }
+  .pubeka-loader-short .mk {
+    fill: none;
+    stroke: var(--success-dot);
+    stroke-width: 11;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: pubeka-loop 1.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  }
+  @keyframes pubeka-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes pubeka-rise {
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes pubeka-out {
+    to {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+  @keyframes pubeka-loop {
+    0% {
+      stroke-dashoffset: 1;
+    }
+    60%,
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pubeka-loader,
+  .pubeka-loader .lg,
+  .pubeka-loader .mk,
+  .pubeka-loader .ln,
+  .pubeka-loader .tx,
+  .pubeka-loader-short .mk {
+    animation: none;
+    transition: none;
+    stroke-dashoffset: 0;
+    opacity: 1;
+    transform: none;
+  }
+  .pubeka-loader.done {
+    opacity: 0;
+  }
+}
