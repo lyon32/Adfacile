@@ -160,7 +160,7 @@ export interface PlatformCampaignRefs {
 
 export interface PlatformStatus {
   /** Valeur de l'énumération `campaign_status` de la base. */
-  status: 'in_review' | 'active' | 'paused' | 'rejected' | 'ended' | 'error';
+  status: 'in_review' | 'active' | 'paused' | 'rejected' | 'ended' | 'stopped' | 'error';
   /** Statut effectif brut de la plateforme, pour le diagnostic. */
   rawStatus: string;
 }

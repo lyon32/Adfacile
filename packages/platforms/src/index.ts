@@ -20,3 +20,6 @@ export * from './meta/media-upload';
 export * from './meta/targeting';
 export * from './meta/campaign-actions';
 export * from './meta/create-campaign';
+export * from './meta/meta-connector';
+export * from './fake/fake-meta-connector';
+export * from './contract/platform-connector.contract';
