@@ -435,7 +435,10 @@ const PROMOTED_OBJECT_RULES: PromotedObjectRule[] = [
  *
  * @returns la valeur acceptée par l'objectif, sinon `value` inchangé
  */
-export function toApiDestination(objective: string, value: string | undefined): string | undefined {
+export function toApiDestination(
+  objective: string | undefined,
+  value: string | undefined,
+): string | undefined {
   const entry = lookupObjective(objective);
   if (!entry || !value) return value;
 
