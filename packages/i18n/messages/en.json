@@ -85,5 +85,40 @@
       "first_campaign_body": "Paste the link to your website or Page. Pubeka prepares the text, the visual and the budget; you review, then publish.",
       "first_campaign_cta": "New campaign"
     }
+  },
+  "onboarding": {
+    "progress": "Step {step} of {total}",
+    "progress_label": "First setup progress",
+    "saving": "Saving…",
+    "save_failed": "We could not save right now. Try again in a moment.",
+    "country": {
+      "title": "Where do you publish from?",
+      "body": "Pubeka sets the time, the currency and the VAT for your country.",
+      "country": "Country",
+      "country_placeholder": "Choose your country",
+      "city": "City",
+      "currency": "Display currency",
+      "country_required": "Choose your country to continue."
+    },
+    "language": {
+      "title": "Which language do you want to use Pubeka in?",
+      "body": "You can change it at any time in the settings.",
+      "label": "Interface language"
+    },
+    "trial": {
+      "title": "Your free trial starts now",
+      "body": "1 campaign, 3 visuals, 7 days. No card required.",
+      "cta": "Start"
+    },
+    "meta": {
+      "title": "Connect your Meta Page",
+      "body": "Pubeka publishes your ads on your Page and your Meta ad account. This connection is coming very soon: you can continue without it and do it later.",
+      "pending": "Meta connection: coming soon"
+    },
+    "brand": {
+      "title": "Your brand kit",
+      "body": "Logo, colors, WhatsApp number and tone of your ads (formal or informal): you will add them once your Page is connected.",
+      "pending": "Brand kit: coming soon"
+    }
   }
 }

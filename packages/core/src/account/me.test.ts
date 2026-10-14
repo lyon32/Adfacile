@@ -98,6 +98,27 @@ describe('updateMe', () => {
     expect(db.calls[0]?.ops).toContainEqual(['eq', 'id', USER_ID]);
   });
 
+  it('TR-PLT-04 : changer de pays recalcule le fuseau depuis la table des pays', async () => {
+    const db = new FakeClient()
+      .reply({ data: { timezone_default: 'Africa/Dakar' }, error: null })
+      .reply({ data: { ...row, country_code: 'SN', timezone: 'Africa/Dakar' }, error: null });
+    const me = await updateMe(ctx(db), { country_code: 'SN' });
+    expect(me.timezone).toBe('Africa/Dakar');
+    expect(db.calls[0]).toMatchObject({ target: 'countries' });
+    expect(db.calls[1]?.ops).toContainEqual([
+      'update',
+      { country_code: 'SN', timezone: 'Africa/Dakar' },
+    ]);
+  });
+
+  it('pays inconnu ou inactif → validation_failed, sans rien modifier', async () => {
+    const db = new FakeClient().reply({ data: null, error: null });
+    await expect(updateMe(ctx(db), { country_code: 'ZZ' })).rejects.toMatchObject({
+      code: 'validation_failed',
+    });
+    expect(db.calls).toHaveLength(1);
+  });
+
   it('corps vide : simple lecture', async () => {
     const db = new FakeClient().reply({ data: row, error: null });
     await updateMe(ctx(db), {});

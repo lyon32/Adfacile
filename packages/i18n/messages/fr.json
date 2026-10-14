@@ -85,5 +85,40 @@
       "first_campaign_body": "Colle le lien de ton site ou de ta Page. Pubeka prépare le texte, le visuel et le budget ; tu valides, puis tu publies.",
       "first_campaign_cta": "Nouvelle campagne"
     }
+  },
+  "onboarding": {
+    "progress": "Étape {step} sur {total}",
+    "progress_label": "Progression de la première configuration",
+    "saving": "Enregistrement…",
+    "save_failed": "Impossible d’enregistrer pour le moment. Réessaie dans quelques instants.",
+    "country": {
+      "title": "D’où publies-tu ?",
+      "body": "Pubeka règle l’heure, la monnaie et la TVA selon ton pays.",
+      "country": "Pays",
+      "country_placeholder": "Choisis ton pays",
+      "city": "Ville",
+      "currency": "Monnaie d’affichage",
+      "country_required": "Choisis ton pays pour continuer."
+    },
+    "language": {
+      "title": "Dans quelle langue veux-tu utiliser Pubeka ?",
+      "body": "Tu pourras la changer à tout moment dans les réglages.",
+      "label": "Langue de l’interface"
+    },
+    "trial": {
+      "title": "Ton essai gratuit commence",
+      "body": "1 campagne, 3 visuels, 7 jours. Aucune carte demandée.",
+      "cta": "Commencer"
+    },
+    "meta": {
+      "title": "Connecte ta Page Meta",
+      "body": "Pubeka publie tes pubs sur ta Page et ton compte publicitaire Meta. Cette connexion arrive très bientôt : tu peux continuer sans elle et la faire plus tard.",
+      "pending": "Connexion Meta : bientôt disponible"
+    },
+    "brand": {
+      "title": "Ton kit de marque",
+      "body": "Logo, couleurs, numéro WhatsApp et ton des pubs (« tu » ou « vous ») : tu les ajouteras dès que ta Page sera connectée.",
+      "pending": "Kit de marque : bientôt disponible"
+    }
   }
 }

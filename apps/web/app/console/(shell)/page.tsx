@@ -3,11 +3,14 @@
 import { Button, Card, CardDescription } from '@pubeka/ui';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { loadViewer } from '../../../features/shell/viewer';
 
 export default async function DashboardPage(): Promise<ReactNode> {
   const [t, viewer] = await Promise.all([getTranslations('dashboard'), loadViewer()]);
+  // Pays pas encore choisi : la première configuration n'est pas faite (APPFLOW §5).
+  if (viewer?.me.country_code === null) redirect('/bienvenue/pays');
   const me = viewer?.me;
   return (
     <div className="flex flex-col gap-6">
