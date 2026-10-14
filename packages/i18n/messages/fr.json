@@ -117,8 +117,7 @@
     },
     "brand": {
       "title": "Ton kit de marque",
-      "body": "Logo, couleurs, numéro WhatsApp et ton des pubs (« tu » ou « vous ») : tu les ajouteras dès que ta Page sera connectée.",
-      "pending": "Kit de marque : bientôt disponible"
+      "body": "Couleurs, numéro WhatsApp et ton des pubs (« tu » ou « vous ») : Pubeka les reprend dans chaque pub."
     }
   },
   "settings": {
@@ -128,6 +127,8 @@
       "profile": "Profil",
       "team": "Équipe",
       "notifications": "Notifications",
+      "brand": "Kit de marque",
+      "pages": "Pages",
       "meta_accounts": "Comptes Meta"
     },
     "saved": "Modifications enregistrées.",
@@ -206,6 +207,14 @@
         "weekly_summary": "Résumé du lundi",
         "optimizer_suggestion": "Suggestion de l’Optimiseur"
       }
+    },
+    "brand": {
+      "title": "Kit de marque",
+      "body": "Logo, couleurs, numéros et ton de ta marque : Pubeka les reprend dans chaque pub."
+    },
+    "pages": {
+      "title": "Pages",
+      "body": "Les Pages Facebook sur lesquelles Pubeka publie, selon ta formule."
     },
     "meta_accounts": {
       "title": "Comptes Meta",
@@ -481,6 +490,81 @@
         "step_3": "Si une autorisation manque encore, retire Pubeka dans les réglages de Facebook, puis reconnecte-toi.",
         "step_4": "Reviens ici et appuie sur « Revérifier ».",
         "note": "Pubeka ne demande que ce qui sert à créer et suivre tes campagnes."
+      }
+    },
+    "pages": {
+      "loading": "Chargement des Pages…",
+      "load_failed": "Les Pages n’ont pas pu être chargées.",
+      "empty_title": "Aucune Page pour le moment",
+      "empty_body": "Connecte ton compte Meta pour retrouver tes Pages Facebook.",
+      "empty_cta": "Connecter Meta",
+      "count": "{active} sur {limit} Pages actives",
+      "limit_reached": "Ta formule est au maximum. Désactive une Page ou passe à la formule supérieure.",
+      "starter_hint": "Tu pourras changer de Page le mois prochain si tu as lancé une campagne avec celle-ci.",
+      "active": "Active",
+      "inactive": "Inactive",
+      "locked": "Page verrouillée : une campagne a été lancée avec elle pendant cette période. Tu pourras la désactiver à la période suivante.",
+      "instagram_linked": "Instagram lié",
+      "instagram_missing": "Pas d’Instagram",
+      "whatsapp_linked": "WhatsApp lié",
+      "whatsapp_missing": "Pas de WhatsApp",
+      "ad_language": "Langue des pubs",
+      "ad_address": "Ton des pubs",
+      "address_vous": "Vouvoiement (« vous »)",
+      "address_tu": "Tutoiement (« tu »)",
+      "only_owner": "Seul le propriétaire active ou désactive une Page. Les éditeurs règlent la langue et le ton des pubs.",
+      "errors": {
+        "limit": "Ta formule ne permet pas d’activer plus de Pages. Désactive une Page ou passe à la formule supérieure.",
+        "locked": "Cette Page est verrouillée pour la période : une campagne a été lancée avec elle.",
+        "forbidden": "Tu n’as pas le droit de faire cela. Demande au propriétaire de l’espace.",
+        "read_only": "Ton abonnement est expiré : renouvelle-le pour modifier tes Pages.",
+        "generic": "Impossible d’enregistrer pour le moment. Réessaie dans quelques instants."
+      }
+    },
+    "brand": {
+      "loading": "Chargement du kit de marque…",
+      "load_failed": "Le kit de marque n’a pas pu être chargé.",
+      "no_page_title": "Active d’abord une Page",
+      "no_page_body": "Le kit de marque se règle Page par Page. Connecte Meta et active une Page pour commencer.",
+      "no_page_cta": "Aller aux comptes Meta",
+      "page": "Page",
+      "for_page": "Kit de marque de la Page {name}",
+      "colors": "Couleurs",
+      "color_primary": "Principale",
+      "color_secondary": "Secondaire",
+      "color_accent": "Accent",
+      "numbers": "Numéros",
+      "whatsapp": "Numéro WhatsApp",
+      "phone": "Téléphone",
+      "number_hint": "Format international, par exemple +237677000000.",
+      "show_number": "Afficher le numéro sur les visuels",
+      "show_number_hint": "Le numéro est posé sur l’image, jamais écrit par l’IA.",
+      "voice": "Ton",
+      "ad_address": "Ton des pubs",
+      "address_vous": "Vouvoiement (« vous »)",
+      "address_tu": "Tutoiement (« tu »)",
+      "tone": "Ton de la marque",
+      "tone_none": "Aucun",
+      "tones": {
+        "premium": "Haut de gamme",
+        "friendly": "Chaleureux",
+        "bold": "Audacieux",
+        "serious": "Sérieux",
+        "playful": "Joueur"
+      },
+      "tagline": "Slogan",
+      "font": "Police",
+      "logo": "Logo",
+      "logo_saved": "Un logo est enregistré pour cette Page.",
+      "logo_soon": "L’envoi du logo arrive bientôt.",
+      "submit": "Enregistrer le kit de marque",
+      "saving": "Enregistrement…",
+      "save_failed": "Impossible d’enregistrer pour le moment. Réessaie dans quelques instants.",
+      "read_only": "Seuls le propriétaire et les éditeurs modifient le kit de marque.",
+      "errors": {
+        "color_invalid": "Couleur au format #RRGGBB, par exemple #1A2B3C.",
+        "phone_invalid": "Numéro au format international, par exemple +237677000000.",
+        "too_long": "Texte trop long."
       }
     }
   }

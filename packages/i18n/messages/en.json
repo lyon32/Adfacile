@@ -117,8 +117,7 @@
     },
     "brand": {
       "title": "Your brand kit",
-      "body": "Logo, colors, WhatsApp number and tone of your ads (formal or informal): you will add them once your Page is connected.",
-      "pending": "Brand kit: coming soon"
+      "body": "Colors, WhatsApp number and ad tone (informal or formal “you”): Pubeka reuses them in every ad."
     }
   },
   "settings": {
@@ -128,6 +127,8 @@
       "profile": "Profile",
       "team": "Team",
       "notifications": "Notifications",
+      "brand": "Brand kit",
+      "pages": "Pages",
       "meta_accounts": "Meta accounts"
     },
     "saved": "Changes saved.",
@@ -206,6 +207,14 @@
         "weekly_summary": "Monday summary",
         "optimizer_suggestion": "Optimizer suggestion"
       }
+    },
+    "brand": {
+      "title": "Brand kit",
+      "body": "Your logo, colors, numbers and tone: Pubeka reuses them in every ad."
+    },
+    "pages": {
+      "title": "Pages",
+      "body": "The Facebook Pages Pubeka publishes on, depending on your plan."
     },
     "meta_accounts": {
       "title": "Meta accounts",
@@ -481,6 +490,81 @@
         "step_3": "If a permission is still missing, remove Pubeka in Facebook’s settings, then reconnect.",
         "step_4": "Come back here and press “Check again”.",
         "note": "Pubeka only asks for what is needed to create and track your campaigns."
+      }
+    },
+    "pages": {
+      "loading": "Loading Pages…",
+      "load_failed": "The Pages could not be loaded.",
+      "empty_title": "No Page yet",
+      "empty_body": "Connect your Meta account to find your Facebook Pages.",
+      "empty_cta": "Connect Meta",
+      "count": "{active} of {limit} Pages active",
+      "limit_reached": "Your plan is at its maximum. Deactivate a Page or move to the next plan.",
+      "starter_hint": "You will be able to switch Pages next month if you launched a campaign with this one.",
+      "active": "Active",
+      "inactive": "Inactive",
+      "locked": "Page locked: a campaign was launched with it during this period. You will be able to deactivate it next period.",
+      "instagram_linked": "Instagram linked",
+      "instagram_missing": "No Instagram",
+      "whatsapp_linked": "WhatsApp linked",
+      "whatsapp_missing": "No WhatsApp",
+      "ad_language": "Ad language",
+      "ad_address": "Ad tone",
+      "address_vous": "Formal (“vous”)",
+      "address_tu": "Informal (“tu”)",
+      "only_owner": "Only the owner activates or deactivates a Page. Editors set the ad language and tone.",
+      "errors": {
+        "limit": "Your plan does not allow more active Pages. Deactivate a Page or move to the next plan.",
+        "locked": "This Page is locked for the period: a campaign was launched with it.",
+        "forbidden": "You are not allowed to do this. Ask the workspace owner.",
+        "read_only": "Your subscription has expired: renew it to change your Pages.",
+        "generic": "Unable to save right now. Try again in a few moments."
+      }
+    },
+    "brand": {
+      "loading": "Loading the brand kit…",
+      "load_failed": "The brand kit could not be loaded.",
+      "no_page_title": "Activate a Page first",
+      "no_page_body": "The brand kit is set Page by Page. Connect Meta and activate a Page to start.",
+      "no_page_cta": "Go to Meta accounts",
+      "page": "Page",
+      "for_page": "Brand kit of the Page {name}",
+      "colors": "Colors",
+      "color_primary": "Primary",
+      "color_secondary": "Secondary",
+      "color_accent": "Accent",
+      "numbers": "Numbers",
+      "whatsapp": "WhatsApp number",
+      "phone": "Phone",
+      "number_hint": "International format, for example +237677000000.",
+      "show_number": "Show the number on visuals",
+      "show_number_hint": "The number is placed on the image, never written by the AI.",
+      "voice": "Tone",
+      "ad_address": "Ad tone",
+      "address_vous": "Formal (“vous”)",
+      "address_tu": "Informal (“tu”)",
+      "tone": "Brand tone",
+      "tone_none": "None",
+      "tones": {
+        "premium": "Premium",
+        "friendly": "Friendly",
+        "bold": "Bold",
+        "serious": "Serious",
+        "playful": "Playful"
+      },
+      "tagline": "Tagline",
+      "font": "Font",
+      "logo": "Logo",
+      "logo_saved": "A logo is saved for this Page.",
+      "logo_soon": "Logo upload is coming soon.",
+      "submit": "Save the brand kit",
+      "saving": "Saving…",
+      "save_failed": "Unable to save right now. Try again in a few moments.",
+      "read_only": "Only the owner and editors change the brand kit.",
+      "errors": {
+        "color_invalid": "Color in #RRGGBB format, for example #1A2B3C.",
+        "phone_invalid": "Number in international format, for example +237677000000.",
+        "too_long": "Text too long."
       }
     }
   }
