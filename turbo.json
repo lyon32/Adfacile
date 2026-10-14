@@ -51,7 +51,19 @@
     },
     "i18n:check": {},
     "e2e:ci": {
-      "cache": false
+      "cache": false,
+      "passThroughEnv": [
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+        "SUPABASE_SECRET_KEY",
+        "SUPABASE_DB_URL",
+        "ADMIN_PATH",
+        "APP_SIGNING_SECRET",
+        "TOKEN_ENCRYPTION_KEYS",
+        "TOKEN_ENCRYPTION_ACTIVE_KEY_ID",
+        "MAILPIT_URL",
+        "NEXT_PUBLIC_CAPTCHA_SITE_KEY"
+      ]
     },
     "e2e:full": {
       "cache": false
