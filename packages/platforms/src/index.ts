@@ -18,4 +18,6 @@ export * from './meta/creative';
 export * from './meta/destination';
 export * from './meta/media-upload';
 export * from './meta/targeting';
+export * from './meta/campaign-actions';
+export * from './meta/create-campaign';
 export * from './meta/ssrf';
