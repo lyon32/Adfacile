@@ -254,7 +254,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Démarrer la connexion Meta (renvoie l'URL de la fenêtre Facebook) */
+        /**
+         * Démarrer la connexion Meta (renvoie l'URL de la fenêtre Facebook)
+         * @description Propriétaire, espace modifiable. L'URL contient un paramètre `state` signé (anti-CSRF) lié à l'utilisateur, à l'espace et à une durée de 10 minutes ; il ne sert qu'une fois.
+         */
         post: operations["startMetaConnect"];
         delete?: never;
         options?: never;
@@ -271,7 +274,8 @@ export interface paths {
         };
         /**
          * Retour de la fenêtre Facebook (redirection vers l'application)
-         * @description Vérifie le paramètre `state` (anti-CSRF, lié à la session), échange le code, chiffre et stocke le jeton.
+         * @description Vérifie le paramètre `state` (signature, durée, utilisateur de la session, usage unique), échange le code, chiffre et stocke le jeton, puis enregistre les comptes publicitaires et les Pages.
+         *     Toujours une redirection 302 vers `/bienvenue/meta` ou `/reglages/comptes-meta` (selon `return_to` de la demande) avec `?meta=connected`, ou `?meta=error&reason=denied|state|meta` (APPFLOW §6.1 : « La connexion n'a pas abouti »). Sans session : 401.
          */
         get: operations["metaCallback"];
         put?: never;
@@ -314,7 +318,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Déconnecter Meta (le jeton est révoqué et effacé) */
+        /**
+         * Déconnecter Meta (le jeton est effacé, les Pages sont désactivées)
+         * @description Propriétaire, espace modifiable. Les campagnes déjà publiées restent actives chez Meta. L'autorisation donnée à Pubeka se retire aussi dans les réglages de Facebook.
+         */
         delete: operations["disconnectMeta"];
         options?: never;
         head?: never;
@@ -333,7 +340,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Lancer le bilan de santé (F1) */
+        /**
+         * Lancer le bilan de santé (F1)
+         * @description Propriétaire, espace modifiable. Relit chez Meta les comptes publicitaires et les Pages (mise à jour de la liste), puis contrôle le compte publicitaire et la Page actifs.
+         */
         post: operations["runHealthCheck"];
         delete?: never;
         options?: never;
@@ -376,7 +386,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Activer une Page (selon la formule) ou régler la langue et le ton des pubs */
+        /**
+         * Activer une Page (selon la formule) ou régler la langue et le ton des pubs
+         * @description Activer ou désactiver : propriétaire. Langue et ton des pubs : propriétaire ou éditeur. Au-delà de la limite de la formule → 402 `page_limit_reached`. Désactiver une Page verrouillée pour la période (une campagne a été lancée avec elle) → 409 `conflict` avec `meta.reason = "page_locked"`.
+         */
         patch: operations["updatePage"];
         trace?: never;
     };
@@ -390,9 +403,12 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Kit de marque de la Page */
+        /** Kit de marque de la Page (valeurs par défaut si jamais enregistré) */
         get: operations["getBrandKit"];
-        /** Enregistrer le kit de marque */
+        /**
+         * Enregistrer le kit de marque
+         * @description Propriétaire ou éditeur, espace modifiable. `logo_path` doit désigner un fichier de l'espace dans le compartiment `brand` (`<workspace_id>/…`).
+         */
         put: operations["putBrandKit"];
         post?: never;
         delete?: never;
@@ -432,7 +448,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Choisir le compte publicitaire actif */
+        /**
+         * Choisir le compte publicitaire actif
+         * @description Propriétaire, espace modifiable. Un seul compte actif par espace.
+         */
         post: operations["activateAdAccount"];
         delete?: never;
         options?: never;
@@ -1685,13 +1704,27 @@ export interface components {
             /** Format: date-time */
             expires_at?: string | null;
             business_id?: string | null;
+            last_health_check?: components["schemas"]["HealthCheck"] | null;
+        };
+        MetaConnectRequest: {
+            /**
+             * @description Écran où revenir après Facebook : /bienvenue/meta ou /reglages/comptes-meta
+             * @default settings
+             * @enum {string}
+             */
+            return_to: "onboarding" | "settings";
         };
         HealthCheck: {
+            /** Format: date-time */
+            checked_at?: string;
             items: {
                 /** @enum {string} */
-                key: "business_portfolio" | "ad_account" | "payment_method" | "page" | "instagram" | "whatsapp" | "pixel";
+                key: "business_portfolio" | "ad_account" | "payment_method" | "page" | "instagram" | "whatsapp" | "pixel" | "permissions";
                 ok: boolean;
+                /** @description Bloque la suite si rouge (seul le compte publicitaire) */
                 required?: boolean;
+                /** @description Fortement recommandé (WhatsApp) : bandeau orange si rouge */
+                recommended?: boolean;
                 guide_slug?: string;
             }[];
         };
@@ -2847,7 +2880,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MetaConnectRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -2861,7 +2898,12 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     metaCallback: {
@@ -2870,6 +2912,8 @@ export interface operations {
                 code?: string;
                 state: string;
                 error?: string;
+                error_reason?: string;
+                error_description?: string;
             };
             header?: never;
             path?: never;
@@ -2884,7 +2928,10 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     listMetaConnections: {
@@ -2909,7 +2956,10 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     disconnectMeta: {
@@ -2931,7 +2981,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     runHealthCheck: {
@@ -2955,7 +3009,12 @@ export interface operations {
                     "application/json": components["schemas"]["HealthCheck"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            424: components["responses"]["FailedDependency"];
+            429: components["responses"]["TooManyRequests"];
             502: components["responses"]["BadGateway"];
         };
     };
@@ -2978,10 +3037,17 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["Page"][];
+                        quotas: {
+                            pages_active: number;
+                            pages_limit: number;
+                        };
                     };
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updatePage: {
@@ -3009,9 +3075,13 @@ export interface operations {
                     "application/json": components["schemas"]["Page"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             402: components["responses"]["PaymentRequired"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getBrandKit: {
@@ -3035,7 +3105,10 @@ export interface operations {
                     "application/json": components["schemas"]["BrandKit"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     putBrandKit: {
@@ -3065,6 +3138,9 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listAdAccounts: {
@@ -3089,7 +3165,10 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     activateAdAccount: {
@@ -3113,7 +3192,11 @@ export interface operations {
                     "application/json": components["schemas"]["AdAccount"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     createUploadUrl: {

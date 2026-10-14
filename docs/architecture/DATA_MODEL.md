@@ -329,23 +329,18 @@ RLS : activée · 0 politique(s) · schéma non exposé par l’API
 | Colonne | Type | Null | Défaut |
 |---|---|---|---|
 | connection_id | uuid | non |  |
-| ciphertext | bytea | non |  |
-| iv | bytea | non |  |
-| auth_tag | bytea | non |  |
-| key_version | integer | non |  |
 | updated_at | timestamp with time zone | non | now() |
+| sealed | text | non |  |
+| key_id | text | non |  |
 
 | Contrainte | Définition |
 |---|---|
-| Contrôle | `CHECK ((octet_length(auth_tag) = 16))` |
-| Contrôle | `CHECK ((octet_length(iv) = 12))` |
-| Contrôle | `CHECK ((key_version >= 1))` |
+| Contrôle | `CHECK ((key_id ~ '^[A-Za-z0-9_-]{1,64}$'::text))` |
+| Contrôle | `CHECK (((sealed ~ '^v1\.[A-Za-z0-9_-]{1,64}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'::text) AND (char_length(sealed) <= 4000)))` |
 | Clé étrangère | `FOREIGN KEY (connection_id) REFERENCES meta_connections(id) ON DELETE CASCADE` |
-| n | `NOT NULL auth_tag` |
-| n | `NOT NULL ciphertext` |
 | n | `NOT NULL connection_id` |
-| n | `NOT NULL iv` |
-| n | `NOT NULL key_version` |
+| n | `NOT NULL key_id` |
+| n | `NOT NULL sealed` |
 | n | `NOT NULL updated_at` |
 | Clé primaire | `PRIMARY KEY (connection_id)` |
 
@@ -470,6 +465,10 @@ RLS : activée · 0 politique(s) · schéma non exposé par l’API
 | n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 | Unique | `UNIQUE (workspace_id, meta_ad_account_id)` |
+
+| Index | Définition |
+|---|---|
+| ad_accounts_one_active | `UNIQUE public.ad_accounts USING btree (workspace_id) WHERE is_active` |
 
 RLS : activée · 1 politique(s)
 

@@ -42,7 +42,7 @@ await db.exec(`
   insert into public.workspace_members values ('${ids.WA}','${ids.A}','owner',null,now()),('${ids.WB}','${ids.B}','owner',null,now()),('${ids.WA}','${ids.V}','viewer',null,now());
   insert into public.campaigns (id,workspace_id,name,created_by) values ('${ids.CA}','${ids.WA}','Campagne A','${ids.A}'),('${ids.CB}','${ids.WB}','Campagne SECRETE B','${ids.B}');
   insert into public.meta_connections (id,workspace_id,token_type) values ('dddddddd-dddd-dddd-dddd-dddddddddddd','${ids.WB}','user');
-  insert into private.meta_tokens values ('dddddddd-dddd-dddd-dddd-dddddddddddd','\\x00'::bytea,'\\x000000000000000000000000'::bytea,'\\x00000000000000000000000000000000'::bytea,1,now());
+  insert into private.meta_tokens (connection_id, sealed, key_id) values ('dddddddd-dddd-dddd-dddd-dddddddddddd','v1.k1.aXZpdml2aXZpdml2.Y2lwaGVydGV4dA.dGFndGFndGFndGFndGFndA','k1');
   insert into public.credit_ledger (workspace_id,bucket,kind,amount) values ('${ids.WA}','monthly','grant_monthly',10),('${ids.WA}','purchased','purchase',3),('${ids.WB}','monthly','grant_monthly',10);
   insert into private.admin_users (profile_id) values ('${ids.ADM}');
   insert into public.agent_runs (workspace_id,agent,model,prompt_version,valid_schema) values ('${ids.WA}','analyste','gemini','v2',true);

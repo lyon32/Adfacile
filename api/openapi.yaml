@@ -294,22 +294,38 @@ paths:
       tags: [ Meta ]
       operationId: startMetaConnect
       summary: Démarrer la connexion Meta (renvoie l'URL de la fenêtre Facebook)
+      description: Propriétaire, espace modifiable. L'URL contient un paramètre `state` signé (anti-CSRF) lié à l'utilisateur, à l'espace et à une durée de 10 minutes ; il ne sert qu'une fois.
+      requestBody:
+        required: false
+        content: { application/json: { schema: { $ref: '#/components/schemas/MetaConnectRequest' } } }
       responses:
         '200': { description: OK, content: { application/json: { schema: { type: object, required: [ authorize_url ], properties: { authorize_url: { type: string, format: uri } } } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /meta/callback:
     get:
       tags: [ Meta ]
       operationId: metaCallback
       summary: Retour de la fenêtre Facebook (redirection vers l'application)
-      description: Vérifie le paramètre `state` (anti-CSRF, lié à la session), échange le code, chiffre et stocke le jeton.
+      description: |
+        Vérifie le paramètre `state` (signature, durée, utilisateur de la session, usage unique), échange le code, chiffre et stocke le jeton, puis enregistre les comptes publicitaires et les Pages.
+        Toujours une redirection 302 vers `/bienvenue/meta` ou `/reglages/comptes-meta` (selon `return_to` de la demande) avec `?meta=connected`, ou `?meta=error&reason=denied|state|meta` (APPFLOW §6.1 : « La connexion n'a pas abouti »). Sans session : 401.
       parameters:
-        - { name: code, in: query, required: false, schema: { type: string } }
-        - { name: state, in: query, required: true, schema: { type: string } }
-        - { name: error, in: query, required: false, schema: { type: string } }
+        - { name: code, in: query, required: false, schema: { type: string, maxLength: 2048 } }
+        - { name: state, in: query, required: true, schema: { type: string, maxLength: 2048 } }
+        - { name: error, in: query, required: false, schema: { type: string, maxLength: 200 } }
+        - { name: error_reason, in: query, required: false, schema: { type: string, maxLength: 200 } }
+        - { name: error_description, in: query, required: false, schema: { type: string, maxLength: 1000 } }
       responses:
         '302': { description: Redirection vers /bienvenue/meta ou /reglages/comptes-meta }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /workspaces/{workspaceId}/meta/connections:
     parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
     get:
@@ -318,7 +334,10 @@ paths:
       summary: Connexions Meta (sans jeton)
       responses:
         '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/MetaConnection' } } } } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
   /workspaces/{workspaceId}/meta/connections/{connectionId}:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -326,10 +345,15 @@ paths:
     delete:
       tags: [ Meta ]
       operationId: disconnectMeta
-      summary: Déconnecter Meta (le jeton est révoqué et effacé)
+      summary: Déconnecter Meta (le jeton est effacé, les Pages sont désactivées)
+      description: Propriétaire, espace modifiable. Les campagnes déjà publiées restent actives chez Meta. L'autorisation donnée à Pubeka se retire aussi dans les réglages de Facebook.
       responses:
         '204': { description: Déconnecté }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
   /workspaces/{workspaceId}/meta/connections/{connectionId}/health-check:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -338,10 +362,16 @@ paths:
       tags: [ Meta ]
       operationId: runHealthCheck
       summary: Lancer le bilan de santé (F1)
+      description: Propriétaire, espace modifiable. Relit chez Meta les comptes publicitaires et les Pages (mise à jour de la liste), puis contrôle le compte publicitaire et la Page actifs.
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/HealthCheck' } } } }
-        '502': { $ref: '#/components/responses/BadGateway' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '424': { $ref: '#/components/responses/FailedDependency' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '502': { $ref: '#/components/responses/BadGateway' }
   /workspaces/{workspaceId}/pages:
     parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
     get:
@@ -349,8 +379,11 @@ paths:
       operationId: listPages
       summary: Pages Facebook connectées
       responses:
-        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/Page' } } } } } } }
+        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data, quotas ], properties: { data: { type: array, items: { $ref: '#/components/schemas/Page' } }, quotas: { type: object, required: [ pages_active, pages_limit ], properties: { pages_active: { type: integer }, pages_limit: { type: integer } } } } } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
   /workspaces/{workspaceId}/pages/{pageId}:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -359,14 +392,19 @@ paths:
       tags: [ Meta ]
       operationId: updatePage
       summary: Activer une Page (selon la formule) ou régler la langue et le ton des pubs
+      description: 'Activer ou désactiver : propriétaire. Langue et ton des pubs : propriétaire ou éditeur. Au-delà de la limite de la formule → 402 `page_limit_reached`. Désactiver une Page verrouillée pour la période (une campagne a été lancée avec elle) → 409 `conflict` avec `meta.reason = "page_locked"`.'
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/PageUpdate' } } }
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Page' } } } }
-        '402': { $ref: '#/components/responses/PaymentRequired' }
-        '409': { $ref: '#/components/responses/Conflict' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
   /workspaces/{workspaceId}/pages/{pageId}/brand-kit:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -374,14 +412,18 @@ paths:
     get:
       tags: [ Meta ]
       operationId: getBrandKit
-      summary: Kit de marque de la Page
+      summary: Kit de marque de la Page (valeurs par défaut si jamais enregistré)
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/BrandKit' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
     put:
       tags: [ Meta ]
       operationId: putBrandKit
       summary: Enregistrer le kit de marque
+      description: Propriétaire ou éditeur, espace modifiable. `logo_path` doit désigner un fichier de l'espace dans le compartiment `brand` (`<workspace_id>/…`).
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/BrandKit' } } }
@@ -389,6 +431,9 @@ paths:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/BrandKit' } } } }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
   /workspaces/{workspaceId}/ad-accounts:
     parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
     get:
@@ -397,7 +442,10 @@ paths:
       summary: Comptes publicitaires
       responses:
         '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/AdAccount' } } } } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
   /workspaces/{workspaceId}/ad-accounts/{adAccountId}/activate:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -406,9 +454,14 @@ paths:
       tags: [ Meta ]
       operationId: activateAdAccount
       summary: Choisir le compte publicitaire actif
+      description: Propriétaire, espace modifiable. Un seul compte actif par espace.
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AdAccount' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
 
   # ------------------------------------------------------------------ Sources et analyse
   /workspaces/{workspaceId}/uploads:
@@ -1448,19 +1501,27 @@ components:
         status: { type: string, enum: [ ok, expiring, expired, revoked ] }
         expires_at: { type: [ string, 'null' ], format: date-time }
         business_id: { type: [ string, 'null' ] }
+        last_health_check: { oneOf: [ { $ref: '#/components/schemas/HealthCheck' }, { type: 'null' } ] }
+    MetaConnectRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        return_to: { type: string, enum: [ onboarding, settings ], default: settings, description: "Écran où revenir après Facebook : /bienvenue/meta ou /reglages/comptes-meta" }
     HealthCheck:
       type: object
       required: [ items ]
       properties:
+        checked_at: { type: string, format: date-time }
         items:
           type: array
           items:
             type: object
             required: [ key, ok ]
             properties:
-              key: { type: string, enum: [ business_portfolio, ad_account, payment_method, page, instagram, whatsapp, pixel ] }
+              key: { type: string, enum: [ business_portfolio, ad_account, payment_method, page, instagram, whatsapp, pixel, permissions ] }
               ok: { type: boolean }
-              required: { type: boolean }
+              required: { type: boolean, description: "Bloque la suite si rouge (seul le compte publicitaire)" }
+              recommended: { type: boolean, description: "Fortement recommandé (WhatsApp) : bandeau orange si rouge" }
               guide_slug: { type: string }
     Page:
       type: object

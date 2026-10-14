@@ -123,7 +123,7 @@ export class GraphClient {
     url: string,
     timeoutMs: number,
     maxBytes: number = MAX_DOWNLOAD_BYTES,
-  ): Promise<{ bytes: Uint8Array; contentType: string | null }> {
+  ): Promise<{ bytes: Uint8Array<ArrayBuffer>; contentType: string | null }> {
     const response = await this.fetchFn(url, {
       method: 'GET',
       redirect: 'error',
