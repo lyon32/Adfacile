@@ -34,6 +34,7 @@ export default defineConfig({
   },
   webServer: {
     command: 'pnpm exec next start -p 5173',
+    cwd: '../..',
     port: 5173,
     reuseExistingServer: process.env.CI === undefined,
     timeout: 120_000,
