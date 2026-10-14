@@ -1,0 +1,8 @@
+@import 'tailwindcss';
+@import '../src/styles/theme.css';
+@source './';
+
+/* Démonstration : le loader inline garde son état final au lieu de s'effacer. */
+.demo-static .lg {
+  animation: none;
+}
