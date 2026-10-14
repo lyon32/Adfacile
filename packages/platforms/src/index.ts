@@ -5,3 +5,6 @@ export { googleConnector } from './google';
 export { tiktokConnector } from './tiktok';
 export * from './meta/errors';
 export * from './meta/token-crypto';
+export * from './meta/ad-account-time';
+export * from './meta/campaign-objectives';
+export * from './meta/messaging-destinations';
