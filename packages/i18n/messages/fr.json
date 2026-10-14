@@ -1,0 +1,89 @@
+{
+  "common": {
+    "loading": "Chargement…",
+    "save": "Enregistrer",
+    "saved": "Enregistré",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "continue": "Continuer",
+    "later": "Plus tard",
+    "back": "Retour",
+    "retry": "Réessayer",
+    "error": "Une erreur est survenue. Réessaie dans quelques instants.",
+    "optional": "facultatif"
+  },
+  "shell": {
+    "skip_link": "Aller au contenu",
+    "opening": "Ouverture de Pubeka",
+    "page_loading": "Chargement de la page",
+    "brand": "Pubeka",
+    "nav": {
+      "main_label": "Navigation principale",
+      "menu_title": "Menu",
+      "account_title": "Compte",
+      "home": "Accueil",
+      "campaigns": "Campagnes",
+      "visuals": "Visuels",
+      "stats": "Statistiques",
+      "billing": "Abonnement",
+      "settings": "Réglages",
+      "help": "Aide"
+    },
+    "tabs": {
+      "label": "Navigation",
+      "home": "Accueil",
+      "campaigns": "Campagnes",
+      "visuals": "Visuels",
+      "account": "Compte"
+    },
+    "page_selector": {
+      "label": "Page active",
+      "empty_title": "Aucune Page connectée",
+      "empty_hint": "Connecte ta Page pour publier tes pubs.",
+      "connect": "Connecter une Page"
+    },
+    "upgrade": {
+      "title": "Passer à Pro",
+      "body": "Plus de Pages, plus de campagnes et de visuels chaque mois.",
+      "cta": "Voir les formules"
+    },
+    "plan": {
+      "starter": "Formule Starter",
+      "pro": "Formule Pro",
+      "business": "Formule Business",
+      "trial": "Essai gratuit"
+    },
+    "banner": {
+      "empty_title": "Ta première campagne t’attend",
+      "empty_body": "Colle le lien de ton site ou de ta Page : Pubeka prépare la pub.",
+      "empty_cta": "Créer une campagne"
+    },
+    "account": {
+      "open": "Ouvrir le menu du compte",
+      "title": "Ton compte",
+      "settings": "Réglages",
+      "language": "Langue",
+      "theme": "Thème",
+      "theme_light": "Clair",
+      "theme_dark": "Sombre",
+      "theme_system": "Système",
+      "sign_out": "Se déconnecter",
+      "close": "Fermer",
+      "update_failed": "Le changement n’a pas été enregistré. Réessaie."
+    }
+  },
+  "dashboard": {
+    "greeting": {
+      "bonjour": "Bonjour",
+      "bonsoir": "Bonsoir",
+      "hello": "Hello",
+      "good_evening": "Good evening"
+    },
+    "home": {
+      "title": "Accueil",
+      "first_campaign_title": "Crée ta première pub",
+      "first_campaign_body": "Colle le lien de ton site ou de ta Page. Pubeka prépare le texte, le visuel et le budget ; tu valides, puis tu publies.",
+      "first_campaign_cta": "Nouvelle campagne"
+    }
+  }
+}
