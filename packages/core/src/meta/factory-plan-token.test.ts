@@ -121,7 +121,11 @@ describe('createMetaConnector', () => {
 describe('pagePlanOf', () => {
   it('Starter sans abonnement : 1 Page, pas de période', async () => {
     const svc = new FakeClient().reply(ok([]), PLANS, ok(null));
-    expect(await pagePlanOf(svc.asService(), WS)).toEqual({ maxPages: 1, periodStart: null });
+    expect(await pagePlanOf(svc.asService(), WS)).toEqual({
+      plan: 'starter',
+      maxPages: 1,
+      periodStart: null,
+    });
   });
 
   it('Pro avec abonnement : 3 Pages et le début de la période en cours', async () => {
@@ -139,6 +143,7 @@ describe('pagePlanOf', () => {
       ok({ period_start: '2026-10-01T00:00:00.000Z' }),
     );
     expect(await pagePlanOf(svc.asService(), WS)).toEqual({
+      plan: 'pro',
       maxPages: 3,
       periodStart: '2026-10-01T00:00:00.000Z',
     });
