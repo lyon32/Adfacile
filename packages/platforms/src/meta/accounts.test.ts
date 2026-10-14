@@ -13,6 +13,7 @@ import {
   getUserPages,
   getWhatsAppAccounts,
   listAdAccountsWithPixels,
+  pageTokenOrUser,
 } from './accounts';
 import { toAppError } from './errors';
 
@@ -206,16 +207,25 @@ describe('comptes publicitaires', () => {
 });
 
 describe('Pages et permissions', () => {
-  it('liste les Pages sans demander leur jeton', async () => {
+  it('liste les Pages avec leur jeton propre, comme AdFacile (me/accounts avec access_token)', async () => {
     const graph = new FakeGraph(() => ({
-      data: [{ id: 'P1', name: 'Lyon Deals', category: 'Boutique' }, { id: 'P2' }],
+      data: [
+        { id: 'P1', name: 'Lyon Deals', category: 'Boutique', access_token: 'JETON-PAGE' },
+        { id: 'P2' },
+      ],
     }));
     const pages = await getUserPages(graph.client(), 'jeton');
     expect(pages).toEqual([
-      { id: 'P1', name: 'Lyon Deals', category: 'Boutique' },
-      { id: 'P2', name: 'P2', category: null },
+      { id: 'P1', name: 'Lyon Deals', category: 'Boutique', accessToken: 'JETON-PAGE' },
+      { id: 'P2', name: 'P2', category: null, accessToken: null },
     ]);
-    expect(graph.calls[0]?.params.fields).not.toMatch(/access_token/);
+    expect(graph.calls[0]?.params.fields).toMatch(/access_token/);
+  });
+
+  it('utilise le jeton de la Page quand il existe, sinon celui de l’utilisateur (repli d’AdFacile)', () => {
+    expect(pageTokenOrUser({ accessToken: 'PAGE' }, 'USER')).toBe('PAGE');
+    expect(pageTokenOrUser({ accessToken: null }, 'USER')).toBe('USER');
+    expect(pageTokenOrUser(undefined, 'USER')).toBe('USER');
   });
 
   it('conserve la cause de Meta quand la lecture des Pages échoue', async () => {
