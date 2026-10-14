@@ -13,6 +13,7 @@ export * from './account/notification-preferences';
 export * from './meta/connections';
 export * from './meta/connector-factory';
 export * from './meta/deps';
+export * from './meta/health';
 export * from './meta/oauth-state';
 export * from './meta/redirect-uri';
 export * from './meta/view';
