@@ -109,6 +109,22 @@ export async function updateMe(ctx: Ctx, patch: MeUpdate): Promise<Me> {
     const value = patch[field];
     if (value !== undefined) changes[field] = value;
   }
+  // Changer de pays recalcule le fuseau (APPFLOW §14) ; le fuseau n'est jamais saisi.
+  if (patch.country_code !== undefined) {
+    const country = await ctx.db
+      .from('countries')
+      .select('timezone_default')
+      .eq('code', patch.country_code)
+      .eq('active', true)
+      .maybeSingle();
+    if (country.error !== null) throw new AppError('internal_error', { cause: country.error });
+    if (country.data === null) {
+      throw new AppError('validation_failed', {
+        errors: [{ field: 'country_code', code: 'unknown_country', message: 'Unknown country' }],
+      });
+    }
+    changes.timezone = country.data.timezone_default;
+  }
   if (Object.keys(changes).length === 0) return getMe(ctx);
   const res = await ctx.db
     .from('profiles')

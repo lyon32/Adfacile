@@ -206,7 +206,7 @@ export function AppShell({
           tabIndex={-1}
           className="mx-auto w-full max-w-5xl px-4 pt-6 pb-28 outline-none min-[980px]:px-10 min-[980px]:pt-10 min-[980px]:pb-16"
         >
-          {pathname === '/' ? null : banner}
+          {pathname === '/' || pathname.startsWith('/bienvenue') ? null : banner}
           {children}
         </main>
       </div>

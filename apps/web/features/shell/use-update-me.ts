@@ -21,6 +21,12 @@ export function writeCookie(name: string, value: string): void {
 export interface MePatch {
   ui_language?: Locale;
   theme?: Theme;
+  country_code?: string;
+  city?: string;
+  currency_display?: 'XAF' | 'XOF';
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
 }
 
 export function useUpdateMe() {
