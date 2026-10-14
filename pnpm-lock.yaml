@@ -307,7 +307,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.2
-        version: 5.0.2(@edge-runtime/vm@3.2.0)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@24.19.0)(jiti@2.7.0))
+        version: 5.0.2(@edge-runtime/vm@3.2.0)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@24.19.0)(esbuild@0.27.0)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.1))
 
   jobs:
     devDependencies:
@@ -401,7 +401,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.2
-        version: 5.0.2(@edge-runtime/vm@3.2.0)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@24.19.0)(jiti@2.7.0))
+        version: 5.0.2(@edge-runtime/vm@3.2.0)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@24.19.0)(esbuild@0.27.0)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.1))
       yaml:
         specifier: 2.9.1
         version: 2.9.1
@@ -429,7 +429,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.2
-        version: 5.0.2(@edge-runtime/vm@3.2.0)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@24.19.0)(jiti@2.7.0))
+        version: 5.0.2(@edge-runtime/vm@3.2.0)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@24.19.0)(esbuild@0.27.0)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.1))
 
   packages/db:
     dependencies:
@@ -502,16 +502,32 @@ importers:
         version: 6.0.3
 
   packages/platforms:
+    dependencies:
+      '@pubeka/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@pubeka/shared':
+        specifier: workspace:*
+        version: link:../shared
     devDependencies:
       '@pubeka/config':
         specifier: workspace:*
         version: link:../config
+      '@types/node':
+        specifier: 24.19.0
+        version: 24.19.0
+      '@vitest/coverage-v8':
+        specifier: 5.0.2
+        version: 5.0.2(vitest@5.0.2)
       eslint:
         specifier: 10.11.0
         version: 10.11.0(jiti@2.7.0)(supports-color@7.2.0)
       typescript:
         specifier: 6.0.3
         version: 6.0.3
+      vitest:
+        specifier: 5.0.2
+        version: 5.0.2(@edge-runtime/vm@3.2.0)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@24.19.0)(jiti@2.7.0))
 
   packages/shared:
     dependencies:
@@ -8774,7 +8790,7 @@ snapshots:
       obug: 2.2.1
       std-env: 4.3.0
       tinyrainbow: 3.2.0
-      vitest: 5.0.2(@edge-runtime/vm@3.2.0)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@24.19.0)(esbuild@0.27.0)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.1))
+      vitest: 5.0.2(@edge-runtime/vm@3.2.0)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@24.19.0)(jiti@2.7.0))
 
   '@vitest/istanbul-lib-coverage@1.0.2': {}
 
