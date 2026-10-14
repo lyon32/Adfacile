@@ -14,3 +14,7 @@ export * from './meta/media-specs';
 export * from './meta/accounts';
 export * from './meta/graph';
 export * from './meta/token-health';
+export * from './meta/creative';
+export * from './meta/destination';
+export * from './meta/media-upload';
+export * from './meta/targeting';

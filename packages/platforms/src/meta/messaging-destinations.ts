@@ -77,6 +77,11 @@ export const CONNECTION_REQUIREMENT = {
 /** Tous les destination_type qui désignent une conversation. */
 const MESSAGING_DESTINATION_TYPES = new Set(Object.values(DESTINATION_TYPE_BY_COMBO));
 
+/** Première valeur non vide : l'équivalent du `a || b` d'AdFacile, qui traite la chaîne vide comme absente. */
+export function firstFilled(...values: (string | null | undefined)[]): string | undefined {
+  return values.find((v) => v !== null && v !== undefined && v !== '') ?? undefined;
+}
+
 /**
  * Réduit un numéro WhatsApp à ses chiffres, indicatif pays compris.
  *
@@ -167,12 +172,12 @@ export function validateMessagingApps(
   // publicités mais la publicité reste sans numéro à promouvoir : le sélecteur du gestionnaire de
   // publicités s'affiche vide et la publicité ne peut pas être diffusée.
   if (selected.includes('whatsapp')) {
-    const numero = normalizeWhatsAppNumber(options.whatsappPhoneNumber ?? account.whatsappNumber);
+    const numero = normalizeWhatsAppNumber(
+      firstFilled(options.whatsappPhoneNumber, account.whatsappNumber),
+    );
     // L'identifiant suffit : Meta en déduit le numéro.
     const identifiant = (
-      options.whatsappPhoneNumberId ??
-      account.whatsappPhoneNumberId ??
-      ''
+      firstFilled(options.whatsappPhoneNumberId, account.whatsappPhoneNumberId) ?? ''
     ).trim();
     if (!numero && !/^\d+$/.test(identifiant)) {
       errors.push("Indiquez l'identifiant du numéro WhatsApp Business à promouvoir.");

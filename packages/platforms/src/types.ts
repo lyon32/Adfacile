@@ -144,8 +144,8 @@ export interface PublishSpec {
 export interface PublishPatch {
   name?: string;
   dailyBudgetUsdCents?: number;
-  /** AAAA-MM-JJ, ou null pour retirer la date de fin. */
-  endDate?: string | null;
+  /** AAAA-MM-JJ, interprété dans le fuseau du compte publicitaire. */
+  endDate?: string;
 }
 
 /** Identifiants chez la plateforme (colonnes `meta_*` de `campaigns` et `ads`). */
