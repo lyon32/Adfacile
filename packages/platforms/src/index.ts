@@ -18,3 +18,4 @@ export * from './meta/creative';
 export * from './meta/destination';
 export * from './meta/media-upload';
 export * from './meta/targeting';
+export * from './meta/ssrf';

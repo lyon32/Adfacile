@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { failure, FakeGraph, file, type GraphHandler } from './fake-graph.test-helper';
+import { failure, FakeGraph, file, GraphReply, type GraphHandler } from './fake-graph.test-helper';
 import { MetaValidationError } from './errors';
 import {
   findWhatsAppIdentity,
@@ -8,6 +8,9 @@ import {
   uploadAdVideo,
   uploadMediaItem,
 } from './media-upload';
+
+// L'hôte autorisé est obligatoire (anti-SSRF) : les tests AdFacile utilisaient cdn.test.
+const OPT = { allowedMediaHosts: ['cdn.test'] };
 
 // Tests portés de backend/src/services/facebookAdsService.test.js (TR-PLA-02) : uploadAdImage,
 // uploadAdVideo, rollbackFacebookObjects.
@@ -21,7 +24,13 @@ describe('uploadAdImage', () => {
         : { images: { 'creative.png': { hash: 'abc123' } } },
     );
 
-    const hash = await uploadAdImage(graph.client(), 'act_1', 'token', 'https://cdn.test/img.png');
+    const hash = await uploadAdImage(
+      graph.client(),
+      'act_1',
+      'token',
+      'https://cdn.test/img.png',
+      OPT,
+    );
 
     expect(hash).toBe('abc123');
     expect(graph.calls[0]).toMatchObject({ method: 'GET', path: 'https://cdn.test/img.png' });
@@ -42,21 +51,56 @@ describe('uploadAdImage', () => {
   it('rejette une URL blob: laissée par un aperçu local', async () => {
     const graph = new FakeGraph(() => ({}));
     await expect(
-      uploadAdImage(graph.client(), 'act_1', 'token', 'blob:http://localhost:5173/abc'),
+      uploadAdImage(graph.client(), 'act_1', 'token', 'blob:http://localhost:5173/abc', OPT),
     ).rejects.toThrow(/téléversé/i);
     expect(graph.calls).toHaveLength(0);
   });
 
-  it("n'accepte que les hôtes de médias autorisés quand la liste est fournie (SSRF)", async () => {
+  it("n'accepte que les hôtes de médias autorisés (SSRF)", async () => {
     const graph = new FakeGraph(() => ({}));
-    const options = { allowedMediaHosts: ['storage.pubeka.test'] };
     await expect(
-      uploadAdImage(graph.client(), 'act_1', 't', 'https://169.254.169.254/latest', options),
+      uploadAdImage(graph.client(), 'act_1', 't', 'https://169.254.169.254/latest', OPT),
     ).rejects.toBeInstanceOf(MetaValidationError);
     await expect(
-      uploadAdImage(graph.client(), 'act_1', 't', 'http://[bad', options),
+      uploadAdImage(graph.client(), 'act_1', 't', 'http://[bad', OPT),
+    ).rejects.toBeInstanceOf(MetaValidationError);
+    await expect(
+      uploadAdImage(graph.client(), 'act_1', 't', 'https://autre.test/a.png', OPT),
     ).rejects.toBeInstanceOf(MetaValidationError);
     expect(graph.calls).toHaveLength(0);
+  });
+
+  it('refuse de télécharger sans liste d’hôtes : absente ou vide → erreur explicite', async () => {
+    const graph = new FakeGraph(() => ({}));
+    await expect(
+      // @ts-expect-error la liste est obligatoire
+      uploadAdImage(graph.client(), 'act_1', 't', 'https://cdn.test/a.png', {}),
+    ).rejects.toMatchObject({
+      code: 'internal_error',
+    });
+    await expect(
+      uploadAdVideo(graph.client(), 'act_1', 't', 'https://cdn.test/a.mp4', {
+        allowedMediaHosts: [],
+      }),
+    ).rejects.toMatchObject({ code: 'internal_error' });
+    expect(graph.calls).toHaveLength(0);
+  });
+
+  it("borne la taille du téléchargement d'une image à 30 Mo (Content-Length)", async () => {
+    const graph = new FakeGraph((call) =>
+      call.path.startsWith('https://cdn.test')
+        ? new GraphReply(
+            200,
+            null,
+            { 'content-length': String(31 * 1024 * 1024) },
+            new Uint8Array(1),
+          )
+        : {},
+    );
+    await expect(
+      uploadAdImage(graph.client(), 'act_1', 't', 'https://cdn.test/a.png', OPT),
+    ).rejects.toThrow(/trop volumineux/);
+    expect(graph.calls.filter((c) => c.method === 'POST')).toHaveLength(0);
   });
 
   it('échoue si Meta ne renvoie pas de hash, au lieu de continuer sans visuel', async () => {
@@ -64,7 +108,7 @@ describe('uploadAdImage', () => {
       call.path.startsWith('https://') ? file('image/png') : { images: {} },
     );
     await expect(
-      uploadAdImage(graph.client(), 'act_1', 'token', 'https://cdn.test/i.png'),
+      uploadAdImage(graph.client(), 'act_1', 'token', 'https://cdn.test/i.png', OPT),
     ).rejects.toThrow(/identifiant/i);
   });
 
@@ -72,7 +116,7 @@ describe('uploadAdImage', () => {
     const graph = new FakeGraph((call) =>
       call.path.startsWith('https://') ? file('', 'x') : { images: { a: { hash: 'h' } } },
     );
-    await uploadAdImage(graph.client(), 'act_1', 't', 'https://cdn.test/dossier/');
+    await uploadAdImage(graph.client(), 'act_1', 't', 'https://cdn.test/dossier/', OPT);
     const source = graph.calls[1]?.form?.get('source') as File;
     expect(source.name).toBe('creative');
   });
@@ -110,7 +154,12 @@ describe('rollbackFacebookObjects', () => {
 });
 
 describe('uploadAdVideo', () => {
-  const sansPause = { pause: () => Promise.resolve(), intervalleMs: 3000, delaiMaxMs: 9000 };
+  const sansPause = {
+    ...OPT,
+    pause: () => Promise.resolve(),
+    intervalleMs: 3000,
+    delaiMaxMs: 9000,
+  };
 
   function graphVideo(statuts: string[]): FakeGraph {
     const file_ = [...statuts];
@@ -202,7 +251,13 @@ describe('uploadAdVideo', () => {
 
   it("utilise l'attente réelle par défaut (aucune pause quand la vidéo est déjà prête)", async () => {
     const graph = graphVideo(['ready']);
-    const res = await uploadAdVideo(graph.client(), 'act_1', 'token', 'https://cdn.test/v.mp4');
+    const res = await uploadAdVideo(
+      graph.client(),
+      'act_1',
+      'token',
+      'https://cdn.test/v.mp4',
+      OPT,
+    );
     expect(res.video_id).toBe('VID');
   });
 });
@@ -218,10 +273,10 @@ describe('uploadMediaItem', () => {
     });
     const g = graph.client();
     expect(
-      await uploadMediaItem(g, 'act_1', 't', { url: 'https://cdn.test/a.jpg', type: 'image' }),
+      await uploadMediaItem(g, 'act_1', 't', { url: 'https://cdn.test/a.jpg', type: 'image' }, OPT),
     ).toEqual({ type: 'image', hash: 'H' });
     expect(
-      await uploadMediaItem(g, 'act_1', 't', { url: 'https://cdn.test/a.mp4', type: 'video' }),
+      await uploadMediaItem(g, 'act_1', 't', { url: 'https://cdn.test/a.mp4', type: 'video' }, OPT),
     ).toEqual({
       type: 'video',
       video_id: 'V',

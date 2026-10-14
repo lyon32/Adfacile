@@ -6,7 +6,9 @@ import { z } from 'zod';
 import type { MediaItem } from '../types';
 import type { UploadedMedia } from './creative';
 import { MetaValidationError } from './errors';
+import { IMAGE_MAX_BYTES, VIDEO_MAX_BYTES } from './media-specs';
 import { firstFilled } from './messaging-destinations';
+import { assertDownloadableMediaUrl } from './ssrf';
 import type { GraphClient } from './graph';
 
 const wait = (ms: number): Promise<void> =>
@@ -22,25 +24,10 @@ export interface UploadOptions {
   /** Attente injectable pour les tests. */
   pause?: (ms: number) => Promise<void>;
   /**
-   * Hôtes autorisés pour les médias (le stockage privé de Pubeka). Sans liste, tout lien http(s) est
-   * accepté ; `core` doit la fournir pour qu'un lien arbitraire ne fasse pas télécharger n'importe quoi
-   * par le serveur (SSRF).
+   * Hôtes autorisés pour les médias (le stockage de Pubeka) : OBLIGATOIRE et non vide. Sans elle, aucun
+   * téléchargement n'a lieu : un lien arbitraire ne doit pas faire télécharger n'importe quoi par le serveur (SSRF).
    */
-  allowedMediaHosts?: readonly string[];
-}
-
-function assertMediaUrl(
-  mediaUrl: string,
-  message: string,
-  allowedHosts: readonly string[] | undefined,
-): void {
-  // Notamment les URL blob: laissées par un aperçu local du navigateur, que Meta ne peut évidemment
-  // pas atteindre.
-  if (!/^https?:\/\//i.test(mediaUrl)) throw new MetaValidationError(message);
-  if (allowedHosts) {
-    const host = URL.canParse(mediaUrl) ? new URL(mediaUrl).hostname : '';
-    if (!allowedHosts.includes(host)) throw new MetaValidationError(message);
-  }
+  allowedMediaHosts: readonly string[];
 }
 
 function fileName(mediaUrl: string, fallback: string): string {
@@ -67,15 +54,15 @@ export async function uploadAdImage(
   adAccountId: string,
   accessToken: string,
   mediaUrl: string,
-  options: UploadOptions = {},
+  options: UploadOptions,
 ): Promise<string> {
-  assertMediaUrl(
+  assertDownloadableMediaUrl(
     mediaUrl,
     "Le visuel n'a pas été correctement téléversé. Ajoutez-le à nouveau.",
     options.allowedMediaHosts,
   );
 
-  const download = await graph.download(mediaUrl, 30_000);
+  const download = await graph.download(mediaUrl, 30_000, IMAGE_MAX_BYTES);
   const form = new FormData();
   form.append(
     'source',
@@ -111,17 +98,17 @@ export async function uploadAdVideo(
   adAccountId: string,
   accessToken: string,
   mediaUrl: string,
-  options: UploadOptions = {},
+  options: UploadOptions,
 ): Promise<{ video_id: string; thumbnail_url: string | null }> {
   const { intervalleMs = 3000, delaiMaxMs = 120_000, pause = wait } = options;
 
-  assertMediaUrl(
+  assertDownloadableMediaUrl(
     mediaUrl,
     "La vidéo n'a pas été correctement téléversée. Ajoutez-la à nouveau.",
     options.allowedMediaHosts,
   );
 
-  const download = await graph.download(mediaUrl, 120_000);
+  const download = await graph.download(mediaUrl, 120_000, VIDEO_MAX_BYTES);
   const form = new FormData();
   form.append(
     'source',
@@ -175,7 +162,7 @@ export async function uploadMediaItem(
   adAccountId: string,
   accessToken: string,
   item: MediaItem,
-  options: UploadOptions = {},
+  options: UploadOptions,
 ): Promise<UploadedMedia> {
   if (item.type === 'video') {
     return {
