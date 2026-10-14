@@ -28,6 +28,8 @@ export interface PlatformAdAccount {
   usable: boolean;
   currency: string | null;
   timezone: string | null;
+  /** Nombre d'ensembles de données (pixels) du compte ; null si non lu ou refusé. */
+  pixelsCount: number | null;
 }
 
 export interface PlatformPage {

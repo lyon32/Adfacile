@@ -194,12 +194,23 @@ export class MetaValidationError extends Error {
   }
 }
 
+/** Une opération de lecture a échoué ; `cause` porte l'erreur d'origine (souvent une `MetaGraphError`). */
+export class MetaOperationError extends Error {
+  constructor(message: string, cause?: unknown) {
+    super(message, cause === undefined ? undefined : { cause });
+    this.name = 'MetaOperationError';
+  }
+}
+
 /**
  * Convertit toute erreur du connecteur en `AppError` (LLD §6.14). Le message d'origine part dans
  * `cause` (Sentry), jamais au client ; `meta` porte le message traduit.
  */
 export function toAppError(error: unknown): AppError {
   if (error instanceof AppError) return error;
+
+  if (error instanceof MetaOperationError && error.cause !== undefined)
+    return toAppError(error.cause);
 
   if (error instanceof MetaValidationError) {
     const errors: FieldError[] = error.validationErrors.map((message) => ({
