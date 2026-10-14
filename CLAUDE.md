@@ -161,6 +161,17 @@ Compétences du dépôt utiles à Pubeka : `turborepo` (monodépôt, S01), `shad
 | Textes de l'interface                         | `writing-guidelines`                                                                                                                    |
 | Une décision 🔶 devient définitive          | `architecture-decision-records`                                                                                                         |
 
+
+### Compléments installés : ECC (plugin `affaan-m/ECC`)
+
+Installé par la personne. **Facultatif**, à utiliser **si le besoin se présente**, jamais par défaut. Les règles de ce fichier priment toujours.
+
+- **Utile en relecture** (ils lisent, ils ne remplacent ni le contrôleur ni la CI) : `ecc:security-reviewer` (chiffrement, webhooks, paiement, SSRF), `ecc:database-reviewer` (migrations, RLS), `ecc:silent-failure-hunter` (erreurs avalées), `ecc:typescript-reviewer`, `ecc:react-reviewer`, `ecc:build-error-resolver` (build qui échoue, correctif minimal).
+- **Pas pour écrire du code métier** hors du périmètre de la session (§5), ni pour contourner une règle (§3).
+- **Ne pas lancer** les commandes de workflow qui prennent la main sur le mode continu (`ecc:orch-*`, `ecc:prp-*`, `ecc:multi-*`, `ecc:loop-*`, `ecc:feature-dev`).
+- **`ecc:astra-review` est interdit** : il envoie le code à un service tiers (OpenAI).
+- **Ne pas activer** ses hooks ni modifier `~/.claude/settings.json` sans l'accord de la personne.
+- **Le résultat d'un agent ECC est un avis.** Ce qui touche l'argent, la sécurité ou les données se vérifie dans les documents (ROADMAP §8.2).
 ---
 
 ## 7. Où trouver quoi
