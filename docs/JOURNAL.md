@@ -18,6 +18,15 @@
 
 ## Sessions terminées
 
+### S09 · Coque de l'application et première configuration — ✅ 2026-10-14
+- **PR** : #29, #30, #31, #32 (fusionnées en squash, dernier commit 60dbe72)
+- **Fait** : `next-intl` FR/EN et `i18n:check` (208 clés) ; coque (barre latérale, onglets en bas sur téléphone, bandeau, carte utilisateur, sélecteur de Page) ; TanStack Query, `nuqs`, magasin Zustand ; `/bienvenue/{etape}` ; `/reglages/profil`, `/reglages/equipe`, `/reglages/notifications` ; habillage final des écrans de S04.
+- **Preuves** : parcours P1 au vert (`e2e:ci`, 74/74, aussi en conditions CI) ; bascule de langue sans texte en dur (TR-PLT-03) ; 66 captures à 360, 390, 768 et 1280 px, clair et sombre, sans défilement horizontal, axe sans violation (branche `captures/s09`) ; `test:int` 89/89 ; « CI terminée » verte sur chaque PR.
+- **Problèmes et cause** : coupure réseau du sous-agent, repris. `AGENTS.md` et `CLAUDE.md` générés par Next avaient été commités : retirés et ignorés dans `.gitignore`. Prettier avait reformaté par erreur des tests de S05/S06 dans #31 : restaurés dans #32.
+- **Décisions prises** : le loader court garde son Lime foncé (décision de la personne, 14/10/2026). Hors chemins de §5 mais exigés par la fiche : route `GET/PUT /notifications/preferences` (rattachée à S27, 12 types de notification à confirmer en S27) ; recalcul du fuseau au changement de pays (`core/account/me.ts`) ; `turbo.json`, `pnpm-workspace.yaml`, parcours dans `apps/web/e2e/journeys`.
+- **Remarqué hors périmètre** : `OpeningLoader` de `packages/ui` reste affiché en développement (effets exécutés deux fois) : la coque le contourne, à corriger dans `packages/ui` ; pas d'écran `/invitation`, ni de liste ou annulation des invitations en attente, ni de transfert de propriété ; impossible d'effacer le numéro de téléphone (`MeUpdate` refuse `null`) ; `detail` traduit de `problem.ts` non fait ; étapes « essai » dépendantes de S24 ; ENV_SETUP §4 à compléter avec 8 dépendances (next-intl 4.14.7, @tanstack/react-query 5.104.0, nuqs 2.10.1, zustand 5.0.15, react-hook-form 7.89.0, @hookform/resolvers 5.9.1, tailwindcss et @tailwindcss/postcss 4.3.3, @axe-core/playwright 4.13.0).
+
+
 ### S08 · Design system en composants — ✅ 2026-10-14
 - **PR** : #27 (fusionnée en squash, commit 85ba53b)
 - **Fait** : `packages/ui` : jetons (DESIGN-SYSTEM §9, clair et sombre par `data-theme`, exportés en `@pubeka/ui/styles.css`) ; composants shadcn habillés (Button, Field, Switch, Card, Eyebrow, Dialog) ; Montant, Badge de statut (6 statuts), Carte de modèle ; loader « Saisie » (complet une fois par session, court au-delà de 300 ms) ; page de démonstration (`pnpm --filter @pubeka/ui demo`, port 5180).
