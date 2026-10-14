@@ -1,17 +1,14 @@
 'use client';
 // Mot de passe oublié (APPFLOW §4.3) : même message, compte connu ou non (EC-AUTH-05).
+import { Button, Field } from '@pubeka/ui';
+import { useTranslations } from 'next-intl';
 import { useState, type SubmitEvent, type ReactNode } from 'react';
-import { translator, type Locale } from './messages';
-import { OutcomeMessage } from './outcome-message';
+import { LINK_CLASS, OutcomeMessage } from './outcome-message';
 import { postAuth, type Outcome } from './post-auth';
 import { useTurnstile } from './use-turnstile';
-import styles from './auth.module.css';
 
-export function ForgotPasswordForm(props: {
-  locale: Locale;
-  captchaSiteKey: string | undefined;
-}): ReactNode {
-  const t = translator(props.locale);
+export function ForgotPasswordForm(props: { captchaSiteKey: string | undefined }): ReactNode {
+  const t = useTranslations('auth');
   const { mountCaptcha, captchaToken, resetCaptcha } = useTurnstile(props.captchaSiteKey);
   const [email, setEmail] = useState('');
   const [pending, setPending] = useState(false);
@@ -32,44 +29,42 @@ export function ForgotPasswordForm(props: {
 
   return (
     <>
-      <p>{t('auth.forgot.body')}</p>
+      <p className="text-muted">{t('forgot.body')}</p>
       <form
-        className={styles.form}
+        className="flex flex-col gap-5"
         onSubmit={(e) => {
           void handleSubmit(e);
         }}
       >
-        <div className={styles.field}>
-          <label htmlFor="email">{t('auth.common.email')}</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-            }}
-          />
-        </div>
-        <div ref={mountCaptcha} className={styles.captcha} />
+        <Field
+          label={t('common.email')}
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+          }}
+        />
+        <div ref={mountCaptcha} className="empty:hidden" />
         {outcome === 'ok' ? (
-          <p role="status" className={styles.alert}>
-            {t('auth.forgot.sent')}
+          <p
+            role="status"
+            className="border-line bg-bg rounded-md border px-3 py-2 text-sm font-semibold"
+          >
+            {t('forgot.sent')}
           </p>
         ) : (
-          <OutcomeMessage outcome={outcome} t={t} />
+          <OutcomeMessage outcome={outcome} />
         )}
-        <button type="submit" className={styles.primary} disabled={pending || !isReady}>
-          {pending ? t('auth.common.sending') : t('auth.forgot.submit')}
-        </button>
+        <Button type="submit" disabled={pending || !isReady}>
+          {pending ? t('common.sending') : t('forgot.submit')}
+        </Button>
       </form>
-      <div className={styles.links}>
-        <a className={styles.link} href="/connexion">
-          {t('auth.forgot.back')}
-        </a>
-      </div>
+      <a className={`${LINK_CLASS} text-[15px]`} href="/connexion">
+        {t('forgot.back')}
+      </a>
     </>
   );
 }

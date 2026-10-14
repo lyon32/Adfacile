@@ -34,6 +34,7 @@ export default defineConfig({
   },
   webServer: {
     command: 'pnpm exec next start -p 5173',
+    cwd: '../..',
     port: 5173,
     reuseExistingServer: process.env.CI === undefined,
     timeout: 120_000,
@@ -41,13 +42,13 @@ export default defineConfig({
   projects: [
     {
       name: 'tel-360',
-      testMatch: ['shell.spec.ts', 'onboarding.spec.ts', 'settings.spec.ts'],
+      testMatch: ['shell.spec.ts', 'onboarding.spec.ts', 'settings.spec.ts', 'auth.spec.ts'],
       use: viewport(360, 740),
     },
     { name: 'tel-390', use: viewport(390, 844) },
     {
       name: 'tablette-768',
-      testMatch: ['shell.spec.ts', 'onboarding.spec.ts', 'settings.spec.ts'],
+      testMatch: ['shell.spec.ts', 'onboarding.spec.ts', 'settings.spec.ts', 'auth.spec.ts'],
       use: viewport(768, 1024),
     },
     { name: 'ordinateur-1280', use: viewport(1280, 800) },

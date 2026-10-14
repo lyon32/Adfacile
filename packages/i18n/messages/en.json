@@ -206,5 +206,73 @@
         "optimizer_suggestion": "Optimizer suggestion"
       }
     }
+  },
+  "auth": {
+    "common": {
+      "or": "or",
+      "email": "Email",
+      "password": "Password",
+      "google": "Continue with Google",
+      "apple": "Continue with Apple",
+      "sending": "Sending…",
+      "captcha_wait": "Checking you are not a robot…"
+    },
+    "sign_in": {
+      "title": "Sign in",
+      "submit": "Sign in",
+      "forgot": "Forgot your password?",
+      "magic_link": "Email me a sign-in link",
+      "magic_link_sent": "If an account exists with this email, a sign-in link has just been sent to it.",
+      "no_account": "No account yet?",
+      "to_sign_up": "Create an account",
+      "idle_notice": "You were signed out after 10 minutes of inactivity. Sign in again to continue."
+    },
+    "sign_up": {
+      "title": "Create your account",
+      "password_hint": "At least 8 characters.",
+      "terms": "I accept the terms of use and the privacy policy",
+      "terms_required": "Accept the terms to continue.",
+      "submit": "Create my account",
+      "has_account": "Already have an account?",
+      "to_sign_in": "Sign in"
+    },
+    "check_email": {
+      "title": "Check your inbox",
+      "body": "A confirmation link was sent to {email}. Open it to activate your account.",
+      "resend": "Resend the link",
+      "resend_in": "Resend the link in {seconds} s",
+      "resent": "Link sent again."
+    },
+    "forgot": {
+      "title": "Forgot your password",
+      "body": "Enter your email: you will get a link to choose a new password (valid for 1 hour).",
+      "submit": "Send the link",
+      "sent": "If an account exists with this email, a reset link has just been sent to it. It is valid for 1 hour.",
+      "back": "Back to sign in"
+    },
+    "new_password": {
+      "title": "New password",
+      "submit": "Save and sign in"
+    },
+    "errors": {
+      "invalid_credentials": "Incorrect email or password.",
+      "locked": "Too many attempts. Try again in 15 minutes or reset your password.",
+      "email_not_confirmed": "Confirm your email first: open the link you received when signing up.",
+      "captcha_failed": "The robot check failed. Try again.",
+      "email_taken": "An account already exists with this email.",
+      "email_taken_link": "Sign in",
+      "weak_password": "This password is too weak or has appeared in a data breach. Choose another one.",
+      "password_too_short": "At least 8 characters.",
+      "invalid_email": "Enter a valid email address.",
+      "rate_limited": "Too many requests. Wait a minute and try again.",
+      "link_expired": "This link has expired.",
+      "link_expired_action": "Get a new link",
+      "unavailable": "Sign-in is unavailable right now. Try again in a moment."
+    },
+    "idle": {
+      "title": "Are you still there?",
+      "body": "You will be signed out in {seconds} s for your security.",
+      "stay": "Stay signed in"
+    }
   }
 }

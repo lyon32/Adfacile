@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
+import { renderIntl } from '../../test-support-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ForgotPasswordForm } from './forgot-password-form';
 import { NewPasswordForm } from './new-password-form';
@@ -43,7 +44,6 @@ const bodyOf = (i: number): unknown =>
 
 describe('connexion', () => {
   const props = {
-    locale: 'fr' as const,
     captchaSiteKey: NO_CAPTCHA,
     next: '/campagnes',
     initialOutcome: null,
@@ -51,7 +51,7 @@ describe('connexion', () => {
   };
 
   it('envoie e-mail et mot de passe puis revient à l’écran d’origine (EC-AUTH-01)', async () => {
-    render(<SignInForm {...props} />);
+    renderIntl(<SignInForm {...props} />);
     type('E-mail', 'awa@test.cm');
     type('Mot de passe', 'secret');
     fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }));
@@ -63,7 +63,7 @@ describe('connexion', () => {
 
   it('affiche le blocage après 5 échecs', async () => {
     replies = [Response.json({ outcome: 'locked', retry_after_s: 900 }, { status: 429 })];
-    render(<SignInForm {...props} />);
+    renderIntl(<SignInForm {...props} />);
     type('E-mail', 'awa@test.cm');
     type('Mot de passe', 'faux');
     fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }));
@@ -74,7 +74,7 @@ describe('connexion', () => {
   });
 
   it('lien magique : message neutre', async () => {
-    render(<SignInForm {...props} />);
+    renderIntl(<SignInForm {...props} />);
     type('E-mail', 'awa@test.cm');
     fireEvent.click(
       screen.getByRole('button', { name: 'Recevoir un lien de connexion par e-mail' }),
@@ -86,14 +86,14 @@ describe('connexion', () => {
   });
 
   it('lien expiré et déconnexion pour inactivité sont expliqués', () => {
-    render(<SignInForm {...props} initialOutcome="link_expired" idleNotice />);
+    renderIntl(<SignInForm {...props} initialOutcome="link_expired" idleNotice />);
     expect(screen.getByRole('alert').textContent).toContain('Ce lien a expiré.');
     expect(screen.getByRole('link', { name: 'Recevoir un nouveau lien' })).toBeTruthy();
     expect(screen.getByRole('status').textContent).toContain('10 minutes');
   });
 
   it('Google et Apple : liens vers le départ OAuth', () => {
-    render(<SignInForm {...props} />);
+    renderIntl(<SignInForm {...props} />);
     expect(screen.getByRole('link', { name: 'Continuer avec Google' }).getAttribute('href')).toBe(
       '/auth/oauth/google',
     );
@@ -105,7 +105,7 @@ describe('connexion', () => {
 
 describe('inscription', () => {
   it('bouton désactivé tant que les conditions ne sont pas acceptées', () => {
-    render(<SignUpForm locale="fr" captchaSiteKey={NO_CAPTCHA} />);
+    renderIntl(<SignUpForm captchaSiteKey={NO_CAPTCHA} />);
     const submit = screen.getByRole('button', { name: 'Créer mon compte' });
     expect(submit).toHaveProperty('disabled', true);
     expect(screen.getByText('Accepte les conditions pour continuer.')).toBeTruthy();
@@ -114,14 +114,14 @@ describe('inscription', () => {
   });
 
   it('mot de passe trop court signalé', () => {
-    render(<SignUpForm locale="fr" captchaSiteKey={NO_CAPTCHA} />);
+    renderIntl(<SignUpForm captchaSiteKey={NO_CAPTCHA} />);
     type('Mot de passe', 'court');
     expect(screen.getByText('8 caractères minimum.')).toBeTruthy();
   });
 
   it('e-mail déjà utilisé : lien « Se connecter »', async () => {
     replies = [Response.json({ outcome: 'email_taken' }, { status: 409 })];
-    render(<SignUpForm locale="fr" captchaSiteKey={NO_CAPTCHA} />);
+    renderIntl(<SignUpForm captchaSiteKey={NO_CAPTCHA} />);
     type('E-mail', 'awa@test.cm');
     type('Mot de passe', 'motdepasse8');
     fireEvent.click(screen.getByRole('checkbox'));
@@ -131,7 +131,7 @@ describe('inscription', () => {
 
   it('« Vérifie ta boîte mail » puis [Renvoyer le lien] actif après 60 s', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-    render(<SignUpForm locale="en" captchaSiteKey={NO_CAPTCHA} />);
+    renderIntl(<SignUpForm captchaSiteKey={NO_CAPTCHA} />, 'en');
     type('Email', 'kofi@test.ci');
     type('Password', 'motdepasse8');
     fireEvent.click(screen.getByRole('checkbox'));
@@ -156,14 +156,14 @@ describe('inscription', () => {
 
 describe('mot de passe oublié et nouveau mot de passe', () => {
   it('message neutre après envoi (EC-AUTH-05)', async () => {
-    render(<ForgotPasswordForm locale="fr" captchaSiteKey={NO_CAPTCHA} />);
+    renderIntl(<ForgotPasswordForm captchaSiteKey={NO_CAPTCHA} />);
     type('E-mail', 'inconnu@test.cm');
     fireEvent.click(screen.getByRole('button', { name: 'Recevoir le lien' }));
     expect((await screen.findByRole('status')).textContent).toContain('Si un compte existe');
   });
 
   it('nouveau mot de passe : connexion automatique vers le tableau de bord', async () => {
-    render(<NewPasswordForm locale="fr" />);
+    renderIntl(<NewPasswordForm />);
     type('Mot de passe', 'nouveau-secret');
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer et me connecter' }));
     await waitFor(() => {
@@ -173,7 +173,7 @@ describe('mot de passe oublié et nouveau mot de passe', () => {
 
   it('nouveau mot de passe refusé : lien expiré', async () => {
     replies = [Response.json({ outcome: 'link_expired' }, { status: 410 })];
-    render(<NewPasswordForm locale="fr" />);
+    renderIntl(<NewPasswordForm />);
     type('Mot de passe', 'nouveau-secret');
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer et me connecter' }));
     expect((await screen.findByRole('alert')).textContent).toContain('Ce lien a expiré.');

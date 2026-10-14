@@ -1,40 +1,40 @@
+'use client';
 // Message affiché pour une issue d'action (jamais le texte renvoyé par Supabase).
+import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
-import type { MessageKey, Translate } from './messages';
 import type { Outcome } from './post-auth';
-import styles from './auth.module.css';
 
-const OUTCOME_KEYS: Record<Exclude<Outcome, 'ok'>, MessageKey> = {
-  invalid_credentials: 'auth.errors.invalid_credentials',
-  locked: 'auth.errors.locked',
-  email_not_confirmed: 'auth.errors.email_not_confirmed',
-  captcha_failed: 'auth.errors.captcha_failed',
-  email_taken: 'auth.errors.email_taken',
-  weak_password: 'auth.errors.weak_password',
-  rate_limited: 'auth.errors.rate_limited',
-  link_expired: 'auth.errors.link_expired',
-  unavailable: 'auth.errors.unavailable',
-};
+const OUTCOME_KEYS = {
+  invalid_credentials: 'invalid_credentials',
+  locked: 'locked',
+  email_not_confirmed: 'email_not_confirmed',
+  captcha_failed: 'captcha_failed',
+  email_taken: 'email_taken',
+  weak_password: 'weak_password',
+  rate_limited: 'rate_limited',
+  link_expired: 'link_expired',
+  unavailable: 'unavailable',
+} as const satisfies Record<Exclude<Outcome, 'ok'>, string>;
 
-export function OutcomeMessage({
-  outcome,
-  t,
-}: {
-  outcome: Outcome | null;
-  t: Translate;
-}): ReactNode {
+export const LINK_CLASS = 'text-ink font-semibold underline underline-offset-4';
+
+export function OutcomeMessage({ outcome }: { outcome: Outcome | null }): ReactNode {
+  const t = useTranslations('auth.errors');
   if (outcome === null || outcome === 'ok') return null;
   return (
-    <p role="alert" className={styles.alert}>
+    <p
+      role="alert"
+      className="border-error text-error rounded-md border px-3 py-2 text-sm font-semibold"
+    >
       {t(OUTCOME_KEYS[outcome])}{' '}
       {outcome === 'email_taken' && (
-        <a className={styles.link} href="/connexion">
-          {t('auth.errors.email_taken_link')}
+        <a className={LINK_CLASS} href="/connexion">
+          {t('email_taken_link')}
         </a>
       )}
       {outcome === 'link_expired' && (
-        <a className={styles.link} href="/mot-de-passe-oublie">
-          {t('auth.errors.link_expired_action')}
+        <a className={LINK_CLASS} href="/mot-de-passe-oublie">
+          {t('link_expired_action')}
         </a>
       )}
     </p>
