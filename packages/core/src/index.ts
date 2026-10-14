@@ -20,3 +20,4 @@ export * from './meta/view';
 export * from './meta/ad-accounts';
 export * from './meta/brand-kit';
 export * from './meta/pages';
+export * from './meta/webhook';

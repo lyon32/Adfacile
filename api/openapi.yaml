@@ -1082,6 +1082,7 @@ paths:
       tags: [ Webhooks ]
       operationId: metaWebhookVerify
       summary: Vérification de l'abonnement Meta (hub.challenge)
+      description: "hub.verify_token est comparé en temps constant à META_WEBHOOK_VERIFY_TOKEN ; jeton faux ou non configuré : 403. hub.challenge (un entier) est renvoyé seul, en texte brut."
       security: []
       parameters:
         - { name: hub.mode, in: query, required: true, schema: { type: string } }
@@ -1089,11 +1090,13 @@ paths:
         - { name: hub.challenge, in: query, required: true, schema: { type: string } }
       responses:
         '200': { description: Renvoie hub.challenge, content: { text/plain: { schema: { type: string } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
     post:
       tags: [ Webhooks ]
       operationId: metaWebhook
       summary: Événements Meta (statut des pubs) — signature X-Hub-Signature-256
+      description: "Signature vérifiée sur le corps brut avant toute lecture du JSON (HMAC-SHA256 avec le secret de l'application) ; signature absente ou fausse : 401 webhook_signature_invalid (aucun contrôle d'heure : Meta relivre un événement échoué pendant 36 h, le rejeu est écarté par l'empreinte du corps). Un événement déjà vu ou inconnu : 200, rien n'est refait. Une écriture qui échoue : 5xx, rien n'est marqué vu, Meta réessaie. Champs lus : in_process_ad_objects et with_issues_ad_objects de l'objet ad_account ; le statut d'une campagne vient toujours de la synchronisation (Meta fait foi)."
       security: [ { webhookSignature: [] } ]
       requestBody: { required: true, content: { application/json: { schema: { type: object } } } }
       responses:
