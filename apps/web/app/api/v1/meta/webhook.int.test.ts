@@ -191,16 +191,46 @@ describeRoute('metaWebhook', {
       expect(await second.json()).toEqual({ status: 'duplicate' });
       expect(await statusEvents(campaign.id)).toHaveLength(count);
     },
-    'TR-SEC-04 : heure d’envoi à plus de 5 minutes → 401 (anti-rejeu), rien n’est enregistré':
+    'Meta relivre un événement échoué pendant 36 h : un événement ancien mais bien signé est ACCEPTÉ, une seule fois':
       async () => {
-        const raw = body(campaign.metaId, { time: nowSeconds() - 6 * 60, nonce: 'vieux' });
-        const res = await receive(signedPost(raw));
-        expect(res.status).toBe(401);
-        expect(((await res.json()) as { code: string }).code).toBe('webhook_signature_invalid');
-        const fresh = await receive(
-          signedPost(body(campaign.metaId, { time: nowSeconds() - 4 * 60, nonce: 'recent' })),
+        const raw = body(campaign.metaId, { time: nowSeconds() - 6 * 3600, nonce: 'relivraison' });
+        const before = (await statusEvents(campaign.id)).length;
+        const first = await receive(signedPost(raw));
+        expect(first.status).toBe(200);
+        expect(await first.json()).toEqual({ status: 'processed', recorded: 1 });
+        const second = await receive(signedPost(raw));
+        expect(await second.json()).toEqual({ status: 'duplicate' });
+        expect(await statusEvents(campaign.id)).toHaveLength(before + 1);
+      },
+    'écriture qui échoue : 5xx, rien n’est marqué vu ; la relivraison de Meta est traitée, puis une seule fois':
+      async () => {
+        const raw = body(campaign.metaId, { nonce: 'panne' });
+        const before = (await statusEvents(campaign.id)).length;
+        await queryTestDb(
+          `create or replace function public.tmp_fail_status_events() returns trigger language plpgsql as $$ begin raise exception 'panne simulée'; end $$`,
         );
-        expect(fresh.status).toBe(200);
+        await queryTestDb(
+          `create trigger tmp_fail before insert on public.campaign_status_events for each row execute function public.tmp_fail_status_events()`,
+        );
+        try {
+          const failed = await receive(signedPost(raw));
+          expect(failed.status).toBeGreaterThanOrEqual(500);
+          expect(
+            await queryTestDb(
+              'select 1 from private.webhook_events where provider = $1 and event_id = $2',
+              ['meta', webhookEventId(raw)],
+            ),
+          ).toHaveLength(0);
+        } finally {
+          await queryTestDb('drop trigger if exists tmp_fail on public.campaign_status_events');
+          await queryTestDb('drop function if exists public.tmp_fail_status_events()');
+        }
+        const retry = await receive(signedPost(raw));
+        expect(retry.status).toBe(200);
+        expect(await retry.json()).toEqual({ status: 'processed', recorded: 1 });
+        const again = await receive(signedPost(raw));
+        expect(await again.json()).toEqual({ status: 'duplicate' });
+        expect(await statusEvents(campaign.id)).toHaveLength(before + 1);
       },
     'EC-META-09 : objet inconnu de Pubeka → 200, journalisé, rien d’enregistré': async () => {
       const res = await receive(signedPost(body('699999999999', { nonce: 'inconnu' })));

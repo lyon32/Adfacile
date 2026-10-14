@@ -7,7 +7,7 @@ import { recordMetaStatusEvents } from '@pubeka/core';
 import { createLogger, createRequestId, getEnv } from '@pubeka/shared';
 import { api } from '../../../../../server/http/routes';
 import { fieldError, problem } from '../../../../../server/http/problem';
-import { extractStatusEvents, hasStaleEntry, MetaWebhookSchema } from './events';
+import { extractStatusEvents, MetaWebhookSchema } from './events';
 import { verifyMetaSignature, verifyTokenMatches, webhookEventId } from './signature';
 
 const logger = createLogger({ base: { module: 'webhook-meta' } });
@@ -79,9 +79,10 @@ export const POST = api(
       logger.warn('Webhook Meta : forme inconnue ignorée', { requestId: ctx.requestId });
       return { status: 200, body: { status: 'ignored' } };
     }
-    // 3. Anti-rejeu : heure d'envoi à plus de 5 minutes.
-    if (hasStaleEntry(parsed.data, ctx.now())) throw new AppError('webhook_signature_invalid');
-    // 4. Doublon, puis enregistrement.
+    // 3. Pas de contrôle d'heure : Meta relivre un événement échoué pendant 36 h (documentation de
+    //    Meta) ; la protection contre le rejeu est l'empreinte du corps, enregistrée une seule fois.
+    // 4. Doublon et enregistrement dans la même transaction : une écriture qui échoue lève une
+    //    erreur (5xx) et Meta réessaie.
     const { events, ignored } = extractStatusEvents(parsed.data);
     const outcome = await recordMetaStatusEvents(ctx, webhookEventId(rawBody), events);
     if (outcome.duplicate) return { status: 200, body: { status: 'duplicate' } };

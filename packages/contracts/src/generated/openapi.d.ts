@@ -1304,7 +1304,7 @@ export interface paths {
         put?: never;
         /**
          * Événements Meta (statut des pubs) — signature X-Hub-Signature-256
-         * @description Signature vérifiée sur le corps brut avant toute lecture du JSON (HMAC-SHA256 avec le secret de l'application) ; heure d'envoi à plus de 5 minutes ou signature fausse : 401 webhook_signature_invalid. Un événement déjà vu ou inconnu : 200, rien n'est refait. Champs lus : in_process_ad_objects et with_issues_ad_objects de l'objet ad_account ; le statut d'une campagne vient toujours de la synchronisation (Meta fait foi).
+         * @description Signature vérifiée sur le corps brut avant toute lecture du JSON (HMAC-SHA256 avec le secret de l'application) ; signature absente ou fausse : 401 webhook_signature_invalid (aucun contrôle d'heure : Meta relivre un événement échoué pendant 36 h, le rejeu est écarté par l'empreinte du corps). Un événement déjà vu ou inconnu : 200, rien n'est refait. Une écriture qui échoue : 5xx, rien n'est marqué vu, Meta réessaie. Champs lus : in_process_ad_objects et with_issues_ad_objects de l'objet ad_account ; le statut d'une campagne vient toujours de la synchronisation (Meta fait foi).
          */
         post: operations["metaWebhook"];
         delete?: never;
