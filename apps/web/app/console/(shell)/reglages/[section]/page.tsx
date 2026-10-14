@@ -1,12 +1,14 @@
-// Réglages `/reglages/{section}` : profil, comptes Meta, équipe, notifications (les autres sections arrivent
-// avec leur session : kit de marque et Pages S11, abonnement S24, mes données S34).
+// Réglages `/reglages/{section}` : profil, kit de marque, Pages, comptes Meta, équipe, notifications
+// (les autres sections arrivent avec leur session : abonnement S24, mes données S34).
 import { getNotificationPreferences, type Ctx } from '@pubeka/core';
 import { createRequestId } from '@pubeka/shared';
 import { getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { BrandKitPanel } from '../../../../../features/meta-connection/brand-kit-form';
 import { ConnectionPanel } from '../../../../../features/meta-connection/connection-panel';
 import { parseNotice } from '../../../../../features/meta-connection/notice';
+import { PagesPanel } from '../../../../../features/meta-connection/pages-panel';
 import { NotificationsForm } from '../../../../../features/settings/notifications-form';
 import { ProfileForm } from '../../../../../features/settings/profile-form';
 import { parseSection } from '../../../../../features/settings/sections';
@@ -80,19 +82,30 @@ export default async function SettingsSectionPage({
     );
   }
 
-  if (section === 'comptes-meta') {
+  if (section === 'comptes-meta' || section === 'pages' || section === 'kit-de-marque') {
     if (workspace === null) notFound();
-    const t = await getTranslations('settings.meta_accounts');
+    const t =
+      section === 'comptes-meta'
+        ? await getTranslations('settings.meta_accounts')
+        : section === 'pages'
+          ? await getTranslations('settings.pages')
+          : await getTranslations('settings.brand');
     const query = await searchParams;
     return (
       <>
         <Heading title={t('title')} body={t('body')} />
-        <ConnectionPanel
-          workspaceId={workspace.id}
-          isOwner={workspace.role === 'owner'}
-          variant="settings"
-          notice={parseNotice(query.meta, query.reason)}
-        />
+        {section === 'comptes-meta' ? (
+          <ConnectionPanel
+            workspaceId={workspace.id}
+            isOwner={workspace.role === 'owner'}
+            variant="settings"
+            notice={parseNotice(query.meta, query.reason)}
+          />
+        ) : section === 'pages' ? (
+          <PagesPanel workspaceId={workspace.id} role={workspace.role} />
+        ) : (
+          <BrandKitPanel workspaceId={workspace.id} role={workspace.role} />
+        )}
       </>
     );
   }

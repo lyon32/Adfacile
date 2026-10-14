@@ -6,12 +6,13 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import type { Locale } from '@pubeka/i18n';
+import { BrandKitPanel } from '../meta-connection/brand-kit-form';
 import { ConnectionPanel, useMetaReadiness } from '../meta-connection/connection-panel';
 import type { ConnectNotice } from '../meta-connection/notice';
 import { SelectField } from '../settings/select-field';
 import type { CountryOption } from '../shell/countries';
 import { useUpdateMe } from '../shell/use-update-me';
-import { STEPS, isSkippable, nextPath, stepNumber, type Step } from './steps';
+import { STEPS, nextPath, stepNumber, type Step } from './steps';
 
 export interface OnboardingProfile {
   countryCode: string | null;
@@ -253,13 +254,41 @@ function MetaStep({
   );
 }
 
-function PlainStep({
-  step,
+/** Étape 5 : kit de marque de la Page active (couleurs, WhatsApp, ton des pubs). */
+function BrandStep({
+  workspace,
   onNext,
 }: {
-  step: 'essai' | 'meta' | 'marque';
+  workspace: OnboardingWorkspace;
   onNext: () => void;
 }): ReactNode {
+  const common = useTranslations('common');
+  return (
+    <div className="flex flex-col gap-5">
+      <BrandKitPanel workspaceId={workspace.id} role={workspace.role} compact onSaved={onNext} />
+      <Button
+        type="button"
+        variant="quiet"
+        onClick={onNext}
+        className="w-full sm:w-auto sm:self-start"
+      >
+        {common('later')}
+      </Button>
+    </div>
+  );
+}
+
+/** Espace introuvable (ne devrait pas arriver) : on laisse passer l'étape. */
+function LaterOnly({ onNext }: { onNext: () => void }): ReactNode {
+  const common = useTranslations('common');
+  return (
+    <Button type="button" onClick={onNext} className="w-full sm:w-auto sm:self-start">
+      {common('continue')}
+    </Button>
+  );
+}
+
+function TrialStep({ onNext }: { onNext: () => void }): ReactNode {
   const t = useTranslations('onboarding');
   return (
     <form
@@ -269,18 +298,7 @@ function PlainStep({
         onNext();
       }}
     >
-      {step === 'marque' ? (
-        <p className="border-line text-meta text-muted rounded-md border border-dashed px-4 py-3 font-semibold">
-          {t('brand.pending')}
-        </p>
-      ) : null}
-      <Actions
-        pending={false}
-        failed={false}
-        label={step === 'essai' ? t('trial.cta') : undefined}
-        skippable={isSkippable(step)}
-        onSkip={onNext}
-      />
+      <Actions pending={false} failed={false} label={t('trial.cta')} />
     </form>
   );
 }
@@ -322,8 +340,12 @@ export function OnboardingFlow({
           <LanguageStep profile={profile} onSaved={goNext} />
         ) : step === 'meta' && workspace !== null ? (
           <MetaStep workspace={workspace} notice={notice} onNext={goNext} />
+        ) : step === 'marque' && workspace !== null ? (
+          <BrandStep workspace={workspace} onNext={goNext} />
+        ) : step === 'essai' ? (
+          <TrialStep onNext={goNext} />
         ) : (
-          <PlainStep step={step} onNext={goNext} />
+          <LaterOnly onNext={goNext} />
         )}
       </Card>
     </div>

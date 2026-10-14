@@ -8,9 +8,11 @@ import { messagesFor, type Locale } from '@pubeka/i18n';
 import type { ErrorCode } from '@pubeka/contracts';
 import { ApiError } from '../../lib/api';
 import type { Health, MetaConnection } from './api';
+import { BrandFormSchema, toBrandKit, toFormValues, BrandKitPanel } from './brand-kit-form';
 import { ConnectionPanel, errorKey, readiness } from './connection-panel';
 import { toneOf } from './health-list';
 import { parseNotice } from './notice';
+import { PagesPanel, pageErrorKey } from './pages-panel';
 
 const WS = '44444444-4444-4444-8444-444444444444';
 
@@ -111,13 +113,18 @@ describe('fonctions pures', () => {
     expect(parseNotice('autre', 'denied')).toBeNull();
   });
 
-  it('errorKey : liste fermée d’API_SPEC §4', () => {
+  it('errorKey et pageErrorKey : liste fermée d’API_SPEC §4', () => {
     const e = (status: number, code: ErrorCode) =>
       new ApiError(status, { type: 'about:blank', status, code, title: code, request_id: 'r' });
     expect(errorKey(e(424, 'meta_token_expired'))).toBe('expired');
     expect(errorKey(e(403, 'role_insufficient'))).toBe('forbidden');
     expect(errorKey(e(503, 'provider_unavailable'))).toBe('unavailable');
     expect(errorKey(new Error('x'))).toBe('generic');
+    expect(pageErrorKey(e(402, 'page_limit_reached'))).toBe('limit');
+    expect(pageErrorKey(e(409, 'conflict'))).toBe('locked');
+    expect(pageErrorKey(e(403, 'workspace_read_only'))).toBe('read_only');
+    expect(pageErrorKey(e(403, 'forbidden'))).toBe('forbidden');
+    expect(pageErrorKey(new Error('x'))).toBe('generic');
   });
 
   it('« Continuer » dépend du compte publicitaire seulement (APPFLOW §6.3)', () => {
@@ -148,6 +155,37 @@ describe('fonctions pures', () => {
     expect(tone('pixel')).toBe('neutral');
     expect(tone('payment_method')).toBe('error');
     expect(tone('ad_account', { required: true })).toBe('error');
+  });
+
+  it('kit de marque : mêmes limites que PUT …/brand-kit, champs vides → null, logo conservé', () => {
+    const base = toFormValues(
+      { colors: { primary: '#112233' }, whatsapp: '+237677000000', tone: 'bold' },
+      { id: 'p', meta_page_id: '1', name: 'P', active: true, ad_address: 'tu' },
+    );
+    expect(BrandFormSchema.safeParse(base).success).toBe(true);
+    const bad = BrandFormSchema.safeParse({
+      ...base,
+      primary: 'rouge',
+      whatsapp: '0677',
+      tagline: 'x'.repeat(121),
+    });
+    expect(bad.error?.issues.map((i) => i.message).sort()).toEqual([
+      'color_invalid',
+      'phone_invalid',
+      'too_long',
+    ]);
+    expect(
+      toBrandKit({ ...base, primary: '', whatsapp: '', tone: '' }, { logo_path: 'ws/logo.png' }),
+    ).toEqual({
+      logo_path: 'ws/logo.png',
+      colors: {},
+      font: null,
+      phone: null,
+      whatsapp: null,
+      tagline: null,
+      tone: null,
+      show_number_on_visuals: true,
+    });
   });
 });
 
@@ -277,5 +315,192 @@ describe('ConnectionPanel', () => {
     stubApi({ 'GET /meta/connections': json({ data: [] }) });
     wrap(<ConnectionPanel workspaceId={WS} isOwner variant="settings" notice={null} />, 'en');
     expect(await screen.findByText('Connect my Meta account')).toBeTruthy();
+  });
+});
+
+const PAGES = {
+  data: [
+    {
+      id: 'p1',
+      meta_page_id: '200000000001',
+      name: 'Boutique Awa',
+      active: true,
+      locked_for_period: true,
+      instagram_linked: true,
+      whatsapp_linked: false,
+      ad_language: 'fr',
+      ad_address: 'vous',
+    },
+    {
+      id: 'p2',
+      meta_page_id: '200000000002',
+      name: 'Awa Mode',
+      active: false,
+      ad_language: 'en',
+      ad_address: 'tu',
+    },
+  ],
+  quotas: { pages_active: 1, pages_limit: 1 },
+};
+
+describe('PagesPanel', () => {
+  it('liste les Pages avec la limite de la formule et le verrou de la période', async () => {
+    stubApi({ 'GET /pages': json(PAGES) });
+    wrap(<PagesPanel workspaceId={WS} role="owner" />);
+    expect(await screen.findByText('1 sur 1 Pages actives')).toBeTruthy();
+    expect(screen.getByText(/Ta formule est au maximum/)).toBeTruthy();
+    expect(screen.getByText(/Page verrouillée/)).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Tu pourras changer de Page le mois prochain si tu as lancé une campagne avec celle-ci.',
+      ),
+    ).toBeTruthy();
+    // La Page verrouillée ne se désactive pas ; l'autre est en attente de place.
+    const switches = screen.getAllByRole('switch');
+    expect(switches).toHaveLength(2);
+    expect(switches[0]?.hasAttribute('disabled')).toBe(true);
+  });
+
+  it('activer au-delà de la limite : le message de la formule s’affiche', async () => {
+    const calls = stubApi({
+      'GET /pages': json(PAGES),
+      'PATCH /pages/p2': problem(402, 'page_limit_reached'),
+    });
+    wrap(<PagesPanel workspaceId={WS} role="owner" />);
+    await screen.findByText('Awa Mode');
+    fireEvent.click(screen.getAllByRole('switch')[1] ?? document.body);
+    expect(
+      await screen.findByText(/Ta formule ne permet pas d’activer plus de Pages/),
+    ).toBeTruthy();
+    expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ active: true });
+  });
+
+  it('l’éditeur règle la langue et le ton des pubs, pas l’activation', async () => {
+    const calls = stubApi({
+      'GET /pages': json(PAGES),
+      'PATCH /pages/p2': json({ ...PAGES.data[1], ad_address: 'vous' }),
+    });
+    wrap(<PagesPanel workspaceId={WS} role="editor" />);
+    await screen.findByText('Awa Mode');
+    for (const toggle of screen.getAllByRole('switch'))
+      expect(toggle.hasAttribute('disabled')).toBe(true);
+    const tones = screen.getAllByLabelText('Ton des pubs');
+    fireEvent.change(tones[1] ?? document.body, { target: { value: 'vous' } });
+    await waitFor(() => {
+      expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ ad_address: 'vous' });
+    });
+    expect(screen.getByText(/Seul le propriétaire active ou désactive une Page/)).toBeTruthy();
+  });
+
+  it('sans Page : invite à connecter Meta', async () => {
+    stubApi({ 'GET /pages': json({ data: [], quotas: { pages_active: 0, pages_limit: 1 } }) });
+    wrap(<PagesPanel workspaceId={WS} role="owner" />);
+    expect(await screen.findByText('Aucune Page pour le moment')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Connecter Meta' }).getAttribute('href')).toBe(
+      '/reglages/comptes-meta',
+    );
+  });
+
+  it('erreur de chargement annoncée', async () => {
+    stubApi({ 'GET /pages': problem(500, 'internal_error') });
+    wrap(<PagesPanel workspaceId={WS} role="viewer" />);
+    expect(await screen.findByRole('alert')).toBeTruthy();
+  });
+});
+
+describe('BrandKitPanel', () => {
+  const kitRoutes = (kit: unknown) => ({
+    'GET /pages': json(PAGES),
+    'GET /pages/p1/brand-kit': json(kit),
+  });
+
+  it('enregistre le kit de la Page active, couleurs et numéros contrôlés avant l’envoi', async () => {
+    const calls = stubApi({
+      ...kitRoutes({ logo_path: 'ws/logo.png', colors: {}, show_number_on_visuals: true }),
+      'PUT /pages/p1/brand-kit': json({
+        colors: { primary: '#112233' },
+        show_number_on_visuals: true,
+      }),
+      'PATCH /pages/p1': json({ ...PAGES.data[0], ad_address: 'tu' }),
+    });
+    wrap(<BrandKitPanel workspaceId={WS} role="editor" />);
+    expect(await screen.findByText('Kit de marque de la Page Boutique Awa')).toBeTruthy();
+    await screen.findByRole('textbox', { name: 'Principale' });
+    expect(screen.getByText('Un logo est enregistré pour cette Page.')).toBeTruthy();
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Principale' }), {
+      target: { value: 'rouge' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le kit de marque' }));
+    expect(await screen.findByText('Couleur au format #RRGGBB, par exemple #1A2B3C.')).toBeTruthy();
+    expect(calls.some((c) => c.method === 'PUT')).toBe(false);
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Principale' }), {
+      target: { value: '#112233' },
+    });
+    fireEvent.change(screen.getByLabelText('Ton des pubs'), { target: { value: 'tu' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le kit de marque' }));
+    await waitFor(() => {
+      expect(calls.some((c) => c.method === 'PATCH')).toBe(true);
+    });
+    expect(calls.find((c) => c.method === 'PUT')?.body).toMatchObject({
+      logo_path: 'ws/logo.png',
+      colors: { primary: '#112233' },
+      whatsapp: null,
+    });
+    expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ ad_address: 'tu' });
+    expect(await screen.findByText('Enregistré')).toBeTruthy();
+  });
+
+  it('première configuration : version courte, [Continuer] enregistre puis avance', async () => {
+    const onSaved = vi.fn();
+    stubApi({
+      ...kitRoutes({ colors: {}, show_number_on_visuals: true }),
+      'PUT /pages/p1/brand-kit': json({ colors: {}, show_number_on_visuals: true }),
+    });
+    wrap(<BrandKitPanel workspaceId={WS} role="owner" compact onSaved={onSaved} />);
+    await screen.findByRole('textbox', { name: 'Principale' });
+    expect(screen.queryByRole('textbox', { name: 'Slogan' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }));
+    await waitFor(() => {
+      expect(onSaved).toHaveBeenCalled();
+    });
+  });
+
+  it('un lecteur voit le kit sans pouvoir le modifier', async () => {
+    stubApi(kitRoutes({ colors: {}, show_number_on_visuals: true }));
+    wrap(<BrandKitPanel workspaceId={WS} role="viewer" />);
+    expect(await screen.findByText(/Seuls le propriétaire et les éditeurs/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Enregistrer le kit de marque' })).toBeNull();
+  });
+
+  it('sans Page active : invite à connecter Meta', async () => {
+    stubApi({
+      'GET /pages': json({
+        data: [{ ...PAGES.data[1] }],
+        quotas: { pages_active: 0, pages_limit: 1 },
+      }),
+    });
+    wrap(<BrandKitPanel workspaceId={WS} role="owner" />);
+    expect(await screen.findByText('Active d’abord une Page')).toBeTruthy();
+  });
+
+  it('plusieurs Pages actives : un sélecteur change de Page', async () => {
+    stubApi({
+      'GET /pages': json({
+        data: [PAGES.data[0], { ...PAGES.data[1], active: true }],
+        quotas: { pages_active: 2, pages_limit: 3 },
+      }),
+      'GET /pages/p1/brand-kit': json({ colors: {}, tagline: 'Un', show_number_on_visuals: true }),
+      'GET /pages/p2/brand-kit': json({
+        colors: {},
+        tagline: 'Deux',
+        show_number_on_visuals: true,
+      }),
+    });
+    wrap(<BrandKitPanel workspaceId={WS} role="owner" />);
+    expect(await screen.findByDisplayValue('Un')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Page'), { target: { value: 'p2' } });
+    expect(await screen.findByDisplayValue('Deux')).toBeTruthy();
   });
 });

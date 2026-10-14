@@ -10,6 +10,8 @@ import { SETTINGS_SECTIONS } from './sections';
 
 const LABEL = {
   profil: 'profile',
+  'kit-de-marque': 'brand',
+  pages: 'pages',
   'comptes-meta': 'meta_accounts',
   equipe: 'team',
   notifications: 'notifications',
