@@ -2428,6 +2428,13 @@ export type Database = {
     Functions: {
       clear_login_failures: { Args: { p_key: string }; Returns: undefined };
       consume_credits: { Args: { job: string }; Returns: undefined };
+      get_meta_token: {
+        Args: { conn: string; ws: string };
+        Returns: {
+          key_id: string;
+          sealed: string;
+        }[];
+      };
       hit_rate_limit: {
         Args: { p_key: string; p_limit: number; p_window_s: number };
         Returns: {
@@ -2457,9 +2464,30 @@ export type Database = {
       record_webhook_event: { Args: { p_event_id: string; p_provider: string }; Returns: boolean };
       release_credits: { Args: { amount?: number; job: string }; Returns: number };
       reserve_credits: { Args: { job: string; needed: number; ws: string }; Returns: boolean };
+      set_active_ad_account: { Args: { p_id: string; ws: string }; Returns: undefined };
+      set_page_active: {
+        Args: {
+          max_pages: number;
+          p_page: string;
+          p_period_start?: string;
+          want: boolean;
+          ws: string;
+        };
+        Returns: string;
+      };
       transfer_ownership: {
         Args: { actor: string; new_owner: string; ws: string };
         Returns: undefined;
+      };
+      upsert_meta_connection: {
+        Args: {
+          p_expires_at?: string;
+          p_key_id: string;
+          p_sealed: string;
+          p_token_type: string;
+          ws: string;
+        };
+        Returns: string;
       };
     };
     Enums: {

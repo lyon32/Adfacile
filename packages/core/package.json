@@ -13,10 +13,13 @@
   },
   "dependencies": {
     "@pubeka/contracts": "workspace:*",
-    "@pubeka/db": "workspace:*"
+    "@pubeka/db": "workspace:*",
+    "@pubeka/platforms": "workspace:*",
+    "@pubeka/shared": "workspace:*"
   },
   "devDependencies": {
     "@pubeka/config": "workspace:*",
+    "@types/node": "24.19.0",
     "@vitest/coverage-v8": "5.0.2",
     "eslint": "10.11.0",
     "typescript": "6.0.3",

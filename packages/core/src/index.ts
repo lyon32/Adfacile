@@ -10,3 +10,8 @@ export * from './workspaces/workspace-view';
 export * from './workspaces/workspaces';
 export * from './workspaces/invitations';
 export * from './account/notification-preferences';
+export * from './meta/connector-factory';
+export * from './meta/deps';
+export * from './meta/oauth-state';
+export * from './meta/redirect-uri';
+export * from './meta/view';
