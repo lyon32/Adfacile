@@ -16,10 +16,7 @@ let awa: TestUser;
 let other: TestUser;
 
 beforeAll(async () => {
-  [awa, other] = await Promise.all([
-    createTestUser({ label: 'me' }),
-    createTestUser({ label: 'other' }),
-  ]);
+  [awa, other] = await Promise.all([createTestUser({ label: 'me' }), createTestUser({ label: 'other' })]);
 });
 
 afterAll(async () => {
@@ -60,11 +57,7 @@ describeRoute('getMe', {
     const res = await GET(call('GET', {}));
     expect(res.status).toBe(401);
     expect(res.headers.get('content-type')).toBe('application/problem+json');
-    expect(await json(res)).toMatchObject({
-      code: 'unauthenticated',
-      status: 401,
-      instance: '/api/v1/me',
-    });
+    expect(await json(res)).toMatchObject({ code: 'unauthenticated', status: 401, instance: '/api/v1/me' });
   },
   otherWorkspace: na("/me ne dépend d'aucun espace : chacun ne lit que son profil (RLS)"),
   forbiddenRole: na('/me est ouvert à tout utilisateur connecté, sans rôle'),
@@ -96,25 +89,15 @@ describeRoute('getMe', {
 
 describeRoute('updateMe', {
   success: async () => {
-    const res = await PATCH(
-      call('PATCH', awa.headers, { city: '  Yaoundé ', theme: 'dark', ui_language: 'en' }),
-    );
+    const res = await PATCH(call('PATCH', awa.headers, { city: '  Yaoundé ', theme: 'dark', ui_language: 'en' }));
     expect(res.status).toBe(200);
     const me = await json(res);
     expect(me).toMatchObject({ city: 'Yaoundé', theme: 'dark', ui_language: 'en' });
     expect(['hello', 'good_evening']).toContain(me.greeting);
-    const { data } = await testServiceClient()
-      .from('profiles')
-      .select('city, theme')
-      .eq('id', awa.id)
-      .single();
+    const { data } = await testServiceClient().from('profiles').select('city, theme').eq('id', awa.id).single();
     expect(data).toEqual({ city: 'Yaoundé', theme: 'dark' });
     // Le profil d'un autre utilisateur n'a pas bougé.
-    const { data: untouched } = await testServiceClient()
-      .from('profiles')
-      .select('city')
-      .eq('id', other.id)
-      .single();
+    const { data: untouched } = await testServiceClient().from('profiles').select('city').eq('id', other.id).single();
     expect(untouched?.city).toBeNull();
   },
   unauthenticated: async () => {
@@ -122,14 +105,10 @@ describeRoute('updateMe', {
     expect(res.status).toBe(401);
     expect((await json(res)).code).toBe('unauthenticated');
   },
-  otherWorkspace: na(
-    "/me ne dépend d'aucun espace ; l'identifiant vient du jeton, jamais du corps",
-  ),
+  otherWorkspace: na("/me ne dépend d'aucun espace ; l'identifiant vient du jeton, jamais du corps"),
   forbiddenRole: na('/me est ouvert à tout utilisateur connecté, sans rôle'),
   invalidBody: async () => {
-    const res = await PATCH(
-      call('PATCH', awa.headers, { id: randomUUID(), phone: '0612', theme: 'neon' }),
-    );
+    const res = await PATCH(call('PATCH', awa.headers, { id: randomUUID(), phone: '0612', theme: 'neon' }));
     expect(res.status).toBe(400);
     const body = await json(res);
     expect(body.code).toBe('validation_failed');
@@ -143,40 +122,25 @@ describeRoute('updateMe', {
   },
   extra: {
     '403 forbidden : écriture par cookie sans Origin de l’application (CSRF)': async () => {
-      const res = await PATCH(
-        call('PATCH', { cookie: awa.cookie, origin: 'https://evil.example' }, { city: 'Pirate' }),
-      );
+      const res = await PATCH(call('PATCH', { cookie: awa.cookie, origin: 'https://evil.example' }, { city: 'Pirate' }));
       expect(res.status).toBe(403);
       expect((await json(res)).code).toBe('forbidden');
-      const ok = await PATCH(
-        call('PATCH', { cookie: awa.cookie, origin: new URL(APP).origin }, { city: 'Kribi' }),
-      );
+      const ok = await PATCH(call('PATCH', { cookie: awa.cookie, origin: new URL(APP).origin }, { city: 'Kribi' }));
       expect(ok.status).toBe(200);
     },
     '400 champ trop long (limites identiques à la base)': async () => {
       const res = await PATCH(call('PATCH', awa.headers, { first_name: 'a'.repeat(81) }));
       expect(res.status).toBe(400);
-      expect((await json(res)).errors).toEqual([
-        expect.objectContaining({ field: 'first_name', code: 'too_long' }),
-      ]);
+      expect((await json(res)).errors).toEqual([expect.objectContaining({ field: 'first_name', code: 'too_long' })]);
     },
-    'TR-PLT-04 : changer de pays recalcule le fuseau ; un pays inconnu est refusé (400)':
-      async () => {
-        const ok = await PATCH(
-          call('PATCH', awa.headers, { country_code: 'SN', currency_display: 'XOF' }),
-        );
-        expect(ok.status).toBe(200);
-        expect(await json(ok)).toMatchObject({
-          country_code: 'SN',
-          timezone: 'Africa/Dakar',
-          currency_display: 'XOF',
-        });
-        const unknown = await PATCH(call('PATCH', awa.headers, { country_code: 'ZZ' }));
-        expect(unknown.status).toBe(400);
-        expect((await json(unknown)).errors).toEqual([
-          expect.objectContaining({ field: 'country_code', code: 'unknown_country' }),
-        ]);
-      },
+    'TR-PLT-04 : changer de pays recalcule le fuseau ; un pays inconnu est refusé (400)': async () => {
+      const ok = await PATCH(call('PATCH', awa.headers, { country_code: 'SN', currency_display: 'XOF' }));
+      expect(ok.status).toBe(200);
+      expect(await json(ok)).toMatchObject({ country_code: 'SN', timezone: 'Africa/Dakar', currency_display: 'XOF' });
+      const unknown = await PATCH(call('PATCH', awa.headers, { country_code: 'ZZ' }));
+      expect(unknown.status).toBe(400);
+      expect((await json(unknown)).errors).toEqual([expect.objectContaining({ field: 'country_code', code: 'unknown_country' })]);
+    },
     '413 corps de plus de 1 Mo': async () => {
       const res = await PATCH(call('PATCH', awa.headers, { city: 'a'.repeat(1024 * 1024) }));
       expect(res.status).toBe(413);

@@ -55,13 +55,8 @@ describe('invitationMessage', () => {
 
 describe('transport des e-mails', () => {
   it('Resend : POST /emails avec clé, clé d’idempotence et texte simple', async () => {
-    const fetchImpl = vi.fn<typeof fetch>(() =>
-      Promise.resolve(new Response('{"id":"x"}', { status: 200 })),
-    );
-    await resendTransport(
-      { apiKey: 're_test', from: 'Pubeka <equipe@pubeka.com>' },
-      fetchImpl,
-    )(invitationMessage(email));
+    const fetchImpl = vi.fn<typeof fetch>(() => Promise.resolve(new Response('{"id":"x"}', { status: 200 })));
+    await resendTransport({ apiKey: 're_test', from: 'Pubeka <equipe@pubeka.com>' }, fetchImpl)(invitationMessage(email));
     const [url, init] = fetchImpl.mock.calls[0] ?? [];
     expect(url).toBe('https://api.resend.com/emails');
     expect(init?.method).toBe('POST');
@@ -77,12 +72,10 @@ describe('transport des e-mails', () => {
   });
 
   it('Resend en erreur : exception sans le corps du fournisseur', async () => {
-    const fetchImpl = vi.fn<typeof fetch>(() =>
-      Promise.resolve(new Response('{"message":"secret"}', { status: 422 })),
+    const fetchImpl = vi.fn<typeof fetch>(() => Promise.resolve(new Response('{"message":"secret"}', { status: 422 })));
+    await expect(resendTransport({ apiKey: 're_x', from: 'a@b.c' }, fetchImpl)(invitationMessage(email))).rejects.toThrow(
+      'Resend : statut 422',
     );
-    await expect(
-      resendTransport({ apiKey: 're_x', from: 'a@b.c' }, fetchImpl)(invitationMessage(email)),
-    ).rejects.toThrow('Resend : statut 422');
   });
 
   it('faux fournisseur : `all` ou une liste contenant `email`', () => {
@@ -94,16 +87,13 @@ describe('transport des e-mails', () => {
 
   it('choix du transport : faux, Resend, ou refus si rien n’est configuré', async () => {
     expect(transportFor({ PUBEKA_FAKE_PROVIDERS: 'email' })).toBe(fakeTransport);
-    expect(transportFor({ RESEND_API_KEY: 're_x', EMAIL_FROM_NOTIFICATIONS: 'a@b.c' })).not.toBe(
-      fakeTransport,
-    );
+    expect(transportFor({ RESEND_API_KEY: 're_x', EMAIL_FROM_NOTIFICATIONS: 'a@b.c' })).not.toBe(fakeTransport);
     await expect(transportFor({})(invitationMessage(email))).rejects.toThrow('non configuré');
   });
 
   it('faux fournisseur : garde les 100 derniers messages, sans rien envoyer', async () => {
     fakeOutbox.length = 0;
-    for (let i = 0; i < 105; i++)
-      await fakeTransport({ ...invitationMessage(email), to: `n${String(i)}@x.io` });
+    for (let i = 0; i < 105; i++) await fakeTransport({ ...invitationMessage(email), to: `n${String(i)}@x.io` });
     expect(fakeOutbox).toHaveLength(100);
     expect(fakeOutbox[0]?.to).toBe('n5@x.io');
   });

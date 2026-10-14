@@ -74,12 +74,7 @@ describeRoute('listPlans', {
       campaigns_per_period: 2,
       max_pages: 1,
       max_members: 1,
-      features: {
-        optimizer: false,
-        pdf_export: false,
-        comparative_stats: false,
-        competitor_analysis: false,
-      },
+      features: { optimizer: false, pdf_export: false, comparative_stats: false, competitor_analysis: false },
     });
     for (const p of data) expect(Number.isInteger(p.price_xaf)).toBe(true);
   },
@@ -105,26 +100,12 @@ describeRoute('getFxRates', {
   success: async () => {
     const svc = testServiceClient();
     await svc.from('exchange_rates').insert([
-      {
-        base: 'USD',
-        quote: 'XAF',
-        rate: 600,
-        source: 'manual',
-        fetched_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        base: 'USD',
-        quote: 'XAF',
-        rate: 605.5,
-        source: 'saspay',
-        fetched_at: new Date().toISOString(),
-      },
+      { base: 'USD', quote: 'XAF', rate: 600, source: 'manual', fetched_at: '2026-01-01T00:00:00Z' },
+      { base: 'USD', quote: 'XAF', rate: 605.5, source: 'saspay', fetched_at: new Date().toISOString() },
     ]);
     const res = await getFxRates(call('fx-rates'));
     expect(res.status).toBe(200);
-    const { data } = (await res.json()) as {
-      data: { base: string; quote: string; rate: number }[];
-    };
+    const { data } = (await res.json()) as { data: { base: string; quote: string; rate: number }[] };
     expect(data.find((r) => r.quote === 'XAF')).toMatchObject({ rate: 605.5, source: 'saspay' });
     for (const r of data) {
       expect(r.base).toBe('USD');
