@@ -18,6 +18,15 @@
 
 ## Sessions terminées
 
+### S10 · Portage du connecteur Meta — ✅ 2026-10-14
+- **PR** : #34 à #39 (fusionnées en squash, dernier commit 6026c17)
+- **Fait** : `packages/platforms` : connecteur Meta en TypeScript (client Graph, lectures du compte, ciblage, destinations, création et suivi de campagne, envoi des médias), erreurs Meta traduites en codes Pubeka, chiffrement des jetons (AES-256-GCM, rotation des clés), `FakeMetaConnector` et suite de contrat, connecteurs `google` et `tiktok` « indisponibles ».
+- **Preuves** : 432 tests dans `@pubeka/platforms`, couverture 99,1 % des lignes et 91,9 % des branches ; 23 tests de chiffrement dont la rotation des clés ; la suite de contrat passe sur la fausse implémentation ; aucun appel réel à Meta ; « CI terminée » verte sur chaque PR ; revue de sécurité du chiffrement par le contrôleur : rien à signaler.
+- **Problèmes et cause** : coupure par la limite de session, reprise de zéro sans perte. Le contrôle a trouvé quatre défauts, corrigés avant la fusion : jeton de Page et `interests: []` rétablis (comportement AdFacile) ; anti-SSRF des médias (liste d'hôtes obligatoire, redirections refusées, taille maximale, adresses privées refusées) ; `facebook.test.js` à porter ; taux de change devenu obligatoire.
+- **Décisions prises** : `fetch` et `zod` à la place d'axios (interdit par ESLint) ; budgets en centimes de dollar ; contrôles de budget et de localisation **avant** le premier appel à Meta (aucun objet orphelin) ; messages « Pubeka » à la place d'« AdsFacile » ; `xafPerUsd` obligatoire (plus de 610 par défaut, `XAF_PER_USD` n'est plus lu) ; suite de contrat dans `packages/platforms` (pas dans `packages/testing`). **Décision produit** : l'IA propose les intérêts Meta de la campagne, l'utilisateur peut les modifier (S14 à S16).
+- **Remarqué hors périmètre** : `core` devra fournir `allowedMediaHosts` (stockage Pubeka uniquement), `xafPerUsd`, lire `TOKEN_ENCRYPTION_KEYS` avec `parseEncryptionKeys`, enregistrer les identifiants de `createCampaign` et appeler `deleteCampaign` si l'enregistrement échoue ; un nom d'hôte autorisé dont le DNS pointerait vers une adresse interne n'est pas détecté (liste = domaines contrôlés par Pubeka) ; le jeton Meta reste dans l'URL des requêtes (comme AdFacile, jamais journalisé) ; structure de `ad_review_feedback` à confirmer en S18 ; ordre des types de résultat des statistiques à affiner en S17 ; validation de l'adresse de retour OAuth revient à S11 ; non portés : `oauthState`, `facebookAccount`, `uploadMedia`, `campaignDelete`, `campaignJobs*`, `facebookInsightsService`, `ttlCache`.
+
+
 ### S09 · Coque de l'application et première configuration — ✅ 2026-10-14
 - **PR** : #29, #30, #31, #32 (fusionnées en squash, dernier commit 60dbe72)
 - **Fait** : `next-intl` FR/EN et `i18n:check` (208 clés) ; coque (barre latérale, onglets en bas sur téléphone, bandeau, carte utilisateur, sélecteur de Page) ; TanStack Query, `nuqs`, magasin Zustand ; `/bienvenue/{etape}` ; `/reglages/profil`, `/reglages/equipe`, `/reglages/notifications` ; habillage final des écrans de S04.
