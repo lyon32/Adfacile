@@ -3,7 +3,8 @@
 // est du JSON, un envoi de fichier est un multipart. Aucune URL (donc aucun jeton) n'est jamais journalisée
 // ni placée dans un message d'erreur.
 // Documentation : https://developers.facebook.com/docs/graph-api/overview
-import { MetaGraphError, parseMetaError } from './errors';
+import type { ReadableStreamDefaultReader } from 'node:stream/web';
+import { MetaGraphError, MetaValidationError, parseMetaError } from './errors';
 
 /** Version appelée par défaut ; surchargeable (`META_GRAPH_API_VERSION`) sans redéployer le code. */
 export const DEFAULT_GRAPH_VERSION = 'v26.0';
@@ -22,6 +23,9 @@ export interface GraphRequestOptions {
 }
 
 const DEFAULT_TIMEOUT_MS = 30_000;
+
+/** Taille maximale d'un média téléchargé (la plus grande limite de Meta pour nous : une vidéo de 50 Mo). */
+export const MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024;
 
 export class GraphClient {
   readonly baseUrl: string;
@@ -109,21 +113,52 @@ export class GraphClient {
     return response.json();
   }
 
-  /** Télécharge un fichier (visuel) ; les octets sont renvoyés pour être envoyés en multipart à Meta. */
+  /**
+   * Télécharge un fichier (visuel) ; les octets sont renvoyés pour être envoyés en multipart à Meta.
+   * Garde-fous contre le téléchargement d'un contenu hors de propos (SSRF, épuisement de mémoire) : aucune
+   * redirection n'est suivie (une redirection pourrait mener à une adresse interne) et la taille est bornée,
+   * d'abord par l'en-tête Content-Length puis pendant la lecture.
+   */
   async download(
     url: string,
     timeoutMs: number,
+    maxBytes: number = MAX_DOWNLOAD_BYTES,
   ): Promise<{ bytes: Uint8Array; contentType: string | null }> {
     const response = await this.fetchFn(url, {
       method: 'GET',
+      redirect: 'error',
       signal: AbortSignal.timeout(timeoutMs),
     });
     if (!response.ok) {
       throw new Error(`Téléchargement du média impossible (HTTP ${String(response.status)})`);
     }
-    return {
-      bytes: new Uint8Array(await response.arrayBuffer()),
-      contentType: response.headers.get('content-type'),
-    };
+    const tooBig = new MetaValidationError('Le fichier est trop volumineux.');
+    const declared = Number(response.headers.get('content-length'));
+    if (Number.isFinite(declared) && declared > maxBytes) {
+      await response.body?.cancel();
+      throw tooBig;
+    }
+
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    const reader: ReadableStreamDefaultReader<Uint8Array> | undefined = response.body?.getReader();
+    while (reader) {
+      const result = await reader.read();
+      if (result.done) break;
+      const value = result.value;
+      total += value.length;
+      if (total > maxBytes) {
+        await reader.cancel();
+        throw tooBig;
+      }
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.length;
+    }
+    return { bytes, contentType: response.headers.get('content-type') };
   }
 }
