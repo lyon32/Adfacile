@@ -9,3 +9,4 @@ export * from './workspaces/transfer-ownership';
 export * from './workspaces/workspace-view';
 export * from './workspaces/workspaces';
 export * from './workspaces/invitations';
+export * from './account/notification-preferences';

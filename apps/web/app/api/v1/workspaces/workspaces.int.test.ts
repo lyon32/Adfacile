@@ -46,7 +46,12 @@ describeRoute('listWorkspaces', {
     expect(data).toHaveLength(2);
     expect(data).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: seeded.workspace.id, role: 'editor', plan: 'trial', status: 'active' }),
+        expect.objectContaining({
+          id: seeded.workspace.id,
+          role: 'editor',
+          plan: 'trial',
+          status: 'active',
+        }),
         expect.objectContaining({ role: 'owner' }),
       ]),
     );
@@ -57,14 +62,19 @@ describeRoute('listWorkspaces', {
     expect(res.status).toBe(401);
     expect((await json(res)).code).toBe('unauthenticated');
   },
-  otherWorkspace: na("liste sans identifiant d'espace : seuls les espaces dont on est membre (vérifié dans « succès »)"),
+  otherWorkspace: na(
+    "liste sans identifiant d'espace : seuls les espaces dont on est membre (vérifié dans « succès »)",
+  ),
   forbiddenRole: na('ouvert à tout utilisateur connecté, sans rôle'),
   invalidBody: na('GET sans corps'),
 });
 
 describeRoute('getWorkspace', {
   success: async () => {
-    const res = await getOne(call('GET', `/workspaces/${seeded.workspace.id}`, seeded.viewer.headers), segment(seeded.workspace.id));
+    const res = await getOne(
+      call('GET', `/workspaces/${seeded.workspace.id}`, seeded.viewer.headers),
+      segment(seeded.workspace.id),
+    );
     expect(res.status).toBe(200);
     expect(await json(res)).toEqual({
       id: seeded.workspace.id,
@@ -78,7 +88,10 @@ describeRoute('getWorkspace', {
     });
   },
   unauthenticated: async () => {
-    const res = await getOne(call('GET', `/workspaces/${seeded.workspace.id}`, {}), segment(seeded.workspace.id));
+    const res = await getOne(
+      call('GET', `/workspaces/${seeded.workspace.id}`, {}),
+      segment(seeded.workspace.id),
+    );
     expect(res.status).toBe(401);
   },
   otherWorkspace: async () => {
@@ -87,7 +100,10 @@ describeRoute('getWorkspace', {
     expect(res.status).toBe(404);
     expect((await json(res)).code).toBe('not_found');
     const unknown = randomUUID();
-    expect((await getOne(call('GET', `/workspaces/${unknown}`, seeded.owner.headers), segment(unknown))).status).toBe(404);
+    expect(
+      (await getOne(call('GET', `/workspaces/${unknown}`, seeded.owner.headers), segment(unknown)))
+        .status,
+    ).toBe(404);
   },
   forbiddenRole: na('tout membre voit l’espace (SECURITY_NOTES §2.2)'),
   invalidBody: async () => {
@@ -108,7 +124,10 @@ describeRoute('getWorkspace', {
         period_end: '2026-11-01T00:00:00Z',
       });
       expect(inserted.error).toBeNull();
-      const res = await getOne(call('GET', `/workspaces/${s.workspace.id}`, s.editor.headers), segment(s.workspace.id));
+      const res = await getOne(
+        call('GET', `/workspaces/${s.workspace.id}`, s.editor.headers),
+        segment(s.workspace.id),
+      );
       expect(await json(res)).toMatchObject({
         plan: 'business',
         period_end: '2026-11-01T00:00:00+00:00',
@@ -121,31 +140,58 @@ describeRoute('getWorkspace', {
 describeRoute('renameWorkspace', {
   success: async () => {
     const s = await seedWorkspace();
-    const res = await rename(call('PATCH', `/workspaces/${s.workspace.id}`, s.owner.headers, { name: '  Boutique Awa ' }), segment(s.workspace.id));
+    const res = await rename(
+      call('PATCH', `/workspaces/${s.workspace.id}`, s.owner.headers, { name: '  Boutique Awa ' }),
+      segment(s.workspace.id),
+    );
     expect(res.status).toBe(200);
-    expect(await json(res)).toMatchObject({ id: s.workspace.id, name: 'Boutique Awa', role: 'owner' });
-    const { data } = await testServiceClient().from('workspaces').select('name').eq('id', s.workspace.id).single();
+    expect(await json(res)).toMatchObject({
+      id: s.workspace.id,
+      name: 'Boutique Awa',
+      role: 'owner',
+    });
+    const { data } = await testServiceClient()
+      .from('workspaces')
+      .select('name')
+      .eq('id', s.workspace.id)
+      .single();
     expect(data?.name).toBe('Boutique Awa');
   },
   unauthenticated: async () => {
-    const res = await rename(call('PATCH', `/workspaces/${seeded.workspace.id}`, { origin: APP }, { name: 'X' }), segment(seeded.workspace.id));
+    const res = await rename(
+      call('PATCH', `/workspaces/${seeded.workspace.id}`, { origin: APP }, { name: 'X' }),
+      segment(seeded.workspace.id),
+    );
     expect(res.status).toBe(401);
   },
   otherWorkspace: async () => {
     const id = seeded.strangerWorkspace.id;
-    const res = await rename(call('PATCH', `/workspaces/${id}`, seeded.owner.headers, { name: 'Pirate' }), segment(id));
+    const res = await rename(
+      call('PATCH', `/workspaces/${id}`, seeded.owner.headers, { name: 'Pirate' }),
+      segment(id),
+    );
     expect(res.status).toBe(404);
-    const { data } = await testServiceClient().from('workspaces').select('name').eq('id', id).single();
+    const { data } = await testServiceClient()
+      .from('workspaces')
+      .select('name')
+      .eq('id', id)
+      .single();
     expect(data?.name).not.toBe('Pirate');
   },
   forbiddenRole: async () => {
-    const res = await rename(call('PATCH', `/workspaces/${seeded.workspace.id}`, seeded.editor.headers, { name: 'X' }), segment(seeded.workspace.id));
+    const res = await rename(
+      call('PATCH', `/workspaces/${seeded.workspace.id}`, seeded.editor.headers, { name: 'X' }),
+      segment(seeded.workspace.id),
+    );
     expect(res.status).toBe(403);
     expect((await json(res)).code).toBe('role_insufficient');
   },
   invalidBody: async () => {
     const res = await rename(
-      call('PATCH', `/workspaces/${seeded.workspace.id}`, seeded.owner.headers, { name: ' ', owner_id: randomUUID() }),
+      call('PATCH', `/workspaces/${seeded.workspace.id}`, seeded.owner.headers, {
+        name: ' ',
+        owner_id: randomUUID(),
+      }),
       segment(seeded.workspace.id),
     );
     expect(res.status).toBe(400);
@@ -159,13 +205,18 @@ describeRoute('renameWorkspace', {
   extra: {
     '403 workspace_read_only : espace en lecture seule': async () => {
       const s = await seedWorkspace({ status: 'read_only' });
-      const res = await rename(call('PATCH', `/workspaces/${s.workspace.id}`, s.owner.headers, { name: 'X' }), segment(s.workspace.id));
+      const res = await rename(
+        call('PATCH', `/workspaces/${s.workspace.id}`, s.owner.headers, { name: 'X' }),
+        segment(s.workspace.id),
+      );
       expect(res.status).toBe(403);
       expect((await json(res)).code).toBe('workspace_read_only');
     },
     '400 nom de plus de 120 caractères': async () => {
       const res = await rename(
-        call('PATCH', `/workspaces/${seeded.workspace.id}`, seeded.owner.headers, { name: 'a'.repeat(121) }),
+        call('PATCH', `/workspaces/${seeded.workspace.id}`, seeded.owner.headers, {
+          name: 'a'.repeat(121),
+        }),
         segment(seeded.workspace.id),
       );
       expect(res.status).toBe(400);

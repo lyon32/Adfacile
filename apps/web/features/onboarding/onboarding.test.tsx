@@ -4,7 +4,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { messagesFor, type Locale } from '@pubeka/i18n';
-import { OnboardingFlow, type CountryOption } from './onboarding-flow';
+import type { CountryOption } from '../shell/countries';
+import { OnboardingFlow } from './onboarding-flow';
 import { STEPS, isSkippable, nextPath, parseStep, stepNumber } from './steps';
 
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));

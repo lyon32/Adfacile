@@ -924,19 +924,27 @@ paths:
       tags: [ Notifications ]
       operationId: getNotificationPreferences
       summary: Préférences par type
+      description: Une ligne par type de notification (les 12 types), avec cloche et e-mail activés par défaut.
       responses:
         '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/NotificationPreference' } } } } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
     put:
       tags: [ Notifications ]
       operationId: putNotificationPreferences
       summary: Enregistrer les préférences
+      description: Corps strict ; un type inconnu ou en double est refusé (400). Les types absents gardent leur valeur.
       requestBody:
         required: true
         content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/NotificationPreference' } } } } } }
       responses:
         '204': { description: OK }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
   # ------------------------------------------------------------------ Support et aide
   /workspaces/{workspaceId}/tickets:
@@ -1855,7 +1863,10 @@ components:
     NotificationPreference:
       type: object
       required: [ type, in_app, email ]
-      properties: { type: { type: string }, in_app: { type: boolean }, email: { type: boolean } }
+      properties:
+        type: { type: string, enum: [ generation_ready, campaign_approved, campaign_rejected, meta_payment_failed, budget_exhausted, campaign_ended, quota_almost_reached, subscription_ending, meta_token_renewal, support_reply, weekly_summary, optimizer_suggestion ] }
+        in_app: { type: boolean }
+        email: { type: boolean }
     Ticket:
       type: object
       required: [ id, subject, category, status ]
