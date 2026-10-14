@@ -41,13 +41,13 @@ export default defineConfig({
   projects: [
     {
       name: 'tel-360',
-      testMatch: ['shell.spec.ts', 'onboarding.spec.ts'],
+      testMatch: ['shell.spec.ts', 'onboarding.spec.ts', 'settings.spec.ts'],
       use: viewport(360, 740),
     },
     { name: 'tel-390', use: viewport(390, 844) },
     {
       name: 'tablette-768',
-      testMatch: ['shell.spec.ts', 'onboarding.spec.ts'],
+      testMatch: ['shell.spec.ts', 'onboarding.spec.ts', 'settings.spec.ts'],
       use: viewport(768, 1024),
     },
     { name: 'ordinateur-1280', use: viewport(1280, 800) },

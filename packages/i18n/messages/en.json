@@ -120,5 +120,91 @@
       "body": "Logo, colors, WhatsApp number and tone of your ads (formal or informal): you will add them once your Page is connected.",
       "pending": "Brand kit: coming soon"
     }
+  },
+  "settings": {
+    "title": "Settings",
+    "nav_label": "Settings sections",
+    "nav": {
+      "profile": "Profile",
+      "team": "Team",
+      "notifications": "Notifications"
+    },
+    "saved": "Changes saved.",
+    "save_failed": "We could not save right now. Try again in a moment.",
+    "profile": {
+      "title": "Profile",
+      "body": "Your details and display preferences.",
+      "first_name": "First name",
+      "last_name": "Last name",
+      "email": "Email",
+      "email_hint": "The email address cannot be changed here.",
+      "phone": "Phone",
+      "phone_hint": "In international format, for example +237612345678.",
+      "phone_invalid": "Use the international format: +237612345678.",
+      "country": "Country",
+      "country_hint": "Changing country updates your time zone.",
+      "city": "City",
+      "currency": "Display currency",
+      "language": "Language",
+      "theme": "Theme",
+      "theme_light": "Light",
+      "theme_dark": "Dark",
+      "theme_system": "System",
+      "name_too_long": "80 characters at most.",
+      "submit": "Save"
+    },
+    "team": {
+      "title": "Team",
+      "body": "The people who can work in this workspace.",
+      "count": "{count} of {limit} members",
+      "members_label": "Workspace members",
+      "loading": "Loading the team…",
+      "load_failed": "The team could not be loaded.",
+      "role_owner": "Owner",
+      "role_editor": "Editor",
+      "role_viewer": "Viewer",
+      "role_of": "Role of {name}",
+      "only_owner": "Only the owner invites and removes members.",
+      "invite_title": "Invite someone",
+      "invite_email": "Email",
+      "invite_role": "Role",
+      "invite_submit": "Invite",
+      "invite_sending": "Sending…",
+      "invited": "Invitation sent to {email}.",
+      "remove": "Remove {name}",
+      "remove_title": "Remove {name}?",
+      "remove_body": "This person loses access to the workspace right away.",
+      "remove_confirm": "Remove",
+      "errors": {
+        "member_limit_reached": "You have reached the member limit of your plan.",
+        "conflict": "This person is already on the team.",
+        "forbidden": "Only the owner can manage the team.",
+        "workspace_read_only": "The workspace is read-only: the team cannot be changed.",
+        "validation_failed": "Check the email address.",
+        "generic": "The action did not go through. Try again in a moment."
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "body": "Choose how you are notified for each event.",
+      "group_label": "Notification preferences",
+      "in_app": "Bell",
+      "email": "Email",
+      "toggle": "{type}: {channel}",
+      "types": {
+        "generation_ready": "Generation ready",
+        "campaign_approved": "Ad approved",
+        "campaign_rejected": "Ad rejected",
+        "meta_payment_failed": "Meta payment failed",
+        "budget_exhausted": "Budget used up",
+        "campaign_ended": "Campaign ended",
+        "quota_almost_reached": "Quota almost reached",
+        "subscription_ending": "Subscription ending",
+        "meta_token_renewal": "Meta token to renew",
+        "support_reply": "Support reply",
+        "weekly_summary": "Monday summary",
+        "optimizer_suggestion": "Optimizer suggestion"
+      }
+    }
   }
 }

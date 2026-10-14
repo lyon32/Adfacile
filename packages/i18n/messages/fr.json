@@ -120,5 +120,91 @@
       "body": "Logo, couleurs, numéro WhatsApp et ton des pubs (« tu » ou « vous ») : tu les ajouteras dès que ta Page sera connectée.",
       "pending": "Kit de marque : bientôt disponible"
     }
+  },
+  "settings": {
+    "title": "Réglages",
+    "nav_label": "Sections des réglages",
+    "nav": {
+      "profile": "Profil",
+      "team": "Équipe",
+      "notifications": "Notifications"
+    },
+    "saved": "Modifications enregistrées.",
+    "save_failed": "Impossible d’enregistrer pour le moment. Réessaie dans quelques instants.",
+    "profile": {
+      "title": "Profil",
+      "body": "Tes informations et tes préférences d’affichage.",
+      "first_name": "Prénom",
+      "last_name": "Nom",
+      "email": "E-mail",
+      "email_hint": "L’adresse e-mail ne se modifie pas ici.",
+      "phone": "Téléphone",
+      "phone_hint": "Au format international, par exemple +237612345678.",
+      "phone_invalid": "Utilise le format international : +237612345678.",
+      "country": "Pays",
+      "country_hint": "Changer de pays met à jour ton fuseau horaire.",
+      "city": "Ville",
+      "currency": "Monnaie d’affichage",
+      "language": "Langue",
+      "theme": "Thème",
+      "theme_light": "Clair",
+      "theme_dark": "Sombre",
+      "theme_system": "Système",
+      "name_too_long": "80 caractères au plus.",
+      "submit": "Enregistrer"
+    },
+    "team": {
+      "title": "Équipe",
+      "body": "Les personnes qui peuvent travailler dans cet espace.",
+      "count": "{count} sur {limit} membres",
+      "members_label": "Membres de l’espace",
+      "loading": "Chargement de l’équipe…",
+      "load_failed": "L’équipe n’a pas pu être chargée.",
+      "role_owner": "Propriétaire",
+      "role_editor": "Éditeur",
+      "role_viewer": "Lecteur",
+      "role_of": "Rôle de {name}",
+      "only_owner": "Seul le propriétaire invite et retire des membres.",
+      "invite_title": "Inviter quelqu’un",
+      "invite_email": "E-mail",
+      "invite_role": "Rôle",
+      "invite_submit": "Inviter",
+      "invite_sending": "Envoi…",
+      "invited": "Invitation envoyée à {email}.",
+      "remove": "Retirer {name}",
+      "remove_title": "Retirer {name} ?",
+      "remove_body": "Cette personne perd l’accès à l’espace tout de suite.",
+      "remove_confirm": "Retirer",
+      "errors": {
+        "member_limit_reached": "Tu as atteint la limite de membres de ta formule.",
+        "conflict": "Cette personne est déjà dans l’équipe.",
+        "forbidden": "Seul le propriétaire peut gérer l’équipe.",
+        "workspace_read_only": "L’espace est en lecture seule : l’équipe ne peut pas être modifiée.",
+        "validation_failed": "Vérifie l’adresse e-mail.",
+        "generic": "L’action n’a pas abouti. Réessaie dans quelques instants."
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "body": "Choisis comment être prévenu pour chaque événement.",
+      "group_label": "Préférences de notification",
+      "in_app": "Cloche",
+      "email": "E-mail",
+      "toggle": "{type} : {channel}",
+      "types": {
+        "generation_ready": "Génération prête",
+        "campaign_approved": "Pub validée",
+        "campaign_rejected": "Pub refusée",
+        "meta_payment_failed": "Paiement Meta échoué",
+        "budget_exhausted": "Budget épuisé",
+        "campaign_ended": "Campagne terminée",
+        "quota_almost_reached": "Quota presque atteint",
+        "subscription_ending": "Abonnement qui se termine",
+        "meta_token_renewal": "Jeton Meta à renouveler",
+        "support_reply": "Réponse du support",
+        "weekly_summary": "Résumé du lundi",
+        "optimizer_suggestion": "Suggestion de l’Optimiseur"
+      }
+    }
   }
 }

@@ -1157,9 +1157,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Préférences par type */
+        /**
+         * Préférences par type
+         * @description Une ligne par type de notification (les 12 types), avec cloche et e-mail activés par défaut.
+         */
         get: operations["getNotificationPreferences"];
-        /** Enregistrer les préférences */
+        /**
+         * Enregistrer les préférences
+         * @description Corps strict ; un type inconnu ou en double est refusé (400). Les types absents gardent leur valeur.
+         */
         put: operations["putNotificationPreferences"];
         post?: never;
         delete?: never;
@@ -2110,7 +2116,8 @@ export interface components {
             next_cursor?: string | null;
         };
         NotificationPreference: {
-            type: string;
+            /** @enum {string} */
+            type: "generation_ready" | "campaign_approved" | "campaign_rejected" | "meta_payment_failed" | "budget_exhausted" | "campaign_ended" | "quota_almost_reached" | "subscription_ending" | "meta_token_renewal" | "support_reply" | "weekly_summary" | "optimizer_suggestion";
             in_app: boolean;
             email: boolean;
         };
@@ -4229,6 +4236,8 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     putNotificationPreferences: {
@@ -4253,7 +4262,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            413: components["responses"]["PayloadTooLarge"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     listTickets: {

@@ -7,14 +7,9 @@ import { useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import type { Locale } from '@pubeka/i18n';
 import { SelectField } from '../settings/select-field';
+import type { CountryOption } from '../shell/countries';
 import { useUpdateMe } from '../shell/use-update-me';
 import { STEPS, isSkippable, nextPath, stepNumber, type Step } from './steps';
-
-export interface CountryOption {
-  code: string;
-  name: string;
-  currency: 'XAF' | 'XOF';
-}
 
 export interface OnboardingProfile {
   countryCode: string | null;
