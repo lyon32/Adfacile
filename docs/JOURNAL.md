@@ -18,6 +18,15 @@
 
 ## Sessions terminées
 
+### S08 · Design system en composants — ✅ 2026-10-14
+- **PR** : #27 (fusionnée en squash, commit 85ba53b)
+- **Fait** : `packages/ui` : jetons (DESIGN-SYSTEM §9, clair et sombre par `data-theme`, exportés en `@pubeka/ui/styles.css`) ; composants shadcn habillés (Button, Field, Switch, Card, Eyebrow, Dialog) ; Montant, Badge de statut (6 statuts), Carte de modèle ; loader « Saisie » (complet une fois par session, court au-delà de 300 ms) ; page de démonstration (`pnpm --filter @pubeka/ui demo`, port 5180).
+- **Preuves** : 14 tests Vitest et 14 tests Playwright ; axe à 0 violation en clair et sombre, à 390 et 1280 px, modale ouverte comprise ; pas de défilement horizontal ; « réduire les animations » testé ; 4 captures dans `packages/ui/e2e/captures/` ; « CI terminée » verte sur c91cafd (exécution 38543587161).
+- **Problèmes et cause** : première CI rouge à cause de la limite de téléchargement de Docker Hub (tâche relancée sans changement). Le tracé « ubeka » de `docs/design/loader/` a perdu ses espaces : le composant reprend celui de `docs/design/logo/pubeka-logo-sombre.svg`. Entrée de journal écrite par erreur dans la PR, retirée après contrôle.
+- **Décisions prises** : démonstration dans `packages/ui` (Vite, port 5180, l'application reste sur 5173), lancée par `pnpm e2e:ci` ; `export default` admis dans les fichiers de configuration de Playwright, Vite et Vitest (imposé par ces outils) ; CSS du loader dans `@layer components` ; avec « réduire les animations », logo fixe 800 ms ; nouvelles dépendances `vite` 8.3.1, `@vitejs/plugin-react` 6.1.1, `@tailwindcss/vite` 4.3.3.
+- **Remarqué hors périmètre** : tracé cassé et couleurs en dur dans `docs/design/loader/` ; loader court Lime foncé sur fond clair à environ 2,3:1 de contraste (**à trancher par la personne**) ; Prettier a mis les codes hexadécimaux des jetons en minuscules (mêmes couleurs) ; ENV_SETUP §4 ne liste pas les trois nouvelles dépendances ; avertissements `pnpm peers` déjà présents ; échec « Vercel – adsfacile » tant que l'ancien projet est branché (👤).
+
+
 ### S07 · Préproduction en ligne — ✅ 2026-10-13
 - **PR** : #24 (fusionnée en squash, commit c68f567)
 - **Fait** : chaque fusion dans `main` est mise en ligne en préproduction, automatiquement :
