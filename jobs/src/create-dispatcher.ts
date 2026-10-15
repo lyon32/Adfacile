@@ -7,10 +7,14 @@ import {
   registerHandler,
   type JobDispatcher,
 } from './dispatcher';
+import { analysisRunHandler } from './handlers/analysis-run';
 import { systemPingHandler } from './handlers/system-ping';
 
 /** Gestionnaires disponibles en mode `inline` : un par tâche, la même logique que sous Trigger.dev. */
-export const inlineHandlers = [registerHandler(systemPingHandler)];
+export const inlineHandlers = [
+  registerHandler(systemPingHandler),
+  registerHandler(analysisRunHandler),
+];
 
 export type DispatcherEnv = Pick<
   Env,

@@ -314,6 +314,12 @@ importers:
       '@pubeka/contracts':
         specifier: workspace:*
         version: link:../packages/contracts
+      '@pubeka/core':
+        specifier: workspace:*
+        version: link:../packages/core
+      '@pubeka/db':
+        specifier: workspace:*
+        version: link:../packages/db
       '@pubeka/shared':
         specifier: workspace:*
         version: link:../packages/shared

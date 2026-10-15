@@ -5,3 +5,4 @@ export * from './dispatcher';
 export * from './create-dispatcher';
 export * from './queue-limits';
 export * from './handlers/system-ping';
+export * from './handlers/analysis-run';
