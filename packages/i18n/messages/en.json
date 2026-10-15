@@ -567,5 +567,140 @@
         "too_long": "Text too long."
       }
     }
+  },
+  "campaign": {
+    "wizard": {
+      "title": "New campaign",
+      "body": "Paste a link, send a photo or describe your business. Pubeka prepares the rest.",
+      "steps": {
+        "label": "Campaign steps",
+        "sources": "Sources",
+        "questions": "Questions",
+        "proposal": "Proposal",
+        "visual": "Visual",
+        "preview": "Preview",
+        "publish": "Publish",
+        "progress": "Step {current} of {total}"
+      },
+      "entry": {
+        "meta_title": "Connect your Meta account to publish.",
+        "meta_body": "You can still prepare your campaign: you will publish it after connecting.",
+        "meta_connect": "Connect",
+        "meta_prepare": "Prepare without publishing",
+        "viewer_title": "Only the owner and editors can create campaigns.",
+        "viewer_body": "Ask the workspace owner to give you the editor role.",
+        "readonly_title": "Your workspace is read-only.",
+        "readonly_body": "Renew your subscription to create new campaigns.",
+        "suspended_title": "Your workspace is suspended.",
+        "suspended_body": "Contact support to reactivate it.",
+        "no_workspace": "No workspace is available to create a campaign."
+      },
+      "sources": {
+        "title": "What do you have at hand?",
+        "body": "You can pick several. The more you give, the more accurate your business profile will be.",
+        "platform_label": "Platform",
+        "platform_meta": "Meta Ads",
+        "platform_google": "Google Ads",
+        "platform_tiktok": "TikTok Ads",
+        "soon": "Soon",
+        "page_label": "Page",
+        "page_none": "No Page connected",
+        "choices_label": "Your sources",
+        "website": "Website link",
+        "website_hint": "Website, online shop or app link",
+        "photo": "Product photo",
+        "photo_hint": "Up to 10 images of 10 MB",
+        "post": "Post",
+        "post_hint": "Facebook, Instagram or X link",
+        "document": "Document",
+        "document_hint": "PDF or Word, 20 MB",
+        "text": "Description",
+        "text_hint": "A few lines about your business",
+        "website_field": "Your website link",
+        "website_placeholder": "https://",
+        "post_field": "Post link",
+        "post_help": "If the post asks you to log in, send a screenshot instead.",
+        "text_field": "Describe your business",
+        "text_help": "What you sell, where, at what price, how to reach you.",
+        "photo_pick": "Choose photos",
+        "document_pick": "Choose a document",
+        "file_remove": "Remove {name}",
+        "file_count": "{count, plural, one {# photo chosen} other {# photos chosen}}",
+        "intent_field": "What you want from your ad (optional)",
+        "intent_help": "For example: a holiday promo, more WhatsApp messages.",
+        "analyse": "Analyse",
+        "analysing_upload": "Uploading file {current} of {total}…",
+        "analysing_start": "Starting the analysis…",
+        "need_one": "Add at least one source to continue.",
+        "errors": {
+          "url_invalid": "Paste an address that starts with https://.",
+          "file_too_large_image": "This file is larger than 10 MB.",
+          "file_too_large_document": "This file is larger than 20 MB.",
+          "file_type": "Accepted formats: JPG, PNG, WEBP, PDF, DOCX.",
+          "too_many_photos": "You can send 10 photos at most.",
+          "text_too_long": "The description is limited to 5,000 characters.",
+          "unsafe_url": "This link cannot be read.",
+          "file_gone": "The upload took too long. Choose the file again.",
+          "rate_limited": "You started many analyses. Try again in a few minutes.",
+          "forbidden": "You are not allowed to start an analysis in this workspace.",
+          "unavailable": "The service is unavailable right now. Try again in a few moments.",
+          "generic": "The analysis could not start. Try again."
+        }
+      },
+      "waiting": {
+        "title": "Reading your sources…",
+        "body": "This usually takes less than a minute. You can stay on this page.",
+        "reading": "Reading your sources",
+        "understanding": "Understanding your business",
+        "questions": "Preparing your questions",
+        "done": "done",
+        "current": "in progress",
+        "todo": "upcoming",
+        "label": "Analysis progress",
+        "load_failed": "Cannot follow the analysis right now. Try again in a few moments."
+      },
+      "questions": {
+        "title": "A few details",
+        "body": "Answer these questions so your ad is accurate. Nothing is made up: what you leave out stays empty.",
+        "answer_label": "Your answer",
+        "why": "Why?",
+        "why_text": "Why this question?",
+        "optional": "optional",
+        "required_error": "This answer is required.",
+        "phone_error": "Write the number with the country code, for example +237 690 12 34 56.",
+        "number_error": "Write a number, for example 25000.",
+        "invalid_error": "This answer is not valid.",
+        "pick_one": "Choose an option",
+        "submit": "Generate the proposal",
+        "saving": "Saving…",
+        "saved_title": "Your answers are saved.",
+        "saved_body": "The campaign proposal will be available in the next step.",
+        "edit": "Edit my answers",
+        "back": "Edit my sources",
+        "save_failed": "Your answers were not saved. Try again.",
+        "notices": {
+          "unreadable": "I could not read {count, plural, one {one of your sources} other {# of your sources}}. Add a description or a photo to complete.",
+          "images_not_read": "I could not read your photos right now. Double-check the information that depends on them.",
+          "image_values": "Double-check the information that came from your photos: it could not be cross-checked.",
+          "multiple_businesses": "Your document covers several businesses. Answer with the one you want to promote in mind.",
+          "product_not_detected": "I cannot recognise a product in your photo. Describe it in your answers."
+        }
+      },
+      "blocked": {
+        "title": "Pubeka cannot create an ad for this product.",
+        "body": "It is forbidden by law and by the platforms. No credit and no campaign is used.",
+        "contest": "Think this is a mistake? Contact support.",
+        "contest_link": "Write to support"
+      },
+      "failed": {
+        "title": "The analysis did not complete.",
+        "retry": "Back to my sources",
+        "source_unreadable": "I cannot read these sources. Add a description or a photo.",
+        "unsafe_url": "This link cannot be read. Check the address or add a description.",
+        "model_without_vision": "I cannot read photos right now. Add a description.",
+        "rate_limited": "The service is very busy. Try again in a few minutes.",
+        "generic": "Something went wrong during the analysis. Nothing was used. Try again."
+      }
+    }
   }
 }

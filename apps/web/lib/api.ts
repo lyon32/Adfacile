@@ -32,6 +32,8 @@ function isProblem(value: unknown): value is ApiProblem {
 export interface ApiRequest {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
+  /** En-têtes en plus (`Idempotency-Key` des actions qui dépensent, API_SPEC §7). */
+  headers?: Record<string, string>;
   signal?: AbortSignal;
 }
 
@@ -46,8 +48,10 @@ export async function apiFetch<S extends z.ZodType>(
     credentials: 'same-origin',
   };
   if (init.body !== undefined) {
-    request.headers = { 'content-type': 'application/json' };
+    request.headers = { 'content-type': 'application/json', ...init.headers };
     request.body = JSON.stringify(init.body);
+  } else if (init.headers !== undefined) {
+    request.headers = init.headers;
   }
   if (init.signal !== undefined) request.signal = init.signal;
   const response = await fetch(`/api/v1${path}`, request);

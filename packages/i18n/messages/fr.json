@@ -567,5 +567,140 @@
         "too_long": "Texte trop long."
       }
     }
+  },
+  "campaign": {
+    "wizard": {
+      "title": "Nouvelle campagne",
+      "body": "Colle un lien, envoie une photo ou décris ton activité. Pubeka prépare le reste.",
+      "steps": {
+        "label": "Étapes de la campagne",
+        "sources": "Sources",
+        "questions": "Questions",
+        "proposal": "Proposition",
+        "visual": "Visuel",
+        "preview": "Aperçu",
+        "publish": "Publier",
+        "progress": "Étape {current} sur {total}"
+      },
+      "entry": {
+        "meta_title": "Connecte ton compte Meta pour publier.",
+        "meta_body": "Tu peux quand même préparer ta campagne : tu la publieras après la connexion.",
+        "meta_connect": "Connecter",
+        "meta_prepare": "Préparer sans publier",
+        "viewer_title": "Seuls le propriétaire et les éditeurs créent des campagnes.",
+        "viewer_body": "Demande au propriétaire de l’espace de te donner le rôle d’éditeur.",
+        "readonly_title": "Ton espace est en lecture seule.",
+        "readonly_body": "Renouvelle ton abonnement pour créer de nouvelles campagnes.",
+        "suspended_title": "Ton espace est suspendu.",
+        "suspended_body": "Contacte le support pour le réactiver.",
+        "no_workspace": "Aucun espace de travail n’est disponible pour créer une campagne."
+      },
+      "sources": {
+        "title": "Qu’as-tu sous la main ?",
+        "body": "Plusieurs choix sont possibles. Plus tu en donnes, plus la fiche de ton activité sera juste.",
+        "platform_label": "Plateforme",
+        "platform_meta": "Meta Ads",
+        "platform_google": "Google Ads",
+        "platform_tiktok": "TikTok Ads",
+        "soon": "Bientôt",
+        "page_label": "Page",
+        "page_none": "Aucune Page connectée",
+        "choices_label": "Tes sources",
+        "website": "Lien de site",
+        "website_hint": "Site, boutique en ligne ou lien d’application",
+        "photo": "Photo du produit",
+        "photo_hint": "Jusqu’à 10 images de 10 Mo",
+        "post": "Publication",
+        "post_hint": "Lien Facebook, Instagram ou X",
+        "document": "Document",
+        "document_hint": "PDF ou Word, 20 Mo",
+        "text": "Description",
+        "text_hint": "Quelques lignes sur ton activité",
+        "website_field": "Lien de ton site",
+        "website_placeholder": "https://",
+        "post_field": "Lien de la publication",
+        "post_help": "Si la publication demande de se connecter, envoie plutôt une capture d’écran.",
+        "text_field": "Décris ton activité",
+        "text_help": "Ce que tu vends, où, à quel prix, comment te joindre.",
+        "photo_pick": "Choisir des photos",
+        "document_pick": "Choisir un document",
+        "file_remove": "Retirer {name}",
+        "file_count": "{count, plural, one {# photo choisie} other {# photos choisies}}",
+        "intent_field": "Ce que tu veux comme pub (facultatif)",
+        "intent_help": "Par exemple : une promo pour les fêtes, plus de messages WhatsApp.",
+        "analyse": "Analyser",
+        "analysing_upload": "Envoi du fichier {current} sur {total}…",
+        "analysing_start": "Lancement de l’analyse…",
+        "need_one": "Ajoute au moins une source pour continuer.",
+        "errors": {
+          "url_invalid": "Colle une adresse qui commence par https://.",
+          "file_too_large_image": "Ce fichier dépasse 10 Mo.",
+          "file_too_large_document": "Ce fichier dépasse 20 Mo.",
+          "file_type": "Formats acceptés : JPG, PNG, WEBP, PDF, DOCX.",
+          "too_many_photos": "Tu peux envoyer 10 photos au maximum.",
+          "text_too_long": "La description est limitée à 5 000 caractères.",
+          "unsafe_url": "Ce lien ne peut pas être lu.",
+          "file_gone": "L’envoi du fichier a pris trop de temps. Choisis-le de nouveau.",
+          "rate_limited": "Tu as lancé beaucoup d’analyses. Réessaie dans quelques minutes.",
+          "forbidden": "Tu n’as pas le droit de lancer une analyse dans cet espace.",
+          "unavailable": "Le service est indisponible pour le moment. Réessaie dans quelques instants.",
+          "generic": "L’analyse n’a pas pu démarrer. Réessaie."
+        }
+      },
+      "waiting": {
+        "title": "Je lis tes sources…",
+        "body": "Cela prend en général moins d’une minute. Tu peux rester sur cette page.",
+        "reading": "Lecture de tes sources",
+        "understanding": "Compréhension de ton activité",
+        "questions": "Préparation de tes questions",
+        "done": "terminé",
+        "current": "en cours",
+        "todo": "à venir",
+        "label": "Avancement de l’analyse",
+        "load_failed": "Impossible de suivre l’analyse pour le moment. Réessaie dans quelques instants."
+      },
+      "questions": {
+        "title": "Quelques précisions",
+        "body": "Réponds à ces questions pour que ta pub soit juste. Rien n’est inventé : ce que tu ne dis pas reste vide.",
+        "answer_label": "Ta réponse",
+        "why": "Pourquoi ?",
+        "why_text": "Pourquoi cette question ?",
+        "optional": "facultatif",
+        "required_error": "Cette réponse est nécessaire.",
+        "phone_error": "Écris le numéro avec l’indicatif du pays, par exemple +237 690 12 34 56.",
+        "number_error": "Écris un nombre, par exemple 25000.",
+        "invalid_error": "Cette réponse n’est pas valide.",
+        "pick_one": "Choisis une option",
+        "submit": "Générer la proposition",
+        "saving": "Enregistrement…",
+        "saved_title": "Tes réponses sont enregistrées.",
+        "saved_body": "La proposition de campagne sera disponible à l’étape suivante.",
+        "edit": "Modifier mes réponses",
+        "back": "Modifier mes sources",
+        "save_failed": "Tes réponses n’ont pas été enregistrées. Réessaie.",
+        "notices": {
+          "unreadable": "Je n’ai pas pu lire {count, plural, one {une de tes sources} other {# de tes sources}}. Ajoute une description ou une photo pour compléter.",
+          "images_not_read": "Je n’ai pas pu lire tes photos pour le moment. Vérifie les informations qui en dépendent.",
+          "image_values": "Vérifie les informations venues de tes photos : elles n’ont pas pu être recoupées.",
+          "multiple_businesses": "Ton document parle de plusieurs activités. Réponds en pensant à celle que tu veux promouvoir.",
+          "product_not_detected": "Je ne reconnais pas de produit sur ta photo. Décris-le dans tes réponses."
+        }
+      },
+      "blocked": {
+        "title": "Pubeka ne peut pas créer de publicité pour ce produit.",
+        "body": "Il est interdit par la loi et par les plateformes. Aucun crédit ni aucune campagne n’est consommé.",
+        "contest": "Tu penses qu’il y a une erreur ? Contacte le support.",
+        "contest_link": "Écrire au support"
+      },
+      "failed": {
+        "title": "L’analyse n’a pas abouti.",
+        "retry": "Revenir à mes sources",
+        "source_unreadable": "Je n’arrive pas à lire ces sources. Ajoute une description ou une photo.",
+        "unsafe_url": "Ce lien ne peut pas être lu. Vérifie l’adresse ou ajoute une description.",
+        "model_without_vision": "Je ne peux pas lire les photos pour le moment. Ajoute une description.",
+        "rate_limited": "Le service est très sollicité. Réessaie dans quelques minutes.",
+        "generic": "Une erreur est survenue pendant l’analyse. Rien n’a été consommé. Réessaie."
+      }
+    }
   }
 }
