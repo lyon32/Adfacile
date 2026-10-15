@@ -11,6 +11,7 @@ const BLOCKED_V4: readonly Cidr4[] = [
   [10, 0, 0, 0, 8], // privé
   [100, 64, 0, 0, 10], // partage d'adresses des opérateurs
   [127, 0, 0, 0, 8], // bouclage
+  [168, 63, 129, 16, 32], // WireServer d'Azure (métadonnées des machines virtuelles)
   [169, 254, 0, 0, 16], // lien local, dont les métadonnées des clouds (169.254.169.254)
   [172, 16, 0, 0, 12], // privé
   [192, 0, 0, 0, 24], // protocoles IETF
@@ -107,6 +108,7 @@ function isPublicV6(address: string): boolean {
 /** Vrai si `address` est une adresse IP littérale publique. Une chaîne qui n'est pas une IP renvoie faux. */
 export function isPublicAddress(address: string): boolean {
   const bare = address.replace(/^\[|\]$/g, '');
+  if (bare.includes('%')) return false; // identifiant de zone IPv6 : jamais accepté
   const version = isIP(bare);
   if (version === 4) return isPublicV4(bare);
   if (version === 6) return isPublicV6(bare);

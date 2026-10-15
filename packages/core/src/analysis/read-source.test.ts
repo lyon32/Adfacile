@@ -305,6 +305,17 @@ describe('createJinaReader : service tiers', () => {
     expect(sentBody).not.toContain(key);
   });
 
+  it('Jina : aucune redirection (la clé ne suit pas), réponse démesurée refusée', async () => {
+    let init: RequestInit | undefined;
+    const fetchImpl = ((_url: string, request: RequestInit) => {
+      init = request;
+      return Promise.resolve(new Response('x', { headers: { 'content-length': '999999999' } }));
+    }) as typeof fetch;
+    const reader = createJinaReader({ apiKey: 'k', fetchImpl });
+    expect(await reader.read('https://shop.example.com/', AbortSignal.timeout(1000))).toBeNull();
+    expect(init?.redirect).toBe('error');
+  });
+
   it('une erreur, une réponse illisible ou vide donne null sans lever d’exception', async () => {
     const make = (impl: () => Promise<Response>) =>
       createJinaReader({ apiKey: 'k', fetchImpl: impl });

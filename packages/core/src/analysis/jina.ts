@@ -7,7 +7,27 @@
 import { z } from 'zod';
 
 export const JINA_ENDPOINT = 'https://r.jina.ai/';
-const MAX_RESPONSE_CHARS = 1_000_000;
+const MAX_RESPONSE_BYTES = 2_000_000;
+
+/** Lit le corps par morceaux et s'arrête au plafond (rend `null` s'il est dépassé). */
+async function readLimited(response: Response, maxBytes: number): Promise<string | null> {
+  const reader: ReadableStreamDefaultReader<Uint8Array> | undefined = response.body?.getReader();
+  if (reader === undefined) return null;
+  const decoder = new TextDecoder();
+  let total = 0;
+  let text = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.length;
+    if (total > maxBytes) {
+      await reader.cancel();
+      return null;
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+  return text + decoder.decode();
+}
 
 export interface JinaReader {
   /** Texte de la page, ou `null` si Jina n'a rien pu lire. Ne lève jamais d'erreur (secours silencieux). */
@@ -36,9 +56,13 @@ export function createJinaReader(options: {
           },
           body: JSON.stringify({ url: publicUrl }),
           signal,
+          // Jamais de redirection : la clé ne doit pas suivre une réponse vers un autre hôte.
+          redirect: 'error',
         });
         if (!response.ok) return null;
-        const text = (await response.text()).slice(0, MAX_RESPONSE_CHARS);
+        const declared = Number(response.headers.get('content-length') ?? '0');
+        if (declared > MAX_RESPONSE_BYTES) return null;
+        const text = (await readLimited(response, MAX_RESPONSE_BYTES)) ?? '';
         const parsed = responseSchema.safeParse(JSON.parse(text));
         const content = parsed.success ? parsed.data.data?.content : null;
         return typeof content === 'string' && content.trim() !== '' ? content : null;

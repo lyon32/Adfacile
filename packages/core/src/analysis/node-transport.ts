@@ -27,10 +27,14 @@ export interface TransportResponse {
 
 export type Transport = (request: TransportRequest) => Promise<TransportResponse>;
 
+/** Taille décompressée maximale d'un corps : borne la mémoire à la source (bombe de décompression). */
+const MAX_DECODED_BYTES = 32 * 1024 * 1024;
+
 function decoder(encoding: string): zlib.Gunzip | zlib.Inflate | zlib.BrotliDecompress | null {
-  if (encoding === 'gzip' || encoding === 'x-gzip') return zlib.createGunzip();
-  if (encoding === 'deflate') return zlib.createInflate();
-  if (encoding === 'br') return zlib.createBrotliDecompress();
+  const options = { maxOutputLength: MAX_DECODED_BYTES };
+  if (encoding === 'gzip' || encoding === 'x-gzip') return zlib.createGunzip(options);
+  if (encoding === 'deflate') return zlib.createInflate(options);
+  if (encoding === 'br') return zlib.createBrotliDecompress(options);
   return null;
 }
 
@@ -59,7 +63,7 @@ export const nodeTransport: Transport = ({ url, address, headers, signal }) =>
             callback(null, address, family);
           }
         },
-        ...(secure && isIP(host) === 0 ? { servername: host } : {}),
+        ...(secure && isIP(host) === 0 ? { servername: host.replace(/\.$/, '') } : {}),
       },
       (response) => {
         const out: Record<string, string> = {};
@@ -76,6 +80,8 @@ export const nodeTransport: Transport = ({ url, address, headers, signal }) =>
             return;
           }
           // L'erreur du décodeur (flux corrompu) est portée par l'itérateur du corps.
+          // Un écouteur existe dès maintenant : une erreur avant la lecture du corps n'arrête jamais le processus.
+          unzip.on('error', () => undefined);
           response.on('error', (error) => unzip.destroy(error));
           stream = response.pipe(unzip);
         }

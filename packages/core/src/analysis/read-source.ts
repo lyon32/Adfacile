@@ -120,6 +120,21 @@ async function readInternal(
   }
 }
 
+/** Attend `promise` au plus `ms` millisecondes ; sinon la source est illisible. */
+async function raceDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      reject(new AppError('source_unreadable', { meta: { reason: 'timeout' } }));
+    }, ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function readSource(
   source: SourceInput,
   options: ReadSourceOptions,
@@ -132,21 +147,24 @@ export async function readSource(
   }
 
   // Adresse validée AVANT tout, y compris avant d'en parler à Jina : le service tiers ne reçoit qu'une adresse publique.
-  const target = await resolvePublicTarget(source.url, deps.resolve);
+  // Un seul délai global pour la lecture, la résolution et le secours (jamais 2 à 3 fois `timeoutMs`).
+  const deadline = Date.now() + options.timeoutMs;
+  const remaining = (): number => Math.max(1, deadline - Date.now());
+  const target = await raceDeadline(
+    resolvePublicTarget(source.url, deps.resolve),
+    options.timeoutMs,
+  );
   if (isLoginWalled(target.url.hostname)) {
     return { text: '', extractor: 'internal', status: 'unreadable', reason: 'login_required' };
   }
 
-  const internal = await readInternal(source.url, options, deps);
+  const internal = await readInternal(source.url, { ...options, timeoutMs: remaining() }, deps);
   if (internal.text.length >= MIN_READABLE_CHARS) {
     return { text: internal.text, extractor: 'internal', status: 'ok' };
   }
 
   if (deps.jina !== undefined) {
-    const viaJina = await deps.jina.read(
-      target.url.toString(),
-      AbortSignal.timeout(options.timeoutMs),
-    );
+    const viaJina = await deps.jina.read(target.url.toString(), AbortSignal.timeout(remaining()));
     const text = viaJina === null ? '' : cleanText(viaJina, maxChars);
     if (text.length >= MIN_READABLE_CHARS) return { text, extractor: 'jina', status: 'ok' };
   }

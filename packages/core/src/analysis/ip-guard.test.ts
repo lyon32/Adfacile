@@ -18,6 +18,7 @@ describe('isPublicAddress', () => {
     '224.0.0.1',
     '240.0.0.1',
     '255.255.255.255',
+    '168.63.129.16', // WireServer d'Azure
     '192.0.2.1',
     '203.0.113.5',
   ])('EC-SRC-01 : %s (IPv4 non publique) est refusée', (address) => {
@@ -79,6 +80,7 @@ describe('isPublicAddress', () => {
       '::g',
       '1.2.3.4.5',
       '0x7f.0.0.1',
+      '2001:4860::1%eth0', // identifiant de zone IPv6
     ]) {
       expect(isPublicAddress(value)).toBe(false);
     }
