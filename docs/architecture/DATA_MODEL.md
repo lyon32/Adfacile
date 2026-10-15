@@ -2,7 +2,7 @@
 
 > Version 1 · 10 octobre 2026 · **Document de référence des données.** Remplace l'ancien `MODELE-DE-DONNEES.md`.
 > Source de vérité : les migrations SQL [`supabase/migrations/`](../../supabase/migrations/). La section 6 (schémas des tables) est **générée automatiquement** à partir de la base réelle par [`supabase/scripts/gen-data-model.mjs`](../../supabase/scripts/gen-data-model.mjs) : elle ne peut pas diverger du SQL.
-> Sécurité des données : [SECURITE-BACKEND.md](SECURITE-BACKEND.md) · tests : [`supabase/tests/security.test.mjs`](../../supabase/tests/security.test.mjs) (44/44), [`api-support.test.mjs`](../../supabase/tests/api-support.test.mjs) (migration 0003) et [`login-attempts.test.mjs`](../../supabase/tests/login-attempts.test.mjs) (migration 0004).
+> Sécurité des données : [SECURITE-BACKEND.md](SECURITE-BACKEND.md) · tests : [`supabase/tests/security.test.mjs`](../../supabase/tests/security.test.mjs) (44/44), [`api-support.test.mjs`](../../supabase/tests/api-support.test.mjs) (migration 0003) et [`login-attempts.test.mjs`](../../supabase/tests/login-attempts.test.mjs) (migration 0004) et [`uploads.test.mjs`](../../supabase/tests/uploads.test.mjs) (migration 0008).
 
 ---
 
@@ -215,7 +215,7 @@ Puis remplacer la section 6 par le contenu de `/tmp/schema.md`.
 | ticket_status | open · waiting_user · closed |
 | workspace_status | active · read_only · suspended |
 
-### Tables (58)
+### Tables (59)
 
 #### `audit.admin_log`
 
@@ -520,12 +520,20 @@ RLS : activée · 1 politique(s)
 | cost_usd | numeric | oui |  |
 | latency_ms | integer | oui |  |
 | created_at | timestamp with time zone | non | now() |
+| error_code | text | oui |  |
+| provider | text | oui |  |
+| requested_model | text | oui |  |
+| attempts | integer | oui |  |
 
 | Contrainte | Définition |
 |---|---|
 | Contrôle | `CHECK ((agent = ANY (ARRAY['analyste'::text, 'stratege'::text, 'designer'::text, 'moderateur'::text, 'optimiseur'::text, 'aide'::text])))` |
+| Contrôle | `CHECK (((attempts >= 0) AND (attempts <= 2)))` |
+| Contrôle | `CHECK ((char_length(error_code) <= 60))` |
 | Contrôle | `CHECK ((char_length(model) <= 120))` |
 | Contrôle | `CHECK ((char_length(prompt_version) <= 40))` |
+| Contrôle | `CHECK ((provider = ANY (ARRAY['openrouter'::text, 'anthropic'::text, 'openai'::text, 'gemini'::text])))` |
+| Contrôle | `CHECK ((char_length(requested_model) <= 120))` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE SET NULL` |
 | n | `NOT NULL agent` |
 | n | `NOT NULL created_at` |
@@ -1821,6 +1829,58 @@ RLS : activée · 2 politique(s)
 | Clé primaire | `PRIMARY KEY (id)` |
 
 RLS : activée · 2 politique(s)
+
+#### `public.uploads`
+
+| Colonne | Type | Null | Défaut |
+|---|---|---|---|
+| id | uuid | non | gen_random_uuid() |
+| workspace_id | uuid | non |  |
+| created_by | uuid | oui |  |
+| purpose | text | non |  |
+| bucket | text | non |  |
+| file_path | text | non |  |
+| declared_mime | text | non |  |
+| declared_size | integer | non |  |
+| status | text | non | 'pending'::text |
+| verified_mime | text | oui |  |
+| verified_size | integer | oui |  |
+| expires_at | timestamp with time zone | non |  |
+| verified_at | timestamp with time zone | oui |  |
+| created_at | timestamp with time zone | non | now() |
+
+| Contrainte | Définition |
+|---|---|
+| Contrôle | `CHECK ((bucket = ANY (ARRAY['sources'::text, 'brand'::text, 'support'::text])))` |
+| Contrôle | `CHECK ((file_path ~ (('^'::text \|\| (workspace_id)::text) \|\| '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(png\|jpg\|webp\|pdf\|docx)$'::text)))` |
+| Contrôle | `CHECK (((status <> 'verified'::text) OR ((verified_mime IS NOT NULL) AND (verified_size IS NOT NULL) AND (verified_at IS NOT NULL))))` |
+| Contrôle | `CHECK ((declared_mime = ANY (ARRAY['image/png'::text, 'image/jpeg'::text, 'image/webp'::text, 'application/pdf'::text, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'::text])))` |
+| Contrôle | `CHECK (((declared_size >= 1) AND (declared_size <= 20971520)))` |
+| Contrôle | `CHECK ((char_length(file_path) <= 300))` |
+| Contrôle | `CHECK ((purpose = ANY (ARRAY['source'::text, 'reference'::text, 'brand_logo'::text, 'support_attachment'::text, 'payment_proof'::text])))` |
+| Contrôle | `CHECK ((status = ANY (ARRAY['pending'::text, 'verified'::text, 'rejected'::text])))` |
+| Contrôle | `CHECK ((verified_mime = ANY (ARRAY['image/png'::text, 'image/jpeg'::text, 'image/webp'::text, 'application/pdf'::text, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'::text])))` |
+| Contrôle | `CHECK (((verified_size >= 1) AND (verified_size <= 20971520)))` |
+| Clé étrangère | `FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL` |
+| Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL bucket` |
+| n | `NOT NULL created_at` |
+| n | `NOT NULL declared_mime` |
+| n | `NOT NULL declared_size` |
+| n | `NOT NULL expires_at` |
+| n | `NOT NULL file_path` |
+| n | `NOT NULL id` |
+| n | `NOT NULL purpose` |
+| n | `NOT NULL status` |
+| n | `NOT NULL workspace_id` |
+| Clé primaire | `PRIMARY KEY (id)` |
+| Unique | `UNIQUE (file_path)` |
+
+| Index | Définition |
+|---|---|
+| uploads_workspace_id_created_at_idx | `public.uploads USING btree (workspace_id, created_at DESC)` |
+
+RLS : activée · 0 politique(s)
 
 #### `public.usage_counters`
 

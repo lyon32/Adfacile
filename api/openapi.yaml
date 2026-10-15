@@ -475,23 +475,33 @@ paths:
         content: { application/json: { schema: { $ref: '#/components/schemas/UploadRequest' } } }
       responses:
         '201': { description: URL signée valable 5 minutes, content: { application/json: { schema: { $ref: '#/components/schemas/UploadTicket' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '415': { $ref: '#/components/responses/UnsupportedMediaType' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
   /workspaces/{workspaceId}/analyses:
     parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
     post:
       tags: [ Sources et analyse ]
       operationId: startAnalysis
-      summary: Analyser les sources (Analyste) — asynchrone
+      summary: Analyser les sources (Analyste) — asynchrone ; 🔑 Idempotency-Key obligatoire (appel IA = dépense)
+      parameters: [ { $ref: '#/components/parameters/IdempotencyKey' } ]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/AnalysisRequest' } } }
       responses:
         '202': { description: Analyse lancée, content: { application/json: { schema: { $ref: '#/components/schemas/Analysis' } } } }
         '400': { $ref: '#/components/responses/BadRequest' }
-        '403': { $ref: '#/components/responses/Forbidden' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
   /workspaces/{workspaceId}/analyses/{analysisId}:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -502,8 +512,8 @@ paths:
       summary: État et résultat de l'analyse (fiche + questions, ou refus pour produit illégal)
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Analysis' } } } }
-        '404': { $ref: '#/components/responses/NotFound' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /workspaces/{workspaceId}/analyses/{analysisId}/answers:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -517,8 +527,11 @@ paths:
         content: { application/json: { schema: { type: object, required: [ answers ], properties: { answers: { type: array, minItems: 1, maxItems: 5, items: { $ref: '#/components/schemas/Answer' } } } } } }
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Analysis' } } } }
-        '422': { $ref: '#/components/responses/Unprocessable' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
 
   # ------------------------------------------------------------------ Campagnes
   /workspaces/{workspaceId}/campaigns:
@@ -1615,6 +1628,8 @@ components:
         profile: { type: [ object, 'null' ], description: BusinessProfile de l'Analyste (docs/agents/01) }
         questions: { type: array, items: { $ref: '#/components/schemas/Question' } }
         unreadable_sources: { type: array, items: { type: integer } }
+        error_code: { type: [ string, 'null' ], description: "Code de la liste fermée quand status = failed (ex. provider_unavailable, source_unreadable)." }
+        flags: { type: array, items: { type: string }, description: "Signalements de l'Analyste (ex. PROMPT_INJECTION_SUSPECTED, SOURCE_UNREADABLE:0). Pas d'effet sur l'écran sauf information." }
     Question:
       type: object
       required: [ id, text, input, required ]
