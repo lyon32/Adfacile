@@ -154,4 +154,28 @@ describe('parseEnv (ENV_SETUP §1.12)', () => {
       reason: 'forme invalide (invalid_format)',
     });
   });
+
+  it('IA texte (D-2) : accepte la passerelle OpenRouter, le réglage des modèles et la confidentialité', () => {
+    const env = parseEnv(
+      validEnv({
+        OPENROUTER_API_KEY: 'sk-or-factice',
+        OPENROUTER_DATA_COLLECTION: 'deny',
+        AGENT_MODELS: JSON.stringify({ analyste: 'google/gemma-4-31b-it:free' }),
+      }),
+    );
+    expect(env.OPENROUTER_DATA_COLLECTION).toBe('deny');
+    expect(env.AGENT_MODELS).toContain('gemma');
+  });
+
+  it('IA texte : refuse un réglage de confidentialité inconnu et un AGENT_MODELS qui n’est pas un objet JSON', () => {
+    expect(
+      problemsOf(validEnv({ OPENROUTER_DATA_COLLECTION: 'peut-etre' })).map((p) => p.name),
+    ).toEqual(['OPENROUTER_DATA_COLLECTION']);
+    expect(problemsOf(validEnv({ AGENT_MODELS: 'pas du json' })).map((p) => p.name)).toEqual([
+      'AGENT_MODELS',
+    ]);
+    expect(problemsOf(validEnv({ AGENT_MODELS: '["a"]' })).map((p) => p.name)).toEqual([
+      'AGENT_MODELS',
+    ]);
+  });
 });

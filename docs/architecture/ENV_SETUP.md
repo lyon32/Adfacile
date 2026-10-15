@@ -97,10 +97,12 @@ Vérifié dans la documentation SasPay ✅ : authentification `Authorization: Be
 
 | Variable | Rôle | Lue par | Local | Forme |
 |---|---|---|---|---|
-| `OPENROUTER_API_KEY` **ou** `AI_GATEWAY_API_KEY` | Clé de la passerelle IA. ❓ Une seule des deux, selon le choix OpenRouter / Vercel AI Gateway (ARCHITECTURE §19, point 2). | W J | ○ | `sk-or-…` · texte |
+| `OPENROUTER_API_KEY` | Clé de la passerelle IA texte **OpenRouter** (décision D-2, 15/10/2026 ; Vercel AI Gateway écartée). Sans elle et sans `ai` dans `PUBEKA_FAKE_PROVIDERS`, les agents refusent de démarrer. | W J | ○ | `sk-or-…` · texte |
+| `OPENROUTER_DATA_COLLECTION` | Réglage de confidentialité envoyé à chaque requête (`provider.data_collection`). `deny` = refuser les modèles dont le fournisseur peut conserver les textes (les modèles gratuits y échouent). Absente = réglage du compte OpenRouter. ❓ À trancher avant la production (ARCHITECTURE §16). | W J | ○ | `allow` · `deny` |
+| `AGENT_MODELS` | Surcharge du modèle de chaque agent, en JSON : `{"analyste":"google/gemma-4-31b-it:free","stratege":{"model":"a/b","fallback":"c/d"}}`. Un texte = le modèle seul ; un objet ajoute le modèle de secours. Agents : `analyste`, `stratege`, `designer`, `moderateur`, `optimiseur`, `aide`. Absente = valeurs de `packages/agents/src/runtime/models.json`. | W J | ○ | JSON |
 | `JINA_API_KEY` | Lecture des sites et PDF en secours (Jina Reader) | J | ○ | `jina_…` |
 
-Le choix du modèle de chaque agent **n'est pas** une variable d'environnement : il est stocké en base et modifiable depuis l'administration (LLD §6.10).
+**Le modèle de chaque agent est un réglage**, jamais une constante du code ni du prompt : valeurs par défaut dans `packages/agents/src/runtime/models.json`, surcharge par `AGENT_MODELS`. L'administration (S31) pourra plus tard le stocker en base : `runAgent` reçoit déjà le modèle en paramètre, rien ne changera côté agents (LLD §6.10).
 
 ### 1.7 Images et vidéos
 
@@ -434,7 +436,7 @@ Source unique des versions du projet. Règles d'épinglage : [CONVENTIONS §1](C
 | `media` | `@fal-ai/client` | **1.10.1** | Client fal |
 | `media` | moteur de rendu des calques | ❓ | Satori + resvg **ou** sharp (ARCHITECTURE §19, point 3) |
 | `media` | Higgsfield, BytePlus | — | Appels HTTP avec `fetch`, sans bibliothèque |
-| `agents` | client de la passerelle IA | ❓ | Dépend du choix OpenRouter / Vercel AI Gateway |
+| `agents` | client de la passerelle IA | — | OpenRouter (D-2) : appels HTTP avec `fetch`, sans bibliothèque ; `zod` 4.6.5 |
 | `notifications` | `resend` | **6.30.0** | Envoi des e-mails |
 | `notifications` | `react-email` | **6.11.0** | Modèles d'e-mails. ⚠️ `@react-email/components` est abandonné sur npm |
 | `notifications` | `@react-email/render` | **2.1.0** | Rendu HTML des e-mails |

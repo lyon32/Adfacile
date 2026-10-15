@@ -356,7 +356,7 @@ Certaines prennent **des semaines** : à lancer tôt, pendant que le code avance
 | # | Décision | À prendre avant | Ce qui se passe sinon |
 |---|---|---|---|
 | D-1 | ✅ CAPTCHA : **Cloudflare Turnstile** (décidé le 12/10/2026) | S04 | S04 commence sans CAPTCHA et l'ajoute dans S35 |
-| D-2 | Passerelle IA texte : OpenRouter ou Vercel AI Gateway | S13 | **S13 bloquée** |
+| D-2 | ✅ Passerelle IA texte : **OpenRouter** (décidé le 15/10/2026 ; pas Vercel AI Gateway). Variable `OPENROUTER_API_KEY`. Le modèle de chaque agent est un réglage (ARCHITECTURE §7) | S13 | S13 bloquée |
 | D-3 | Moteur de rendu des calques : Satori + resvg ou sharp | pendant S22 (essai sur 3 mises en page) | — |
 | D-4 | Valider les choix 🔶 du LLD (D1-D9), de CONVENTIONS, d'ENV_SETUP, de TESTING et de CI_CD | S01 | S01 les applique tels quels |
 | D-5 | Plafond quotidien de générations | S35 (après mesure des coûts réels) | valeur provisoire dans l'administration |

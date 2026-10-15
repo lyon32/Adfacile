@@ -36,6 +36,18 @@ const fakeProviders = z
     { message: 'all, ou une liste parmi meta,saspay,media,ai,email' },
   );
 
+const jsonObject = z.string().refine(
+  (v) => {
+    try {
+      const parsed: unknown = JSON.parse(v);
+      return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed);
+    } catch {
+      return false;
+    }
+  },
+  { message: 'objet JSON' },
+);
+
 const encryptionKeys = z.string().refine(
   (v) => {
     try {
@@ -96,9 +108,10 @@ const EnvSchema = z
       .regex(/^sk_(test|live)_.+$/)
       .optional(),
     SASPAY_WEBHOOK_SECRET: optionalText,
-    // 1.6 IA texte et lecture des sources (une seule passerelle, choix ❓ D-2)
+    // 1.6 IA texte (passerelle OpenRouter, décision D-2 du 15/10/2026) et lecture des sources
     OPENROUTER_API_KEY: optionalText,
-    AI_GATEWAY_API_KEY: optionalText,
+    OPENROUTER_DATA_COLLECTION: z.enum(['allow', 'deny']).optional(),
+    AGENT_MODELS: jsonObject.optional(),
     JINA_API_KEY: optionalText,
     // 1.7 Images et vidéos
     FAL_KEY: optionalText,
