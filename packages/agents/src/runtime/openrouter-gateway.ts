@@ -78,6 +78,13 @@ export class OpenRouterGateway implements AiGateway {
   }
 
   async complete(request: AiCompletionRequest): Promise<AiCompletion> {
+    // Appel direct chez un autre fournisseur (clé propre à un agent) : l'interface est prête, pas la réalisation (S31).
+    if (request.provider !== undefined && request.provider !== 'openrouter') {
+      throw new AiGatewayError(
+        'bad_request',
+        `Fournisseur « ${request.provider} » non pris en charge par cette passerelle`,
+      );
+    }
     const timeout = AbortSignal.timeout(this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
     const signal =
       request.signal === undefined ? timeout : AbortSignal.any([request.signal, timeout]);
@@ -87,7 +94,7 @@ export class OpenRouterGateway implements AiGateway {
       response = await this.fetchImpl(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${this.options.apiKey}`,
+          Authorization: `Bearer ${request.apiKey ?? this.options.apiKey}`,
           'Content-Type': 'application/json',
           'HTTP-Referer': this.options.referer ?? 'https://pubeka.com',
           'X-Title': this.options.title ?? 'Pubeka',
