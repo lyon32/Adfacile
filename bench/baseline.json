@@ -1,0 +1,6 @@
+{
+  "_comment": "Sorties enregistrées servant de référence au rejeu sans réseau (node bench/run.mjs --replay, lancé par la CI). Chaque entrée : modèle, fichier de bench/results, nombre minimal de cas rejoués. Le rejeu prouve que le banc, les jeux de cas, les contrôles et les seuils de TR-AGT-05 fonctionnent ; il ne prouve PAS la qualité d'un nouveau prompt ou d'un nouveau modèle : pour cela, le banc réel se lance à la main (node bench/run.mjs) et ses résultats s'ajoutent à docs/agents/benchmark.md.",
+  "analyste": { "model": "gemini-3.1-flash-lite", "prompt": "analyste@2", "file": "results/2026-10-10T00-26-56_analyste_gemini-3.1-flash-lite.json", "minCases": 50 },
+  "stratege": { "model": "gemini-3-flash", "prompt": "stratege@3", "file": "results/2026-10-10T00-50-45_stratege_gemini-3-flash.json", "minCases": 8 },
+  "moderateur": { "model": "gemini-3.1-flash-lite", "prompt": "moderateur@2", "file": "results/2026-10-10T00-38-38_moderateur_gemini-3.1-flash-lite.json", "minCases": 8 }
+}

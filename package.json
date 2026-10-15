@@ -28,6 +28,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "coverage:summary": "node scripts/noop.mjs",
+    "bench:test": "node --test bench/bench.test.mjs",
+    "bench:replay": "node bench/run.mjs --replay",
     "ci:env": "node scripts/ci/write-test-env.mjs",
     "supabase": "supabase"
   },

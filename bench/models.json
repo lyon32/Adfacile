@@ -1,176 +1,109 @@
 {
-  "_comment": "Modèles comparés. Prix en $ par million de tokens (entrée, sortie) : à vérifier sur la page tarifs de chaque fournisseur avant de conclure. Un modèle dont la clé est absente est ignoré. Prix à 0 = offre gratuite testée ; prix payants à renseigner.",
+  "_comment": "Modèles comparés par le banc, tous via OpenRouter (décision D-2, 15/10/2026). Prix en dollars par MILLION de jetons [entrée, sortie], relevés le 15/10/2026 dans l API publique https://openrouter.ai/api/v1/models (node bench/run.mjs --list-openrouter les relit). Le banc calcule le coût d un appel avec le coût réellement facturé (usage.cost) et, à défaut, avec ces prix et les jetons utilisés. Un modèle :free coûte 0 mais peut enregistrer les textes envoyés (ARCHITECTURE §16) et est limité à 50 requêtes par jour. Un modèle dont la clé OPENROUTER_API_KEY est absente est ignoré. `default: true` : modèles lancés quand ni --only ni --model n'est donné (les réglages actuels de packages/agents/src/runtime/models.json).",
+  "priced_at": "2026-10-15",
+  "campaign_cost_target_usd": 0.05,
   "models": [
     {
-      "id": "gemini-3.8-flash",
-      "provider": "gemini",
-      "model": "gemini-3.8-flash",
-      "price": [
-        0,
-        0
-      ]
-    },
-    {
-      "id": "gemini-3.1-flash-lite",
-      "provider": "gemini",
-      "model": "gemini-3.1-flash-lite",
-      "price": [
-        0,
-        0
-      ]
-    },
-    {
-      "id": "gemini-3-flash",
-      "provider": "gemini",
-      "model": "gemini-3-flash-preview",
-      "price": [
-        0,
-        0
-      ]
-    },
-    {
-      "id": "gemini-3.5-flash",
-      "provider": "gemini",
-      "model": "gemini-3.5-flash",
-      "price": [
-        0,
-        0
-      ]
-    },
-    {
-      "id": "gemini-3.1-pro",
-      "provider": "gemini",
-      "model": "gemini-3.1-pro-preview",
-      "price": [
-        0,
-        0
-      ]
-    },
-    {
-      "id": "gemma-4-31b",
-      "provider": "gemini",
-      "model": "gemma-4-31b-it",
-      "price": [
-        0,
-        0
-      ]
-    },
-    {
-      "id": "claude-haiku",
-      "provider": "anthropic",
-      "model": "claude-haiku-5-5",
-      "price": [
-        1,
-        5
-      ]
-    },
-    {
-      "id": "claude-sonnet",
-      "provider": "anthropic",
-      "model": "claude-sonnet-5-5",
-      "price": [
-        3,
-        15
-      ]
-    },
-    {
-      "id": "gpt-mini",
-      "provider": "openai",
-      "model": "gpt-5-mini",
+      "id": "or-gemini-3.1-flash-lite",
+      "provider": "openrouter",
+      "model": "google/gemini-3.1-flash-lite",
       "price": [
         0.25,
-        2
+        1.5
+      ],
+      "default": true
+    },
+    {
+      "id": "or-gemini-3-flash",
+      "provider": "openrouter",
+      "model": "google/gemini-3-flash-preview",
+      "price": [
+        0.5,
+        3
+      ],
+      "default": true
+    },
+    {
+      "id": "or-gemma-4-31b",
+      "provider": "openrouter",
+      "model": "google/gemma-4-31b-it",
+      "price": [
+        0.2,
+        0.4
       ]
     },
     {
-      "id": "gpt",
-      "provider": "openai",
-      "model": "gpt-5",
+      "id": "or-gemma-4-26b",
+      "provider": "openrouter",
+      "model": "google/gemma-4-26b-a4b-it",
       "price": [
-        1.25,
-        10
-      ]
-    },
-    {
-      "id": "mistral-medium",
-      "provider": "mistral",
-      "model": "mistral-medium-latest",
-      "price": [
-        0.4,
-        2
-      ]
-    },
-    {
-      "id": "kimi",
-      "provider": "kimi",
-      "model": "kimi-k2-0905-preview",
-      "price": [
-        0.6,
-        2.5
-      ]
-    },
-    {
-      "id": "mistral-small",
-      "provider": "mistral",
-      "model": "mistral-small-latest",
-      "price": [
-        0.1,
+        0.09,
         0.3
       ]
     },
     {
-      "id": "groq-kimi",
-      "provider": "groq",
-      "model": "moonshotai/kimi-k2-instruct-0905",
-      "price": [
-        0,
-        0
-      ]
-    },
-    {
-      "id": "groq-llama",
-      "provider": "groq",
-      "model": "llama-3.3-70b-versatile",
-      "price": [
-        0,
-        0
-      ]
-    },
-    {
-      "id": "groq-gpt-oss",
-      "provider": "groq",
-      "model": "openai/gpt-oss-120b",
-      "price": [
-        0,
-        0
-      ]
-    },
-    {
-      "id": "or-deepseek",
+      "id": "or-deepseek-v4-flash",
       "provider": "openrouter",
-      "model": "deepseek/deepseek-chat-v3-0324:free",
+      "model": "deepseek/deepseek-v4-flash",
+      "price": [
+        0.091,
+        0.182
+      ]
+    },
+    {
+      "id": "or-qwen-3.7-flash",
+      "provider": "openrouter",
+      "model": "qwen/qwen3.7-flash",
+      "price": [
+        0.03,
+        0.13
+      ]
+    },
+    {
+      "id": "or-ling-3.1-flash",
+      "provider": "openrouter",
+      "model": "inclusionai/ling-3.1-flash",
+      "price": [
+        0.075,
+        0.225
+      ]
+    },
+    {
+      "id": "or-mimo-2.5",
+      "provider": "openrouter",
+      "model": "xiaomi/mimo-v2.5",
+      "price": [
+        0.14,
+        0.28
+      ]
+    },
+    {
+      "id": "or-claude-haiku-5.5",
+      "provider": "openrouter",
+      "model": "anthropic/claude-haiku-5.5",
+      "price": [
+        0.1,
+        0.5
+      ]
+    },
+    {
+      "id": "or-gemma-4-31b-free",
+      "provider": "openrouter",
+      "model": "google/gemma-4-31b-it:free",
       "price": [
         0,
         0
       ]
     },
     {
-      "id": "cerebras-qwen",
-      "provider": "cerebras",
-      "model": "qwen-3-235b-a22b-instruct-2507",
-      "price": [
-        0,
-        0
-      ]
-    },
-    {
-      "id": "github-gpt",
-      "provider": "github",
-      "model": "openai/gpt-4.1",
+      "id": "or-gemma-4-26b-free",
+      "provider": "openrouter",
+      "model": "google/gemma-4-26b-a4b-it:free",
       "price": [
         0,
         0
       ]
     }
-  ]
+  ],
+  "campaign_cost_target_usd_comment": "Objectif de coût des agents par campagne (Analyste + Stratège, Modérateur à part) : quelques centimes ; au-dessus, le rapport le signale (sans échouer)."
 }

@@ -125,6 +125,9 @@ jobs:
         run: pnpm test:coverage
       - name: Sécurité de la base (PGlite)
         run: pnpm test:db
+      # Banc des agents avec des fausses implémentations : aucun réseau, aucune clé, aucun coût (TESTING §6.1).
+      - name: Banc des agents — tests du banc et rejeu des sorties enregistrées
+        run: pnpm bench:test && pnpm bench:replay
       - name: Résumé de couverture dans la page de la tâche
         if: always()
         run: pnpm --silent coverage:summary >> "$GITHUB_STEP_SUMMARY"
