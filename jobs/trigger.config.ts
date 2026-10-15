@@ -3,6 +3,14 @@ import { defineConfig } from '@trigger.dev/sdk';
 // Configuration Trigger.dev v4 (https://trigger.dev/docs/config/config-file). Le projet vient de la variable
 // TRIGGER_PROJECT_REF : `pubeka-staging` en préproduction, le projet de production ensuite (CI_CD §4).
 // Aucun identifiant de projet n'est écrit ici ; `trigger.dev init` n'est jamais lancé (LLD §2.1).
+// La CLI évalue ce fichier avant de lire `jobs/.env` : sur un poste de développement on le lit ici (Node 24).
+if (process.env.TRIGGER_PROJECT_REF === undefined) {
+  try {
+    process.loadEnvFile('.env');
+  } catch {
+    // Pas de jobs/.env : l'erreur claire ci-dessous l'indiquera.
+  }
+}
 const project = process.env.TRIGGER_PROJECT_REF;
 if (project === undefined || project === '') {
   throw new Error('TRIGGER_PROJECT_REF est absente : voir docs/architecture/ENV_SETUP.md §1.9.');
