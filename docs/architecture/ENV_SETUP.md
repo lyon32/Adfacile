@@ -130,7 +130,7 @@ En local, les e-mails de **connexion** (lien magique, confirmation) ne passent p
 | Variable | Rôle | Lue par | Local | Forme |
 |---|---|---|---|---|
 | `TRIGGER_SECRET_KEY` | Permet à l'application web de **déclencher** des tâches (clé de l'environnement : dev, staging ou prod). Exigée seulement si `PUBEKA_JOB_DISPATCH=trigger` | W | ✔ | `tr_dev_…` · `tr_prod_…` |
-| `TRIGGER_PROJECT_REF` | Projet Trigger.dev, lu par `jobs/trigger.config.ts` | J B | ✔ | `proj_…` |
+| `TRIGGER_PROJECT_REF` | Projet Trigger.dev, lu par `jobs/trigger.config.ts` (à défaut, le projet de préproduction : l'indexation distante de `trigger deploy` n'a pas les variables de la CI ; la CLI préfère `--project-ref` ou cette variable, et la production n'est jamais la valeur par défaut) | J B | ✔ | `proj_…` |
 | `TRIGGER_ACCESS_TOKEN` | Déploiement des tâches depuis la CI (environnements GitHub, CI_CD §9.3) | CI | — | `tr_pat_…` |
 | `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `VERCEL_AUTOMATION_BYPASS_SECRET` | Déploiement Vercel et tests de fumée de la préproduction depuis la CI | CI | — | texte |
 
