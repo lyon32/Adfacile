@@ -6,6 +6,8 @@ packages:
 # Paquets autorisés à lancer un script d'installation (binaires natifs).
 allowBuilds:
   esbuild: true
+  # Binaire de construction distante de `trigger deploy` (dépendance de trigger.dev 4.6.4) : sans lui, le déploiement échoue.
+  '@depot/cli': true
   supabase: true
   unrs-resolver: true
   # Dépendances de next-intl, inutiles ici (extraction des textes par SWC, surveillance de fichiers).

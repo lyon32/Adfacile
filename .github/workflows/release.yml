@@ -92,7 +92,7 @@ jobs:
         run: supabase db push
 
       - name: 2. Tâches Trigger.dev (prod)
-        run: pnpm --filter @pubeka/jobs exec trigger.dev deploy --env prod --external-id "$SHA"
+        run: pnpm --filter @pubeka/jobs exec trigger deploy --env prod --external-id "$SHA"
 
       - name: 3. Vercel — construction (variables de production)
         run: |

@@ -200,8 +200,10 @@ pubeka/                                  ← ce dépôt (Adfacile), renommé plu
 ├─ jobs/                                 Trigger.dev
 │  ├─ trigger.config.ts
 │  └─ src/
-│     ├─ queues.ts                       media-fal, media-higgsfield, media-byteplus-video, agents
-│     ├─ tasks/                          tâches déclenchées (génération, publication, analyse…)
+│     ├─ queues.ts                       media-fal, media-higgsfield, media-byteplus-video, agents (limites : queue-limits.ts)
+│     ├─ dispatcher.ts                   JobDispatcher, InlineJobDispatcher, TriggerJobDispatcher (S13)
+│     ├─ handlers/                       logique de chaque tâche, partagée par `inline` et Trigger.dev
+│     ├─ tasks/                          enveloppes Trigger.dev des tâches (génération, publication, analyse…)
 │     └─ schedules/                      tâches planifiées (ARCHITECTURE §10)
 │
 ├─ bench/                                banc de test des modèles (existant, inchangé)
