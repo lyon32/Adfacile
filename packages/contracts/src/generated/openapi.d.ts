@@ -489,7 +489,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Analyser les sources (Analyste) — asynchrone */
+        /** Analyser les sources (Analyste) — asynchrone ; 🔑 Idempotency-Key obligatoire (appel IA = dépense) */
         post: operations["startAnalysis"];
         delete?: never;
         options?: never;
@@ -1818,6 +1818,10 @@ export interface components {
             profile?: Record<string, never> | null;
             questions?: components["schemas"]["Question"][];
             unreadable_sources?: number[];
+            /** @description Code de la liste fermée quand status = failed (ex. provider_unavailable, source_unreadable). */
+            error_code?: string | null;
+            /** @description Signalements de l'Analyste (ex. PROMPT_INJECTION_SUSPECTED, SOURCE_UNREADABLE:0). Pas d'effet sur l'écran sauf information. */
+            flags?: string[];
         };
         Question: {
             id: string;
@@ -3229,15 +3233,22 @@ export interface operations {
                     "application/json": components["schemas"]["UploadTicket"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             413: components["responses"]["PayloadTooLarge"];
             415: components["responses"]["UnsupportedMediaType"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     startAnalysis: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description UUID v4 généré par le client pour cette intention. Même clé + même corps = même réponse ; même clé + corps différent = 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
             path: {
                 workspaceId: components["parameters"]["WorkspaceId"];
             };
@@ -3261,6 +3272,11 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getAnalysis: {
@@ -3315,7 +3331,10 @@ export interface operations {
                     "application/json": components["schemas"]["Analysis"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             422: components["responses"]["Unprocessable"];
         };
     };

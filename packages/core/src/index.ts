@@ -21,3 +21,5 @@ export * from './meta/ad-accounts';
 export * from './meta/brand-kit';
 export * from './meta/pages';
 export * from './meta/webhook';
+export * from './uploads/file-types';
+export * from './uploads/create-upload-ticket';
