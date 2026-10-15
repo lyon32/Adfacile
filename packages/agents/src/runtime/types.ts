@@ -12,9 +12,23 @@ export const AGENT_NAMES = [
 ] as const;
 export type AgentName = (typeof AGENT_NAMES)[number];
 
+/**
+ * Partie d'un message multimodal (format OpenAI repris par OpenRouter, documentation :
+ * https://openrouter.ai/docs/features/multimodal/images ). Une image est envoyée en URL de données (`data:image/…;base64,…`) :
+ * le modèle doit accepter les images (`architecture.input_modalities` d'OpenRouter), voir `model-catalog.ts`.
+ */
+export type ChatContentPart =
+  { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } };
+
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string;
+  content: string | ChatContentPart[];
+}
+
+/** Nombre de caractères d'un message (les images comptent pour 0 : elles sont facturées à part). */
+export function messageLength(message: ChatMessage): number {
+  if (typeof message.content === 'string') return message.content.length;
+  return message.content.reduce((n, part) => n + (part.type === 'text' ? part.text.length : 0), 0);
 }
 
 /** Forme de la réponse demandée au modèle. `json_object` : JSON libre, validé ensuite par Zod. */
