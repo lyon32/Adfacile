@@ -15,7 +15,8 @@
     "@pubeka/contracts": "workspace:*",
     "@pubeka/db": "workspace:*",
     "@pubeka/platforms": "workspace:*",
-    "@pubeka/shared": "workspace:*"
+    "@pubeka/shared": "workspace:*",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@pubeka/config": "workspace:*",
