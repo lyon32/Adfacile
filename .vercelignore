@@ -1,6 +1,5 @@
 # Fichiers jamais envoyés à Vercel par la CLI (`vercel deploy --prebuilt`, CI_CD §4) :
-# secrets locaux et ancien code AdFacile (retiré en S12).
-backend/
+# secrets locaux.
 .env
 .env.*
 **/.env
