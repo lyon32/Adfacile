@@ -22,3 +22,6 @@ pnpm-lock.yaml
 coverage/
 .turbo/
 **/src/generated/
+
+# Prompts des agents : texte exact, versionné et mesuré par le banc (TR-AGT-04) ; jamais reformaté.
+packages/agents/src/*/prompts/

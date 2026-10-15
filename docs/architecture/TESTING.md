@@ -70,7 +70,7 @@ Playwright contre `next build && next start` sur le port 5173, base Supabase loc
 
 ### 2.6 Banc des agents ✅
 
-Le banc existant (`bench/run.mjs`, jeux `businesses`, `strategist`, `designer`, `rejections`, `trap`) appelle les **vrais** modèles. Il est obligatoire pour **tout changement de prompt ou de modèle** (TR-AGT-04) et doit atteindre les seuils de TR-AGT-05. Les cas pièges (`trap.json`) prouvent TR-SEC-07 (injection) et TR-AGT-06 (illégal évident).
+Le banc existant (`bench/run.mjs`, jeux `businesses`, `strategist`, `designer`, `rejections`, `trap`) appelle les **vrais** modèles. Il est obligatoire pour **tout changement de prompt ou de modèle** (TR-AGT-04) et doit atteindre les seuils de TR-AGT-05. Il passe par OpenRouter (D-2) ; `--limit=N` limite les cas par agent, `--max-requests=N` plafonne les requêtes, et le rapport donne le **coût par campagne** (Analyste + Stratège, Modérateur à part) calculé sur les jetons réellement utilisés. **Dans la CI, aucun vrai appel** : `pnpm bench:test` (le banc avec une fausse fonction d'appel : jamais un 3ᵉ appel, seuils, coût) et `pnpm bench:replay` (rejeu des sorties enregistrées, échec sous les seuils) tournent dans « Tests unitaires ». Les cas pièges (`trap.json`) prouvent TR-SEC-07 (injection) et TR-AGT-06 (illégal évident).
 
 ### 2.7 Contrôle des fournisseurs 🔶
 
