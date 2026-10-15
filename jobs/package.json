@@ -7,11 +7,22 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@pubeka/config": "workspace:*",
+    "@types/node": "24.19.0",
     "eslint": "10.11.0",
-    "typescript": "6.0.3"
+    "trigger.dev": "4.6.4",
+    "typescript": "6.0.3",
+    "vitest": "5.0.2"
+  },
+  "dependencies": {
+    "@pubeka/contracts": "workspace:*",
+    "@pubeka/shared": "workspace:*",
+    "@trigger.dev/sdk": "4.6.4",
+    "zod": "4.6.5"
   }
 }

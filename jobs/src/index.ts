@@ -1,2 +1,7 @@
-// Tâches Trigger.dev : vides jusqu'à S13 (docs/ROADMAP.md §3).
-export {};
+// Module @pubeka/jobs : tâches de fond Trigger.dev (LLD §2.1, ARCHITECTURE §8.4 et §10).
+// Les tâches elles-mêmes sont dans `tasks/` (chargées par `trigger.config.ts`) ; l'application lance une tâche par
+// un `JobDispatcher` (`createJobDispatcher`), jamais en important une tâche.
+export * from './dispatcher';
+export * from './create-dispatcher';
+export * from './queue-limits';
+export * from './handlers/system-ping';
