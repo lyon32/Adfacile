@@ -1,0 +1,51 @@
+// Sortie de l'Analyste servie par la FAUSSE passerelle (PUBEKA_FAKE_PROVIDERS=ai : développement, préproduction, parcours).
+// Elle ne contient aucun numéro, prix ni adresse : le contrôle R3 n'a rien à retirer. Aucun appel payant.
+export const FAKE_ANALYSTE_OUTPUT = {
+  profile: {
+    business_name: { value: null, source: null },
+    sector: { value: 'ecommerce_general', confidence: 0.5 },
+    offer_type: 'product',
+    products: [],
+    value_props: [],
+    target_audience: { description: null, age_range: null, gender: null },
+    locations: [],
+    contacts: { whatsapp: null, phone: null, website: null, instagram: null },
+    tone: { value: null, confidence: 0 },
+    promotions: [],
+    has_ecommerce_checkout: null,
+    languages_detected: ['fr'],
+  },
+  conflicts: [],
+  sensitive_signals: [],
+  missing: ['contacts.whatsapp', 'locations[0].city', 'products[0].price'],
+  questions: [
+    {
+      id: 'q1',
+      field: 'contacts.whatsapp',
+      text: 'Sur quel numéro WhatsApp tes clients doivent-ils t’écrire ?',
+      input: 'phone',
+      options: null,
+      required: true,
+      why: 'La pub enverra les clients directement sur ce numéro.',
+    },
+    {
+      id: 'q2',
+      field: 'locations[0].city',
+      text: 'Dans quelle ville vends-tu ?',
+      input: 'location',
+      options: null,
+      required: true,
+      why: 'La pub sera montrée aux personnes proches de ta zone de vente.',
+    },
+    {
+      id: 'q3',
+      field: 'products[0].price',
+      text: 'Veux-tu afficher un prix ? Si oui, lequel ?',
+      input: 'text',
+      options: null,
+      required: false,
+      why: 'Un prix clair attire les clients prêts à acheter.',
+    },
+  ],
+  flags: [],
+} as const;

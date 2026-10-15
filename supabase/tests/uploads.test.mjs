@@ -1,5 +1,5 @@
-// Tests de la migration 0008 (fichiers envoyés, journal des agents, TR-SEC-08, TR-SEC-01) — PGlite.
-// Usage : node supabase/tests/meta-webhook.test.mjs <dossier contenant node_modules/@electric-sql/pglite>
+// Tests des migrations 0008 et 0009 (fichiers envoyés, journal des agents, TR-SEC-08, TR-SEC-01) — PGlite.
+// Usage : node supabase/tests/uploads.test.mjs <dossier contenant node_modules/@electric-sql/pglite>
 import { readFileSync, readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, dirname, resolve } from 'node:path';
@@ -104,6 +104,25 @@ await check('agent_runs reste invisible aux clients (S13 : administrateur seulem
     await tx.exec(`set local request.jwt.claim.sub = '${U}'`);
     return (await tx.query('select 1 from public.agent_runs')).rows.length;
   })) === 0);
+
+await check('0009 : analyses.flags existe, vaut {} par défaut et reste borné à 40 signalements', async () => {
+  const [{ id: aid }] = await q(`insert into public.analyses (workspace_id) values ($1) returning id`, [WS]);
+  const [row] = await q('select flags from public.analyses where id=$1', [aid]);
+  if (row.flags.length !== 0) return false;
+  await db.query('update public.analyses set flags=$2 where id=$1', [aid, ['PROMPT_INJECTION_SUSPECTED']]);
+  try {
+    await db.query('update public.analyses set flags=$2 where id=$1', [aid, Array.from({ length: 41 }, (_, i) => 'F' + i)]);
+    return false;
+  } catch (e) { return /check|violates/i.test(e.message); }
+});
+await check('0009 : un membre lit les flags de ses analyses, pas ceux d’un autre espace (RLS)', async () => {
+  await db.query(`insert into public.analyses (workspace_id, flags) values ($1, '{AUTRE_ESPACE}')`, [WS2]);
+  const own = await as('authenticated', async (tx) => {
+    await tx.exec(`set local request.jwt.claim.sub = '${U}'`);
+    return (await tx.query('select flags from public.analyses')).rows.flatMap((r) => r.flags);
+  });
+  return own.includes('PROMPT_INJECTION_SUSPECTED') && !own.includes('AUTRE_ESPACE');
+});
 
 console.log(results.join('\n'));
 console.log(`\n${pass} réussis, ${fail} échoués`);

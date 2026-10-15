@@ -190,6 +190,7 @@ export type Database = {
           created_at: string;
           created_by: string | null;
           error_code: string | null;
+          flags: string[];
           id: string;
           page_id: string | null;
           source_ids: string[];
@@ -205,6 +206,7 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           error_code?: string | null;
+          flags?: string[];
           id?: string;
           page_id?: string | null;
           source_ids?: string[];
@@ -220,6 +222,7 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           error_code?: string | null;
+          flags?: string[];
           id?: string;
           page_id?: string | null;
           source_ids?: string[];
