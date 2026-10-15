@@ -1,5 +1,7 @@
 # Banc de test des agents — obligatoire si un prompt ou un modèle d'agent change (TR-AGT-04).
-# Appelle les VRAIS modèles : coûte de l'argent. Actif seulement si la variable PUBEKA_PIPELINE_ENABLED vaut true.
+# Appelle les VRAIS modèles : coûte de l'argent. Actif seulement si les variables de dépôt PUBEKA_PIPELINE_ENABLED et
+# PUBEKA_BENCH_REAL valent true (la personne l'active quand les clés et les crédits sont en place : décision S13).
+# Sans cela, la CI rejoue le banc sur les sorties enregistrées, sans réseau (`pnpm bench:replay`, job « Tests unitaires »).
 name: Banc des agents
 
 on:
@@ -23,7 +25,7 @@ concurrency:
 jobs:
   bench:
     name: Banc des agents (vrais modèles)
-    if: vars.PUBEKA_PIPELINE_ENABLED == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.draft)
+    if: vars.PUBEKA_PIPELINE_ENABLED == 'true' && vars.PUBEKA_BENCH_REAL == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.draft)
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     environment: pubeka-agents-bench
