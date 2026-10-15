@@ -2,7 +2,7 @@
 
 > Version 1 · 10 octobre 2026 · **Document de référence des données.** Remplace l'ancien `MODELE-DE-DONNEES.md`.
 > Source de vérité : les migrations SQL [`supabase/migrations/`](../../supabase/migrations/). La section 6 (schémas des tables) est **générée automatiquement** à partir de la base réelle par [`supabase/scripts/gen-data-model.mjs`](../../supabase/scripts/gen-data-model.mjs) : elle ne peut pas diverger du SQL.
-> Sécurité des données : [SECURITE-BACKEND.md](SECURITE-BACKEND.md) · tests : [`supabase/tests/security.test.mjs`](../../supabase/tests/security.test.mjs) (44/44), [`api-support.test.mjs`](../../supabase/tests/api-support.test.mjs) (migration 0003) et [`login-attempts.test.mjs`](../../supabase/tests/login-attempts.test.mjs) (migration 0004) et [`uploads.test.mjs`](../../supabase/tests/uploads.test.mjs) (migration 0008).
+> Sécurité des données : [SECURITE-BACKEND.md](SECURITE-BACKEND.md) · tests : [`supabase/tests/security.test.mjs`](../../supabase/tests/security.test.mjs) (44/44), [`api-support.test.mjs`](../../supabase/tests/api-support.test.mjs) (migration 0003) et [`login-attempts.test.mjs`](../../supabase/tests/login-attempts.test.mjs) (migration 0004) et [`uploads.test.mjs`](../../supabase/tests/uploads.test.mjs) (migrations 0008 et 0009).
 
 ---
 
@@ -563,6 +563,7 @@ RLS : activée · 1 politique(s)
 | error_code | text | oui |  |
 | created_at | timestamp with time zone | non | now() |
 | updated_at | timestamp with time zone | non | now() |
+| flags | text[] | non | '{}'::text[] |
 
 | Contrainte | Définition |
 |---|---|
@@ -570,6 +571,7 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK (((status <> 'blocked'::text) OR (blocked_reason IS NOT NULL)))` |
 | Contrôle | `CHECK (((status <> 'ready'::text) OR (business_profile_id IS NOT NULL)))` |
 | Contrôle | `CHECK ((char_length(error_code) <= 60))` |
+| Contrôle | `CHECK ((cardinality(flags) <= 40))` |
 | Contrôle | `CHECK ((cardinality(source_ids) <= 12))` |
 | Contrôle | `CHECK ((status = ANY (ARRAY['queued'::text, 'reading'::text, 'analysing'::text, 'questions'::text, 'ready'::text, 'blocked'::text, 'failed'::text])))` |
 | Contrôle | `CHECK ((char_length(user_intent) <= 1000))` |
@@ -578,6 +580,7 @@ RLS : activée · 1 politique(s)
 | Clé étrangère | `FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
 | n | `NOT NULL created_at` |
+| n | `NOT NULL flags` |
 | n | `NOT NULL id` |
 | n | `NOT NULL source_ids` |
 | n | `NOT NULL status` |

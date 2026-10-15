@@ -16,7 +16,10 @@
     "@pubeka/db": "workspace:*",
     "@pubeka/platforms": "workspace:*",
     "@pubeka/shared": "workspace:*",
-    "zod": "4.6.5"
+    "zod": "4.6.5",
+    "@pubeka/agents": "workspace:*",
+    "unpdf": "1.8.1",
+    "fflate": "0.8.3"
   },
   "devDependencies": {
     "@pubeka/config": "workspace:*",

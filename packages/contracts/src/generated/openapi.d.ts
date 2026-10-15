@@ -1820,8 +1820,10 @@ export interface components {
             unreadable_sources?: number[];
             /** @description Code de la liste fermée quand status = failed (ex. provider_unavailable, source_unreadable). */
             error_code?: string | null;
-            /** @description Signalements de l'Analyste (ex. PROMPT_INJECTION_SUSPECTED, SOURCE_UNREADABLE:0). Pas d'effet sur l'écran sauf information. */
+            /** @description Signalements affichables : SOURCE_UNREADABLE:{index}, MODEL_WITHOUT_VISION, IMAGES_NOT_READ, IMAGE_VALUES_UNVERIFIED, MULTIPLE_BUSINESSES, PRODUCT_NOT_DETECTED. Une injection de consigne n'est jamais exposée (elle est ignorée et enregistrée pour l'administration). */
             flags?: string[];
+            /** @description Réponses déjà données aux questions (affichées pré-remplies au retour sur l’étape). */
+            answers?: components["schemas"]["Answer"][];
         };
         Question: {
             id: string;

@@ -1,0 +1,204 @@
+// Base et stockage EN MÉMOIRE pour les tests unitaires de `analysis` : le sous-ensemble du client Supabase que ces cas
+// d'usage emploient (select, insert, update, delete, eq, in, order, limit, maybeSingle, single, `.select()` après une écriture).
+// Les contraintes de la vraie base (RLS, CHECK) sont prouvées par les tests PGlite et par les tests d'intégration.
+import type { DbClient, ServiceClient } from '@pubeka/db';
+
+export type Row = Record<string, unknown>;
+export interface Result {
+  data: unknown;
+  error: { code?: string; message: string } | null;
+}
+
+const DEFAULTS: Record<string, () => Row> = {
+  analyses: () => ({
+    status: 'queued',
+    flags: [],
+    unreadable_sources: [],
+    source_ids: [],
+    error_code: null,
+    blocked_reason: null,
+    business_profile_id: null,
+  }),
+  uploads: () => ({ status: 'pending', verified_mime: null, verified_size: null }),
+  sources: () => ({ status: 'ok', extractor: null, extracted_text: null }),
+  business_profiles: () => ({ answers: [], conflicts: [], sensitive_signals: [], flags: [] }),
+};
+
+export class MemoryDb {
+  readonly tables: Record<string, Row[]> = {};
+  readonly objects = new Map<string, { bytes: Uint8Array; createdAt: string }>();
+  readonly storageCalls: string[] = [];
+  /** Fait échouer la prochaine requête sur cette table (`table:op`). */
+  failNext = new Set<string>();
+  private counter = 0;
+
+  rows(table: string): Row[] {
+    return (this.tables[table] ??= []);
+  }
+
+  nextId(): string {
+    this.counter += 1;
+    return `00000000-0000-4000-8000-${String(this.counter).padStart(12, '0')}`;
+  }
+
+  from(table: string): Query {
+    return new Query(this, table);
+  }
+
+  readonly storage = {
+    from: (bucket: string) => ({
+      info: (
+        path: string,
+      ): Promise<{
+        data: { size: number; createdAt: string } | null;
+        error: { message: string } | null;
+      }> => {
+        const object = this.objects.get(`${bucket}/${path}`);
+        return Promise.resolve(
+          object === undefined
+            ? { data: null, error: { message: 'Object not found' } }
+            : { data: { size: object.bytes.length, createdAt: object.createdAt }, error: null },
+        );
+      },
+      download: (
+        path: string,
+      ): Promise<{ data: Blob | null; error: { message: string } | null }> => {
+        const object = this.objects.get(`${bucket}/${path}`);
+        return Promise.resolve(
+          object === undefined
+            ? { data: null, error: { message: 'Object not found' } }
+            : { data: new Blob([Uint8Array.from(object.bytes)]), error: null },
+        );
+      },
+      upload: (
+        path: string,
+        bytes: Uint8Array,
+      ): Promise<{ data: unknown; error: { message: string } | null }> => {
+        this.storageCalls.push(`upload:${bucket}/${path}`);
+        if (this.failNext.delete('storage:upload'))
+          return Promise.resolve({ data: null, error: { message: 'down' } });
+        this.objects.set(`${bucket}/${path}`, { bytes, createdAt: new Date().toISOString() });
+        return Promise.resolve({ data: { path }, error: null });
+      },
+      remove: (paths: string[]): Promise<{ data: unknown; error: null }> => {
+        for (const path of paths) {
+          this.storageCalls.push(`remove:${bucket}/${path}`);
+          this.objects.delete(`${bucket}/${path}`);
+        }
+        return Promise.resolve({ data: [], error: null });
+      },
+    }),
+  };
+
+  put(bucket: string, path: string, bytes: Uint8Array, createdAt = new Date().toISOString()): void {
+    this.objects.set(`${bucket}/${path}`, { bytes, createdAt });
+  }
+
+  asDb(): DbClient {
+    return this as unknown as DbClient;
+  }
+
+  asService(): ServiceClient {
+    return this as unknown as ServiceClient;
+  }
+}
+
+class Query implements PromiseLike<Result> {
+  private op: 'select' | 'insert' | 'update' | 'delete' = 'select';
+  private payload: Row | Row[] = {};
+  private filters: ((row: Row) => boolean)[] = [];
+  private returning = false;
+  private mode: 'many' | 'maybe' | 'single' = 'many';
+  private max = Infinity;
+
+  constructor(
+    private readonly db: MemoryDb,
+    private readonly table: string,
+  ) {}
+
+  /** Les colonnes demandées ne changent rien en mémoire : toute la ligne est rendue. */
+  select(): this {
+    if (this.op !== 'select') this.returning = true;
+    return this;
+  }
+  insert(rows: Row | Row[]): this {
+    this.op = 'insert';
+    this.payload = rows;
+    return this;
+  }
+  update(patch: Row): this {
+    this.op = 'update';
+    this.payload = patch;
+    return this;
+  }
+  delete(): this {
+    this.op = 'delete';
+    return this;
+  }
+  eq(column: string, value: unknown): this {
+    this.filters.push((row) => row[column] === value);
+    return this;
+  }
+  in(column: string, values: unknown[]): this {
+    this.filters.push((row) => values.includes(row[column]));
+    return this;
+  }
+  order(): this {
+    return this;
+  }
+  limit(n: number): this {
+    this.max = n;
+    return this;
+  }
+  maybeSingle(): this {
+    this.mode = 'maybe';
+    return this;
+  }
+  single(): this {
+    this.mode = 'single';
+    return this;
+  }
+
+  private run(): Result {
+    if (this.db.failNext.delete(`${this.table}:${this.op}`)) {
+      return { data: null, error: { code: 'XX000', message: 'échec simulé' } };
+    }
+    const rows = this.db.rows(this.table);
+    let affected: Row[];
+    if (this.op === 'insert') {
+      const list = Array.isArray(this.payload) ? this.payload : [this.payload];
+      affected = list.map((row) => ({
+        id: this.db.nextId(),
+        ...(DEFAULTS[this.table]?.() ?? {}),
+        ...row,
+      }));
+      rows.push(...affected);
+    } else {
+      const matching = rows.filter((row) => this.filters.every((f) => f(row)));
+      if (this.op === 'update') {
+        for (const row of matching) Object.assign(row, this.payload);
+      } else if (this.op === 'delete') {
+        for (const row of matching) rows.splice(rows.indexOf(row), 1);
+      }
+      affected = matching.slice(0, this.max);
+    }
+    if ((this.op === 'insert' || this.op === 'update' || this.op === 'delete') && !this.returning) {
+      return { data: null, error: null };
+    }
+    const copy = affected.map((row) => ({ ...row }));
+    if (this.mode === 'many') return { data: copy, error: null };
+    if (copy.length === 0) {
+      return this.mode === 'single'
+        ? { data: null, error: { code: 'PGRST116', message: 'aucune ligne' } }
+        : { data: null, error: null };
+    }
+    return { data: copy[0], error: null };
+  }
+
+  then<R1 = Result, R2 = never>(
+    onfulfilled?: ((value: Result) => R1 | PromiseLike<R1>) | null,
+    onrejected?: ((reason: unknown) => R2 | PromiseLike<R2>) | null,
+  ): PromiseLike<R1 | R2> {
+    return Promise.resolve(this.run()).then(onfulfilled, onrejected);
+  }
+}

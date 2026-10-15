@@ -1629,7 +1629,8 @@ components:
         questions: { type: array, items: { $ref: '#/components/schemas/Question' } }
         unreadable_sources: { type: array, items: { type: integer } }
         error_code: { type: [ string, 'null' ], description: "Code de la liste fermée quand status = failed (ex. provider_unavailable, source_unreadable)." }
-        flags: { type: array, items: { type: string }, description: "Signalements de l'Analyste (ex. PROMPT_INJECTION_SUSPECTED, SOURCE_UNREADABLE:0). Pas d'effet sur l'écran sauf information." }
+        flags: { type: array, items: { type: string }, description: "Signalements affichables : SOURCE_UNREADABLE:{index}, MODEL_WITHOUT_VISION, IMAGES_NOT_READ, IMAGE_VALUES_UNVERIFIED, MULTIPLE_BUSINESSES, PRODUCT_NOT_DETECTED. Une injection de consigne n'est jamais exposée (elle est ignorée et enregistrée pour l'administration)." }
+        answers: { type: array, items: { $ref: '#/components/schemas/Answer' }, description: 'Réponses déjà données aux questions (affichées pré-remplies au retour sur l’étape).' }
     Question:
       type: object
       required: [ id, text, input, required ]
