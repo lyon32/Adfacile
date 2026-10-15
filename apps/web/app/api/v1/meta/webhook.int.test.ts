@@ -16,6 +16,8 @@ import { webhookEventId } from '../webhooks/meta/signature';
 
 const SECRET = randomBytes(16).toString('hex');
 const VERIFY_TOKEN = `jeton-${randomUUID()}`;
+/** Défi de test : une valeur qui ne peut pas apparaître par hasard dans l'identifiant de requête (`req_…`) de la réponse. */
+const CHALLENGE = `defi-${randomUUID()}`;
 process.env.META_APP_SECRET = SECRET;
 process.env.META_WEBHOOK_VERIFY_TOKEN = VERIFY_TOKEN;
 
@@ -98,13 +100,13 @@ describeRoute('metaWebhookVerify', {
   forbiddenRole: async () => {
     // Jeton faux, mode inattendu : 403, et le défi n'est jamais renvoyé.
     for (const query of [
-      { 'hub.mode': 'subscribe', 'hub.verify_token': 'faux', 'hub.challenge': '42' },
-      { 'hub.mode': 'subscribe', 'hub.verify_token': `${VERIFY_TOKEN}x`, 'hub.challenge': '42' },
-      { 'hub.mode': 'unsubscribe', 'hub.verify_token': VERIFY_TOKEN, 'hub.challenge': '42' },
+      { 'hub.mode': 'subscribe', 'hub.verify_token': 'faux', 'hub.challenge': CHALLENGE },
+      { 'hub.mode': 'subscribe', 'hub.verify_token': `${VERIFY_TOKEN}x`, 'hub.challenge': CHALLENGE },
+      { 'hub.mode': 'unsubscribe', 'hub.verify_token': VERIFY_TOKEN, 'hub.challenge': CHALLENGE },
     ]) {
       const res = verify(get(query));
       expect(res.status).toBe(403);
-      expect(await res.text()).not.toContain('42');
+      expect(await res.text()).not.toContain(CHALLENGE);
     }
   },
   invalidBody: () => {
