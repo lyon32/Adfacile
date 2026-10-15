@@ -52,7 +52,7 @@
 | Environnements | **2 projets Supabase** (développement, production) + Vercel Preview/Production | ✅ | Q23 |
 | Sauvegardes | Supabase Pro (sauvegardes quotidiennes) **en production, quand l'offre Pro est payée** | ✅ | Q43 |
 | Tâches en arrière-plan | **Trigger.dev** — **offre gratuite (Free) en ce moment** (12/10/2026, projet `proj_wnjyspfoeknisnyzygkj`), Hobby 10 $/mois plus tard (voir la note ci-dessous) | ✅ | Sans limite de durée ; code ouvert ; files avec limite de simultanéité |
-| IA texte | **Passerelle IA** (choix entre OpenRouter et Vercel AI Gateway à faire après comparaison vérifiée) | ✅ principe · ❓ outil | Changer de modèle sans toucher au code, coût par client |
+| IA texte | **OpenRouter** (passerelle unique, décision D-2 du 15/10/2026 ; Vercel AI Gateway écartée) | ✅ | Un seul point d'entrée pour tous les modèles : changer de modèle ou en ajouter un secours sans toucher au code, coût par appel renvoyé dans la réponse. Appelée par `fetch`, sans bibliothèque |
 | IA médias | **Aiguilleur interne** + catalogue de modèles ; **fal + Higgsfield au lancement**, BytePlus avec la vidéo | ✅ | [capacites-medias.md](capacites-medias.md) |
 | Lecture des sources | Notre propre lecture d'abord, **Jina Reader** en secours (sites, PDF) | ✅ | Q36 |
 | Paiement | **SasPay** (Mobile Money et carte, paiement unique, pas de prélèvement automatique) | ✅ | Vérifié dans leur API |
@@ -164,7 +164,9 @@ Spécifications : [docs/agents/](../agents/README.md). Résultats de tests : [be
 | Assistant aide | Bulle d'aide, connaît l'état du compte | à tester |
 
 Règles d'exécution :
-- Appels **côté serveur uniquement**, via la passerelle IA ; sortie JSON validée par schéma (Zod) ; 1 nouvel essai avec l'erreur, puis échec signalé.
+- Appels **côté serveur uniquement**, via la passerelle IA (OpenRouter) ; sortie JSON validée par schéma (Zod) ; 1 nouvel essai avec l'erreur, puis échec signalé. **Jamais un 3ᵉ appel**, et une panne de la passerelle n'est jamais rejouée (résultat incertain).
+- **Le modèle de chaque agent est un réglage**, jamais une constante du code ni du prompt : défaut dans `packages/agents/src/runtime/models.json`, surcharge par la variable `AGENT_MODELS` (JSON), n'importe quel identifiant OpenRouter (ex. `google/gemma-4-31b-it:free`), avec un **modèle de secours** réglable par agent (essayé par OpenRouter lui-même si le premier est indisponible). Exigence produit : des modèles **précis**, qui comprennent leur rôle directement et ne « parlent pas pour rien » : rien d'autre que le JSON demandé. Le banc (`bench/run.mjs`) compare les modèles OpenRouter avant tout changement (TR-AGT-04).
+- **Pour S31 (administration, exigence du 15/10/2026)** : tout se règle **sans redéploiement** depuis la page d'administration : (a) santé de chaque agent (taux de réussite, sorties valides, latence, coût, dernier appel, dernière erreur) calculée sur `agent_runs` ; (b) changement du modèle de chaque agent parmi une liste prédéfinie, avec un modèle de repli ; (c) clé d'API propre à un ou plusieurs agents (par défaut : la clé OpenRouter globale ; clé d'un autre fournisseur si OpenRouter ne répond plus). Ce que S13 prépare : le runtime lit le réglage derrière `AgentConfigSource` (S13 : `EnvAgentConfigSource`, `models.json` + `AGENT_MODELS` ; S31 : une source en base) et applique `applyAgentConfig` à la définition, sans modifier `runAgent` ; la passerelle accepte `provider` et `apiKey` par appel (OpenRouter réalisé ; Anthropic, OpenAI, Gemini : interface prête, appel direct **non réalisé** en S13, la passerelle répond `bad_request`) ; `AgentKeyStore.resolve(keyRef)` donne la clé. Une clé saisie par l'administrateur sera stockée **chiffrée** (même mécanisme que `TOKEN_ENCRYPTION_KEYS`), en écriture seule : jamais renvoyée, jamais journalisée (S13 ne stocke aucune clé). **Table `agent_runs` (0001)** : contient déjà agent, modèle utilisé, version du prompt, jetons, coût, durée, `valid_schema`, `retried`. **Manque pour la santé** (nouvelle migration à créer avec le premier écrivain de la table, S14, ou en S31) : `error_code text` (dernière erreur), `provider text`, `requested_model text` (savoir si le repli a répondu), `attempts smallint` ; sans elles, un échec n'est pas distinguable d'une sortie invalide et le taux de repli n'est pas mesurable. `AgentRunRecord` les porte déjà (`errorCode`, `provider`, `requestedModel`, `attempts`).
 - **Affichage progressif** (streaming) pour le Stratège et l'Assistant.
 - Chaque appel est journalisé (`agent_runs`) : modèle, version du prompt, jetons, coût, durée, validité.
 - Contenu des sources = donnée, jamais instruction (détection d'injection).
@@ -384,6 +386,7 @@ Fonctions (Q17, Q27) :
 - Suppression de compte : tout est effacé chez nous ; **campagnes conservées chez Meta** ; données de facturation conservées (obligation légale) (Q44).
 - Clause de responsabilité affichée avant la première publication (blocage de compte publicitaire par Meta) (Q54).
 - PostHog : masquage des champs sensibles dans le revisionnage de sessions.
+- ❓ **Textes envoyés aux modèles IA (décision de la personne à prendre AVANT la production, S36).** Les textes des clients (sites, descriptions, réponses aux questions) partent chez OpenRouter, puis chez le fournisseur du modèle. **Les modèles gratuits (`:free`) peuvent enregistrer ces textes** et s'en servir pour s'améliorer ; les modèles payants dépendent de la politique de leur fournisseur. OpenRouter offre un réglage par requête (`provider.data_collection: "deny"`, variable `OPENROUTER_DATA_COLLECTION`) et un réglage de compte (page *Privacy* de l'espace OpenRouter, option « zéro rétention des données »). Options : (1) modèles payants seulement + `deny` en production ; (2) modèles gratuits pour le développement et le banc seulement, jamais avec des données de vrais clients ; (3) accepter les modèles gratuits et le dire dans la politique de confidentialité (§16, Q42). **Recommandation** : option 1 ou 2. Tant que ce n'est pas tranché, le banc et les essais n'utilisent que des textes d'exemple (jeux de `bench/datasets/`), jamais des données de clients. Documentation : https://openrouter.ai/docs/features/provider-routing
 
 ---
 
@@ -417,7 +420,7 @@ Fonctions (Q17, Q27) :
 | # | Sujet | Comment on tranche |
 |---|---|---|
 | 1 | Modèles texte définitifs par agent | Banc de test (Higgsfield, fal et BytePlus pour les médias ; passerelle pour le texte) |
-| 2 | Outil de passerelle IA texte | Comparaison vérifiée OpenRouter / Vercel AI Gateway |
+| 2 | ✅ Outil de passerelle IA texte : **OpenRouter** (15/10/2026) | Décision D-2, ROADMAP §5. Reste ouverte : la **confidentialité des modèles gratuits** (§16) |
 | 3 | Moteur de rendu des calques | Essai Satori + resvg contre sharp sur 3 mises en page |
 | 4 | Modèles médias visibles et crédits exacts | Tests un par un (C2, C1, C3, C4, puis vidéo) |
 | 5 | Plafond quotidien de générations | Après mesure des coûts réels |

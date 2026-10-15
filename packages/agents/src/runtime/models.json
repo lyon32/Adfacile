@@ -1,0 +1,35 @@
+{
+  "_comment": "Réglage par défaut du modèle de CHAQUE agent (identifiants OpenRouter). Provisoire (ARCHITECTURE §7, résultats de docs/agents/benchmark.md) : à confirmer par le banc réel. Jamais écrit dans le code ni dans les prompts. Surcharge sans toucher au code : variable AGENT_MODELS (JSON). La température est fixée ici, pas par l'agent (docs/agents R10). Changer un modèle ou un prompt impose de repasser le banc (TR-AGT-04).",
+  "agents": {
+    "analyste": {
+      "model": "google/gemini-3.1-flash-lite",
+      "fallback": "google/gemma-4-31b-it",
+      "temperature": 0.2
+    },
+    "stratege": {
+      "model": "google/gemini-3-flash-preview",
+      "fallback": "google/gemini-3.1-flash-lite",
+      "temperature": 0.3
+    },
+    "designer": {
+      "model": "google/gemini-3-flash-preview",
+      "fallback": "google/gemini-3.1-flash-lite",
+      "temperature": 0.7
+    },
+    "moderateur": {
+      "model": "google/gemini-3.1-flash-lite",
+      "fallback": "google/gemma-4-31b-it",
+      "temperature": 0.2
+    },
+    "optimiseur": {
+      "model": "google/gemini-3.1-flash-lite",
+      "fallback": "google/gemma-4-31b-it",
+      "temperature": 0.2
+    },
+    "aide": {
+      "model": "google/gemini-3.1-flash-lite",
+      "fallback": "google/gemma-4-31b-it",
+      "temperature": 0.3
+    }
+  }
+}
