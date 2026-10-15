@@ -68,3 +68,14 @@ Changements : Modérateur redéfini (explication après refus Meta) ; Analyste v
 - **Génération d'images (Nano Banana) : toujours non testée, quota gratuit nul.**
 
 Leçon : le modèle reproduit les idées reçues (marques = interdit). Chaque règle Meta sensible doit être **écrite explicitement** dans le prompt, et testée par un cas.
+
+### Session 4 (15 oct. 2026) : passerelle OpenRouter, premier essai (7 requêtes réelles, 1 cas par agent)
+Banc réécrit pour OpenRouter (décision D-2) : modèles et prix dans `bench/models.json`, coût réel lu dans `usage.cost`, option `--limit`, coût par campagne dans le rapport. Offre gratuite : 50 requêtes par jour pour les modèles `:free`. Prompts déplacés dans `packages/agents/src/<agent>/prompts/`.
+
+| Modèle | Résultat | Remarque |
+|---|---|---|
+| google/gemma-4-31b-it:free, google/gemma-4-26b-a4b-it:free | non concluant | Erreur 429 « limitée en amont » : le fournisseur gratuit est saturé, la requête n'est pas comptée dans le quota du jour. Non rejouée (aucune relance automatique). |
+| deepseek/deepseek-v4-flash (payant) | Analyste, Stratège, Modérateur : 100 % sur 1 cas chacun | JSON valide dès le premier appel, aucun texte autour. **Coût par campagne mesuré : 0,00075 $** (Analyste 0,00057 $ + Stratège 0,00018 $) ; Modérateur 0,0001 $ par refus. Latence élevée : 55 s pour l'Analyste, 14 s pour le Stratège. |
+
+Un seul cas par agent : cela montre que le banc, la passerelle et le calcul du coût fonctionnent, **pas** que le modèle est retenu. Prochaine étape : jeu complet (`node bench/run.mjs --model=deepseek/deepseek-v4-flash --agent=analyste,stratege,moderateur`) avant de fixer les modèles de `packages/agents/src/runtime/models.json`.
+
