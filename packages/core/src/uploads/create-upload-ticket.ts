@@ -63,7 +63,11 @@ export async function createUploadTicket(
 
   const signed = await ctx.svc.storage.from(rule.bucket).createSignedUploadUrl(filePath);
   if (signed.error !== null) {
-    await ctx.svc.from('uploads').delete().eq('workspace_id', ctx.workspace.id).eq('file_path', filePath);
+    await ctx.svc
+      .from('uploads')
+      .delete()
+      .eq('workspace_id', ctx.workspace.id)
+      .eq('file_path', filePath);
     throw new AppError('provider_unavailable', { cause: signed.error });
   }
   return {

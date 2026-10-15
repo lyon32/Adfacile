@@ -115,14 +115,18 @@ export type Database = {
       agent_runs: {
         Row: {
           agent: string;
+          attempts: number | null;
           cost_usd: number | null;
           created_at: string;
+          error_code: string | null;
           id: string;
           input: Json | null;
           latency_ms: number | null;
           model: string;
           output: Json | null;
           prompt_version: string;
+          provider: string | null;
+          requested_model: string | null;
           retried: boolean;
           tokens_in: number | null;
           tokens_out: number | null;
@@ -131,14 +135,18 @@ export type Database = {
         };
         Insert: {
           agent: string;
+          attempts?: number | null;
           cost_usd?: number | null;
           created_at?: string;
+          error_code?: string | null;
           id?: string;
           input?: Json | null;
           latency_ms?: number | null;
           model: string;
           output?: Json | null;
           prompt_version: string;
+          provider?: string | null;
+          requested_model?: string | null;
           retried?: boolean;
           tokens_in?: number | null;
           tokens_out?: number | null;
@@ -147,14 +155,18 @@ export type Database = {
         };
         Update: {
           agent?: string;
+          attempts?: number | null;
           cost_usd?: number | null;
           created_at?: string;
+          error_code?: string | null;
           id?: string;
           input?: Json | null;
           latency_ms?: number | null;
           model?: string;
           output?: Json | null;
           prompt_version?: string;
+          provider?: string | null;
+          requested_model?: string | null;
           retried?: boolean;
           tokens_in?: number | null;
           tokens_out?: number | null;
@@ -2123,6 +2135,72 @@ export type Database = {
           },
           {
             foreignKeyName: 'tickets_workspace_id_fkey';
+            columns: ['workspace_id'];
+            isOneToOne: false;
+            referencedRelation: 'workspaces';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      uploads: {
+        Row: {
+          bucket: string;
+          created_at: string;
+          created_by: string | null;
+          declared_mime: string;
+          declared_size: number;
+          expires_at: string;
+          file_path: string;
+          id: string;
+          purpose: string;
+          status: string;
+          verified_at: string | null;
+          verified_mime: string | null;
+          verified_size: number | null;
+          workspace_id: string;
+        };
+        Insert: {
+          bucket: string;
+          created_at?: string;
+          created_by?: string | null;
+          declared_mime: string;
+          declared_size: number;
+          expires_at: string;
+          file_path: string;
+          id?: string;
+          purpose: string;
+          status?: string;
+          verified_at?: string | null;
+          verified_mime?: string | null;
+          verified_size?: number | null;
+          workspace_id: string;
+        };
+        Update: {
+          bucket?: string;
+          created_at?: string;
+          created_by?: string | null;
+          declared_mime?: string;
+          declared_size?: number;
+          expires_at?: string;
+          file_path?: string;
+          id?: string;
+          purpose?: string;
+          status?: string;
+          verified_at?: string | null;
+          verified_mime?: string | null;
+          verified_size?: number | null;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'uploads_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'uploads_workspace_id_fkey';
             columns: ['workspace_id'];
             isOneToOne: false;
             referencedRelation: 'workspaces';

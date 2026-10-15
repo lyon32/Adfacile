@@ -57,7 +57,10 @@ describe('createUploadTicket', () => {
     expect(ticket.upload_url).toContain('token=');
     expect(ticket.expires_at).toBe(new Date(NOW.getTime() + UPLOAD_WINDOW_MS).toISOString());
     expect(storageCalls).toEqual([{ bucket: 'sources', path: `${WS}/${ID}.jpg` }]);
-    const insert = svc.calls[0]?.ops.find(([op]) => op === 'insert')?.[1] as Record<string, unknown>;
+    const insert = svc.calls[0]?.ops.find(([op]) => op === 'insert')?.[1] as Record<
+      string,
+      unknown
+    >;
     expect(insert).toMatchObject({
       workspace_id: WS,
       purpose: 'source',
@@ -67,7 +70,8 @@ describe('createUploadTicket', () => {
 
   it('TR-SEC-08 : une image de 10 Mo passe, 10 Mo + 1 octet est refusée (413)', async () => {
     const { ctx } = setup();
-    const png = (size: number) => createUploadTicket(ctx(), { purpose: 'source', mime: 'image/png', size });
+    const png = (size: number) =>
+      createUploadTicket(ctx(), { purpose: 'source', mime: 'image/png', size });
     expect(await code(png(10 * MIB))).toBe('ok');
     expect(await code(png(10 * MIB + 1))).toBe('file_too_large');
   });
@@ -93,7 +97,9 @@ describe('createUploadTicket', () => {
   it('un logo de plus de 5 Mo est refusé (compartiment « brand ») ; la preuve de paiement va au compartiment « support »', async () => {
     const { ctx, storageCalls } = setup();
     expect(
-      await code(createUploadTicket(ctx(), { purpose: 'brand_logo', mime: 'image/png', size: 5 * MIB + 1 })),
+      await code(
+        createUploadTicket(ctx(), { purpose: 'brand_logo', mime: 'image/png', size: 5 * MIB + 1 }),
+      ),
     ).toBe('file_too_large');
     await createUploadTicket(
       ctx(),
@@ -107,7 +113,10 @@ describe('createUploadTicket', () => {
     const { ctx } = setup();
     const input = { purpose: 'source', mime: 'image/png', size: 10 } as const;
     expect(await code(createUploadTicket(ctx('viewer'), input))).toBe('role_insufficient');
-    const readOnly = { ...ctx(), workspace: { id: WS, role: 'owner' as const, access: 'read_only' as const } };
+    const readOnly = {
+      ...ctx(),
+      workspace: { id: WS, role: 'owner' as const, access: 'read_only' as const },
+    };
     expect(await code(createUploadTicket(readOnly, input))).toBe('workspace_read_only');
   });
 

@@ -45,7 +45,11 @@ export const PURPOSE_RULES: Record<UploadPurpose, PurposeRule> = {
   source: { bucket: 'sources', mimes: ALL, maxBytes: 20 * MIB },
   reference: { bucket: 'sources', mimes: IMAGES, maxBytes: 10 * MIB },
   brand_logo: { bucket: 'brand', mimes: IMAGES, maxBytes: 5 * MIB },
-  support_attachment: { bucket: 'support', mimes: [...IMAGES, 'application/pdf'], maxBytes: 10 * MIB },
+  support_attachment: {
+    bucket: 'support',
+    mimes: [...IMAGES, 'application/pdf'],
+    maxBytes: 10 * MIB,
+  },
   payment_proof: { bucket: 'support', mimes: [...IMAGES, 'application/pdf'], maxBytes: 10 * MIB },
 };
 

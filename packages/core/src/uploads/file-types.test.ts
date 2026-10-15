@@ -7,7 +7,9 @@ const ascii = (text: string): number[] => Array.from(text, (c) => c.charCodeAt(0
 
 describe('sniffFileType', () => {
   it('TR-SEC-08 : reconnaît PNG, JPEG, WebP, PDF et DOCX par leurs premiers octets', () => {
-    expect(sniffFileType(bytes(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0))).toBe('image/png');
+    expect(sniffFileType(bytes(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0))).toBe(
+      'image/png',
+    );
     expect(sniffFileType(bytes(0xff, 0xd8, 0xff, 0xe0))).toBe('image/jpeg');
     expect(sniffFileType(bytes(...ascii('RIFF'), 1, 2, 3, 4, ...ascii('WEBPVP8 ')))).toBe(
       'image/webp',
