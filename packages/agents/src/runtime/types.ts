@@ -21,7 +21,18 @@ export interface ChatMessage {
 export type AiResponseFormat =
   { type: 'json_object' } | { type: 'json_schema'; name: string; schema: Record<string, unknown> };
 
+/** Fournisseurs de modèles texte. OpenRouter par défaut ; les autres sont prévus pour une clé propre à un agent (S31). */
+export const AI_PROVIDERS = ['openrouter', 'anthropic', 'openai', 'gemini'] as const;
+export type AiProviderId = (typeof AI_PROVIDERS)[number];
+
 export interface AiCompletionRequest {
+  /** Fournisseur de l'appel ; `openrouter` si absent. Seul OpenRouter est réalisé en S13 (les autres : `bad_request`). */
+  provider?: AiProviderId;
+  /**
+   * Clé propre à cet appel (clé d'un agent définie par l'administration, S31). Absente : clé globale de la passerelle.
+   * Jamais journalisée, jamais copiée dans un message d'erreur.
+   */
+  apiKey?: string;
   /** Identifiant de modèle de la passerelle (ex. `google/gemma-4-31b-it:free`). Jamais écrit en dur. */
   model: string;
   /** Modèle de secours, essayé par la passerelle elle-même si le premier est indisponible. */
@@ -71,8 +82,38 @@ export class AiGatewayError extends Error {
   }
 }
 
+/**
+ * Réglage d'un agent, lu derrière `AgentConfigSource`. En S13 la source est `EnvAgentConfigSource` (models.json et
+ * `AGENT_MODELS`) ; S31 branchera une source en base, modifiable sans redéploiement, sans toucher à `runAgent`.
+ */
+export interface AgentConfig {
+  agent: AgentName;
+  provider: AiProviderId;
+  model: string;
+  fallbackModel?: string;
+  temperature: number;
+  /** Référence d'une clé propre (identifiant en base), jamais la clé : résolue par `AgentKeyStore`. Absente : clé globale. */
+  keyRef?: string;
+}
+
+export interface AgentConfigSource {
+  get(agent: AgentName): Promise<AgentConfig>;
+}
+
+/**
+ * Donne la clé d'API d'une référence. S31 : lecture d'une clé stockée CHIFFRÉE (même mécanisme que
+ * `TOKEN_ENCRYPTION_KEYS`), en écriture seule côté administration. Ne renvoie ni ne journalise jamais la clé.
+ */
+export interface AgentKeyStore {
+  resolve(keyRef: string): Promise<string>;
+}
+
 export interface AgentDefinition<I, O> {
   name: AgentName;
+  /** Fournisseur ; `openrouter` si absent. */
+  provider?: AiProviderId;
+  /** Référence de clé propre (voir `AgentConfig.keyRef`). */
+  keyRef?: string;
   /** Ex. `analyste@2`. Tout changement de prompt crée une nouvelle version (R12). */
   promptVersion: string;
   /** Identifiant passerelle : vient de la configuration (`resolveAgentModel`), jamais d'une constante. */
@@ -92,7 +133,15 @@ export interface AgentDefinition<I, O> {
 export interface AgentRunRecord {
   workspaceId: string | null;
   agent: AgentName;
+  /** Modèle qui a réellement répondu (principal ou modèle de secours). */
   model: string;
+  /** Modèle demandé (le réglage). Différent de `model` : le modèle de secours a répondu. */
+  requestedModel: string;
+  provider: AiProviderId;
+  /** Nombre d'appels à la passerelle : 0 (entrée refusée), 1 ou 2 (jamais plus). */
+  attempts: number;
+  /** Code d'erreur applicatif si l'exécution a échoué, sinon `null`. */
+  errorCode: string | null;
   promptVersion: string;
   input: unknown;
   /** JSON valide renvoyé par le modèle ; `null` si la sortie n'a jamais été valide. */
@@ -112,4 +161,21 @@ export interface RunAgentOptions {
   signal?: AbortSignal;
   /** Horloge injectable pour mesurer la durée (millisecondes) ; défaut `Date.now`. */
   clock?: () => number;
+  /** Nécessaire seulement si l'agent a une clé propre (`keyRef`). */
+  keys?: AgentKeyStore;
+}
+
+/** Applique un réglage d'agent (venu d'une `AgentConfigSource`) à la définition de l'agent. */
+export function applyAgentConfig<I, O>(
+  def: AgentDefinition<I, O>,
+  config: AgentConfig,
+): AgentDefinition<I, O> {
+  return {
+    ...def,
+    provider: config.provider,
+    model: config.model,
+    temperature: config.temperature,
+    ...(config.fallbackModel === undefined ? {} : { fallbackModel: config.fallbackModel }),
+    ...(config.keyRef === undefined ? {} : { keyRef: config.keyRef }),
+  };
 }
