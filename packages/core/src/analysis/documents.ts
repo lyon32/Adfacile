@@ -26,29 +26,67 @@ interface PdfTextItem {
   hasEOL?: boolean;
 }
 
-export async function extractPdfText(bytes: Uint8Array): Promise<string> {
+/** Plafonds de ressources d'une lecture de PDF : un PDF piégé ne doit ni bloquer le processus ni épuiser la mémoire. */
+export const PDF_TIMEOUT_MS = 20_000;
+export const MAX_PDF_ITEMS_PER_PAGE = 100_000;
+
+export interface PdfLimits {
+  timeoutMs?: number;
+}
+
+/**
+ * Texte d'un PDF. Au plus 50 pages, 200 000 caractères, 100 000 éléments de texte par page, et un délai maximal :
+ * passé le délai, la lecture est refusée. pdf.js ne s'interrompt pas en plein calcul, donc la durée est contrôlée entre
+ * deux pages ET par une course avec une temporisation : l'appelant n'attend jamais davantage que le délai.
+ */
+export async function extractPdfText(bytes: Uint8Array, limits: PdfLimits = {}): Promise<string> {
+  const timeoutMs = limits.timeoutMs ?? PDF_TIMEOUT_MS;
+  const deadline = Date.now() + timeoutMs;
+  const state = { stop: false, deadline };
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      state.stop = true;
+      reject(unsupported('pdf_timeout'));
+    }, timeoutMs);
+  });
+  const work = readPdf(bytes, state);
+  // Si la temporisation gagne, la lecture continue en arrière-plan jusqu'à la prochaine page puis s'arrête : son
+  // refus éventuel ne doit pas devenir une erreur non gérée.
+  work.catch(() => undefined);
+  try {
+    return await Promise.race([work, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function readPdf(
+  bytes: Uint8Array,
+  state: { stop: boolean; deadline: number },
+): Promise<string> {
   try {
     const pdf = await getDocumentProxy(new Uint8Array(bytes));
     const pages = Math.min(pdf.numPages, MAX_PDF_PAGES);
     const out: string[] = [];
     let chars = 0;
     for (let n = 1; n <= pages && chars < MAX_DOCUMENT_CHARS; n += 1) {
+      if (state.stop || Date.now() > state.deadline) throw unsupported('pdf_timeout');
       const page = await pdf.getPage(n);
       const content = await page.getTextContent();
+      if (content.items.length > MAX_PDF_ITEMS_PER_PAGE) throw unsupported('pdf_too_complex');
       let line = '';
       for (const item of content.items as PdfTextItem[]) {
         line += item.str ?? '';
         if (item.hasEOL === true) line += '\n';
+        if (line.length > MAX_DOCUMENT_CHARS) break;
       }
       out.push(line);
       chars += line.length;
     }
-    return out
-      .join('\n\n')
-      .replace(/[ \t]+/g, ' ')
-      .trim()
-      .slice(0, MAX_DOCUMENT_CHARS);
+    return out.join('\n\n').replace(/[ 	]+/g, ' ').trim().slice(0, MAX_DOCUMENT_CHARS);
   } catch (cause) {
+    if (cause instanceof AppError) throw cause;
     throw unsupported('pdf_unreadable', cause);
   }
 }

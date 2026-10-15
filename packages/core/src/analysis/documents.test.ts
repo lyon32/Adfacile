@@ -1,7 +1,13 @@
 // Texte des PDF et DOCX, sans exécution, avec les protections de SECURITY_NOTES §3.3 (pages, entrées, taille).
 import { strToU8, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
-import { extractDocumentText, extractDocxText, extractPdfText, MAX_PDF_PAGES } from './documents';
+import {
+  extractDocumentText,
+  extractDocxText,
+  extractPdfText,
+  MAX_DOCUMENT_CHARS,
+  MAX_PDF_PAGES,
+} from './documents';
 
 /** PDF minimal à `pages` pages, chacune avec une ligne de texte (xref reconstruite par pdf.js si besoin). */
 function pdf(lines: string[]): Uint8Array {
@@ -51,6 +57,25 @@ describe('extractPdfText', () => {
     const text = await extractPdfText(pdf(lines));
     expect(text).toContain(`PAGE${String(MAX_PDF_PAGES)}END`);
     expect(text).not.toContain(`PAGE${String(MAX_PDF_PAGES + 1)}END`);
+  });
+
+  it('PDF piégé : au-delà du délai maximal la lecture est refusée proprement, sans bloquer', async () => {
+    const lines = Array.from({ length: MAX_PDF_PAGES }, (_, i) => `PAGE${String(i)}`);
+    const started = Date.now();
+    await expect(extractPdfText(pdf(lines), { timeoutMs: 1 })).rejects.toMatchObject({
+      code: 'unsupported_file_type',
+      opts: { meta: { reason: 'pdf_timeout' } },
+    });
+    expect(Date.now() - started).toBeLessThan(2000);
+    // Le processus reste utilisable : une lecture normale réussit juste après.
+    expect(await extractPdfText(pdf(['Bonjour']))).toContain('Bonjour');
+  });
+
+  it('PDF piégé : un texte démesuré est borné à 200 000 caractères', async () => {
+    const page = 'mot '.repeat(1500);
+    const text = await extractPdfText(pdf(Array.from({ length: MAX_PDF_PAGES }, () => page)));
+    expect(text.length).toBeLessThanOrEqual(MAX_DOCUMENT_CHARS);
+    expect(text.length).toBeGreaterThan(1000);
   });
 
   it('un PDF corrompu est refusé (unsupported_file_type), sans erreur interne', async () => {

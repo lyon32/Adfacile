@@ -153,7 +153,7 @@ Liste fermée : tout nouveau code doit être ajouté à l'énumération `ErrorCo
 | `gone` | 410 | Fichier expiré (7 jours), invitation expirée | Explique et propose de recommencer |
 | `file_too_large` | 413 | Image de plus de 10 Mo, ou PDF/DOCX de plus de 20 Mo | Indique la limite |
 | `unsupported_file_type` | 415 | Type non accepté | Liste les types acceptés |
-| `illegal_product` | 422 | Produit interdit détecté par l'Analyste | Explique le refus, sans contournement |
+| `illegal_product` | 422 | Produit interdit détecté par l'Analyste. **Aujourd'hui renvoyé en `200`** : l'analyse est asynchrone, le refus se lit dans `GET /analyses/{id}` (`status: blocked`, `blocked_reason: illegal_product`, aucune fiche ni question) ; le code est réservé aux routes synchrones futures | Explique le refus, sans contournement |
 | `source_unreadable` | 422 | Aucune source lisible | Propose d'ajouter une photo ou du texte |
 | `unsafe_url` | 422 | URL interne, privée ou non HTTP(S) (anti-SSRF) | « Ce lien ne peut pas être lu » |
 | `budget_too_low` | 422 | Budget sous le minimum de la plateforme | Indique le minimum |
@@ -165,7 +165,7 @@ Liste fermée : tout nouveau code doit être ajouté à l'énumération `ErrorCo
 | `internal_error` | 500 | Erreur inattendue | Affiche `request_id` |
 | `meta_error` | 502 | Erreur renvoyée par Meta | Message traduit + `request_id` |
 | `payment_provider_error` | 502 | Erreur SasPay | Propose de réessayer ou d'envoyer une preuve |
-| `provider_unavailable` | 503 | Fournisseur médias indisponible, aucun secours | Propose un autre modèle |
+| `provider_unavailable` | 503 | Fournisseur médias ou IA indisponible, aucun secours. Pour l'Analyste, aussi quand le modèle réglé ne voit pas les images : l'analyse échoue avec `error_code: provider_unavailable` et le signalement `MODEL_WITHOUT_VISION` (aucun nouveau code) | Propose un autre modèle |
 | `maintenance` | 503 | Mode maintenance actif (sauf `/public/maintenance`, `/admin/*` et les webhooks, toujours traités : SECURITY_NOTES EC-ADM-02) | Page de maintenance |
 
 ---

@@ -102,6 +102,7 @@ async function readInternal(
     const result = await safeFetch(url, {
       timeoutMs: options.timeoutMs,
       maxBytes: options.maxBytes,
+      skipRedirectedHost: isLoginWalled,
       ...(deps.resolve === undefined ? {} : { resolve: deps.resolve }),
       ...(deps.transport === undefined ? {} : { transport: deps.transport }),
     });
@@ -159,6 +160,10 @@ export async function readSource(
   }
 
   const internal = await readInternal(source.url, { ...options, timeoutMs: remaining() }, deps);
+  // Raccourci qui mène à Facebook, Instagram ou X : même règle que l'adresse de départ (EC-SRC-04), ni Jina ni requête.
+  if (internal.reason === 'login_required') {
+    return { text: '', extractor: 'internal', status: 'unreadable', reason: 'login_required' };
+  }
   if (internal.text.length >= MIN_READABLE_CHARS) {
     return { text: internal.text, extractor: 'internal', status: 'ok' };
   }

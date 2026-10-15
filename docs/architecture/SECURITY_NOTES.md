@@ -310,8 +310,9 @@ Une réponse d'agent ou un résultat de génération est traité comme une donn�
 | EC-SRC-03 | Site protégé contre les robots (défi anti-robot, connexion obligatoire) | Jina Reader en secours ; sinon source « illisible » et proposition d'ajouter une capture ou du texte. **On ne contourne jamais** une protection anti-robot | `422 source_unreadable` si aucune source lisible |
 | EC-SRC-04 | Publication Facebook ou Instagram qui exige d'être connecté | Illisible ; proposition d'envoyer une capture d'écran | — |
 | EC-SRC-05 | Instructions cachées dans une page (« ignore tes règles… ») | Signalées (`PROMPT_INJECTION_SUSPECTED`), ignorées ; l'analyse continue (✅ TR-SEC-07) | — |
-| EC-SRC-06 | Produit illégal évident | Arrêt **avant** toute dépense de crédits, explication, aucun contournement proposé ; contestation possible par ticket | `422 illegal_product` |
+| EC-SRC-06 | Produit illégal évident | Arrêt **avant** toute dépense de crédits, explication, aucun contournement proposé ; contestation possible par ticket | `200` avec `status: blocked` et `blocked_reason: illegal_product` : l'analyse est asynchrone (`POST /analyses` répond `202`), le refus n'est connu qu'après la lecture des sources et se lit sur `GET /analyses/{id}`. Le code `illegal_product` reste dans la liste fermée (décision du chef de projet, S14) |
 | EC-SRC-07 | Site dans une autre langue que celle de l'interface | Analyse dans la langue du site ; pubs dans la langue réglée pour la Page | — |
+| EC-SRC-08 | Photos envoyées alors que le modèle réglé pour l'Analyste ne voit pas les images | Aucun appel IA, aucune dépense ; avec du texte l'analyse continue sans les photos (`IMAGES_NOT_READ`), sans texte elle échoue | `provider_unavailable` avec le signalement `MODEL_WITHOUT_VISION` (aucun nouveau code d'erreur, S14) |
 
 ### 5.8 Hors connexion
 
