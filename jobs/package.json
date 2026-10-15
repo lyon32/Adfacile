@@ -21,6 +21,8 @@
   },
   "dependencies": {
     "@pubeka/contracts": "workspace:*",
+    "@pubeka/core": "workspace:*",
+    "@pubeka/db": "workspace:*",
     "@pubeka/shared": "workspace:*",
     "@trigger.dev/sdk": "4.6.4",
     "zod": "4.6.5"

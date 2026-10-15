@@ -36,3 +36,6 @@ export * from './analysis/fake-analyste';
 export * from './analysis/source-files';
 export * from './analysis/view';
 export * from './analysis/start-analysis';
+export * from './analysis/fake-deps';
+export * from './analysis/run-analysis';
+export * from './analysis/answers';
