@@ -7,7 +7,9 @@ import tseslint from 'typescript-eslint';
 
 /** Modules @pubeka/* que chaque module a le droit d'importer (LLD §3). */
 export const ALLOWED_INTERNAL = {
-  web: ['core', 'ui', 'api-client', 'db', 'contracts', 'shared', 'i18n', 'testing'],
+  // `jobs` : apps/web lance les tâches de fond par `createJobDispatcher` (mode `inline` : les gestionnaires s'exécutent dans le
+  // processus web, TESTING §6.1). S14 est le premier consommateur (journal S13, « remarqué hors périmètre »).
+  web: ['core', 'jobs', 'ui', 'api-client', 'db', 'contracts', 'shared', 'i18n', 'testing'],
   jobs: ['core', 'db', 'contracts', 'shared', 'i18n', 'testing'],
   core: [
     'agents',
