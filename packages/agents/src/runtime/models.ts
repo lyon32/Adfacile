@@ -3,7 +3,7 @@
 // passerelle accepte n'importe quel identifiant OpenRouter (ex. `google/gemma-4-31b-it:free`).
 import { z } from 'zod';
 import defaults from './models.json';
-import { AGENT_NAMES, type AgentName } from './types';
+import { AGENT_NAMES, type AgentConfig, type AgentConfigSource, type AgentName } from './types';
 
 export interface AgentModelSetting {
   model: string;
@@ -116,4 +116,28 @@ export function resolveAgentModels(override?: string): AgentModelSettings {
 
 export function resolveAgentModel(name: AgentName, override?: string): AgentModelSetting {
   return resolveAgentModels(override)[name];
+}
+
+/**
+ * Source de réglage de S13 : `models.json` et la variable `AGENT_MODELS`, OpenRouter, clé globale.
+ * S31 la remplacera par une source en base (modèle, modèle de secours, fournisseur, référence de clé), sans toucher
+ * à `runAgent`.
+ */
+export class EnvAgentConfigSource implements AgentConfigSource {
+  private readonly settings: AgentModelSettings;
+
+  constructor(override?: string) {
+    this.settings = resolveAgentModels(override);
+  }
+
+  get(agent: AgentName): Promise<AgentConfig> {
+    const s = this.settings[agent];
+    return Promise.resolve({
+      agent,
+      provider: 'openrouter',
+      model: s.model,
+      ...(s.fallbackModel === undefined ? {} : { fallbackModel: s.fallbackModel }),
+      temperature: s.temperature,
+    });
+  }
 }

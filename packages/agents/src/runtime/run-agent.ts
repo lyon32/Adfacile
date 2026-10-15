@@ -122,11 +122,21 @@ export async function runAgent<I, O>(
   };
   let model = def.model;
   let retried = false;
+  let attempts = 0;
 
-  const record = (output: unknown, validSchema: boolean, shownInput: unknown): AgentRunRecord => ({
+  const record = (
+    output: unknown,
+    validSchema: boolean,
+    shownInput: unknown,
+    errorCode: string | null = null,
+  ): AgentRunRecord => ({
     workspaceId: opts.workspaceId,
     agent: def.name,
     model,
+    requestedModel: def.model,
+    provider: def.provider ?? 'openrouter',
+    attempts,
+    errorCode,
     promptVersion: def.promptVersion,
     input: shownInput,
     output,
@@ -138,18 +148,47 @@ export async function runAgent<I, O>(
 
   const parsedInput = def.inputSchema.safeParse(input);
   if (!parsedInput.success) {
-    throw new AgentRunError('validation_failed', 'invalid_input', record(null, false, null), {
-      cause: parsedInput.error,
-    });
+    throw new AgentRunError(
+      'validation_failed',
+      'invalid_input',
+      record(null, false, null, 'validation_failed'),
+      {
+        cause: parsedInput.error,
+      },
+    );
   }
   const agentInput = parsedInput.data;
   const messages = def.buildMessages(agentInput);
   const responseFormat = responseFormatFor(def);
 
+  // Clé propre à l'agent (S31) : résolue ici, passée à la passerelle, jamais copiée dans le journal ni dans une erreur.
+  let apiKey: string | undefined;
+  if (def.keyRef !== undefined) {
+    if (opts.keys === undefined) {
+      throw new AgentRunError(
+        'internal_error',
+        'gateway',
+        record(null, false, agentInput, 'internal_error'),
+      );
+    }
+    try {
+      apiKey = await opts.keys.resolve(def.keyRef);
+    } catch {
+      throw new AgentRunError(
+        'provider_unavailable',
+        'gateway',
+        record(null, false, agentInput, 'provider_unavailable'),
+      );
+    }
+  }
+
   const call = async (sent: ChatMessage[]): Promise<AiCompletion> => {
     let completion: AiCompletion;
+    attempts += 1;
     try {
       completion = await opts.gateway.complete({
+        ...(def.provider === undefined ? {} : { provider: def.provider }),
+        ...(apiKey === undefined ? {} : { apiKey }),
         model: def.model,
         ...(def.fallbackModel === undefined ? {} : { fallbackModel: def.fallbackModel }),
         messages: sent,
@@ -161,14 +200,24 @@ export async function runAgent<I, O>(
       });
     } catch (cause) {
       if (cause instanceof AiGatewayError) {
-        throw new AgentRunError(codeFor(cause), 'gateway', record(null, false, agentInput), {
-          cause,
-          ...(cause.opts.retryAfterS === undefined ? {} : { retryAfterS: cause.opts.retryAfterS }),
-        });
+        throw new AgentRunError(
+          codeFor(cause),
+          'gateway',
+          record(null, false, agentInput, codeFor(cause)),
+          {
+            cause,
+            ...(cause.opts.retryAfterS === undefined
+              ? {}
+              : { retryAfterS: cause.opts.retryAfterS }),
+          },
+        );
       }
-      throw new AgentRunError('provider_unavailable', 'gateway', record(null, false, agentInput), {
-        cause,
-      });
+      throw new AgentRunError(
+        'provider_unavailable',
+        'gateway',
+        record(null, false, agentInput, 'provider_unavailable'),
+        { cause },
+      );
     }
     model = completion.model;
     totals.tokensIn = sum(totals.tokensIn, completion.tokensIn);
@@ -183,10 +232,18 @@ export async function runAgent<I, O>(
     return { output: firstCheck.output, run: record(firstCheck.output, true, agentInput) };
   }
   if (firstCheck.outOfScope) {
-    throw new AgentRunError('validation_failed', 'out_of_scope', record(null, false, agentInput));
+    throw new AgentRunError(
+      'validation_failed',
+      'out_of_scope',
+      record(null, false, agentInput, 'validation_failed'),
+    );
   }
   if (opts.signal?.aborted === true) {
-    throw new AgentRunError('provider_unavailable', 'aborted', record(null, false, agentInput));
+    throw new AgentRunError(
+      'provider_unavailable',
+      'aborted',
+      record(null, false, agentInput, 'provider_unavailable'),
+    );
   }
 
   // Un seul nouvel essai. Il n'y a volontairement aucune boucle : un troisième appel est impossible.
@@ -199,7 +256,12 @@ export async function runAgent<I, O>(
   throw new AgentRunError(
     secondCheck.outOfScope ? 'validation_failed' : 'provider_unavailable',
     secondCheck.outOfScope ? 'out_of_scope' : 'invalid_output',
-    record(null, false, agentInput),
+    record(
+      null,
+      false,
+      agentInput,
+      secondCheck.outOfScope ? 'validation_failed' : 'provider_unavailable',
+    ),
   );
 }
 
