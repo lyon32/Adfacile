@@ -7,3 +7,5 @@ export * from './runtime/models';
 export * from './runtime/openrouter-gateway';
 export * from './runtime/fake-ai-gateway';
 export * from './runtime/create-gateway';
+export * from './analyste';
+export * from './runtime/model-catalog';

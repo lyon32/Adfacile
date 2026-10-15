@@ -9,7 +9,7 @@ import type {
   AiGateway,
   AiGatewayErrorKind,
 } from './types';
-import { AiGatewayError } from './types';
+import { AiGatewayError, messageLength } from './types';
 
 export type FakeReply =
   /** Réponse valide : l'objet est sérialisé en JSON. */
@@ -65,7 +65,7 @@ export class FakeAiGateway implements AiGateway {
       throw new AiGatewayError(reply.fail, `FakeAiGateway : panne simulée (${reply.fail})`);
     }
     const text = 'json' in reply ? JSON.stringify(reply.json) : reply.text;
-    const promptChars = request.messages.reduce((n, m) => n + m.content.length, 0);
+    const promptChars = request.messages.reduce((n, m) => n + messageLength(m), 0);
     return {
       text,
       model: request.model,
