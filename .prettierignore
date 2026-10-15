@@ -1,7 +1,4 @@
-# Ancien code AdFacile (référence jusqu'à S12, LLD §2.3) et dossiers non formatés par Prettier
-/src/
-/backend/
-/public/
+# Dossiers non formatés par Prettier
 bench/
 docs/
 logs/
@@ -20,10 +17,6 @@ README.md
 index.html
 vite.config.ts
 tsconfig.*.json
-Dockerfile*
-docker-compose*.yml
-render.yaml
-nginx.conf
 pnpm-lock.yaml
 .next/
 coverage/
