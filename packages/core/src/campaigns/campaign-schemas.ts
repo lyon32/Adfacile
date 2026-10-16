@@ -4,49 +4,9 @@
 // code et renvoie un message par champ ; ici les bornes ne servent qu'à refuser l'absurde avant d'aller plus loin.
 import { z } from 'zod';
 
-export const OBJECTIVES = [
-  'OUTCOME_ENGAGEMENT',
-  'OUTCOME_TRAFFIC',
-  'OUTCOME_AWARENESS',
-  'OUTCOME_SALES',
-] as const;
-export const DESTINATIONS = [
-  'WHATSAPP',
-  'MESSENGER',
-  'INSTAGRAM_DIRECT',
-  'WEBSITE',
-  'APP',
-  'ON_POST',
-  'NONE',
-] as const;
-export const OPTIMIZATION_GOALS = [
-  'CONVERSATIONS',
-  'LINK_CLICKS',
-  'LANDING_PAGE_VIEWS',
-  'POST_ENGAGEMENT',
-  'REACH',
-  'OFFSITE_CONVERSIONS',
-] as const;
-export const CTAS = [
-  'SEND_WHATSAPP_MESSAGE',
-  'SEND_MESSAGE',
-  'LEARN_MORE',
-  'SHOP_NOW',
-  'ORDER_NOW',
-  'CONTACT_US',
-  'BOOK_NOW',
-  'SIGN_UP',
-  'GET_OFFER',
-] as const;
-export const ANGLES = [
-  'price',
-  'quality',
-  'speed',
-  'scarcity',
-  'social_proof',
-  'novelty',
-  'convenience',
-] as const;
+// Les listes fermées viennent du Stratège (une seule définition, docs/agents/02 §6).
+import { ANGLES, CTAS, DESTINATIONS, OBJECTIVES, OPTIMIZATION_GOALS } from '@pubeka/agents';
+export { ANGLES, CTAS, DESTINATIONS, OBJECTIVES, OPTIMIZATION_GOALS };
 
 const PIXEL_ID = /^[0-9]{5,25}$/;
 const META_INTEREST_ID = /^[0-9]{3,25}$/;
