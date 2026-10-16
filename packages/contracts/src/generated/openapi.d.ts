@@ -644,7 +644,7 @@ export interface paths {
         /**
          * Retenir une proposition (copiée dans la campagne)
          * @description Copie les champs de la proposition dans le brouillon et note la version retenue. Le serveur revalide tout (budget,
-         *     dates, textes) : une proposition devenue invalide (date passée…) est refusée en `422`. Seul un brouillon peut en recevoir une.
+         *     dates, textes) : une proposition devenue invalide (date passée…) est refusée en `400 validation_failed` avec le champ en cause. Seul un brouillon peut en recevoir une.
          */
         post: operations["chooseProposal"];
         delete?: never;
@@ -2002,7 +2002,7 @@ export interface components {
             status: "ready";
             chosen: boolean;
             proposal: components["schemas"]["CampaignProposal"];
-            cost?: components["schemas"]["CampaignCost"];
+            cost: components["schemas"]["CampaignCost"];
             /** Format: date-time */
             created_at?: string;
         };
@@ -3682,11 +3682,11 @@ export interface operations {
                     "application/json": components["schemas"]["Campaign"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
-            422: components["responses"]["Unprocessable"];
         };
     };
     publishCampaign: {

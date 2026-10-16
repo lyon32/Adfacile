@@ -652,14 +652,14 @@ paths:
       summary: Retenir une proposition (copiée dans la campagne)
       description: |
         Copie les champs de la proposition dans le brouillon et note la version retenue. Le serveur revalide tout (budget,
-        dates, textes) : une proposition devenue invalide (date passée…) est refusée en `422`. Seul un brouillon peut en recevoir une.
+        dates, textes) : une proposition devenue invalide (date passée…) est refusée en `400 validation_failed` avec le champ en cause. Seul un brouillon peut en recevoir une.
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/Unprocessable' }
+        '400': { $ref: '#/components/responses/BadRequest' }
   /workspaces/{workspaceId}/campaigns/{campaignId}/publish:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -1808,7 +1808,7 @@ components:
         next_cursor: { type: [ string, 'null' ] }
     Proposal:
       type: object
-      required: [ version, status, proposal, chosen ]
+      required: [ version, status, proposal, chosen, cost ]
       properties:
         version: { type: integer, minimum: 1, description: "Numéro d'ordre dans la campagne (onglet « Proposition 1, 2, 3 »)" }
         status: { type: string, enum: [ ready ], description: "Seules les propositions terminées sont listées ; un flux SSE interrompu n'en laisse aucune." }
