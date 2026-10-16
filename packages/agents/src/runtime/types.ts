@@ -56,6 +56,12 @@ export interface AiCompletionRequest {
   maxOutputTokens?: number;
   responseFormat: AiResponseFormat;
   signal?: AbortSignal;
+  /**
+   * Affichage progressif : si présent, la passerelle demande le texte en flux et appelle `onText` à chaque fragment reçu.
+   * L'appel rend toujours la réponse COMPLÈTE ; les fragments ne sont qu'un aperçu non contractuel (la validation se fait
+   * sur le texte final). Absent : un seul aller-retour, sans flux.
+   */
+  onText?: (delta: string) => void;
   /** Pour le journal et pour les fausses implémentations ; jamais envoyé au fournisseur. */
   trace?: { agent: AgentName; promptVersion: string };
 }
@@ -173,6 +179,13 @@ export interface RunAgentOptions {
   workspaceId: string | null;
   gateway: AiGateway;
   signal?: AbortSignal;
+  /**
+   * Aperçu progressif (Stratège, Assistant) : reçoit les fragments du PREMIER appel seulement. Le nouvel essai éventuel
+   * (sortie invalide) n'est pas diffusé : l'aperçu déjà montré est remplacé par la sortie finale validée.
+   */
+  onText?: (delta: string) => void;
+  /** Appelé juste avant l'unique nouvel essai : l'aperçu déjà montré va être remplacé. */
+  onRetry?: () => void;
   /** Horloge injectable pour mesurer la durée (millisecondes) ; défaut `Date.now`. */
   clock?: () => number;
   /** Nécessaire seulement si l'agent a une clé propre (`keyRef`). */

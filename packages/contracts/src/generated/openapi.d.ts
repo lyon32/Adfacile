@@ -617,9 +617,12 @@ export interface paths {
          *     - `field` : `{ "path": "copy.headline", "value": "…" }`, un événement par champ terminé, dans l'ordre d'écriture.
          *       C'est un **aperçu non contractuel** : seul `done` fait foi ;
          *     - `done` : la `Proposal` complète, validée et enregistrée ;
+         *     - `retry` : le Stratège réécrit (sa première réponse était invalide) ; l'aperçu déjà reçu est remplacé par le `done` final ;
          *     - `error` : un Problem Details (même forme que les erreurs HTTP), puis le flux se ferme.
          *     Sans ce type, réponse JSON complète en `201`. Une erreur avant le début du flux est une réponse HTTP normale.
-         *     Si le client coupe la connexion, l'appel IA en cours est annulé et la proposition est marquée en échec.
+         *     Si le client coupe la connexion, la génération SE TERMINE et s'enregistre (rien n'est payé deux fois) : en rouvrant la
+         *     requête avec la même `Idempotency-Key`, le client reçoit `done` sans nouvel appel (reprise), ou `409` tant qu'elle est en cours.
+         *     Délai maximal d'une génération en flux : 100 secondes.
          */
         post: operations["generateProposal"];
         delete?: never;

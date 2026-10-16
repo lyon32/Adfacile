@@ -48,6 +48,30 @@ const successSchema = z.object({
     .optional(),
 });
 
+const LF = String.fromCharCode(10);
+const CR_END = new RegExp(`${String.fromCharCode(13)}$`);
+
+const usageSchema = z.object({
+  prompt_tokens: z.number().optional(),
+  completion_tokens: z.number().optional(),
+  cost: z.number().nullable().optional(),
+});
+
+const chunkSchema = z.object({
+  model: z.string().optional(),
+  error: z.object({ message: z.string().optional() }).optional(),
+  choices: z
+    .array(
+      z.object({
+        delta: z.object({ content: z.string().nullable().optional() }).optional(),
+        finish_reason: z.string().nullable().optional(),
+        error: z.object({ message: z.string().optional() }).optional(),
+      }),
+    )
+    .optional(),
+  usage: usageSchema.optional(),
+});
+
 const errorSchema = z.object({
   error: z.object({
     code: z.union([z.number(), z.string()]).optional(),
@@ -110,6 +134,9 @@ export class OpenRouterGateway implements AiGateway {
     }
 
     if (!response.ok) throw await this.failure(response);
+    if (request.onText !== undefined) {
+      return this.readStream(response, request, { timedOut: () => timeout.aborted });
+    }
 
     const json: unknown = await response.json().catch(() => null);
     const parsed = successSchema.safeParse(json);
@@ -160,11 +187,110 @@ export class OpenRouterGateway implements AiGateway {
       ...(request.fallbackModel === undefined
         ? { model: request.model }
         : { models: [request.model, request.fallbackModel] }),
+      ...(request.onText === undefined ? {} : { stream: true }),
       messages: request.messages,
       temperature: request.temperature,
       ...(request.maxOutputTokens === undefined ? {} : { max_tokens: request.maxOutputTokens }),
       response_format: responseFormat,
       ...(Object.keys(provider).length === 0 ? {} : { provider }),
+    };
+  }
+
+  /**
+   * Lecture du flux SSE (https://openrouter.ai/docs/api-reference/streaming) : lignes `data: {json}`, commentaires `: …`
+   * à ignorer, fin `data: [DONE]`, `usage` dans un dernier fragment, erreur en cours de route = fragment avec un champ
+   * `error` (le statut HTTP reste 200). Les fragments de texte sont transmis à `onText` ; la réponse rendue est complète.
+   */
+  private async readStream(
+    response: Response,
+    request: AiCompletionRequest,
+    state: { timedOut: () => boolean },
+  ): Promise<AiCompletion> {
+    const onText = request.onText;
+    if (response.body === null || onText === undefined) {
+      throw new AiGatewayError('bad_response', 'Flux de la passerelle absent');
+    }
+    const reader: ReadableStreamDefaultReader<Uint8Array> = response.body.getReader();
+    const decoder = new TextDecoder();
+    let pending = '';
+    let text = '';
+    let model: string | undefined;
+    let finish = null as string | null;
+    let usage: z.infer<typeof usageSchema> | undefined;
+
+    const handle = (line: string): boolean => {
+      // Commentaire SSE (« : OPENROUTER PROCESSING ») ou ligne vide : ignoré, sans JSON.parse.
+      if (line === '' || line.startsWith(':')) return false;
+      if (!line.startsWith('data:')) return false;
+      const payload = line.slice(5).trim();
+      if (payload === '[DONE]') return true;
+      let json: unknown;
+      try {
+        json = JSON.parse(payload);
+      } catch {
+        throw new AiGatewayError('bad_response', 'Fragment de flux illisible');
+      }
+      const chunk = chunkSchema.safeParse(json);
+      if (!chunk.success) throw new AiGatewayError('bad_response', 'Fragment de flux inattendu');
+      if (chunk.data.error !== undefined) {
+        throw new AiGatewayError(
+          'unavailable',
+          shorten(chunk.data.error.message ?? 'Erreur du modèle'),
+        );
+      }
+      model = chunk.data.model ?? model;
+      if (chunk.data.usage !== undefined) usage = chunk.data.usage;
+      const choice = chunk.data.choices?.[0];
+      if (choice?.error !== undefined) {
+        throw new AiGatewayError(
+          'unavailable',
+          shorten(choice.error.message ?? 'Erreur du modèle'),
+        );
+      }
+      if (typeof choice?.finish_reason === 'string') finish = choice.finish_reason;
+      const delta = choice?.delta?.content;
+      if (typeof delta === 'string' && delta !== '') {
+        text += delta;
+        onText(delta);
+      }
+      return false;
+    };
+
+    try {
+      let done = false;
+      while (!done) {
+        const read = await reader.read();
+        if (read.done) break;
+        pending += decoder.decode(read.value, { stream: true });
+        let newline = pending.indexOf(LF);
+        while (newline !== -1 && !done) {
+          done = handle(pending.slice(0, newline).replace(CR_END, ''));
+          pending = pending.slice(newline + 1);
+          newline = pending.indexOf(LF);
+        }
+      }
+      if (!done && pending.trim() !== '') handle(pending.trim());
+    } catch (cause) {
+      if (cause instanceof AiGatewayError) throw cause;
+      if (state.timedOut()) throw new AiGatewayError('timeout', 'Délai dépassé', { cause });
+      if (request.signal?.aborted === true) {
+        throw new AiGatewayError('timeout', 'Appel annulé', { cause });
+      }
+      throw new AiGatewayError('unavailable', 'Flux de la passerelle interrompu', { cause });
+    } finally {
+      reader.releaseLock();
+    }
+
+    if (finish === 'error')
+      throw new AiGatewayError('unavailable', 'Erreur du modèle en cours de route');
+    if (text.trim() === '') throw new AiGatewayError('bad_response', 'Réponse vide du modèle');
+    return {
+      text,
+      model: model ?? request.model,
+      tokensIn: usage?.prompt_tokens ?? null,
+      tokensOut: usage?.completion_tokens ?? null,
+      costUsd: usage?.cost ?? null,
+      finishReason: finish,
     };
   }
 
