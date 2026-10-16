@@ -1709,8 +1709,7 @@ components:
         optimization_goal: { type: [ string, 'null' ], enum: [ CONVERSATIONS, LINK_CLICKS, LANDING_PAGE_VIEWS, POST_ENGAGEMENT, REACH, OFFSITE_CONVERSIONS, null ] }
         geo: { $ref: '#/components/schemas/CampaignGeo' }
         targeting: { $ref: '#/components/schemas/CampaignTargeting' }
-        daily_budget: { oneOf: [ { $ref: '#/components/schemas/Money' }, { type: 'null' } ], description: "Budget par jour en FCFA et en dollars ; null tant qu'il n'est pas défini, ou si le taux de change manque." }
-        daily_budget_usd_cents: { type: [ integer, 'null' ], description: Budget par jour en centimes de dollar (la valeur qui fait foi) }
+        daily_budget_usd_cents: { type: [ integer, 'null' ], description: "Budget par jour en centimes de dollar (la valeur qui fait foi) ; l'équivalent en FCFA est dans cost.daily" }
         cost: { $ref: '#/components/schemas/CampaignCost' }
         vat_rate: { type: [ number, 'null' ], description: "Taux de TVA enregistré lors de la dernière écriture (fraction : 0,1925 = 19,25 %) ; null si la TVA du pays n'est pas configurée." }
         start_date: { type: [ string, 'null' ], format: date }
@@ -1774,6 +1773,7 @@ components:
         vat_usd_cents: { type: [ integer, 'null' ] }
         total_usd_cents: { type: [ integer, 'null' ] }
         total: { oneOf: [ { $ref: '#/components/schemas/Money' }, { type: 'null' } ], description: Total TVA comprise en FCFA et en dollars }
+        daily: { oneOf: [ { $ref: '#/components/schemas/Money' }, { type: 'null' } ], description: Budget par jour (hors TVA) en FCFA et en dollars }
         fx: { oneOf: [ { $ref: '#/components/schemas/FxRate' }, { type: 'null' } ] }
     CampaignUpdate:
       type: object
