@@ -14,8 +14,12 @@ import {
   strategeAgent,
   strategeInputSchema,
   strategeStoredSchema,
+  createFieldStream,
   prepareStrategeMessage,
+  previewSafe,
   runAgent,
+  strategeCopyContext,
+  type FieldEvent,
   type StrategeOutput,
 } from '@pubeka/agents';
 import { AppError, isErrorCode, type components, type ErrorCode } from '@pubeka/contracts';
@@ -338,30 +342,95 @@ async function settle(
   if (done.error !== null) throw db(done.error);
 }
 
-export async function generateProposal(
+/** Champs montrés en aperçu pendant l'écriture (jamais les signalements, le ciblage ni la consigne visuelle). */
+const PREVIEW_PATHS = [
+  /^objective$/,
+  /^objective_reason$/,
+  /^destination$/,
+  /^geo\.(countries\.\d+|cities\.\d+\.(name|radius_km)|reason)$/,
+  /^budget\.(daily_usd_cents|reason)$/,
+  /^schedule\.(start_date|end_date|reason)$/,
+  /^copy\.(primary_text|headline|description|cta|angle)$/,
+];
+
+export interface RunOptions {
+  /** Aperçu : un champ terminé, dans l'ordre d'écriture. Non contractuel : seule la proposition rendue fait foi. */
+  onField?: (event: FieldEvent) => void;
+  /** Le nouvel essai commence : l'aperçu déjà montré va être remplacé. */
+  onRetry?: () => void;
+  /** Annulation (délai maximal du flux). Une déconnexion du client n'annule PAS la génération (reprise possible). */
+  signal?: AbortSignal;
+}
+
+export type ProposalStart =
+  | { kind: 'replay'; proposal: ProposalView }
+  | { kind: 'run'; run: (options?: RunOptions) => Promise<ProposalView> };
+
+/**
+ * Première moitié de la génération : contrôles, réservation de la ligne (clé d'idempotence). Toute erreur ici (404, 409,
+ * 403, échec rejoué…) part AVANT le début d'un flux, en réponse HTTP normale. Une proposition déjà prête est rejouée
+ * sans aucun appel au modèle.
+ */
+export async function startProposal(
   ctx: MemberCtx,
   campaignId: string,
   options: GenerateOptions,
   deps: ProposalDeps,
-): Promise<ProposalView> {
+): Promise<ProposalStart> {
   assertRole(ctx, ['owner', 'editor']);
   assertWritable(ctx);
   const campaign = await loadCampaignRow(ctx, campaignId);
   if (campaign.status !== 'draft' || !campaign.editable) throw conflict('campaign_not_editable');
 
   const claimed = await claim(ctx, campaignId, options.idempotencyKey);
-  if (claimed.kind === 'existing') return replay(ctx, campaign, claimed.row, deps);
-
+  if (claimed.kind === 'existing') {
+    return { kind: 'replay', proposal: await replay(ctx, campaign, claimed.row, deps) };
+  }
   const row = claimed.row;
+  return {
+    kind: 'run',
+    run: (runOptions = {}) => execute(ctx, campaign, row, deps, { ...runOptions, ...options }),
+  };
+}
+
+export async function generateProposal(
+  ctx: MemberCtx,
+  campaignId: string,
+  options: GenerateOptions,
+  deps: ProposalDeps,
+): Promise<ProposalView> {
+  const started = await startProposal(ctx, campaignId, options, deps);
+  return started.kind === 'replay' ? started.proposal : started.run({});
+}
+
+async function execute(
+  ctx: MemberCtx,
+  campaign: CampaignRow,
+  row: ProposalRow,
+  deps: ProposalDeps,
+  options: RunOptions & GenerateOptions,
+): Promise<ProposalView> {
   try {
     // Quotas et crédits (S24) : après la réservation de la ligne, avant toute dépense.
-    await deps.beforeSpend?.(campaignId, ctx.workspace.id);
+    await deps.beforeSpend?.(campaign.id, ctx.workspace.id);
 
     const material = await gatherInput(ctx, campaign);
     const input = strategeInputSchema.parse(material.input);
     const config = await deps.configs.get('stratege');
     const definition = strategeAgent(config, input);
     const injection = prepareStrategeMessage(input).injectionSuspected;
+    const copyContext = strategeCopyContext(input);
+
+    // Aperçu : un champ n'est montré que s'il est complet, autorisé, et sans invention (R3) ; jamais enregistré.
+    const onField = options.onField;
+    const stream =
+      onField === undefined
+        ? undefined
+        : createFieldStream((event) => {
+            if (!PREVIEW_PATHS.some((p) => p.test(event.path))) return;
+            if (typeof event.value === 'string' && !previewSafe(event.value, copyContext)) return;
+            onField(event);
+          });
 
     let output: StrategeOutput;
     let runId: string | null;
@@ -371,6 +440,14 @@ export async function generateProposal(
         gateway: deps.gateway,
         ...(options.signal === undefined ? {} : { signal: options.signal }),
         ...(deps.keys === undefined ? {} : { keys: deps.keys }),
+        ...(stream === undefined
+          ? {}
+          : {
+              onText: (delta: string) => {
+                stream.push(delta);
+              },
+            }),
+        ...(options.onRetry === undefined ? {} : { onRetry: options.onRetry }),
       });
       output = result.output;
       runId = await journalAgentRun(ctx.svc, result.run, material.summary, ctx.workspace.id);
@@ -384,12 +461,8 @@ export async function generateProposal(
     const stored: StrategeOutput = injection
       ? { ...output, flags: [...new Set([...output.flags, 'PROMPT_INJECTION_SUSPECTED'])] }
       : output;
-    await deps.afterAccepted?.(campaignId, ctx.workspace.id, row.version);
-    await settle(ctx, row.id, {
-      status: 'ready',
-      proposal: stored,
-      agent_run_id: runId,
-    });
+    await deps.afterAccepted?.(campaign.id, ctx.workspace.id, row.version);
+    await settle(ctx, row.id, { status: 'ready', proposal: stored, agent_run_id: runId });
     const settled = await ctx.svc
       .from('campaign_proposals')
       .select(PROPOSAL_COLUMNS)

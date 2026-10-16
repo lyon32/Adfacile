@@ -165,3 +165,13 @@ export function checkCopy(out: CopyFields, context: CopyContext): Violation[] {
   }
   return violations;
 }
+
+/**
+ * Un fragment de texte peut-il être montré en aperçu ? Non s'il contient du HTML, un nombre ou une adresse qui ne sont dans
+ * aucune source (R3) : l'aperçu ne montre jamais une invention, même si la sortie finale sera de toute façon refusée.
+ */
+export function previewSafe(value: string, context: CopyContext): boolean {
+  if (HTML.test(value)) return false;
+  if (numbersIn(value).some((token) => !numberGrounded(token, context))) return false;
+  return (value.match(LINK) ?? []).every((link) => context.haystack.includes(link.toLowerCase()));
+}

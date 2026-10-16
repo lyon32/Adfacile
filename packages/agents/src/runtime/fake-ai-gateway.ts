@@ -29,6 +29,10 @@ export interface FakeAiGatewayOptions {
   dynamicFixtures?: Partial<Record<AgentName, (request: AiCompletionRequest) => unknown>>;
   /** Coût simulé par appel, en dollars. */
   costUsdPerCall?: number;
+  /** Affichage progressif : taille d'un fragment (caractères) quand la requête demande un flux ; 16 par défaut. */
+  chunkSize?: number;
+  /** Pause entre deux fragments (millisecondes) : simule la vitesse d'écriture d'un modèle. 0 par défaut. */
+  chunkDelayMs?: number;
 }
 
 /** Estimation grossière : 4 caractères par jeton, suffisante pour remplir le journal des tests. */
@@ -54,13 +58,24 @@ export class FakeAiGateway implements AiGateway {
     return this.queue.length;
   }
 
-  complete(request: AiCompletionRequest): Promise<AiCompletion> {
+  async complete(request: AiCompletionRequest): Promise<AiCompletion> {
     this.calls.push(request);
-    try {
-      return Promise.resolve(this.reply(request));
-    } catch (error) {
-      return Promise.reject(error instanceof Error ? error : new Error(String(error)));
+    const completion = this.reply(request);
+    if (request.onText === undefined) return completion;
+    // Flux : le texte final est servi par fragments, comme le ferait un modèle (aperçu non contractuel).
+    const size = Math.max(1, this.options.chunkSize ?? 16);
+    const delay = this.options.chunkDelayMs ?? 0;
+    for (let at = 0; at < completion.text.length; at += size) {
+      if (request.signal?.aborted === true) {
+        throw new AiGatewayError('timeout', 'FakeAiGateway : appel annulé');
+      }
+      if (delay > 0) await pause(delay, request.signal);
+      request.onText(completion.text.slice(at, at + size));
     }
+    if (request.signal?.aborted === true) {
+      throw new AiGatewayError('timeout', 'FakeAiGateway : appel annulé');
+    }
+    return completion;
   }
 
   private reply(request: AiCompletionRequest): AiCompletion {
@@ -94,4 +109,18 @@ export class FakeAiGateway implements AiGateway {
       'FakeAiGateway : aucune réponse programmée ni fixture pour cet appel',
     );
   }
+}
+
+function pause(ms: number, signal: AbortSignal | undefined): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timer);
+        resolve();
+      },
+      { once: true },
+    );
+  });
 }

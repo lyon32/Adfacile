@@ -182,7 +182,10 @@ export async function runAgent<I, O>(
     }
   }
 
-  const call = async (sent: ChatMessage[]): Promise<AiCompletion> => {
+  const call = async (
+    sent: ChatMessage[],
+    onText?: (delta: string) => void,
+  ): Promise<AiCompletion> => {
     let completion: AiCompletion;
     attempts += 1;
     try {
@@ -196,6 +199,7 @@ export async function runAgent<I, O>(
         ...(def.maxOutputTokens === undefined ? {} : { maxOutputTokens: def.maxOutputTokens }),
         responseFormat,
         ...(opts.signal === undefined ? {} : { signal: opts.signal }),
+        ...(onText === undefined ? {} : { onText }),
         trace: { agent: def.name, promptVersion: def.promptVersion },
       });
     } catch (cause) {
@@ -226,7 +230,7 @@ export async function runAgent<I, O>(
     return completion;
   };
 
-  const first = await call(messages);
+  const first = await call(messages, opts.onText);
   const firstCheck = validate(first.text, def.outputSchema);
   if (firstCheck.ok) {
     return { output: firstCheck.output, run: record(firstCheck.output, true, agentInput) };
@@ -248,6 +252,7 @@ export async function runAgent<I, O>(
 
   // Un seul nouvel essai. Il n'y a volontairement aucune boucle : un troisième appel est impossible.
   retried = true;
+  opts.onRetry?.();
   const second = await call(retryMessages(messages, first.text, firstCheck.problem));
   const secondCheck = validate(second.text, def.outputSchema);
   if (secondCheck.ok) {
