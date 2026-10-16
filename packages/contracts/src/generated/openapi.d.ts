@@ -585,7 +585,7 @@ export interface paths {
          * Modifier un brouillon, ou une campagne publiée (renvoyée à Meta, peut relancer une vérification)
          * @description `version` est obligatoire (EC-TEAM-08). Version périmée : `409 conflict` avec `meta.current_version`, rien n'est modifié.
          *     S15 ne modifie que les brouillons (`draft`) ; la modification d'une campagne publiée arrive avec S16. Chaque champ
-         *     est revalidé par le serveur (budget 100 à 1 000 000 centimes, dates, textes) ; le coût est recalculé.
+         *     est revalidé par le serveur (budget 100 à 1 000 000 centimes, dates, textes) ; le coût est recalculé. `copy` et `targeting` sont fusionnés champ par champ ; `geo` et `targeting.interests` sont remplacés en entier.
          */
         patch: operations["updateCampaign"];
         trace?: never;
@@ -1965,6 +1965,7 @@ export interface components {
             destination?: "WHATSAPP" | "MESSENGER" | "INSTAGRAM_DIRECT" | "WEBSITE" | "APP" | "ON_POST" | "NONE";
             geo?: components["schemas"]["CampaignGeo"];
             targeting?: components["schemas"]["CampaignTargeting"];
+            /** @description Centimes de dollar. Sous 100 (1 $) : 422 budget_too_low ; au-dessus de 1 000 000 : 400. */
             daily_budget_usd_cents?: number;
             /** Format: date */
             start_date?: string;

@@ -42,3 +42,8 @@ export * from './analysis/answers';
 export * from './campaigns/campaign-state';
 export * from './campaigns/cost';
 export * from './campaigns/cost-context';
+export * from './campaigns/campaign-fields';
+export * from './campaigns/campaign-schemas';
+export * from './campaigns/campaign-view';
+export * from './campaigns/create-draft';
+export * from './campaigns/update-campaign';
