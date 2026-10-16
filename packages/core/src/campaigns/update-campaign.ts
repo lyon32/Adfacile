@@ -53,18 +53,6 @@ function conflict(current: number, reason: string): AppError {
   return new AppError('conflict', { meta: { current_version: current, reason } });
 }
 
-function dedupeInterests(
-  list: NonNullable<Targeting['interests']>,
-): NonNullable<Targeting['interests']> {
-  const seen = new Set<string>();
-  return list.filter((item) => {
-    const key = item.name.toLocaleLowerCase('fr');
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
 async function assertPixelBelongs(
   ctx: MemberCtx,
   row: CampaignRow,
@@ -124,9 +112,6 @@ export async function updateCampaign(
   const currentTargeting = readJson(targetingSchema, row.targeting, {});
   const mergedCopy: AdCopy = { ...currentCopy, ...patch.copy };
   const mergedTargeting: Targeting = { ...currentTargeting, ...patch.targeting };
-  if (patch.targeting?.interests !== undefined) {
-    mergedTargeting.interests = dedupeInterests(patch.targeting.interests);
-  }
   const mergedGeo: Geo = patch.geo ?? readJson(geoSchema, row.geo, {});
   const budget = patch.daily_budget_usd_cents ?? row.daily_budget_usd_cents;
   const startDate = patch.start_date ?? row.start_date;

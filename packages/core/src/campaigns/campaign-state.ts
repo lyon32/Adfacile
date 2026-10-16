@@ -5,11 +5,10 @@
 // Les statuts de publication et de diffusion sont posés par S16 et S17 ; la table est complète dès S15 pour qu'il n'y ait
 // jamais deux endroits où l'on décide d'une transition.
 //
-// Écarts entre documents, tranchés ainsi (à confirmer par la personne, voir le rapport de S15) :
-//  - LLD §6.8 : `stopped: []` (terminal) ; APPFLOW §11.2 : « Arrêtée → En diffusion : paiement corrigé ». On suit APPFLOW
-//    (événement `recover`), parce que la pastille « Arrêtée » invite à corriger le paiement.
-//  - APPFLOW : « Refusée → Vérification » ; LLD : `rejected → publishing`. On suit LLD (la republication passe par
-//    `publishing`, puis `sent`).
+// Décisions de la personne (16/10/2026), qui font foi sur les documents :
+//  - `stopped → active` par `recover` : quand Meta arrête une campagne pour un paiement, le client alimente ses fonds
+//    publicitaires chez Meta puis la campagne repart (APPFLOW §11.2). S17 déclenchera `recover` quand Meta l'indique.
+//  - `rejected → publishing` (LLD) : une campagne refusée repart vers « Publication », puis `sent`.
 export const CAMPAIGN_STATUSES = [
   'draft',
   'publishing',

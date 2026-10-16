@@ -207,7 +207,6 @@ describeRoute('updateCampaign', {
       targeting: {
         age_min: 18,
         age_max: 45,
-        interests: [{ name: 'Mode' }, { name: 'mode' }, { name: 'Sport' }],
       },
     });
     expect(res.status).toBe(200);
@@ -218,7 +217,7 @@ describeRoute('updateCampaign', {
       objective: 'OUTCOME_ENGAGEMENT',
       daily_budget_usd_cents: 500,
     });
-    expect(updated.targeting.interests).toEqual([{ name: 'Mode' }, { name: 'Sport' }]);
+    expect(updated.targeting).toMatchObject({ age_min: 18, age_max: 45 });
     // Coût : 7 jours × 500 centimes, TVA d'essai du Cameroun, change lu en base.
     const fx = (
       await testServiceClient()
@@ -399,6 +398,17 @@ describeRoute('updateCampaign', {
           end_date: inDays(2),
         });
         expect(oneDay.status).toBe(400);
+      },
+    'DÉCISION 16/10/2026 : les centres d’intérêt ne font plus partie du contrat (ciblage automatique d’abord) : 400':
+      async () => {
+        const draft = await newDraft(s);
+        const res = await patch(s, s.owner, draft.id, {
+          version: 1,
+          targeting: { interests: [{ name: 'Mode' }] },
+        });
+        expect(res.status).toBe(400);
+        const after = await asBody(await read(s, s.owner, draft.id));
+        expect(after.version).toBe(1);
       },
     'textes : trop longs, HTML, objectif et destination incompatibles : 400': async () => {
       const draft = await newDraft(s);

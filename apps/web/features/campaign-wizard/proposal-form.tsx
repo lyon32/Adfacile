@@ -9,7 +9,6 @@ import { useState, type ReactNode } from 'react';
 import { CTAS, OBJECTIVES, OBJECTIVE_DESTINATIONS } from './proposal-api';
 import {
   LIMITS,
-  MAX_INTERESTS,
   codePointLength,
   estimateXaf,
   parseUsdInput,
@@ -77,7 +76,6 @@ export function ProposalForm({
   const ui: UiLocale = locale === 'en' ? 'en' : 'fr';
   const [form, setForm] = useState<EditForm>(initial);
   const [showErrors, setShowErrors] = useState(false);
-  const [newInterest, setNewInterest] = useState('');
 
   const errors: FormErrors = validateForm(form, today);
   const shown = (field: string): string | undefined => {
@@ -96,19 +94,6 @@ export function ProposalForm({
     setShowErrors(true);
     if (Object.keys(errors).length > 0) return;
     onSubmit(form);
-  }
-
-  function addInterest(): void {
-    const name = newInterest.trim();
-    if (
-      name === '' ||
-      form.interests.some((i) => i.toLocaleLowerCase(locale) === name.toLocaleLowerCase(locale))
-    ) {
-      setNewInterest('');
-      return;
-    }
-    set('interests', [...form.interests, name]);
-    setNewInterest('');
   }
 
   return (
@@ -320,64 +305,6 @@ export function ProposalForm({
             </option>
           ))}
         </select>
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <p className="tracking-eyebrow text-muted text-xs font-bold uppercase">
-          {t('form.interests')}
-        </p>
-        <p className="text-meta text-muted">{t('form.interests_hint')}</p>
-        {form.interests.length === 0 ? null : (
-          <ul className="flex flex-wrap gap-2">
-            {form.interests.map((name) => (
-              <li
-                key={name}
-                className="border-line flex items-center gap-1 rounded-md border py-1 pr-1 pl-3 text-sm"
-              >
-                {name}
-                <button
-                  type="button"
-                  aria-label={t('actions.remove_interest', { name })}
-                  onClick={() => {
-                    set(
-                      'interests',
-                      form.interests.filter((i) => i !== name),
-                    );
-                  }}
-                  className="grid size-8 place-items-center rounded-md"
-                >
-                  <X aria-hidden="true" className="size-4" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {form.interests.length >= MAX_INTERESTS ? (
-          <p role="alert" className="text-meta text-error font-semibold">
-            {t('errors.interests_too_many')}
-          </p>
-        ) : (
-          <div className="grid grid-cols-[1fr_auto] items-start gap-2">
-            <Field
-              className="min-w-0"
-              label={t('form.interest_label')}
-              value={newInterest}
-              maxLength={80}
-              onChange={(event) => {
-                setNewInterest(event.target.value);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  addInterest();
-                }
-              }}
-            />
-            <Button type="button" variant="quiet" className="mt-0" onClick={addInterest}>
-              {t('actions.add_interest')}
-            </Button>
-          </div>
-        )}
       </div>
 
       <div aria-live="polite" className="flex flex-col gap-3">

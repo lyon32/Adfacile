@@ -129,16 +129,16 @@ describe('getCampaign', () => {
 });
 
 describe('updateCampaign', () => {
-  it('fusionne copy et targeting, remplace geo, dédoublonne les intérêts, augmente la version, enregistre TVA et change', async () => {
+  it('fusionne copy et targeting, remplace geo, augmente la version, enregistre TVA et change', async () => {
     const { ctx, db } = world();
     const id = addDraft(db, {
       copy: { primary_text: 'Ancien texte', headline: 'Ancien titre' },
-      targeting: { age_min: 20, age_max: 40, interests: [{ name: 'Sport' }] },
+      targeting: { age_min: 20, age_max: 40 },
     });
     const view = await updateCampaign(ctx, id, {
       version: 1,
       copy: { headline: 'Nouveau titre' },
-      targeting: { age_max: 50, interests: [{ name: 'Mode' }, { name: 'MODE' }] },
+      targeting: { age_max: 50 },
       geo: { countries: ['CM'], cities: [{ name: 'Douala', radius_km: 10 }] },
       daily_budget_usd_cents: 500,
       start_date: '2026-10-13',
@@ -154,7 +154,7 @@ describe('updateCampaign', () => {
       name: 'Ma pub',
       ab_test: true,
       copy: { primary_text: 'Ancien texte', headline: 'Nouveau titre' },
-      targeting: { age_min: 20, age_max: 50, interests: [{ name: 'Mode' }] },
+      targeting: { age_min: 20, age_max: 50 },
       tracking: { pixel_id: '123456789012' },
     });
     expect(db.rows('campaigns')[0]).toMatchObject({

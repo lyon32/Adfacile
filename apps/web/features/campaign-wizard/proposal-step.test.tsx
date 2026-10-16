@@ -463,6 +463,18 @@ describe('étape Proposition', () => {
     expect(screen.getByText(/Budget hors TVA/)).toBeTruthy();
   });
 
+  it('DÉCISION 16/10/2026 : aucune estimation de portée n’est affichée (elle viendra de Meta avec la publication)', async () => {
+    stubApi({
+      [CAMPAIGN_GET]: json(campaign()),
+      [PROPOSALS]: json({ data: [proposal(1, COST_OK)] }),
+    });
+    mount();
+    await screen.findByText('Messages ou interactions');
+    expect(screen.queryByText(/personnes touchées/i)).toBeNull();
+    expect(screen.queryByText(/estimation de portée/i)).toBeNull();
+    expect(screen.queryByText(/portée estimée/i)).toBeNull();
+  });
+
   it('proposition complète : fiche lisible, justifications, coût FCFA avec dollars dessous', async () => {
     stubApi({
       [CAMPAIGN_GET]: json(campaign()),
@@ -732,19 +744,15 @@ describe('modification', () => {
     });
   });
 
-  it('villes et centres d’intérêt : ajout, retrait, doublon ignoré', async () => {
+  it('villes : ajout et retrait ; AUCUN champ de centres d’intérêt (ciblage automatique d’abord)', async () => {
     const calls = setup(json(chosenCampaign({ version: 3 })));
     mount();
     fireEvent.click(await screen.findByRole('button', { name: 'Modifier' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Ajouter une ville' }));
     const cityNames = screen.getAllByLabelText('Ville');
     fireEvent.change(cityNames[1]!, { target: { value: 'Yaoundé' } });
-    const interest = screen.getByLabelText('Centre d’intérêt');
-    fireEvent.change(interest, { target: { value: 'Sport' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Ajouter' }));
-    fireEvent.change(screen.getByLabelText('Centre d’intérêt'), { target: { value: 'sport' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Ajouter' }));
-    expect(screen.getAllByText('Sport')).toHaveLength(1);
+    expect(screen.queryByLabelText('Centre d’intérêt')).toBeNull();
+    expect(screen.queryByText('Centres d’intérêt')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Retirer Douala' }));
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer mes modifications' }));
     await waitFor(() => {
@@ -752,8 +760,8 @@ describe('modification', () => {
     });
     expect(calls.find((c) => c.method === 'PATCH')?.body).toMatchObject({
       geo: { cities: [{ name: 'Yaoundé', radius_km: 10 }] },
-      targeting: { interests: [{ name: 'Sport' }] },
     });
+    expect(calls.find((c) => c.method === 'PATCH')?.body).not.toHaveProperty('targeting');
   });
 
   it('[Annuler] referme sans rien envoyer', async () => {

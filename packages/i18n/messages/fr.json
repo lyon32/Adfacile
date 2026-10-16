@@ -726,8 +726,7 @@
           "text": "Texte",
           "headline": "Titre",
           "description": "Description",
-          "button": "Bouton",
-          "interests": "Centres d’intérêt"
+          "button": "Bouton"
         },
         "objectives": {
           "OUTCOME_ENGAGEMENT": "Messages ou interactions",
@@ -790,8 +789,6 @@
           "retry": "Réessayer",
           "add_city": "Ajouter une ville",
           "remove_city": "Retirer {name}",
-          "add_interest": "Ajouter",
-          "remove_interest": "Retirer {name}",
           "generate_first": "Générer la proposition"
         },
         "form": {
@@ -810,10 +807,7 @@
           "counter": "{count} / {max}",
           "city_name": "Ville",
           "city_radius": "Rayon (km)",
-          "interest_label": "Centre d’intérêt",
-          "interests_hint": "Facultatif. Meta les relie à ses propres catégories à la publication.",
           "zone": "Zone",
-          "interests": "Centres d’intérêt",
           "replace_warning": "Retenir une autre proposition remplace tes modifications."
         },
         "errors": {
@@ -834,7 +828,6 @@
           "city_name": "Écris le nom de la ville.",
           "city_radius": "Un rayon entre 1 et 80 km.",
           "destination_mismatch": "Cette destination ne correspond pas à l’objectif.",
-          "interests_too_many": "15 centres d’intérêt au maximum.",
           "server_validation": "Le serveur a refusé une valeur. Vérifie les champs et réessaie.",
           "stream_failed": "La proposition n’a pas pu être écrite. Rien n’est retenu et rien n’est perdu.",
           "stream_ended": "La connexion s’est coupée avant la fin. Réessaie : on reprend la même proposition, sans doublon.",

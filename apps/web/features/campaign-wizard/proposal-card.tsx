@@ -161,17 +161,6 @@ export function ProposalCard({
           </span>
         )}
       </Row>
-      {d.interests.length === 0 ? null : (
-        <Row label={t('labels.interests')} pending={false} empty={false}>
-          <ul className="flex flex-wrap gap-2">
-            {d.interests.map((name) => (
-              <li key={name} className="border-line rounded-md border px-3 py-1 text-sm">
-                {name}
-              </li>
-            ))}
-          </ul>
-        </Row>
-      )}
     </dl>
   );
 }

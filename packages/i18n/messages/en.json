@@ -726,8 +726,7 @@
           "text": "Text",
           "headline": "Headline",
           "description": "Description",
-          "button": "Button",
-          "interests": "Interests"
+          "button": "Button"
         },
         "objectives": {
           "OUTCOME_ENGAGEMENT": "Messages or engagement",
@@ -790,8 +789,6 @@
           "retry": "Try again",
           "add_city": "Add a city",
           "remove_city": "Remove {name}",
-          "add_interest": "Add",
-          "remove_interest": "Remove {name}",
           "generate_first": "Generate the proposal"
         },
         "form": {
@@ -810,10 +807,7 @@
           "counter": "{count} / {max}",
           "city_name": "City",
           "city_radius": "Radius (km)",
-          "interest_label": "Interest",
-          "interests_hint": "Optional. Meta maps them to its own categories at publishing.",
           "zone": "Area",
-          "interests": "Interests",
           "replace_warning": "Selecting another proposal replaces your changes."
         },
         "errors": {
@@ -834,7 +828,6 @@
           "city_name": "Enter the city name.",
           "city_radius": "A radius between 1 and 80 km.",
           "destination_mismatch": "This destination does not match the goal.",
-          "interests_too_many": "15 interests at most.",
           "server_validation": "The server rejected a value. Check the fields and try again.",
           "stream_failed": "The proposal could not be written. Nothing is selected and nothing is lost.",
           "stream_ended": "The connection dropped before the end. Try again: we pick up the same proposal, with no duplicate.",

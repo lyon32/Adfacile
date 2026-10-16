@@ -183,7 +183,7 @@ Les modèles d'IA (Claude, Gemini, OpenAI, Mistral, Kimi…) seront **choisis pa
 Chaque objectif a une description courte et compréhensible dans l'interface.
 
 ### 7.2 Ciblage
-Advantage+ (ciblage automatique de Meta) par défaut. Seule la **zone géographique** est visible et modifiable. Âge, sexe et langue sont gérés en paramètres avancés et repliés.
+Advantage+ (ciblage automatique de Meta) par défaut. Seule la **zone géographique** est visible et modifiable. Décision du 16/10/2026 : pas de saisie de centres d'intérêt pour l'instant (une saisie sans effet tromperait l'utilisateur) ; les intérêts proposés par l'IA viendront plus tard (voir ROADMAP, « À planifier »). Âge, sexe et langue sont gérés en paramètres avancés et repliés.
 
 ### 7.3 Pixel / ensemble de données
 - Question posée : « As-tu un pixel Meta sur ton site ? »

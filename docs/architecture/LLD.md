@@ -513,9 +513,12 @@ const CAMPAIGN_TRANSITIONS = {
   paused:     ['active', 'ended', 'stopped'],
   rejected:   ['publishing', 'stopped'],                     // republication après correction
   error:      ['publishing', 'draft'],
-  ended: [], stopped: [],
+  ended:      [],
+  stopped:    ['active'],                                    // `recover` : le client relance après avoir payé chez Meta
 } as const satisfies Record<CampaignStatus, readonly CampaignStatus[]>;
 ```
+
+Table finale : **18 transitions** sur 9 états × 12 événements (108 paires, 90 interdites), répétées dans le déclencheur SQL `private.guard_campaign_status`. Décisions du 16/10/2026 : `stopped → active` existe (événement `recover`), déclenché par la **relance du client** (route `relaunch`, S16) après qu'il a réglé sa facture ou alimenté ses fonds chez Meta ; ce n'est pas une détection automatique, S17 se borne à afficher l'état arrêté et à guider le client. `rejected → publishing` : une campagne refusée repart vers « Publication ».
 
 `publishCampaign`, dans l'ordre :
 1. Contrôles : rôle, espace modifiable, Page active dans la formule, connexion Meta valide, responsabilité acceptée (première fois).

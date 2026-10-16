@@ -86,9 +86,6 @@ const TargetingSchema = z.object({
   age_max: z.number().optional(),
   genders: z.enum(['all', 'male', 'female']).optional(),
   advantage_plus: z.boolean().optional(),
-  interests: z
-    .array(z.object({ name: z.string(), id: z.string().nullable().optional() }))
-    .optional(),
 });
 
 export const CampaignSchema = z.object({
@@ -212,7 +209,6 @@ export interface CampaignPatchBody {
     cta?: (typeof CTAS)[number];
   };
   geo?: { countries?: string[]; cities?: { name: string; radius_km: number }[] };
-  targeting?: { interests?: { name: string }[] };
 }
 
 /** Modification avec `version` (EC-TEAM-08) : une version périmée donne `409 conflict` avec `meta.current_version`. */
