@@ -26,9 +26,9 @@ export function CostPanel({ cost }: { cost: Cost }): ReactNode {
 
   return (
     <section aria-labelledby="cost-title" className="border-line flex flex-col gap-3 border-t pt-5">
-      <h3 id="cost-title" className="tracking-eyebrow text-muted text-xs font-bold uppercase">
+      <h2 id="cost-title" className="tracking-eyebrow text-muted text-xs font-bold uppercase">
         {t('title')}
-      </h3>
+      </h2>
 
       {cost.status === 'incomplete' ? <p className="text-muted">{t('incomplete')}</p> : null}
 

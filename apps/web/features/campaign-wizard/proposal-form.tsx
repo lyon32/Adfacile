@@ -171,6 +171,7 @@ export function ProposalForm({
         {form.cities.map((city, index) => (
           <div key={index} className="grid grid-cols-[1fr_6rem_auto] items-start gap-2">
             <Field
+              className="min-w-0"
               label={t('form.city_name')}
               value={city.name}
               maxLength={100}
@@ -183,6 +184,7 @@ export function ProposalForm({
               }}
             />
             <Field
+              className="min-w-0"
               label={t('form.city_radius')}
               value={city.radius}
               inputMode="numeric"
@@ -358,6 +360,7 @@ export function ProposalForm({
         ) : (
           <div className="grid grid-cols-[1fr_auto] items-start gap-2">
             <Field
+              className="min-w-0"
               label={t('form.interest_label')}
               value={newInterest}
               maxLength={80}
