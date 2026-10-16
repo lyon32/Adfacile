@@ -269,6 +269,46 @@ describe('readSource : EC-SRC-04, publication qui exige d’être connecté', ()
     expect(fallback.urls).toEqual([]);
   });
 
+  it('EC-SRC-04 : un lien raccourci qui redirige vers Instagram ou Facebook n’est ni suivi jusqu’au bout ni envoyé à Jina', async () => {
+    for (const target of [
+      'https://www.instagram.com/p/ABC/',
+      'https://m.facebook.com/x/posts/1',
+      'https://x.com/a/status/1',
+    ]) {
+      const hosts: string[] = [];
+      const transport: Transport = (request) => {
+        hosts.push(request.url.hostname);
+        return Promise.resolve(page(302, '', { location: target }));
+      };
+      const fallback = jina(LONG_TEXT);
+      const result = await readSource(web('https://bit.example.com/abc'), OPTIONS, {
+        resolve,
+        transport,
+        jina: fallback,
+      });
+      expect(result).toMatchObject({ status: 'unreadable', reason: 'login_required' });
+      expect(hosts).toEqual(['bit.example.com']); // aucune connexion à l’hôte de destination
+      expect(fallback.urls).toEqual([]);
+    }
+  });
+
+  it('un raccourci vers un site ordinaire est suivi normalement', async () => {
+    let calls = 0;
+    const transport: Transport = () => {
+      calls += 1;
+      return Promise.resolve(
+        calls === 1
+          ? page(302, '', { location: 'https://boutique.example.cm/' })
+          : page(200, `<p>${LONG_TEXT}</p>`),
+      );
+    };
+    const result = await readSource(web('https://bit.example.com/abc'), OPTIONS, {
+      resolve,
+      transport,
+    });
+    expect(result).toMatchObject({ status: 'ok', extractor: 'internal' });
+  });
+
   it('un site dont le nom ressemble seulement à Facebook est lu normalement', async () => {
     const { transport } = site(() => page(200, `<p>${LONG_TEXT}</p>`));
     const result = await readSource(web('https://notfacebook.com/'), OPTIONS, {

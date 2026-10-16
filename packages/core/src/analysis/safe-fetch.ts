@@ -23,6 +23,11 @@ export interface SafeFetchOptions {
   maxRedirects?: number;
   resolve?: DnsResolver;
   transport?: Transport;
+  /**
+   * Refuse de se connecter à un hôte atteint par REDIRECTION (ex. un lien raccourci qui mène à instagram.com) : la lecture
+   * s'arrête avant toute connexion, `source_unreadable` (motif `login_required`).
+   */
+  skipRedirectedHost?: (hostname: string) => boolean;
 }
 
 export interface SafeFetchResult {
@@ -112,6 +117,9 @@ export async function safeFetch(raw: string, options: SafeFetchOptions): Promise
   for (let hop = 0; ; hop += 1) {
     // Chaque saut, y compris le premier, est validé avant toute connexion (EC-SRC-01).
     const target: PublicTarget = await within(resolvePublicTarget(current, resolve), signal);
+    if (hop > 0 && options.skipRedirectedHost?.(target.url.hostname) === true) {
+      throw unreadable('login_required');
+    }
     const address = target.addresses[0];
     if (address === undefined) throw unreadable('no_address');
 
