@@ -656,6 +656,11 @@ paths:
       description: |
         Copie les champs de la proposition dans le brouillon et note la version retenue. Le serveur revalide tout (budget,
         dates, textes) : une proposition devenue invalide (date passée…) est refusée en `400 validation_failed` avec le champ en cause. Seul un brouillon peut en recevoir une.
+        Le corps porte la `version` du brouillon lue par le client : si le brouillon a changé depuis, `409 conflict` avec
+        `meta.current_version` et rien n'est écrasé.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: false, required: [ version ], properties: { version: { type: integer, minimum: 1, description: 'Version du brouillon lue par le client' } } } } }
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }

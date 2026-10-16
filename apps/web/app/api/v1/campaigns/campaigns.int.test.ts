@@ -374,6 +374,32 @@ describeRoute('updateCampaign', {
         code: 'too_large',
       });
     },
+    'durée : 365 jours début et fin compris acceptés, 366 et un seul jour refusés (SECURITY_NOTES §3.2)':
+      async () => {
+        const draft = await newDraft(s);
+        const full = await patch(s, s.owner, draft.id, {
+          version: 1,
+          start_date: inDays(2),
+          end_date: inDays(2 + 364),
+        });
+        expect(full.status).toBe(200);
+        const tooLong = await patch(s, s.owner, draft.id, {
+          version: 2,
+          start_date: inDays(2),
+          end_date: inDays(2 + 365),
+        });
+        expect(tooLong.status).toBe(400);
+        expect((await problemOf(tooLong)).errors?.[0]).toMatchObject({
+          field: 'end_date',
+          code: 'too_large',
+        });
+        const oneDay = await patch(s, s.owner, draft.id, {
+          version: 2,
+          start_date: inDays(2),
+          end_date: inDays(2),
+        });
+        expect(oneDay.status).toBe(400);
+      },
     'textes : trop longs, HTML, objectif et destination incompatibles : 400': async () => {
       const draft = await newDraft(s);
       const long = await patch(s, s.owner, draft.id, {

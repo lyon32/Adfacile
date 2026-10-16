@@ -648,6 +648,8 @@ export interface paths {
          * Retenir une proposition (copiée dans la campagne)
          * @description Copie les champs de la proposition dans le brouillon et note la version retenue. Le serveur revalide tout (budget,
          *     dates, textes) : une proposition devenue invalide (date passée…) est refusée en `400 validation_failed` avec le champ en cause. Seul un brouillon peut en recevoir une.
+         *     Le corps porte la `version` du brouillon lue par le client : si le brouillon a changé depuis, `409 conflict` avec
+         *     `meta.current_version` et rien n'est écrasé.
          */
         post: operations["chooseProposal"];
         delete?: never;
@@ -3515,8 +3517,11 @@ export interface operations {
                 "application/json": {
                     /** Format: uuid */
                     analysis_id: string;
-                    /** Format: uuid */
-                    page_id: string;
+                    /**
+                     * Format: uuid
+                     * @description Absente tant que Meta n'est pas connecté : on peut préparer la campagne sans publier (APPFLOW §8.0).
+                     */
+                    page_id?: string;
                     /** @enum {string} */
                     platform: "meta";
                 };
@@ -3679,7 +3684,14 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Version du brouillon lue par le client */
+                    version: number;
+                };
+            };
+        };
         responses: {
             /** @description OK */
             200: {

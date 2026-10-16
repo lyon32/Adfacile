@@ -476,7 +476,7 @@ describe('chooseProposal', () => {
     const { ctx, db } = world();
     const id = addDraft(db, { targeting: { interests: [{ name: 'Mode' }] } });
     withProposal(db, id);
-    const view = await chooseProposal(ctx, id, 1);
+    const view = await chooseProposal(ctx, id, 1, 1);
     expect(view).toMatchObject({
       chosen_proposal_version: 1,
       version: 2,
@@ -496,21 +496,21 @@ describe('chooseProposal', () => {
     const id = addDraft(db);
     withProposal(db, id, validOutput(), 1);
     withProposal(db, id, validOutput(), 2);
-    await chooseProposal(ctx, id, 1);
-    await chooseProposal(ctx, id, 2);
+    await chooseProposal(ctx, id, 1, 1);
+    await chooseProposal(ctx, id, 2, 2);
     expect(db.rows('campaign_proposals').map((p) => p.chosen)).toEqual([false, true]);
   });
   it('visual_brief vide : enregistré à null', async () => {
     const { ctx, db } = world();
     const id = addDraft(db);
     withProposal(db, id, validOutput({ visual_brief: '' }));
-    await chooseProposal(ctx, id, 1);
+    await chooseProposal(ctx, id, 1, 1);
     expect(db.rows('campaigns')[0]?.visual_brief).toBeNull();
   });
   it('introuvable, en échec, illisible : 404, 404, 409', async () => {
     const { ctx, db } = world();
     const id = addDraft(db);
-    expect(await code(chooseProposal(ctx, id, 1))).toBe('not_found');
+    expect(await code(chooseProposal(ctx, id, 1, 1))).toBe('not_found');
     db.rows('campaign_proposals').push({
       id: 'f',
       campaign_id: id,
@@ -519,7 +519,7 @@ describe('chooseProposal', () => {
       status: 'failed',
       proposal: {},
     });
-    expect(await code(chooseProposal(ctx, id, 1))).toBe('not_found');
+    expect(await code(chooseProposal(ctx, id, 1, 1))).toBe('not_found');
     db.rows('campaign_proposals').push({
       id: 'g',
       campaign_id: id,
@@ -528,7 +528,7 @@ describe('chooseProposal', () => {
       status: 'ready',
       proposal: { x: 1 },
     });
-    expect(await code(chooseProposal(ctx, id, 2))).toBe('conflict');
+    expect(await code(chooseProposal(ctx, id, 2, 1))).toBe('conflict');
   });
   it('dates passées dans la proposition : 400 validation_failed, le brouillon est intact', async () => {
     const { ctx, db } = world();
@@ -538,21 +538,40 @@ describe('chooseProposal', () => {
       id,
       validOutput({ schedule: { start_date: '2020-01-01', end_date: '2020-01-07', reason: '' } }),
     );
-    expect(await code(chooseProposal(ctx, id, 1))).toBe('validation_failed');
+    expect(await code(chooseProposal(ctx, id, 1, 1))).toBe('validation_failed');
     expect(db.rows('campaigns')[0]).toMatchObject({ version: 1, objective: null });
   });
   it('refus : viewer, lecture seule, non-brouillon', async () => {
     const id = addDraft(world().db);
-    expect(await code(chooseProposal(world({ role: 'viewer' }).ctx, id, 1))).toBe(
+    expect(await code(chooseProposal(world({ role: 'viewer' }).ctx, id, 1, 1))).toBe(
       'role_insufficient',
     );
-    expect(await code(chooseProposal(world({ access: 'read_only' }).ctx, id, 1))).toBe(
+    expect(await code(chooseProposal(world({ access: 'read_only' }).ctx, id, 1, 1))).toBe(
       'workspace_read_only',
     );
     const w = world();
-    expect(await code(chooseProposal(w.ctx, addDraft(w.db, { status: 'active' }), 1))).toBe(
+    expect(await code(chooseProposal(w.ctx, addDraft(w.db, { status: 'active' }), 1, 1))).toBe(
       'conflict',
     );
+  });
+  it('version du brouillon périmée côté client : 409 avec la version actuelle, rien n’est écrasé (EC-TEAM-08)', async () => {
+    const { ctx, db } = world();
+    const id = addDraft(db);
+    withProposal(db, id);
+    db.rows('campaigns')[0]!.version = 3;
+    await expect(chooseProposal(ctx, id, 1, 1)).rejects.toMatchObject({
+      code: 'conflict',
+      opts: { meta: { current_version: 3, reason: 'stale_version' } },
+    });
+    expect(db.rows('campaigns')[0]).toMatchObject({ version: 3, objective: null });
+    expect(db.rows('campaign_proposals')[0]?.chosen).not.toBe(true);
+  });
+  it('version à jour fournie par le client : le choix passe et la version augmente', async () => {
+    const { ctx, db } = world();
+    const id = addDraft(db);
+    withProposal(db, id);
+    db.rows('campaigns')[0]!.version = 3;
+    expect(await chooseProposal(ctx, id, 1, 3)).toMatchObject({ version: 4 });
   });
   it('modification concurrente du brouillon pendant le choix : 409, rien n’est écrasé', async () => {
     const { ctx, db } = world();
@@ -563,7 +582,7 @@ describe('chooseProposal', () => {
       memory.beforeUpdate = undefined;
       memory.rows('campaigns')[0]!.version = 5;
     };
-    await expect(chooseProposal(ctx, id, 1)).rejects.toMatchObject({
+    await expect(chooseProposal(ctx, id, 1, 1)).rejects.toMatchObject({
       code: 'conflict',
       opts: { meta: { current_version: 5, reason: 'stale_version' } },
     });
@@ -575,8 +594,180 @@ describe('chooseProposal', () => {
     const id = addDraft(db);
     withProposal(db, id);
     db.failNext.add('campaigns:update');
-    expect(await code(chooseProposal(ctx, id, 1))).toBe('internal_error');
+    expect(await code(chooseProposal(ctx, id, 1, 1))).toBe('internal_error');
     db.failNext.add('campaign_proposals:select');
-    expect(await code(chooseProposal(ctx, id, 1))).toBe('internal_error');
+    expect(await code(chooseProposal(ctx, id, 1, 1))).toBe('internal_error');
+  });
+});
+
+describe('ordre des points d’accroche de dépense (S24) et libération', () => {
+  function hooks(log: string[]) {
+    return {
+      beforeSpend: () => {
+        log.push('avant');
+        return Promise.resolve();
+      },
+      afterAccepted: (_c: string, _w: string, version: number) => {
+        log.push(`après:${String(version)}`);
+        return Promise.resolve();
+      },
+      release: (_c: string, _w: string, version: number) => {
+        log.push(`libère:${String(version)}`);
+        return Promise.resolve();
+      },
+    };
+  }
+
+  it('succès : avant → appel IA → après (seulement une fois la proposition enregistrée), jamais de libération', async () => {
+    const { ctx, db } = world();
+    const id = addDraft(db);
+    const log: string[] = [];
+    const { deps, gateway } = fakeProposalDeps(hooks(log));
+    const original = gateway.complete.bind(gateway);
+    gateway.complete = (request) => {
+      log.push('ia');
+      return original(request);
+    };
+    await generateProposal(ctx, id, { idempotencyKey: KEY }, deps);
+    expect(log).toEqual(['avant', 'ia', 'après:1']);
+    expect(db.rows('campaign_proposals')[0]?.status).toBe('ready');
+  });
+
+  it('entrée invalide (analyse absente) : AUCUN point d’accroche appelé, aucune réservation à rendre', async () => {
+    const { ctx, db } = world();
+    const id = addDraft(db, { analysis_id: null });
+    const log: string[] = [];
+    const { deps, gateway } = fakeProposalDeps(hooks(log));
+    expect(await code(generateProposal(ctx, id, { idempotencyKey: KEY }, deps))).toBe('conflict');
+    expect(log).toEqual([]);
+    expect(gateway.calls).toHaveLength(0);
+  });
+
+  it('fiche illisible par le schéma d’entrée : aucun point d’accroche avant la validation', async () => {
+    const { ctx, db } = world();
+    db.rows('business_profiles')[0]!.profile = 'illisible';
+    const id = addDraft(db);
+    const log: string[] = [];
+    const { deps, gateway } = fakeProposalDeps(hooks(log));
+    await code(generateProposal(ctx, id, { idempotencyKey: KEY }, deps));
+    expect(log).toEqual([]);
+    expect(gateway.calls).toHaveLength(0);
+  });
+
+  it('refus de beforeSpend : rien n’est réservé chez S24, donc rien à libérer', async () => {
+    const { ctx, db } = world();
+    const id = addDraft(db);
+    const log: string[] = [];
+    const { deps } = fakeProposalDeps({
+      ...hooks(log),
+      beforeSpend: () => Promise.reject(new AppError('insufficient_credits')),
+    });
+    expect(await code(generateProposal(ctx, id, { idempotencyKey: KEY }, deps))).toBe(
+      'insufficient_credits',
+    );
+    expect(log).toEqual([]);
+  });
+
+  it('panne de la passerelle après réservation : la réservation est libérée une seule fois, afterAccepted jamais appelé', async () => {
+    const { ctx, db } = world();
+    const id = addDraft(db);
+    const log: string[] = [];
+    const { deps, gateway } = fakeProposalDeps(hooks(log));
+    gateway.enqueue({ fail: 'unavailable' });
+    expect(await code(generateProposal(ctx, id, { idempotencyKey: KEY }, deps))).toBe(
+      'provider_unavailable',
+    );
+    expect(log).toEqual(['avant', 'libère:1']);
+  });
+
+  it('sortie invalide deux fois : réservation libérée, afterAccepted jamais appelé', async () => {
+    const { ctx, db } = world();
+    const id = addDraft(db);
+    const log: string[] = [];
+    const { deps, gateway } = fakeProposalDeps(hooks(log));
+    const bad = { json: validOutput({ budget: { daily_usd_cents: 5, reason: '' } }) };
+    gateway.enqueue(bad, bad);
+    expect(await code(generateProposal(ctx, id, { idempotencyKey: KEY }, deps))).toBe(
+      'provider_unavailable',
+    );
+    expect(log).toEqual(['avant', 'libère:1']);
+  });
+
+  it('ligne perdue sans résultat réutilisable (statut figé par un autre) : erreur claire, libération, pas de consommation', async () => {
+    const { ctx, db } = world();
+    const id = addDraft(db);
+    const log: string[] = [];
+    const { deps } = fakeProposalDeps(hooks(log));
+    db.beforeUpdate = (table, memory) => {
+      if (table !== 'campaign_proposals') return;
+      memory.beforeUpdate = undefined;
+      const row = memory.rows('campaign_proposals')[0]!;
+      row.status = 'failed';
+      row.error_code = 'rate_limited'; // pas une expiration : la ligne n'est pas réutilisable
+    };
+    await expect(generateProposal(ctx, id, { idempotencyKey: KEY }, deps)).rejects.toMatchObject({
+      code: 'conflict',
+      opts: { meta: { reason: 'generation_expired' } },
+    });
+    expect(log).toEqual(['avant', 'libère:1']);
+    expect(db.rows('campaign_proposals')[0]?.status).toBe('failed');
+  });
+
+  it('génération lente terminée APRÈS l’expiration : si la ligne a été marquée expirée, le résultat valide (déjà payé) est enregistré, sans libération', async () => {
+    const { ctx, db } = world();
+    const id = addDraft(db);
+    const log: string[] = [];
+    const { deps } = fakeProposalDeps(hooks(log));
+    db.beforeUpdate = (table, memory) => {
+      if (table !== 'campaign_proposals') return;
+      memory.beforeUpdate = undefined;
+      const row = memory.rows('campaign_proposals')[0]!;
+      row.status = 'failed';
+      row.error_code = 'generation_expired'; // un renvoi de la même clé l'a marquée perdue entre-temps
+    };
+    const view = await generateProposal(ctx, id, { idempotencyKey: KEY }, deps);
+    expect(view.status).toBe('ready');
+    expect(db.rows('campaign_proposals')[0]).toMatchObject({ status: 'ready', error_code: null });
+    expect(log).toEqual(['avant', 'après:1']);
+  });
+
+  it('une ligne marquée expirée par un renvoi porte le code generation_expired (et se rejoue en 503)', async () => {
+    const { ctx, db } = world();
+    const id = addDraft(db);
+    const { deps } = fakeProposalDeps({ staleAfterMs: 1000 });
+    db.rows('campaign_proposals').push({
+      id: 'p0',
+      campaign_id: id,
+      workspace_id: W,
+      version: 1,
+      status: 'generating',
+      idempotency_key: KEY,
+      proposal: {},
+      created_at: new Date(NOW.getTime() - 5000).toISOString(),
+    });
+    expect(await code(generateProposal(ctx, id, { idempotencyKey: KEY }, deps))).toBe(
+      'provider_unavailable',
+    );
+    expect(db.rows('campaign_proposals')[0]).toMatchObject({
+      status: 'failed',
+      error_code: 'generation_expired',
+    });
+    expect(await code(generateProposal(ctx, id, { idempotencyKey: KEY }, deps))).toBe(
+      'provider_unavailable',
+    );
+  });
+
+  it('échec de afterAccepted : la proposition reste enregistrée (le travail payé n’est pas jeté), l’erreur est journalisée', async () => {
+    const { ctx, db } = world();
+    const id = addDraft(db);
+    const log: string[] = [];
+    const { deps } = fakeProposalDeps({
+      ...hooks(log),
+      afterAccepted: () => Promise.reject(new Error('S24 en panne')),
+    });
+    const view = await generateProposal(ctx, id, { idempotencyKey: KEY }, deps);
+    expect(view.status).toBe('ready');
+    expect(db.rows('campaign_proposals')[0]?.status).toBe('ready');
+    expect(log).toEqual(['avant']);
   });
 });
