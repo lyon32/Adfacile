@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:db": "node ../../supabase/tests/security.test.mjs . && node ../../supabase/tests/api-support.test.mjs . && node ../../supabase/tests/login-attempts.test.mjs . && node ../../supabase/tests/meta-connection.test.mjs . && node ../../supabase/tests/meta-webhook.test.mjs . && node ../../supabase/tests/uploads.test.mjs .",
+    "test:db": "node ../../supabase/tests/security.test.mjs . && node ../../supabase/tests/api-support.test.mjs . && node ../../supabase/tests/login-attempts.test.mjs . && node ../../supabase/tests/meta-connection.test.mjs . && node ../../supabase/tests/meta-webhook.test.mjs . && node ../../supabase/tests/uploads.test.mjs . && node ../../supabase/tests/campaign-drafts.test.mjs .",
     "db:types": "supabase gen types typescript --local --schema public --workdir ../.. > src/database.types.ts && prettier --write src/database.types.ts",
     "db:data-model": "node ../../supabase/scripts/gen-data-model.mjs ."
   },

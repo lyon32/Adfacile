@@ -549,7 +549,11 @@ export interface paths {
         /** Liste des campagnes */
         get: operations["listCampaigns"];
         put?: never;
-        /** Créer un brouillon de campagne à partir d'une analyse */
+        /**
+         * Créer un brouillon de campagne à partir d'une analyse
+         * @description L'analyse doit être au statut `ready` (questions répondues) et appartenir à l'espace ; la Page doit appartenir à l'espace.
+         *     Le brouillon reprend le compte publicitaire actif. Aucun appel IA, aucune dépense.
+         */
         post: operations["createCampaign"];
         delete?: never;
         options?: never;
@@ -567,14 +571,22 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Détail d'une campagne */
+        /**
+         * Détail d'une campagne
+         * @description Le coût (`cost`) est recalculé à chaque lecture avec la TVA du pays et le taux de change en vigueur.
+         */
         get: operations["getCampaign"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** Modifier un brouillon, ou une campagne publiée (renvoyée à Meta, peut relancer une vérification) */
+        /**
+         * Modifier un brouillon, ou une campagne publiée (renvoyée à Meta, peut relancer une vérification)
+         * @description `version` est obligatoire (EC-TEAM-08). Version périmée : `409 conflict` avec `meta.current_version`, rien n'est modifié.
+         *     S15 ne modifie que les brouillons (`draft`) ; la modification d'une campagne publiée arrive avec S16. Chaque champ
+         *     est revalidé par le serveur (budget 100 à 1 000 000 centimes, dates, textes) ; le coût est recalculé.
+         */
         patch: operations["updateCampaign"];
         trace?: never;
     };
@@ -588,13 +600,26 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Propositions IA de la campagne (toutes versions) */
+        /**
+         * Propositions IA de la campagne (toutes versions)
+         * @description Les propositions terminées (status ready), de la plus ancienne à la plus récente (onglets « Proposition 1, 2, 3 »).
+         */
         get: operations["listProposals"];
         put?: never;
         /**
          * Générer une proposition (Stratège), avec affichage progressif
-         * @description Avec `Accept: text/event-stream`, la réponse est un flux SSE : événements `field` (champ rempli), `done` (proposition complète), `error` (Problem Details en JSON).
-         *     Sans ce type, réponse JSON complète.
+         * @description Action qui dépense un appel IA : `Idempotency-Key` obligatoire (UUID v4). Une clé désigne une seule génération par
+         *     campagne : le renvoi de la même clé ne refait aucun appel IA (la proposition déjà produite est rejouée, en-tête
+         *     `Idempotent-Replayed: true`) ; si la première est encore en cours : `409 conflict` avec `retry_after_s` ; si elle
+         *     a échoué : la même erreur (un appel au résultat incertain n'est jamais relancé automatiquement : nouvelle clé).
+         *
+         *     Avec `Accept: text/event-stream`, la réponse est un flux SSE (API_SPEC §10), toujours en `200` :
+         *     - `field` : `{ "path": "copy.headline", "value": "…" }`, un événement par champ terminé, dans l'ordre d'écriture.
+         *       C'est un **aperçu non contractuel** : seul `done` fait foi ;
+         *     - `done` : la `Proposal` complète, validée et enregistrée ;
+         *     - `error` : un Problem Details (même forme que les erreurs HTTP), puis le flux se ferme.
+         *     Sans ce type, réponse JSON complète en `201`. Une erreur avant le début du flux est une réponse HTTP normale.
+         *     Si le client coupe la connexion, l'appel IA en cours est annulé et la proposition est marquée en échec.
          */
         post: operations["generateProposal"];
         delete?: never;
@@ -616,7 +641,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Retenir une proposition (copiée dans la campagne) */
+        /**
+         * Retenir une proposition (copiée dans la campagne)
+         * @description Copie les champs de la proposition dans le brouillon et note la version retenue. Le serveur revalide tout (budget,
+         *     dates, textes) : une proposition devenue invalide (date passée…) est refusée en `422`. Seul un brouillon peut en recevoir une.
+         */
         post: operations["chooseProposal"];
         delete?: never;
         options?: never;
@@ -1849,22 +1878,36 @@ export interface components {
             platform: "meta" | "google" | "tiktok";
             /** Format: uuid */
             page_id?: string | null;
+            /** Format: uuid */
+            analysis_id?: string | null;
             status: components["schemas"]["CampaignStatus"];
             /** @enum {string|null} */
             objective?: "OUTCOME_ENGAGEMENT" | "OUTCOME_TRAFFIC" | "OUTCOME_AWARENESS" | "OUTCOME_SALES" | null;
             /** @enum {string|null} */
             destination?: "WHATSAPP" | "MESSENGER" | "INSTAGRAM_DIRECT" | "WEBSITE" | "APP" | "ON_POST" | "NONE" | null;
-            geo?: Record<string, never>;
-            daily_budget?: components["schemas"]["Money"];
-            total_cost?: components["schemas"]["Money"];
+            /** @enum {string|null} */
+            optimization_goal?: "CONVERSATIONS" | "LINK_CLICKS" | "LANDING_PAGE_VIEWS" | "POST_ENGAGEMENT" | "REACH" | "OFFSITE_CONVERSIONS" | null;
+            geo?: components["schemas"]["CampaignGeo"];
+            targeting?: components["schemas"]["CampaignTargeting"];
+            /** @description Budget par jour en FCFA et en dollars ; null tant qu'il n'est pas défini, ou si le taux de change manque. */
+            daily_budget?: components["schemas"]["Money"] | null;
+            /** @description Budget par jour en centimes de dollar (la valeur qui fait foi) */
+            daily_budget_usd_cents?: number | null;
+            cost: components["schemas"]["CampaignCost"];
+            /** @description Taux de TVA enregistré lors de la dernière écriture (fraction : 0,1925 = 19,25 %) ; null si la TVA du pays n'est pas configurée. */
             vat_rate?: number | null;
             /** Format: date */
             start_date?: string | null;
             /** Format: date */
             end_date?: string | null;
             copy?: components["schemas"]["AdCopy"];
+            tracking?: {
+                pixel_id?: string;
+            } | null;
+            visual_brief?: string | null;
             ab_test?: boolean;
-            editable?: boolean;
+            editable: boolean;
+            chosen_proposal_version?: number | null;
             /** @description Texte affiché (ex. « Meta vérifie ta pub, en général sous 24 heures ») */
             status_message?: string;
             /** Format: date-time */
@@ -1872,19 +1915,56 @@ export interface components {
             /** @description Augmente à chaque modification ; à renvoyer dans PATCH (SECURITY_NOTES EC-TEAM-08) */
             version: number;
         };
+        CampaignGeo: {
+            countries?: string[];
+            cities?: {
+                name: string;
+                radius_km: number;
+            }[];
+        };
+        CampaignTargeting: {
+            age_min?: number;
+            age_max?: number;
+            /** @enum {string} */
+            genders?: "all" | "male" | "female";
+            advantage_plus?: boolean;
+            /** @description Centres d'intérêt Meta. Décision produit : l'IA peut les proposer, l'utilisateur les modifie. Sans identifiant Meta (résolu à la publication, S16), un intérêt est envoyé comme interests: []. */
+            interests?: {
+                name: string;
+                id?: string | null;
+            }[];
+        };
+        /**
+         * @description Coût estimé de la campagne : budget par jour × nombre de jours (début et fin inclus) + TVA du pays. Tout est calculé par
+         *     le serveur, en entiers (centimes de dollar, FCFA). Aucune TVA ni aucun taux de change n'est inventé : si la TVA du
+         *     pays n'est pas configurée dans l'administration, `status` vaut `vat_not_configured` et les totaux sont `null`.
+         */
+        CampaignCost: {
+            /**
+             * @description ok : tout est calculé ; incomplete : budget ou dates manquants ; vat_not_configured : pas de TVA connue pour le pays ; fx_not_available : pas de taux de change.
+             * @enum {string}
+             */
+            status: "ok" | "incomplete" | "vat_not_configured" | "fx_not_available";
+            /** @description Pays dont la TVA est appliquée (pays de facturation du compte publicitaire, sinon pays du propriétaire). */
+            vat_country?: string | null;
+            vat_rate?: number | null;
+            days?: number | null;
+            /** @description Budget total hors TVA */
+            budget_usd_cents?: number | null;
+            vat_usd_cents?: number | null;
+            total_usd_cents?: number | null;
+            /** @description Total TVA comprise en FCFA et en dollars */
+            total?: components["schemas"]["Money"] | null;
+            fx?: components["schemas"]["FxRate"] | null;
+        };
         CampaignUpdate: {
             name?: string;
             /** @enum {string} */
             objective?: "OUTCOME_ENGAGEMENT" | "OUTCOME_TRAFFIC" | "OUTCOME_AWARENESS" | "OUTCOME_SALES";
             /** @enum {string} */
             destination?: "WHATSAPP" | "MESSENGER" | "INSTAGRAM_DIRECT" | "WEBSITE" | "APP" | "ON_POST" | "NONE";
-            geo?: Record<string, never>;
-            targeting?: {
-                age_min?: number;
-                age_max?: number;
-                /** @enum {string} */
-                genders?: "all" | "male" | "female";
-            };
+            geo?: components["schemas"]["CampaignGeo"];
+            targeting?: components["schemas"]["CampaignTargeting"];
             daily_budget_usd_cents?: number;
             /** Format: date */
             start_date?: string;
@@ -1895,7 +1975,6 @@ export interface components {
                 pixel_id?: string;
             } | null;
             ab_test?: boolean;
-            visual_ids?: string[];
             /** @description Version lue ; périmée → 409 conflict avec meta.current_version */
             version: number;
         };
@@ -1913,16 +1992,61 @@ export interface components {
             next_cursor?: string | null;
         };
         Proposal: {
+            /** @description Numéro d'ordre dans la campagne (onglet « Proposition 1, 2, 3 ») */
             version: number;
-            chosen?: boolean;
-            /** @description CampaignProposal du Stratège (docs/agents/02) */
-            proposal: Record<string, never>;
-            estimate?: {
-                reach_min?: number;
-                reach_max?: number;
-            };
+            /**
+             * @description Seules les propositions terminées sont listées ; un flux SSE interrompu n'en laisse aucune.
+             * @enum {string}
+             */
+            status: "ready";
+            chosen: boolean;
+            proposal: components["schemas"]["CampaignProposal"];
+            cost?: components["schemas"]["CampaignCost"];
             /** Format: date-time */
             created_at?: string;
+        };
+        /** @description Sortie validée du Stratège (docs/agents/02-stratege-campagne.md §6), après contrôle R3 par le code. Le coût en FCFA et la TVA ne viennent jamais de l'agent. */
+        CampaignProposal: {
+            /** @enum {string} */
+            objective: "OUTCOME_ENGAGEMENT" | "OUTCOME_TRAFFIC" | "OUTCOME_AWARENESS" | "OUTCOME_SALES";
+            objective_reason?: string;
+            /** @enum {string} */
+            destination: "WHATSAPP" | "MESSENGER" | "INSTAGRAM_DIRECT" | "WEBSITE" | "APP" | "ON_POST" | "NONE";
+            /** @enum {string} */
+            optimization_goal: "CONVERSATIONS" | "LINK_CLICKS" | "LANDING_PAGE_VIEWS" | "POST_ENGAGEMENT" | "REACH" | "OFFSITE_CONVERSIONS";
+            geo: {
+                countries: string[];
+                cities: {
+                    name: string;
+                    radius_km: number;
+                }[];
+                reason?: string;
+            };
+            advanced_targeting: {
+                age_min?: number;
+                age_max?: number;
+                /** @enum {string} */
+                genders?: "all" | "male" | "female";
+                advantage_plus?: boolean;
+            };
+            budget: {
+                daily_usd_cents: number;
+                reason?: string;
+            };
+            schedule: {
+                /** Format: date */
+                start_date: string;
+                /** Format: date */
+                end_date: string;
+                reason?: string;
+            };
+            copy: components["schemas"]["AdCopy"];
+            tracking?: {
+                pixel_id?: string;
+            } | null;
+            warnings: string[];
+            visual_brief: string;
+            flags: string[];
         };
         CampaignStats: {
             summary: {
@@ -3399,8 +3523,11 @@ export interface operations {
                     "application/json": components["schemas"]["Campaign"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     getCampaign: {
@@ -3453,8 +3580,10 @@ export interface operations {
                     "application/json": components["schemas"]["Campaign"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["Unprocessable"];
         };
@@ -3483,12 +3612,16 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     generateProposal: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description UUID v4 généré par le client pour cette intention. Même clé + même corps = même réponse ; même clé + corps différent = 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
             path: {
                 workspaceId: components["parameters"]["WorkspaceId"];
                 campaignId: components["parameters"]["CampaignId"];
@@ -3497,6 +3630,15 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Flux SSE (field, done, error) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
             /** @description Proposition créée */
             201: {
                 headers: {
@@ -3504,12 +3646,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Proposal"];
-                    "text/event-stream": string;
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
             429: components["responses"]["TooManyRequests"];
             502: components["responses"]["BadGateway"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     chooseProposal: {
@@ -3535,6 +3682,10 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
         };
     };
     publishCampaign: {

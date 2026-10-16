@@ -2,7 +2,7 @@
 
 > Version 1 · 10 octobre 2026 · **Document de référence des données.** Remplace l'ancien `MODELE-DE-DONNEES.md`.
 > Source de vérité : les migrations SQL [`supabase/migrations/`](../../supabase/migrations/). La section 6 (schémas des tables) est **générée automatiquement** à partir de la base réelle par [`supabase/scripts/gen-data-model.mjs`](../../supabase/scripts/gen-data-model.mjs) : elle ne peut pas diverger du SQL.
-> Sécurité des données : [SECURITE-BACKEND.md](SECURITE-BACKEND.md) · tests : [`supabase/tests/security.test.mjs`](../../supabase/tests/security.test.mjs) (44/44), [`api-support.test.mjs`](../../supabase/tests/api-support.test.mjs) (migration 0003) et [`login-attempts.test.mjs`](../../supabase/tests/login-attempts.test.mjs) (migration 0004) et [`uploads.test.mjs`](../../supabase/tests/uploads.test.mjs) (migrations 0008 et 0009).
+> Sécurité des données : [SECURITE-BACKEND.md](SECURITE-BACKEND.md) · tests : [`supabase/tests/security.test.mjs`](../../supabase/tests/security.test.mjs) (44/44), [`api-support.test.mjs`](../../supabase/tests/api-support.test.mjs) (migration 0003) et [`login-attempts.test.mjs`](../../supabase/tests/login-attempts.test.mjs) (migration 0004) et [`uploads.test.mjs`](../../supabase/tests/uploads.test.mjs) (migrations 0008 et 0009) et [`campaign-drafts.test.mjs`](../../supabase/tests/campaign-drafts.test.mjs) (migration 0010).
 
 ---
 
@@ -771,21 +771,36 @@ RLS : activée · 1 politique(s)
 | chosen | boolean | non | false |
 | agent_run_id | uuid | oui |  |
 | created_at | timestamp with time zone | non | now() |
+| status | text | non | 'ready'::text |
+| idempotency_key | uuid | oui |  |
+| error_code | text | oui |  |
+| created_by | uuid | oui |  |
 
 | Contrainte | Définition |
 |---|---|
+| Contrôle | `CHECK ((char_length(error_code) <= 60))` |
+| Contrôle | `CHECK (((status <> 'ready'::text) OR (proposal <> '{}'::jsonb)))` |
+| Contrôle | `CHECK ((status = ANY (ARRAY['generating'::text, 'ready'::text, 'failed'::text])))` |
+| Contrôle | `CHECK ((version >= 1))` |
 | Clé étrangère | `FOREIGN KEY (agent_run_id) REFERENCES agent_runs(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE` |
+| Clé étrangère | `FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
 | n | `NOT NULL campaign_id` |
 | n | `NOT NULL chosen` |
 | n | `NOT NULL created_at` |
 | n | `NOT NULL id` |
 | n | `NOT NULL proposal` |
+| n | `NOT NULL status` |
 | n | `NOT NULL version` |
 | n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 | Unique | `UNIQUE (campaign_id, version)` |
+
+| Index | Définition |
+|---|---|
+| campaign_proposals_idem_uniq | `UNIQUE public.campaign_proposals USING btree (campaign_id, idempotency_key) WHERE (idempotency_key IS NOT NULL)` |
+| campaign_proposals_one_chosen | `UNIQUE public.campaign_proposals USING btree (campaign_id) WHERE chosen` |
 
 RLS : activée · 1 politique(s)
 
@@ -849,20 +864,30 @@ RLS : activée · 1 politique(s)
 | created_at | timestamp with time zone | non | now() |
 | updated_at | timestamp with time zone | non | now() |
 | version | integer | non | 1 |
+| analysis_id | uuid | oui |  |
+| optimization_goal | text | oui |  |
+| visual_brief | text | oui |  |
+| chosen_proposal_version | integer | oui |  |
 
 | Contrainte | Définition |
 |---|---|
 | Contrôle | `CHECK (((end_date IS NULL) OR (start_date IS NULL) OR (end_date >= start_date)))` |
+| Contrôle | `CHECK ((chosen_proposal_version >= 1))` |
+| Contrôle | `CHECK (((daily_budget_usd_cents IS NULL) OR (daily_budget_usd_cents <= 1000000)))` |
 | Contrôle | `CHECK (((daily_budget_usd_cents IS NULL) OR (daily_budget_usd_cents >= 100)))` |
 | Contrôle | `CHECK ((destination = ANY (ARRAY['WHATSAPP'::text, 'MESSENGER'::text, 'INSTAGRAM_DIRECT'::text, 'WEBSITE'::text, 'APP'::text, 'ON_POST'::text, 'NONE'::text])))` |
+| Contrôle | `CHECK (((start_date IS NULL) OR (end_date IS NULL) OR ((end_date - start_date) <= 365)))` |
 | Contrôle | `CHECK ((fx_rate_xaf > (0)::numeric))` |
 | Contrôle | `CHECK ((meta_adset_id ~ '^[0-9]{5,25}$'::text))` |
 | Contrôle | `CHECK ((meta_campaign_id ~ '^[0-9]{5,25}$'::text))` |
 | Contrôle | `CHECK (((char_length(name) >= 1) AND (char_length(name) <= 200)))` |
 | Contrôle | `CHECK ((objective = ANY (ARRAY['OUTCOME_ENGAGEMENT'::text, 'OUTCOME_TRAFFIC'::text, 'OUTCOME_AWARENESS'::text, 'OUTCOME_SALES'::text])))` |
+| Contrôle | `CHECK ((optimization_goal = ANY (ARRAY['CONVERSATIONS'::text, 'LINK_CLICKS'::text, 'LANDING_PAGE_VIEWS'::text, 'POST_ENGAGEMENT'::text, 'REACH'::text, 'OFFSITE_CONVERSIONS'::text])))` |
 | Contrôle | `CHECK (((vat_rate >= (0)::numeric) AND (vat_rate <= 0.5)))` |
 | Contrôle | `CHECK ((version >= 1))` |
+| Contrôle | `CHECK ((char_length(visual_brief) <= 1000))` |
 | Clé étrangère | `FOREIGN KEY (ad_account_id) REFERENCES ad_accounts(id) ON DELETE SET NULL` |
+| Clé étrangère | `FOREIGN KEY (analysis_id) REFERENCES analyses(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (created_by) REFERENCES profiles(id)` |
 | Clé étrangère | `FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
@@ -883,6 +908,7 @@ RLS : activée · 1 politique(s)
 
 | Index | Définition |
 |---|---|
+| campaigns_analysis_id_idx | `public.campaigns USING btree (analysis_id)` |
 | campaigns_meta_campaign_id_idx | `public.campaigns USING btree (meta_campaign_id)` |
 | campaigns_workspace_id_status_idx | `public.campaigns USING btree (workspace_id, status)` |
 
