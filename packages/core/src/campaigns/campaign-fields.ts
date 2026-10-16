@@ -6,6 +6,7 @@
 //  - dates : début ≥ aujourd'hui (dans le fuseau de l'utilisateur), fin > début, écart ≤ 365 jours ;
 //  - textes : 125 / 40 / 30 caractères, mesurés en POINTS DE CODE (un émoji = 1), pas de HTML ;
 //  - un champ qui n'est pas modifié n'est pas revalidé : un ancien brouillon reste modifiable sur un autre point.
+import { OBJECTIVE_DESTINATIONS } from '@pubeka/agents';
 import { AppError, type FieldError } from '@pubeka/contracts';
 import { daysInclusive } from './cost';
 
@@ -40,14 +41,6 @@ export interface CampaignFields {
   };
 }
 
-/** Destinations permises par objectif (PRD §7.1) ; l'agent applique la même table (docs/agents/02 §7.1). */
-export const OBJECTIVE_DESTINATIONS: Readonly<Record<string, readonly string[]>> = {
-  OUTCOME_ENGAGEMENT: ['WHATSAPP', 'MESSENGER', 'INSTAGRAM_DIRECT', 'ON_POST'],
-  OUTCOME_TRAFFIC: ['WEBSITE', 'APP'],
-  OUTCOME_AWARENESS: ['NONE'],
-  OUTCOME_SALES: ['WEBSITE'],
-};
-
 /** Longueur en points de code Unicode (SECURITY_NOTES §3.1 règle 4). */
 export function codePointLength(text: string): number {
   return Array.from(text).length;
@@ -64,6 +57,10 @@ function isDate(value: string): boolean {
   return daysInclusive(value, value) === 1;
 }
 
+function lookupDestinations(objective: string): readonly string[] | undefined {
+  return Object.entries(OBJECTIVE_DESTINATIONS).find(([key]) => key === objective)?.[1];
+}
+
 export function checkCampaignFields(
   fields: CampaignFields,
   changed: ReadonlySet<string>,
@@ -77,8 +74,7 @@ export function checkCampaignFields(
 
   // Objectif et destination
   if (changed.has('objective') || changed.has('destination')) {
-    const allowed =
-      fields.objective === null ? undefined : OBJECTIVE_DESTINATIONS[fields.objective];
+    const allowed = fields.objective === null ? undefined : lookupDestinations(fields.objective);
     if (
       allowed !== undefined &&
       fields.destination !== null &&
