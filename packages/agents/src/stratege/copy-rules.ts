@@ -175,3 +175,86 @@ export function previewSafe(value: string, context: CopyContext): boolean {
   if (numbersIn(value).some((token) => !numberGrounded(token, context))) return false;
   return (value.match(LINK) ?? []).every((link) => context.haystack.includes(link.toLowerCase()));
 }
+
+// ---- Justifications et avertissements (affichés à l'écran) ----------------------------------------------------------------
+
+export interface ReasonFields {
+  objective_reason: string;
+  geo: { reason: string; cities: { radius_km: number }[] };
+  budget: { daily_usd_cents: number; reason: string };
+  schedule: { start_date: string; end_date: string; reason: string };
+  advanced_targeting: { age_min: number; age_max: number };
+  warnings: string[];
+}
+
+function dayCount(start: string, end: string): number | null {
+  const a = Date.parse(`${start}T00:00:00Z`);
+  const b = Date.parse(`${end}T00:00:00Z`);
+  return Number.isNaN(a) || Number.isNaN(b) || b < a ? null : Math.round((b - a) / 86_400_000) + 1;
+}
+
+/**
+ * Nombres que le Stratège a le droit de citer parce qu'ils DÉCOULENT de sa propre proposition (le budget par jour et le
+ * total sur la durée, la durée, les dates, le rayon, l'âge) : « 4 $ par jour, soit 28 $ sur 7 jours ».
+ * Tout autre nombre doit venir des sources (R3).
+ */
+export function derivedNumbers(out: ReasonFields): ReadonlySet<string> {
+  const set = new Set<string>();
+  const add = (value: number | string): void => {
+    set.add(String(value));
+  };
+  const cents = out.budget.daily_usd_cents;
+  add(cents);
+  add(Math.floor(cents / 100));
+  if (cents % 100 !== 0) add(compactNumber((cents / 100).toFixed(2)));
+  const days = dayCount(out.schedule.start_date, out.schedule.end_date);
+  if (days !== null) {
+    add(days);
+    add(Math.floor((cents * days) / 100));
+    add(cents * days);
+  }
+  for (const city of out.geo.cities) add(city.radius_km);
+  add(out.advanced_targeting.age_min);
+  add(out.advanced_targeting.age_max);
+  for (const day of [out.schedule.start_date, out.schedule.end_date]) {
+    const [y, m, d] = day.split('-');
+    for (const part of [y, m, d]) {
+      if (part === undefined) continue;
+      add(part);
+      add(Number(part));
+    }
+  }
+  return set;
+}
+
+export function checkReasons(out: ReasonFields, context: CopyContext): Violation[] {
+  const violations: Violation[] = [];
+  const derived = derivedNumbers(out);
+  const texts: [(string | number)[], string][] = [
+    [['objective_reason'], out.objective_reason],
+    [['geo', 'reason'], out.geo.reason],
+    [['budget', 'reason'], out.budget.reason],
+    [['schedule', 'reason'], out.schedule.reason],
+    ...out.warnings.map((w, i): [(string | number)[], string] => [['warnings', i], w]),
+  ];
+  for (const [path, value] of texts) {
+    if (HTML.test(value)) violations.push({ path, message: 'ne doit contenir aucun HTML' });
+    for (const token of numbersIn(value)) {
+      if (!derived.has(token) && !numberGrounded(token, context)) {
+        violations.push({
+          path,
+          message: `contient le nombre « ${token} » qui n'est ni dans une source ni déduit de la proposition : retire-le (R3)`,
+        });
+      }
+    }
+    for (const link of value.match(LINK) ?? []) {
+      if (!context.haystack.includes(link.toLowerCase())) {
+        violations.push({
+          path,
+          message: `contient « ${link} » qui n'est dans aucune source : retire-le (R3)`,
+        });
+      }
+    }
+  }
+  return violations;
+}
