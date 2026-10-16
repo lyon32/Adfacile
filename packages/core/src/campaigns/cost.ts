@@ -139,8 +139,9 @@ export function campaignCost(input: CostInput): CampaignCostView {
   const currency: FcfaCurrency = input.fx?.quote ?? 'XAF';
   const dailyMoney = daily !== null && fxScaled !== null ? money(daily, fxScaled, currency) : null;
 
+  // Même règle que la validation : fin > début, donc deux jours au moins (début et fin compris).
   const days =
-    input.startDate === null || input.endDate === null
+    input.startDate === null || input.endDate === null || input.endDate <= input.startDate
       ? null
       : daysInclusive(input.startDate, input.endDate);
   if (daily === null || days === null) {

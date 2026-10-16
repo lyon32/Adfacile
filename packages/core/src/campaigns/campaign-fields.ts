@@ -3,7 +3,7 @@
 // Utilisé par la modification d'un brouillon et par le choix d'une proposition : une seule définition des limites.
 //
 //  - budget par jour : ≥ 100 centimes (1 $, TR-PLA-10) sinon 422 `budget_too_low` ; ≤ 1 000 000 centimes sinon 400 ;
-//  - dates : début ≥ aujourd'hui (dans le fuseau de l'utilisateur), fin > début, écart ≤ 365 jours ;
+//  - dates : début ≥ aujourd'hui (dans le fuseau de l'utilisateur), fin > début (deux jours au moins), durée ≤ 365 jours DÉBUT ET FIN COMPRIS ;
 //  - textes : 125 / 40 / 30 caractères, mesurés en POINTS DE CODE (un émoji = 1), pas de HTML ;
 //  - un champ qui n'est pas modifié n'est pas revalidé : un ancien brouillon reste modifiable sur un autre point.
 import { OBJECTIVE_DESTINATIONS } from '@pubeka/agents';
@@ -12,7 +12,8 @@ import { daysInclusive } from './cost';
 
 export const MIN_DAILY_BUDGET_USD_CENTS = 100;
 export const MAX_DAILY_BUDGET_USD_CENTS = 1_000_000;
-export const MAX_CAMPAIGN_DAYS_SPAN = 365;
+/** Durée maximale, début et fin compris (SECURITY_NOTES §3.2). */
+export const MAX_CAMPAIGN_DAYS = 365;
 export const COPY_LIMITS = { primary_text: 125, headline: 40, description: 30 } as const;
 export const MAX_INTERESTS = 15;
 export const MAX_CITIES = 20;
@@ -110,11 +111,11 @@ export function checkCampaignFields(
       add('start_date', 'invalid_value', 'La date de début ne peut pas être passée.');
     }
     if (startOk && endOk) {
-      const span = (daysInclusive(startDate, endDate) ?? 0) - 1;
+      const days = daysInclusive(startDate, endDate) ?? 0;
       if (endDate <= startDate) {
         add('end_date', 'invalid_value', 'La date de fin doit suivre la date de début.');
-      } else if (span > MAX_CAMPAIGN_DAYS_SPAN) {
-        add('end_date', 'too_large', 'Une campagne dure 365 jours au plus.');
+      } else if (days > MAX_CAMPAIGN_DAYS) {
+        add('end_date', 'too_large', 'Une campagne dure 365 jours au plus, début et fin compris.');
       }
     }
   }

@@ -4,6 +4,7 @@ import { fromPreview } from './proposal-display';
 import type { Campaign } from './proposal-api';
 import {
   applyField,
+  estimateXaf,
   buildPatch,
   formFromCampaign,
   parseUsdInput,
@@ -131,8 +132,9 @@ describe('validateForm (mêmes limites que le serveur)', () => {
     expect(validateForm(form({ startDate: TODAY }), TODAY).startDate).toBeUndefined();
     expect(validateForm(form({ endDate: '2026-10-13' }), TODAY).endDate).toBe('end_before_start');
     expect(validateForm(form({ endDate: '2026-10-12' }), TODAY).endDate).toBe('end_before_start');
-    expect(validateForm(form({ endDate: '2027-10-13' }), TODAY).endDate).toBeUndefined();
-    expect(validateForm(form({ endDate: '2027-10-14' }), TODAY).endDate).toBe('span_too_long');
+    // 365 jours, début et fin compris : 13/10/2026 → 12/10/2027 ; un de plus est refusé.
+    expect(validateForm(form({ endDate: '2027-10-12' }), TODAY).endDate).toBeUndefined();
+    expect(validateForm(form({ endDate: '2027-10-13' }), TODAY).endDate).toBe('span_too_long');
     expect(validateForm(form({ startDate: '2026-02-31' }), TODAY).startDate).toBe('start_invalid');
     expect(validateForm(form({ endDate: '' }), TODAY).endDate).toBe('end_invalid');
   });
@@ -235,5 +237,29 @@ describe('buildPatch', () => {
   });
   it('campagne sans objectif : pas de formulaire', () => {
     expect(formFromCampaign({ ...CAMPAIGN, objective: null })).toBeNull();
+  });
+});
+
+describe('estimateXaf : FCFA estimés en entiers (arrondi à la demi-unité vers le haut), jamais de flottant', () => {
+  it('400 centimes à 600 FCFA le dollar = 2 400', () => {
+    expect(estimateXaf(400, 600)).toBe(2400);
+  });
+  it('demi-unité arrondie vers le haut : 1 centime à 50 FCFA = 0,5 → 1', () => {
+    expect(estimateXaf(1, 50)).toBe(1);
+    expect(estimateXaf(1, 49.9)).toBe(0);
+  });
+  it('taux décimal conservé au dix-millième : 100 centimes à 655,957 = 656', () => {
+    expect(estimateXaf(100, 655.957)).toBe(656);
+    expect(estimateXaf(1000, 655.957)).toBe(6560);
+  });
+  it('taux invalide ou nul : aucune estimation', () => {
+    expect(estimateXaf(400, 0)).toBeNull();
+    expect(estimateXaf(400, -1)).toBeNull();
+    expect(estimateXaf(400, Number.NaN)).toBeNull();
+  });
+  it('toujours un entier, même pour un grand budget', () => {
+    const value = estimateXaf(99_999_900, 655.957);
+    expect(Number.isInteger(value)).toBe(true);
+    expect(value).toBe(655_956_344);
   });
 });

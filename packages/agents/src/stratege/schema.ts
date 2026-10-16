@@ -3,7 +3,7 @@
 // source, ton vous/tu, mots interdits, limites de caractères, budget minimum) sont vérifiées par le CODE dans le schéma
 // de sortie : `runAgent` en tire son unique nouvel essai (TR-AGT-01), puis l'échec est visible. Jamais un 3ᵉ appel.
 import { z } from 'zod';
-import { checkCopy, type CopyContext } from './copy-rules';
+import { checkCopy, checkReasons, type CopyContext } from './copy-rules';
 
 export const OBJECTIVES = [
   'OUTCOME_ENGAGEMENT',
@@ -61,7 +61,8 @@ export const OBJECTIVE_DESTINATIONS: Readonly<
 
 export const MIN_DAILY_USD_CENTS = 100;
 export const MAX_DAILY_USD_CENTS = 1_000_000;
-const MAX_SPAN_DAYS = 365;
+/** Durée maximale, début et fin compris. */
+const MAX_DAYS = 365;
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const text = (max: number) => z.string().max(max);
@@ -239,8 +240,11 @@ export function strategeOutputSchemaFor(input: ParsedStrategeInput, context: Cop
         issue(['schedule', 'start_date'], `la date de début ne peut pas être avant ${input.today}`);
       if (end <= start)
         issue(['schedule', 'end_date'], 'la date de fin doit suivre la date de début');
-      else if (daysBetween(start, end) > MAX_SPAN_DAYS)
-        issue(['schedule', 'end_date'], 'une campagne dure 365 jours au plus');
+      else if (daysBetween(start, end) + 1 > MAX_DAYS)
+        issue(
+          ['schedule', 'end_date'],
+          'une campagne dure 365 jours au plus, début et fin compris',
+        );
     }
 
     const { start_date: wantedStart, end_date: wantedEnd } = input.user_constraints;
@@ -265,5 +269,7 @@ export function strategeOutputSchemaFor(input: ParsedStrategeInput, context: Cop
     }
 
     for (const violation of checkCopy(out, context)) issue(violation.path, violation.message);
+    // Les justifications et avertissements sont affichés à l'écran : même contrôle R3 (nombres déduits de la proposition permis).
+    for (const violation of checkReasons(out, context)) issue(violation.path, violation.message);
   });
 }
