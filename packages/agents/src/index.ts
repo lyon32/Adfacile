@@ -9,3 +9,4 @@ export * from './runtime/fake-ai-gateway';
 export * from './runtime/create-gateway';
 export * from './analyste';
 export * from './runtime/model-catalog';
+export * from './stratege';
