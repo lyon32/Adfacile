@@ -219,10 +219,16 @@ describe('budget, dates, destination, pixel, contraintes', () => {
       strategeOutput({ schedule: { start_date, end_date, reason: '' } });
     expect(problems(sched('2026-10-09', '2026-10-16')).join('\n')).toMatch(/début/);
     expect(problems(sched('2026-10-11', '2026-10-11')).join('\n')).toMatch(/fin/);
-    expect(problems(sched('2026-10-11', '2027-10-13')).join('\n')).toMatch(/365/);
+    expect(problems(sched('2026-10-11', '2027-10-13')).join(String.fromCharCode(10))).toMatch(
+      /365/,
+    );
+    // 366 jours, début et fin compris, sont refusés ; 365 acceptés (ci-dessous).
+    expect(problems(sched('2026-10-11', '2027-10-11')).join(String.fromCharCode(10))).toMatch(
+      /365/,
+    );
     expect(problems(sched('2026-02-31', '2026-03-05')).join('\n')).toMatch(/inexistantes/);
     expect(problems(sched('2026-10-10', '2026-10-17'))).toEqual([]);
-    expect(problems(sched('2026-10-11', '2027-10-11'))).toEqual([]);
+    expect(problems(sched('2026-10-11', '2027-10-10'))).toEqual([]);
   });
   it('WhatsApp non lié : WHATSAPP refusé', () => {
     const input = strategeInput({
@@ -327,5 +333,80 @@ describe('exécution avec la fausse passerelle (TR-AGT-01)', () => {
     ).rejects.toMatchObject({ reason: 'invalid_output' });
     expect(gateway.calls).toHaveLength(2);
     expect(gateway.pending).toBe(1);
+  });
+});
+
+describe('R3 sur les justifications et les avertissements (affichés à l’écran)', () => {
+  it('un chiffre inventé dans une justification est refusé', () => {
+    const out = strategeOutput({ objective_reason: 'Vos clients répondent à 99 % en moyenne.' });
+    expect(problems(out).join('\n')).toMatch(/objective_reason.*99/);
+    expect(
+      problems(
+        strategeOutput({
+          geo: {
+            countries: ['CI'],
+            cities: [{ name: 'Abidjan', radius_km: 10 }],
+            reason: 'Livraison en 3 h.',
+          },
+        }),
+      ).join('\n'),
+    ).toMatch(/geo\.reason/);
+    expect(
+      problems(
+        strategeOutput({ budget: { daily_usd_cents: 400, reason: 'Vous gagnerez 500 clients.' } }),
+      ).join('\n'),
+    ).toMatch(/budget\.reason/);
+    expect(
+      problems(
+        strategeOutput({
+          schedule: {
+            start_date: '2026-10-11',
+            end_date: '2026-10-17',
+            reason: 'Meta apprend en 48 h.',
+          },
+        }),
+      ).join('\n'),
+    ).toMatch(/schedule\.reason/);
+  });
+  it('les nombres DÉRIVÉS de la proposition sont permis : budget par jour, durée, dates, rayon', () => {
+    const out = strategeOutput({
+      budget: { daily_usd_cents: 400, reason: '4 $ par jour, soit 28 $ sur 7 jours.' },
+      schedule: {
+        start_date: '2026-10-11',
+        end_date: '2026-10-17',
+        reason: 'Du 11 au 17 octobre 2026, soit 7 jours.',
+      },
+      geo: {
+        countries: ['CI'],
+        cities: [{ name: 'Abidjan', radius_km: 10 }],
+        reason: 'Un rayon de 10 km autour d’Abidjan.',
+      },
+    });
+    expect(problems(out)).toEqual([]);
+  });
+  it('les nombres de la fiche sont permis dans une justification', () => {
+    expect(
+      problems(
+        strategeOutput({ objective_reason: 'Vos baskets à 25 000 F se vendent en direct.' }),
+      ),
+    ).toEqual([]);
+  });
+  it('un avertissement avec un chiffre inventé, une adresse inconnue ou du HTML est refusé', () => {
+    expect(
+      problems(strategeOutput({ warnings: ['Appelez le 05 55 44 33 22.'] })).join('\n'),
+    ).toMatch(/warnings\.0/);
+    expect(problems(strategeOutput({ warnings: ['Voir www.inconnu.ci'] })).join('\n')).toMatch(
+      /warnings\.0/,
+    );
+    expect(problems(strategeOutput({ warnings: ['<b>Attention</b>'] })).join('\n')).toMatch(
+      /warnings\.0/,
+    );
+    expect(
+      problems(
+        strategeOutput({
+          warnings: ['WhatsApp non lié : la pub enverra les clients sur Messenger.'],
+        }),
+      ),
+    ).toEqual([]);
   });
 });

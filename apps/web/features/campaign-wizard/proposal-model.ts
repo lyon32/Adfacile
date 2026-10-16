@@ -49,6 +49,17 @@ export function parseUsdInput(text: string): number | null {
   return Number(match[1]) * 100 + cents;
 }
 
+/**
+ * Estimation en FCFA d'un budget en centimes : calcul en entiers (taux au dix-millième, arrondi à la demi-unité vers le
+ * haut), comme le serveur. C'est une AIDE de saisie : le montant qui fait foi est celui du serveur. Taux inconnu → null.
+ */
+export function estimateXaf(cents: number, xafPerUsd: number): number | null {
+  if (!Number.isFinite(xafPerUsd) || xafPerUsd <= 0 || !Number.isSafeInteger(cents) || cents < 0)
+    return null;
+  const scaled = BigInt(Math.round(xafPerUsd * 10_000));
+  return Number((BigInt(cents) * scaled + 500_000n) / 1_000_000n);
+}
+
 export function usdInputFromCents(cents: number): string {
   const whole = Math.floor(cents / 100);
   const rest = cents % 100;
@@ -150,7 +161,7 @@ export function validateForm(form: EditForm, today: string): FormErrors {
   else if (form.startDate < today) errors.startDate = 'start_past';
   if (end === null) errors.endDate = 'end_invalid';
   else if (start !== null && end <= start) errors.endDate = 'end_before_start';
-  else if (start !== null && (end - start) / 86_400_000 > 365) errors.endDate = 'span_too_long';
+  else if (start !== null && (end - start) / 86_400_000 + 1 > 365) errors.endDate = 'span_too_long';
 
   const checkText = (field: string, value: string, max: number, required: boolean): void => {
     if (required && value.trim() === '')

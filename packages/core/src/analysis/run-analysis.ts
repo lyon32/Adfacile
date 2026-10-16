@@ -20,6 +20,7 @@ import {
 import { AppError } from '@pubeka/contracts';
 import type { Json } from '@pubeka/db';
 import { createLogger } from '@pubeka/shared';
+import { journalAgentRun } from '../agent-journal';
 import type { ServiceCtx } from '../context';
 import type { RunAnalysisDeps } from './deps';
 import { extractDocumentText } from './documents';
@@ -78,35 +79,6 @@ async function fail(
     .update({ status: 'failed', error_code: code, flags })
     .eq('workspace_id', input.workspaceId)
     .eq('id', input.analysisId);
-}
-
-/** Journal `agent_runs` (R11) : sans le contenu des sources ni les images (données du client, volumineuses). */
-async function journal(
-  svc: ServiceCtx['svc'],
-  run: AgentRunRecord,
-  summary: NonNullable<Json>,
-  workspaceId: string,
-): Promise<void> {
-  const inserted = await svc.from('agent_runs').insert({
-    workspace_id: workspaceId,
-    agent: run.agent,
-    model: run.model,
-    requested_model: run.requestedModel,
-    provider: run.provider,
-    attempts: run.attempts,
-    error_code: run.errorCode,
-    prompt_version: run.promptVersion,
-    input: summary,
-    ...(run.output === null ? {} : { output: run.output as NonNullable<Json> }),
-    valid_schema: run.validSchema,
-    retried: run.retried,
-    tokens_in: run.tokensIn,
-    tokens_out: run.tokensOut,
-    cost_usd: run.costUsd,
-    latency_ms: run.latencyMs,
-  });
-  if (inserted.error !== null)
-    logger.error('Journal des agents non écrit', { code: inserted.error.code });
 }
 
 async function download(
@@ -441,13 +413,13 @@ async function analyse(
     run = result.run;
   } catch (error) {
     if (error instanceof AgentRunError) {
-      await journal(svc, error.run, logged, workspaceId);
+      await journalAgentRun(svc, error.run, logged, workspaceId);
       await fail(svc, input, error.code, flags);
       return { outcome: 'failed' };
     }
     throw error;
   }
-  await journal(svc, run, logged, workspaceId);
+  await journalAgentRun(svc, run, logged, workspaceId);
 
   // 7. R3 : aucune valeur sans source (le contrôle est fait par le code, pas seulement par le prompt).
   const imageSourceIndexes = sendImages.map((i) => i.index);

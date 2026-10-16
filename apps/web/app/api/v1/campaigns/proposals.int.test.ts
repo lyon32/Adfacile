@@ -104,6 +104,7 @@ function choose(
   who: Who,
   campaignId: string,
   version: string | number,
+  body: unknown = { version: 1 },
 ): Promise<Response> {
   const id = ws.workspace.id;
   return chooseRoute(
@@ -111,6 +112,7 @@ function choose(
       'POST',
       `/workspaces/${id}/campaigns/${campaignId}/proposals/${String(version)}/choose`,
       who.headers,
+      body,
     ),
     { params: Promise.resolve({ workspaceId: id, campaignId, version: String(version) }) },
   );
@@ -497,7 +499,7 @@ describeRoute('chooseProposal', {
     expect(camp.cost.status).toBe('ok');
     // La liste marque la proposition retenue ; en retenir une autre déplace la marque (une seule à la fois).
     const p2 = await asProposal(await generate(s, s.owner, draft.id));
-    expect((await choose(s, s.owner, draft.id, p2.version)).status).toBe(200);
+    expect((await choose(s, s.owner, draft.id, p2.version, { version: 2 })).status).toBe(200);
     const all = (await json(await list(s, s.owner, draft.id))) as unknown as {
       data: ProposalBody[];
     };
@@ -533,6 +535,19 @@ describeRoute('chooseProposal', {
     expect((await choose(s, s.owner, draft.id, 0)).status).toBe(400);
     expect((await choose(s, s.owner, draft.id, '-1')).status).toBe(400);
     expect((await choose(s, s.owner, draft.id, '1.5')).status).toBe(400);
+    // Le corps est obligatoire et strict : `version` du brouillon, entier d'au moins 1, aucun champ en plus.
+    await generate(s, s.owner, draft.id);
+    for (const body of [
+      null,
+      {},
+      { version: 0 },
+      { version: '1' },
+      { version: 1.5 },
+      { version: 1, x: 1 },
+    ]) {
+      const res = await choose(s, s.owner, draft.id, 1, body);
+      expect(res.status, JSON.stringify(body)).toBe(400);
+    }
   },
   extra: {
     'version inconnue : 404': async () => {
@@ -582,7 +597,9 @@ describeRoute('chooseProposal', {
         });
         expect(withInterests.status).toBe(200);
         await generate(s, s.owner, draft.id);
-        const res = (await json(await choose(s, s.owner, draft.id, 1))) as unknown as CampaignBody;
+        const res = (await json(
+          await choose(s, s.owner, draft.id, 1, { version: 2 }),
+        )) as unknown as CampaignBody;
         expect(res.targeting.interests).toEqual([{ name: 'Mode' }]);
       },
     'campagne qui n’est plus un brouillon : 409': async () => {
@@ -591,6 +608,37 @@ describeRoute('chooseProposal', {
       await svc().from('campaigns').update({ status: 'publishing' }).eq('id', draft.id);
       expect((await choose(s, s.owner, draft.id, 1)).status).toBe(409);
     },
+    'version du brouillon périmée : 409 avec la version actuelle, rien n’est écrasé': async () => {
+      const draft = await newDraft(s);
+      await generate(s, s.owner, draft.id);
+      expect((await patch(s, s.owner, draft.id, { version: 1, name: 'Autre nom' })).status).toBe(
+        200,
+      );
+      const res = await choose(s, s.owner, draft.id, 1, { version: 1 });
+      expect(res.status).toBe(409);
+      const problem = await asProblem(res);
+      expect(problem.code).toBe('conflict');
+      expect(problem.meta).toMatchObject({ current_version: 2, reason: 'stale_version' });
+      const after = (await json(await read(s, s.owner, draft.id))) as unknown as CampaignBody;
+      expect(after).toMatchObject({ version: 2, objective: null, name: 'Autre nom' });
+    },
+    'EN MÊME TEMPS : une modification (A) et un choix (B) avec la même version lue : un seul gagne, aucune écriture perdue':
+      async () => {
+        const draft = await newDraft(s);
+        await generate(s, s.owner, draft.id);
+        const [a, b] = await Promise.all([
+          patch(s, s.owner, draft.id, { version: 1, name: 'Nom de A' }),
+          choose(s, s.editor, draft.id, 1, { version: 1 }),
+        ]);
+        expect([a.status, b.status].sort()).toEqual([200, 409]);
+        const loser = a.status === 409 ? a : b;
+        expect((await asProblem(loser)).meta).toMatchObject({ current_version: 2 });
+        const after = (await json(await read(s, s.owner, draft.id))) as unknown as CampaignBody;
+        expect(after.version).toBe(2);
+        // Ce que le gagnant a écrit est là, et rien du perdant.
+        if (a.status === 200) expect(after).toMatchObject({ name: 'Nom de A', objective: null });
+        else expect(after.name).not.toBe('Nom de A');
+      },
     'après le choix, une modification avec l’ancienne version est refusée (409)': async () => {
       const draft = await newDraft(s);
       await generate(s, s.owner, draft.id);

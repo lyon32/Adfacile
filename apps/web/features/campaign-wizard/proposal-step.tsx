@@ -21,6 +21,7 @@ import {
   type Campaign,
   type Proposal,
 } from './proposal-api';
+import { clearPendingKey, loadPendingKey, savePendingKey } from './proposal-key';
 import { ProposalCard } from './proposal-card';
 import { fromCampaign, fromPreview, fromProposal, type Display } from './proposal-display';
 import { ProposalForm } from './proposal-form';
@@ -55,6 +56,14 @@ function generationError(error: unknown): ErrorKey {
       return error.problem?.meta?.reason === 'generation_in_progress' ? 'in_progress' : 'not_ready';
   }
   return 'stream_failed';
+}
+
+/** Issue incertaine : on renvoie avec la MÊME clé (le serveur rejoue la même génération au lieu d'en lancer une autre). */
+function keepsKey(error: unknown): boolean {
+  if (error instanceof StreamEndedError) return true;
+  if (error instanceof ApiError)
+    return error.code === 'conflict' && error.problem?.meta?.reason === 'generation_in_progress';
+  return true; // coupure réseau avant toute réponse
 }
 
 function localToday(): string {
@@ -104,7 +113,8 @@ export function ProposalStep({
     campaign.chosen_proposal_version === current.version;
 
   async function run(id: string): Promise<void> {
-    pendingKey.current ??= crypto.randomUUID();
+    pendingKey.current ??= loadPendingKey(id) ?? crypto.randomUUID();
+    savePendingKey(id, pendingKey.current);
     setError(null);
     setPreview({});
     setRewriting(false);
@@ -122,11 +132,16 @@ export function ProposalStep({
         },
       });
       pendingKey.current = null;
+      clearPendingKey(id);
       await setSelected(done.version);
       setRetained(false);
     } catch (e) {
-      // Une coupure réseau garde la clé (reprise) ; toute autre issue en demandera une nouvelle.
-      if (!(e instanceof StreamEndedError)) pendingKey.current = null;
+      // La clé est gardée tant que l'issue est INCERTAINE (coupure, génération encore en cours, réponse illisible) : le renvoi
+      // reprend la même génération, sans seconde dépense. Un refus net du serveur en demandera une nouvelle.
+      if (!keepsKey(e)) {
+        pendingKey.current = null;
+        clearPendingKey(id);
+      }
       setError(generationError(e));
     } finally {
       setPreview(null);
@@ -150,12 +165,20 @@ export function ProposalStep({
   }
 
   async function ensureChosen(): Promise<boolean> {
-    if (current === undefined) return false;
+    if (current === undefined || campaign === undefined) return false;
     if (isChosen) return true;
     try {
-      await choose.mutateAsync(current.version);
+      await choose.mutateAsync({
+        proposalVersion: current.version,
+        campaignVersion: campaign.version,
+      });
       return true;
     } catch (e) {
+      // Le brouillon a changé ailleurs depuis notre lecture : rien n'est écrasé, on propose de recharger.
+      if (e instanceof ApiError && e.code === 'conflict') {
+        setConflict(true);
+        return false;
+      }
       setError(
         e instanceof ApiError && e.code === 'validation_failed'
           ? 'server_validation'
@@ -198,7 +221,9 @@ export function ProposalStep({
         <AlertTriangle aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
         <div className="flex flex-col gap-2">
           <p>{t(`errors.${bannerError}`)}</p>
-          {bannerError === 'stream_failed' || bannerError === 'stream_ended' ? (
+          {bannerError === 'stream_failed' ||
+          bannerError === 'stream_ended' ||
+          bannerError === 'in_progress' ? (
             <Button
               type="button"
               variant="quiet"
@@ -453,6 +478,7 @@ export function ProposalStep({
             className="w-full sm:w-auto"
             onClick={() => {
               pendingKey.current = null;
+              clearPendingKey(targetCampaign);
               void run(targetCampaign);
             }}
           >

@@ -23,6 +23,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  window.sessionStorage.clear();
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
@@ -388,6 +389,68 @@ describe('étape Proposition', () => {
     });
   });
 
+  it('409 « déjà en cours » : [Réessayer] est proposé et reprend la MÊME clé (jamais une seconde dépense)', async () => {
+    const calls = stubApi({
+      [CAMPAIGN_GET]: json(campaign()),
+      [PROPOSALS]: [json({ data: [] }), json({ data: [] }), json({ data: [proposal(1)] })],
+      [GENERATE]: [
+        problem('conflict', 409, { reason: 'generation_in_progress' }),
+        json(proposal(1), 201),
+      ],
+    });
+    mount();
+    await clickGenerate();
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('déjà en cours d’écriture');
+    fireEvent.click(within(alert).getByRole('button', { name: 'Réessayer' }));
+    await waitFor(() => {
+      expect(calls.filter((c) => c.method === 'POST')).toHaveLength(2);
+    });
+    const keys = calls.filter((c) => c.method === 'POST').map((c) => c.headers['idempotency-key']);
+    expect(keys[0]).toBe(keys[1]);
+  });
+
+  it('page rechargée pendant l’écriture : la clé est gardée pour la campagne, la reprise réutilise la MÊME clé', async () => {
+    const first = controlledStream();
+    const calls = stubApi({
+      [CAMPAIGN_GET]: json(campaign()),
+      [PROPOSALS]: json({ data: [] }),
+      [GENERATE]: [() => first.response(), json(proposal(1), 201)],
+    });
+    const view = mount();
+    await clickGenerate();
+    await screen.findByText('J’écris ta proposition…');
+    view.unmount(); // rechargement : l'état de la page est perdu
+    const second = mount();
+    expect(second.container).toBeTruthy();
+    await clickGenerate();
+    await waitFor(() => {
+      expect(calls.filter((c) => c.method === 'POST')).toHaveLength(2);
+    });
+    const keys = calls.filter((c) => c.method === 'POST').map((c) => c.headers['idempotency-key']);
+    expect(keys[0]).toBe(keys[1]);
+  });
+
+  it('génération réussie : la clé gardée est effacée, la suivante sera neuve', async () => {
+    const live = controlledStream();
+    stubApi({
+      [CAMPAIGN_GET]: json(campaign()),
+      [PROPOSALS]: [json({ data: [] }), json({ data: [proposal(1)] })],
+      [GENERATE]: () => live.response(),
+    });
+    mount();
+    await clickGenerate();
+    await screen.findByText('J’écris ta proposition…');
+    expect(window.sessionStorage.length).toBe(1); // gardée pendant l'écriture
+    await act(async () => {
+      live.send('done', proposal(1));
+      live.close();
+      await Promise.resolve();
+    });
+    await screen.findByText('Coût estimé');
+    expect(window.sessionStorage.length).toBe(0);
+  });
+
   it('TVA non configurée : le dit clairement, aucun total inventé, le budget hors TVA reste visible', async () => {
     stubApi({
       [CAMPAIGN_GET]: json(campaign()),
@@ -488,6 +551,43 @@ describe('étape Proposition', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Continuer' }));
     expect(await screen.findByText('Proposition retenue', { selector: 'p' })).toBeTruthy();
     expect(calls.some((c) => c.path.endsWith('/proposals/1/choose'))).toBe(true);
+  });
+
+  it('[Continuer] envoie la version du brouillon lue (verrou optimiste) avec le choix', async () => {
+    const calls = stubApi({
+      [CAMPAIGN_GET]: json(campaign({ version: 4 })),
+      [PROPOSALS]: json({ data: [proposal(1)] }),
+      [`POST /campaigns/${CAMPAIGN}/proposals/1/choose`]: json(chosenCampaign()),
+    });
+    mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Continuer' }));
+    await screen.findByText('Proposition retenue', { selector: 'p' });
+    const post = calls.find((c) => c.path.endsWith('/proposals/1/choose'));
+    expect(post?.body).toEqual({ version: 4 });
+  });
+
+  it('CONFLIT au choix (409) : bandeau « a changé ailleurs », rien de retenu, [Recharger] relit le serveur', async () => {
+    const calls = stubApi({
+      [CAMPAIGN_GET]: json(campaign()),
+      [PROPOSALS]: json({ data: [proposal(1)] }),
+      [`POST /campaigns/${CAMPAIGN}/proposals/1/choose`]: problem('conflict', 409, {
+        current_version: 6,
+        reason: 'stale_version',
+      }),
+    });
+    mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Continuer' }));
+    expect(await screen.findByText('Cette campagne a changé ailleurs')).toBeTruthy();
+    expect(screen.queryByText('Proposition retenue', { selector: 'p' })).toBeNull();
+    const before = calls.filter(
+      (c) => c.method === 'GET' && c.path === `/campaigns/${CAMPAIGN}`,
+    ).length;
+    fireEvent.click(screen.getByRole('button', { name: 'Recharger la campagne' }));
+    await waitFor(() => {
+      expect(
+        calls.filter((c) => c.method === 'GET' && c.path === `/campaigns/${CAMPAIGN}`).length,
+      ).toBeGreaterThan(before);
+    });
   });
 
   it('refus du serveur au choix : message, rien de retenu', async () => {

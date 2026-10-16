@@ -102,11 +102,12 @@ await check('budget quotidien : 99 centimes refusés, 100 acceptés, 1 000 000 a
   return (await rejects(() => set(99), /check|violates/i)) && (await set(100), true) &&
     (await set(1000000), true) && (await rejects(() => set(1000001), /check|violates/i));
 });
-await check('durée : 365 jours acceptés, 366 refusés ; fin avant début refusée', async () => {
+await check('durée (0011) : 365 jours début et fin compris acceptés (écart 364), 366 refusés (écart 365) ; fin = début et fin avant début refusés', async () => {
   const id = await newCampaign();
   const set = (s, e) => db.query(`update public.campaigns set start_date=$2, end_date=$3 where id=$1`, [id, s, e]);
-  return (await set('2026-01-01', '2027-01-01'), true) && (await rejects(() => set('2026-01-01', '2027-01-02'), /check|violates/i)) &&
-    (await rejects(() => set('2026-01-10', '2026-01-09'), /check|violates/i));
+  return (await set('2026-01-01', '2026-12-31'), true) && (await rejects(() => set('2026-01-01', '2027-01-01'), /check|violates/i)) &&
+    (await rejects(() => set('2026-01-10', '2026-01-10'), /check|violates/i)) &&
+    (await rejects(() => set('2026-01-10', '2026-01-09'), /check|violates/i)) && (await set('2026-01-10', '2026-01-11'), true);
 });
 
 // --- Propositions ------------------------------------------------------

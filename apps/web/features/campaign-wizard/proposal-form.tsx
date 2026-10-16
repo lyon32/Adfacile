@@ -11,6 +11,7 @@ import {
   LIMITS,
   MAX_INTERESTS,
   codePointLength,
+  estimateXaf,
   parseUsdInput,
   validateForm,
   withObjective,
@@ -88,10 +89,8 @@ export function ProposalForm({
   };
 
   const cents = parseUsdInput(form.budget);
-  const fcfa =
-    cents !== null && xafPerUsd !== null
-      ? formatXaf(Math.round((cents * xafPerUsd) / 100), ui)
-      : null;
+  const estimated = cents !== null && xafPerUsd !== null ? estimateXaf(cents, xafPerUsd) : null;
+  const fcfa = estimated === null ? null : formatXaf(estimated, ui);
 
   function submit(): void {
     setShowErrors(true);

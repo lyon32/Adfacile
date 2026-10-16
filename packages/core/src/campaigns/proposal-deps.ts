@@ -16,13 +16,18 @@ export interface ProposalDeps {
   configs: AgentConfigSource;
   keys?: AgentKeyStore;
   /**
-   * Point d'accroche des quotas et des crédits (S24). Appelé UNE fois par génération, après la réservation de la ligne
-   * (la clé d'idempotence est prise) et AVANT l'appel au modèle : une erreur ici (`insufficient_credits`…) arrête tout sans
+   * Point d'accroche des quotas et des crédits (S24). Appelé UNE fois par génération, APRÈS la validation de l'entrée et la
+   * réservation de la ligne (la clé d'idempotence est prise), AVANT l'appel au modèle : une erreur ici (`insufficient_credits`…) arrête tout sans
    * dépense. Pas de quota avant S24 : le seul garde-fou est la limite de débit « ai » de la route (20 par heure et par espace).
    */
   beforeSpend?: (campaignId: string, workspaceId: string) => Promise<void>;
   /** Appelé seulement quand la proposition est acceptée (valide et enregistrée) : c'est là que S24 consommera. */
   afterAccepted?: (campaignId: string, workspaceId: string, version: number) => Promise<void>;
+  /**
+   * Libération (S24) : rend ce que `beforeSpend` a réservé. Appelé UNE fois si la génération échoue APRÈS la réservation
+   * (panne du modèle, sortie invalide, ligne perdue). Jamais appelé si `beforeSpend` a refusé : rien n'a été réservé.
+   */
+  release?: (campaignId: string, workspaceId: string, version: number) => Promise<void>;
   /** Une génération « en cours » plus ancienne que ce délai est considérée perdue (processus interrompu). */
   staleAfterMs?: number;
 }

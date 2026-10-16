@@ -16,7 +16,7 @@ import {
   strategeStoredSchema,
   createFieldStream,
   prepareStrategeMessage,
-  previewSafe,
+  previewAllowed,
   runAgent,
   strategeCopyContext,
   type FieldEvent,
@@ -24,7 +24,7 @@ import {
 } from '@pubeka/agents';
 import { AppError, isErrorCode, type components, type ErrorCode } from '@pubeka/contracts';
 import type { Json, TablesUpdate } from '@pubeka/db';
-import { calendarDateIn } from '@pubeka/shared';
+import { calendarDateIn, createLogger } from '@pubeka/shared';
 import { journalAgentRun } from '../agent-journal';
 import type { MemberCtx } from '../context';
 import { assertRole, assertWritable } from '../workspaces/guards';
@@ -44,6 +44,9 @@ import type { ProposalDeps } from './proposal-deps';
 export type ProposalView = components['schemas']['Proposal'];
 
 const DEFAULT_STALE_MS = 120_000;
+/** Code d'une ligne marquée perdue par un renvoi : son résultat tardif, s'il arrive, est quand même enregistré. */
+const EXPIRED = 'generation_expired';
+const logger = createLogger({ base: { module: 'proposals' } });
 const MAX_PREVIOUS = 5;
 const MAX_VERSION_ATTEMPTS = 4;
 /** Signalements réservés à l'administration : jamais montrés à l'écran (APPFLOW §8.1 pour l'injection). */
@@ -317,6 +320,12 @@ async function claim(
   throw conflict('version_race');
 }
 
+/**
+ * Enregistre l'issue d'une génération ; rend `true` seulement si une ligne a RÉELLEMENT été modifiée.
+ * Une génération lente peut avoir été marquée « expirée » par un renvoi de la même clé : son résultat valide (déjà payé)
+ * est alors quand même enregistré. Toute autre ligne (supprimée, déjà terminée, échec d'une autre nature) n'est pas
+ * réutilisable : on rend `false` et l'appelant ne consomme rien.
+ */
 async function settle(
   ctx: MemberCtx,
   rowId: string,
@@ -326,7 +335,7 @@ async function settle(
     agent_run_id?: string | null;
     error_code?: string | null;
   },
-): Promise<void> {
+): Promise<boolean> {
   const patch: TablesUpdate<'campaign_proposals'> = {
     status: values.status,
     error_code: values.error_code ?? null,
@@ -338,20 +347,22 @@ async function settle(
     .update(patch)
     .eq('workspace_id', ctx.workspace.id)
     .eq('id', rowId)
-    .eq('status', 'generating');
+    .eq('status', 'generating')
+    .select('id');
   if (done.error !== null) throw db(done.error);
+  if (done.data.length > 0) return true;
+  if (values.status !== 'ready') return false;
+  const late = await ctx.svc
+    .from('campaign_proposals')
+    .update(patch)
+    .eq('workspace_id', ctx.workspace.id)
+    .eq('id', rowId)
+    .eq('status', 'failed')
+    .eq('error_code', EXPIRED)
+    .select('id');
+  if (late.error !== null) throw db(late.error);
+  return late.data.length > 0;
 }
-
-/** Champs montrés en aperçu pendant l'écriture (jamais les signalements, le ciblage ni la consigne visuelle). */
-const PREVIEW_PATHS = [
-  /^objective$/,
-  /^objective_reason$/,
-  /^destination$/,
-  /^geo\.(countries\.\d+|cities\.\d+\.(name|radius_km)|reason)$/,
-  /^budget\.(daily_usd_cents|reason)$/,
-  /^schedule\.(start_date|end_date|reason)$/,
-  /^copy\.(primary_text|headline|description|cta|angle)$/,
-];
 
 export interface RunOptions {
   /** Aperçu : un champ terminé, dans l'ordre d'écriture. Non contractuel : seule la proposition rendue fait foi. */
@@ -410,10 +421,10 @@ async function execute(
   deps: ProposalDeps,
   options: RunOptions & GenerateOptions,
 ): Promise<ProposalView> {
+  // Vrai dès que S24 a pu réserver quelque chose (beforeSpend a réussi) : tout échec ensuite doit le rendre (release).
+  let reserved = false;
   try {
-    // Quotas et crédits (S24) : après la réservation de la ligne, avant toute dépense.
-    await deps.beforeSpend?.(campaign.id, ctx.workspace.id);
-
+    // 1. Validation d'entrée AVANT toute réservation : une entrée invalide ne coûte rien et n'a rien à rendre.
     const material = await gatherInput(ctx, campaign);
     const input = strategeInputSchema.parse(material.input);
     const config = await deps.configs.get('stratege');
@@ -421,14 +432,17 @@ async function execute(
     const injection = prepareStrategeMessage(input).injectionSuspected;
     const copyContext = strategeCopyContext(input);
 
+    // 2. Quotas et crédits (S24) : après la réservation de la ligne et la validation, avant l'appel au modèle.
+    await deps.beforeSpend?.(campaign.id, ctx.workspace.id);
+    reserved = true;
+
     // Aperçu : un champ n'est montré que s'il est complet, autorisé, et sans invention (R3) ; jamais enregistré.
     const onField = options.onField;
     const stream =
       onField === undefined
         ? undefined
         : createFieldStream((event) => {
-            if (!PREVIEW_PATHS.some((p) => p.test(event.path))) return;
-            if (typeof event.value === 'string' && !previewSafe(event.value, copyContext)) return;
+            if (!previewAllowed(event, input.today, copyContext)) return;
             onField(event);
           });
 
@@ -461,8 +475,26 @@ async function execute(
     const stored: StrategeOutput = injection
       ? { ...output, flags: [...new Set([...output.flags, 'PROMPT_INJECTION_SUSPECTED'])] }
       : output;
-    await deps.afterAccepted?.(campaign.id, ctx.workspace.id, row.version);
-    await settle(ctx, row.id, { status: 'ready', proposal: stored, agent_run_id: runId });
+
+    // 3. Enregistrement : le résultat n'est « accepté » que si la ligne l'est réellement.
+    const saved = await settle(ctx, row.id, {
+      status: 'ready',
+      proposal: stored,
+      agent_run_id: runId,
+    });
+    if (!saved) throw new AppError('conflict', { meta: { reason: 'generation_expired' } });
+
+    // 4. Consommation (S24) seulement APRÈS l'enregistrement. Un échec ici ne jette pas une proposition déjà payée :
+    //    elle reste enregistrée et l'erreur est journalisée (S24 rattrapera la consommation).
+    try {
+      await deps.afterAccepted?.(campaign.id, ctx.workspace.id, row.version);
+    } catch (hookError) {
+      logger.error('Consommation après proposition échouée', {
+        campaignId: campaign.id,
+        version: row.version,
+        err: hookError,
+      });
+    }
     const settled = await ctx.svc
       .from('campaign_proposals')
       .select(PROPOSAL_COLUMNS)
@@ -475,6 +507,18 @@ async function execute(
     const code: ErrorCode = error instanceof AppError ? error.code : 'internal_error';
     // L'échec est enregistré (même clé = même réponse) ; aucune relance automatique.
     await settle(ctx, row.id, { status: 'failed', error_code: code }).catch(() => undefined);
+    if (reserved) {
+      // Rend ce que beforeSpend a réservé : aucune réservation orpheline après un échec.
+      try {
+        await deps.release?.(campaign.id, ctx.workspace.id, row.version);
+      } catch (releaseError) {
+        logger.error('Libération après échec impossible', {
+          campaignId: campaign.id,
+          version: row.version,
+          err: releaseError,
+        });
+      }
+    }
     throw error;
   }
 }
@@ -490,7 +534,7 @@ async function replay(
   // « generating » : encore en cours, ou perdue si le processus s'est arrêté.
   const age = ctx.now().getTime() - new Date(row.created_at).getTime();
   if (age > (deps.staleAfterMs ?? DEFAULT_STALE_MS)) {
-    await settle(ctx, row.id, { status: 'failed', error_code: 'provider_unavailable' });
+    await settle(ctx, row.id, { status: 'failed', error_code: EXPIRED });
     throw new AppError('provider_unavailable');
   }
   throw new AppError('conflict', {
@@ -505,11 +549,18 @@ export async function chooseProposal(
   ctx: MemberCtx,
   campaignId: string,
   version: number,
+  campaignVersion: number,
 ): Promise<CampaignView> {
   assertRole(ctx, ['owner', 'editor']);
   assertWritable(ctx);
   const campaign = await loadCampaignRow(ctx, campaignId);
   if (campaign.status !== 'draft' || !campaign.editable) throw conflict('campaign_not_editable');
+  // Version lue par le client : si le brouillon a changé depuis (autre onglet, collègue), on refuse au lieu d'écraser (EC-TEAM-08).
+  if (campaign.version !== campaignVersion) {
+    throw new AppError('conflict', {
+      meta: { current_version: campaign.version, reason: 'stale_version' },
+    });
+  }
 
   const found = await ctx.db
     .from('campaign_proposals')
@@ -579,7 +630,7 @@ export async function chooseProposal(
     .eq('workspace_id', ctx.workspace.id)
     .eq('id', campaignId)
     // Verrou optimiste : si quelqu'un a modifié le brouillon depuis notre lecture, rien n'est écrasé (EC-TEAM-08).
-    .eq('version', campaign.version)
+    .eq('version', campaignVersion)
     .eq('status', 'draft')
     .select(CAMPAIGN_COLUMNS);
   if (written.error !== null) throw db(written.error);

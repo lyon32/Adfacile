@@ -7,6 +7,14 @@ import { createConfirmedUser, overflowsHorizontally, patchMe, signIn } from './s
 
 // Un compte neuf par test : la limite « IA » (20 par heure et par espace) ne doit pas fausser un parcours.
 
+// Écrans SANS montant : les autres affichent des FCFA calculés avec la TVA et le taux d'ESSAI posés par les tests (pas des
+// données du produit) ; leurs captures le disent dans le nom du fichier.
+const SANS_MONTANT = new Set([
+  'proposition-depart',
+  'proposition-ecriture',
+  'proposition-erreur-flux',
+]);
+
 async function checkScreen(
   page: Page,
   name: string,
@@ -15,7 +23,7 @@ async function checkScreen(
 ) {
   expect(await overflowsHorizontally(page)).toBe(false);
   await page.screenshot({
-    path: `../../test-results/captures/${name}-${info.project.name}-${theme}.png`,
+    path: `../../test-results/captures/${name}${SANS_MONTANT.has(name) ? '' : '-valeurs-essai'}-${info.project.name}-${theme}.png`,
     fullPage: true,
   });
   const results = await new AxeBuilder({ page }).analyze();

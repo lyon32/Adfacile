@@ -74,11 +74,11 @@ describe('campaignCost', () => {
   });
 
   it('arrondi de la TVA : 0,5 centime exactement monte (demi vers le haut)', () => {
-    // 200 centimes × 1 jour × 0,0025 = 0,5 centime
+    // 100 centimes × 2 jours × 0,0025 = 0,5 centime
     const cost = campaignCost({
-      dailyBudgetUsdCents: 200,
+      dailyBudgetUsdCents: 100,
       startDate: '2026-10-11',
-      endDate: '2026-10-11',
+      endDate: '2026-10-12',
       vat: vat(0.0025),
       fx: fx(600),
     });
@@ -86,11 +86,11 @@ describe('campaignCost', () => {
   });
 
   it('arrondi de la TVA : juste sous 0,5 centime descend', () => {
-    // 199 × 0,0025 = 0,4975
+    // 66 centimes × 3 jours × 0,0025 = 0,495
     const cost = campaignCost({
-      dailyBudgetUsdCents: 199,
+      dailyBudgetUsdCents: 66,
       startDate: '2026-10-11',
-      endDate: '2026-10-11',
+      endDate: '2026-10-13',
       vat: vat(0.0025),
       fx: fx(600),
     });
@@ -103,7 +103,7 @@ describe('campaignCost', () => {
     expect(cost.total?.xaf).toBe(25142);
   });
 
-  it('un seul jour', () => {
+  it('un seul jour (début = fin) : incomplète, comme la validation (fin > début, deux jours au moins)', () => {
     const cost = campaignCost({
       dailyBudgetUsdCents: 100,
       startDate: '2026-10-11',
@@ -111,13 +111,25 @@ describe('campaignCost', () => {
       vat: vat(0.1),
       fx: fx(600),
     });
-    expect(cost).toMatchObject({
-      days: 1,
-      budget_usd_cents: 100,
-      vat_usd_cents: 10,
-      total_usd_cents: 110,
+    expect(cost.status).toBe('incomplete');
+    expect(cost.total).toBeNull();
+  });
+
+  it('deux jours, le minimum : 2 × 100 centimes + 10 % de TVA', () => {
+    const cost = campaignCost({
+      dailyBudgetUsdCents: 100,
+      startDate: '2026-10-11',
+      endDate: '2026-10-12',
+      vat: vat(0.1),
+      fx: fx(600),
     });
-    expect(cost.total?.xaf).toBe(660);
+    expect(cost).toMatchObject({
+      days: 2,
+      budget_usd_cents: 200,
+      vat_usd_cents: 20,
+      total_usd_cents: 220,
+    });
+    expect(cost.total?.xaf).toBe(1320);
   });
 
   it('plus grand cas permis (10 000 $ par jour pendant 365 jours) reste exact', () => {

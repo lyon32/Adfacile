@@ -234,13 +234,11 @@ export function useUpdateCampaign(workspaceId: string, campaignId: string) {
 export function useChooseProposal(workspaceId: string, campaignId: string) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (version: number) =>
+    mutationFn: (input: { proposalVersion: number; campaignVersion: number }) =>
       apiFetch(
-        `${base(workspaceId)}/campaigns/${campaignId}/proposals/${String(version)}/choose`,
+        `${base(workspaceId)}/campaigns/${campaignId}/proposals/${String(input.proposalVersion)}/choose`,
         CampaignSchema,
-        {
-          method: 'POST',
-        },
+        { method: 'POST', body: { version: input.campaignVersion } },
       ),
     onSuccess: async (campaign) => {
       client.setQueryData(campaignKey(workspaceId, campaignId), campaign);

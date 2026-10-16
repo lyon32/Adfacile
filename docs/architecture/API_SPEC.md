@@ -413,7 +413,7 @@ Détail des corps de requête et de réponse : [`api/openapi.yaml`](../../api/op
 | GET · POST | `{ws}/campaigns` | Lister, créer un brouillon |
 | GET · PATCH | `{ws}/campaigns/{id}` | Détail, modifier |
 | GET · POST | `{ws}/campaigns/{id}/proposals` | Propositions, en générer une (SSE) |
-| POST | `{ws}/campaigns/{id}/proposals/{version}/choose` | Retenir une proposition |
+| POST | `{ws}/campaigns/{id}/proposals/{version}/choose` | Retenir une proposition (corps `{ version }` : version du brouillon lue ; périmée → 409 `conflict`) |
 | POST 🔑 | `{ws}/campaigns/{id}/publish` | Publier (202) |
 | POST | `{ws}/campaigns/{id}/pause` · `/resume` | Pause, reprise |
 | POST | `{ws}/campaigns/{id}/relaunch` | Relancer en nouveau brouillon |

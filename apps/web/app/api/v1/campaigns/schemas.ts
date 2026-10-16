@@ -31,3 +31,8 @@ export const updateCampaignSchema = z.strictObject({
   ab_test: z.boolean().optional(),
   version: z.number().int().min(1),
 });
+
+/** Retenir une proposition : la version du brouillon lue par le client (verrou optimiste, EC-TEAM-08). */
+export const chooseProposalSchema = z.strictObject({
+  version: z.number().int().min(1),
+});

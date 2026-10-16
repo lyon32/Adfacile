@@ -82,9 +82,10 @@ describe('dates (début ≥ aujourd’hui, fin > début, durée ≤ 365 jours)',
       run({ startDate: '2026-10-20', endDate: '2026-10-14' }, ['start_date', 'end_date'])?.code,
     ).toBe('validation_failed');
   });
-  it('durée : 365 jours de décalage acceptés, 366 refusés', () => {
-    expect(run({ startDate: '2026-10-13', endDate: '2027-10-13' }, ['end_date'])).toBeNull();
-    const e = run({ startDate: '2026-10-13', endDate: '2027-10-14' }, ['end_date']);
+  it('durée : 365 jours au plus, début ET fin compris (365 acceptés, 366 refusés)', () => {
+    // du 13/10/2026 au 12/10/2027 = 365 jours comptés début et fin inclus
+    expect(run({ startDate: '2026-10-13', endDate: '2027-10-12' }, ['end_date'])).toBeNull();
+    const e = run({ startDate: '2026-10-13', endDate: '2027-10-13' }, ['end_date']);
     expect(e?.opts.errors?.[0]).toMatchObject({ field: 'end_date', code: 'too_large' });
   });
   it('date inexistante ou mal formée refusée', () => {
