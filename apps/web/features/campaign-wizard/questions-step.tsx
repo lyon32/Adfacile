@@ -165,9 +165,16 @@ export interface QuestionsStepProps {
   workspaceId: string;
   analysis: Analysis;
   onBack: () => void;
+  /** Réponses enregistrées : passer à l'étape « Proposition ». */
+  onContinue?: () => void;
 }
 
-export function QuestionsStep({ workspaceId, analysis, onBack }: QuestionsStepProps): ReactNode {
+export function QuestionsStep({
+  workspaceId,
+  analysis,
+  onBack,
+  onContinue,
+}: QuestionsStepProps): ReactNode {
   const t = useTranslations('campaign.wizard.questions');
   const locale = useLocale();
   const save = useAnswerQuestions(workspaceId, analysis.id);
@@ -248,6 +255,11 @@ export function QuestionsStep({ workspaceId, analysis, onBack }: QuestionsStepPr
             {t('saved_title')}
           </h2>
           <p className="text-muted">{t('saved_body')}</p>
+          {onContinue === undefined ? null : (
+            <Button type="button" className="w-full sm:w-auto sm:self-start" onClick={onContinue}>
+              {t('go_proposal')}
+            </Button>
+          )}
           <Button
             type="button"
             variant="quiet"

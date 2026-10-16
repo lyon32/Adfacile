@@ -9,6 +9,7 @@ import { useState, type ReactNode } from 'react';
 import { useConnections } from '../meta-connection/api';
 import { useAnalysis } from './api';
 import { BlockedPanel, FailedPanel } from './outcome-panels';
+import { ProposalStep } from './proposal-step';
 import { QuestionsStep } from './questions-step';
 import { SourcesStep } from './sources-step';
 import { Stepper, type WizardStep } from './stepper';
@@ -84,6 +85,8 @@ function AnalysisFlow({
   analysisId: string;
   onBack: () => void;
 }): ReactNode {
+  const [stage, setStage] = useQueryState('etape', parseAsString);
+  const [campaignId, setCampaignId] = useQueryState('campagne', parseAsString);
   const t = useTranslations('campaign.wizard.waiting');
   const common = useTranslations('common');
   const analysis = useAnalysis(workspaceId, analysisId);
@@ -130,9 +133,34 @@ function AnalysisFlow({
       );
     case 'questions':
     case 'ready':
+      if (stage === 'proposition' && data.status === 'ready') {
+        return (
+          <Shell step="proposal">
+            <ProposalStep
+              workspaceId={workspaceId}
+              analysisId={analysisId}
+              pageId={data.page_id ?? null}
+              campaignId={campaignId}
+              onCampaign={(id) => {
+                void setCampaignId(id);
+              }}
+              onBack={() => {
+                void setStage(null);
+              }}
+            />
+          </Shell>
+        );
+      }
       return (
         <Shell step="questions">
-          <QuestionsStep workspaceId={workspaceId} analysis={data} onBack={onBack} />
+          <QuestionsStep
+            workspaceId={workspaceId}
+            analysis={data}
+            onBack={onBack}
+            onContinue={() => {
+              void setStage('proposition');
+            }}
+          />
         </Shell>
       );
   }
