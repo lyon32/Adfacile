@@ -1889,9 +1889,7 @@ export interface components {
             optimization_goal?: "CONVERSATIONS" | "LINK_CLICKS" | "LANDING_PAGE_VIEWS" | "POST_ENGAGEMENT" | "REACH" | "OFFSITE_CONVERSIONS" | null;
             geo?: components["schemas"]["CampaignGeo"];
             targeting?: components["schemas"]["CampaignTargeting"];
-            /** @description Budget par jour en FCFA et en dollars ; null tant qu'il n'est pas défini, ou si le taux de change manque. */
-            daily_budget?: components["schemas"]["Money"] | null;
-            /** @description Budget par jour en centimes de dollar (la valeur qui fait foi) */
+            /** @description Budget par jour en centimes de dollar (la valeur qui fait foi) ; l'équivalent en FCFA est dans cost.daily */
             daily_budget_usd_cents?: number | null;
             cost: components["schemas"]["CampaignCost"];
             /** @description Taux de TVA enregistré lors de la dernière écriture (fraction : 0,1925 = 19,25 %) ; null si la TVA du pays n'est pas configurée. */
@@ -1955,6 +1953,8 @@ export interface components {
             total_usd_cents?: number | null;
             /** @description Total TVA comprise en FCFA et en dollars */
             total?: components["schemas"]["Money"] | null;
+            /** @description Budget par jour (hors TVA) en FCFA et en dollars */
+            daily?: components["schemas"]["Money"] | null;
             fx?: components["schemas"]["FxRate"] | null;
         };
         CampaignUpdate: {

@@ -40,3 +40,5 @@ export * from './analysis/fake-deps';
 export * from './analysis/run-analysis';
 export * from './analysis/answers';
 export * from './campaigns/campaign-state';
+export * from './campaigns/cost';
+export * from './campaigns/cost-context';
