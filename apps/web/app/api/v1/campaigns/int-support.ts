@@ -1,7 +1,7 @@
 // Aide des tests d'intégration « campagnes » : Page, analyse prête, TVA et change de TEST, appels de route.
 // Les taux écrits ici sont des valeurs de test dans la base locale ; le produit n'en contient aucun.
 import { randomUUID } from 'node:crypto';
-import { testServiceClient, type SeededWorkspace } from '@pubeka/testing';
+import { queryTestDb, testServiceClient, type SeededWorkspace } from '@pubeka/testing';
 import { expect } from 'vitest';
 import { call, json, ws } from '../meta/int-support';
 import { POST as createRoute } from '../workspaces/[workspaceId]/campaigns/route';
@@ -167,7 +167,11 @@ export interface CampaignBody {
 export async function newDraft(s: SeededWorkspace): Promise<CampaignBody> {
   const pageId = await seedPage(s);
   const analysisId = await seedReadyAnalysis(s, pageId);
-  const res = await create(s, s.owner, { analysis_id: analysisId, page_id: pageId, platform: 'meta' });
+  const res = await create(s, s.owner, {
+    analysis_id: analysisId,
+    page_id: pageId,
+    platform: 'meta',
+  });
   expect(res.status).toBe(201);
   return (await json(res)) as unknown as CampaignBody;
 }
@@ -178,3 +182,8 @@ export function inDays(days: number): string {
 }
 
 export const newKey = (): string => randomUUID();
+
+/** Remet à zéro les compteurs de débit : la limite « ai » (20 par heure et par espace) ne doit pas fausser un test. */
+export async function resetRateLimits(): Promise<void> {
+  await queryTestDb('delete from private.rate_limits');
+}
