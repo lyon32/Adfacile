@@ -505,8 +505,12 @@ export type Database = {
           campaign_id: string;
           chosen: boolean;
           created_at: string;
+          created_by: string | null;
+          error_code: string | null;
           id: string;
+          idempotency_key: string | null;
           proposal: NonNullable<Json>;
+          status: string;
           version: number;
           workspace_id: string;
         };
@@ -515,8 +519,12 @@ export type Database = {
           campaign_id: string;
           chosen?: boolean;
           created_at?: string;
+          created_by?: string | null;
+          error_code?: string | null;
           id?: string;
+          idempotency_key?: string | null;
           proposal: NonNullable<Json>;
+          status?: string;
           version: number;
           workspace_id: string;
         };
@@ -525,8 +533,12 @@ export type Database = {
           campaign_id?: string;
           chosen?: boolean;
           created_at?: string;
+          created_by?: string | null;
+          error_code?: string | null;
           id?: string;
+          idempotency_key?: string | null;
           proposal?: NonNullable<Json>;
+          status?: string;
           version?: number;
           workspace_id?: string;
         };
@@ -543,6 +555,13 @@ export type Database = {
             columns: ['campaign_id'];
             isOneToOne: false;
             referencedRelation: 'campaigns';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'campaign_proposals_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
             referencedColumns: ['id'];
           },
           {
@@ -613,6 +632,8 @@ export type Database = {
         Row: {
           ab_test: boolean;
           ad_account_id: string | null;
+          analysis_id: string | null;
+          chosen_proposal_version: number | null;
           copy: NonNullable<Json>;
           created_at: string;
           created_by: string | null;
@@ -627,6 +648,7 @@ export type Database = {
           meta_campaign_id: string | null;
           name: string;
           objective: string | null;
+          optimization_goal: string | null;
           page_id: string | null;
           platform: Database['public']['Enums']['platform'];
           published_at: string | null;
@@ -637,11 +659,14 @@ export type Database = {
           updated_at: string;
           vat_rate: number | null;
           version: number;
+          visual_brief: string | null;
           workspace_id: string;
         };
         Insert: {
           ab_test?: boolean;
           ad_account_id?: string | null;
+          analysis_id?: string | null;
+          chosen_proposal_version?: number | null;
           copy?: NonNullable<Json>;
           created_at?: string;
           created_by?: string | null;
@@ -656,6 +681,7 @@ export type Database = {
           meta_campaign_id?: string | null;
           name: string;
           objective?: string | null;
+          optimization_goal?: string | null;
           page_id?: string | null;
           platform?: Database['public']['Enums']['platform'];
           published_at?: string | null;
@@ -666,11 +692,14 @@ export type Database = {
           updated_at?: string;
           vat_rate?: number | null;
           version?: number;
+          visual_brief?: string | null;
           workspace_id: string;
         };
         Update: {
           ab_test?: boolean;
           ad_account_id?: string | null;
+          analysis_id?: string | null;
+          chosen_proposal_version?: number | null;
           copy?: NonNullable<Json>;
           created_at?: string;
           created_by?: string | null;
@@ -685,6 +714,7 @@ export type Database = {
           meta_campaign_id?: string | null;
           name?: string;
           objective?: string | null;
+          optimization_goal?: string | null;
           page_id?: string | null;
           platform?: Database['public']['Enums']['platform'];
           published_at?: string | null;
@@ -695,6 +725,7 @@ export type Database = {
           updated_at?: string;
           vat_rate?: number | null;
           version?: number;
+          visual_brief?: string | null;
           workspace_id?: string;
         };
         Relationships: [
@@ -703,6 +734,13 @@ export type Database = {
             columns: ['ad_account_id'];
             isOneToOne: false;
             referencedRelation: 'ad_accounts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'campaigns_analysis_id_fkey';
+            columns: ['analysis_id'];
+            isOneToOne: false;
+            referencedRelation: 'analyses';
             referencedColumns: ['id'];
           },
           {

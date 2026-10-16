@@ -555,10 +555,16 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { type: object, required: [ analysis_id, page_id, platform ], properties: { analysis_id: { type: string, format: uuid }, page_id: { type: string, format: uuid }, platform: { type: string, enum: [ meta ] } } } } }
+      description: |
+        L'analyse doit être au statut `ready` (questions répondues) et appartenir à l'espace ; la Page doit appartenir à l'espace.
+        Le brouillon reprend le compte publicitaire actif. Aucun appel IA, aucune dépense.
       responses:
         '201': { description: Brouillon créé, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
-        '403': { $ref: '#/components/responses/Forbidden' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
   /workspaces/{workspaceId}/campaigns/{campaignId}:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -567,6 +573,7 @@ paths:
       tags: [ Campagnes ]
       operationId: getCampaign
       summary: Détail d'une campagne
+      description: Le coût (`cost`) est recalculé à chaque lecture avec la TVA du pays et le taux de change en vigueur.
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -578,12 +585,18 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/CampaignUpdate' } } }
+      description: |
+        `version` est obligatoire (EC-TEAM-08). Version périmée : `409 conflict` avec `meta.current_version`, rien n'est modifié.
+        S15 ne modifie que les brouillons (`draft`) ; la modification d'une campagne publiée arrive avec S16. Chaque champ
+        est revalidé par le serveur (budget 100 à 1 000 000 centimes, dates, textes) ; le coût est recalculé.
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '422': { $ref: '#/components/responses/Unprocessable' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
   /workspaces/{workspaceId}/campaigns/{campaignId}/proposals:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -592,21 +605,42 @@ paths:
       tags: [ Campagnes ]
       operationId: listProposals
       summary: Propositions IA de la campagne (toutes versions)
+      description: "Les propositions terminées (status ready), de la plus ancienne à la plus récente (onglets « Proposition 1, 2, 3 »)."
       responses:
         '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/Proposal' } } } } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
     post:
       tags: [ Campagnes ]
       operationId: generateProposal
       summary: Générer une proposition (Stratège), avec affichage progressif
       description: |
-        Avec `Accept: text/event-stream`, la réponse est un flux SSE : événements `field` (champ rempli), `done` (proposition complète), `error` (Problem Details en JSON).
-        Sans ce type, réponse JSON complète.
+        Action qui dépense un appel IA : `Idempotency-Key` obligatoire (UUID v4). Une clé désigne une seule génération par
+        campagne : le renvoi de la même clé ne refait aucun appel IA (la proposition déjà produite est rejouée, en-tête
+        `Idempotent-Replayed: true`) ; si la première est encore en cours : `409 conflict` avec `retry_after_s` ; si elle
+        a échoué : la même erreur (un appel au résultat incertain n'est jamais relancé automatiquement : nouvelle clé).
+
+        Avec `Accept: text/event-stream`, la réponse est un flux SSE (API_SPEC §10), toujours en `200` :
+        - `field` : `{ "path": "copy.headline", "value": "…" }`, un événement par champ terminé, dans l'ordre d'écriture.
+          C'est un **aperçu non contractuel** : seul `done` fait foi ;
+        - `done` : la `Proposal` complète, validée et enregistrée ;
+        - `error` : un Problem Details (même forme que les erreurs HTTP), puis le flux se ferme.
+        Sans ce type, réponse JSON complète en `201`. Une erreur avant le début du flux est une réponse HTTP normale.
+        Si le client coupe la connexion, l'appel IA en cours est annulé et la proposition est marquée en échec.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       responses:
-        '201': { description: Proposition créée, content: { application/json: { schema: { $ref: '#/components/schemas/Proposal' } }, text/event-stream: { schema: { type: string } } } }
+        '200': { description: "Flux SSE (field, done, error)", content: { text/event-stream: { schema: { type: string } } } }
+        '201': { description: Proposition créée, content: { application/json: { schema: { $ref: '#/components/schemas/Proposal' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
         '502': { $ref: '#/components/responses/BadGateway' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /workspaces/{workspaceId}/campaigns/{campaignId}/proposals/{version}/choose:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -616,9 +650,16 @@ paths:
       tags: [ Campagnes ]
       operationId: chooseProposal
       summary: Retenir une proposition (copiée dans la campagne)
+      description: |
+        Copie les champs de la proposition dans le brouillon et note la version retenue. Le serveur revalide tout (budget,
+        dates, textes) : une proposition devenue invalide (date passée…) est refusée en `422`. Seul un brouillon peut en recevoir une.
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
   /workspaces/{workspaceId}/campaigns/{campaignId}/publish:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -1655,27 +1696,85 @@ components:
       enum: [ draft, publishing, in_review, active, paused, rejected, ended, stopped, error ]
     Campaign:
       type: object
-      required: [ id, name, platform, status, version ]
+      required: [ id, name, platform, status, version, editable, cost ]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
         platform: { type: string, enum: [ meta, google, tiktok ] }
         page_id: { type: [ string, 'null' ], format: uuid }
+        analysis_id: { type: [ string, 'null' ], format: uuid }
         status: { $ref: '#/components/schemas/CampaignStatus' }
         objective: { type: [ string, 'null' ], enum: [ OUTCOME_ENGAGEMENT, OUTCOME_TRAFFIC, OUTCOME_AWARENESS, OUTCOME_SALES, null ] }
         destination: { type: [ string, 'null' ], enum: [ WHATSAPP, MESSENGER, INSTAGRAM_DIRECT, WEBSITE, APP, ON_POST, NONE, null ] }
-        geo: { type: object }
-        daily_budget: { $ref: '#/components/schemas/Money' }
-        total_cost: { $ref: '#/components/schemas/Money' }
-        vat_rate: { type: [ number, 'null' ] }
+        optimization_goal: { type: [ string, 'null' ], enum: [ CONVERSATIONS, LINK_CLICKS, LANDING_PAGE_VIEWS, POST_ENGAGEMENT, REACH, OFFSITE_CONVERSIONS, null ] }
+        geo: { $ref: '#/components/schemas/CampaignGeo' }
+        targeting: { $ref: '#/components/schemas/CampaignTargeting' }
+        daily_budget: { oneOf: [ { $ref: '#/components/schemas/Money' }, { type: 'null' } ], description: "Budget par jour en FCFA et en dollars ; null tant qu'il n'est pas défini, ou si le taux de change manque." }
+        daily_budget_usd_cents: { type: [ integer, 'null' ], description: Budget par jour en centimes de dollar (la valeur qui fait foi) }
+        cost: { $ref: '#/components/schemas/CampaignCost' }
+        vat_rate: { type: [ number, 'null' ], description: "Taux de TVA enregistré lors de la dernière écriture (fraction : 0,1925 = 19,25 %) ; null si la TVA du pays n'est pas configurée." }
         start_date: { type: [ string, 'null' ], format: date }
         end_date: { type: [ string, 'null' ], format: date }
         copy: { $ref: '#/components/schemas/AdCopy' }
+        tracking: { type: [ object, 'null' ], properties: { pixel_id: { type: string } } }
+        visual_brief: { type: [ string, 'null' ], maxLength: 1000 }
         ab_test: { type: boolean }
         editable: { type: boolean }
+        chosen_proposal_version: { type: [ integer, 'null' ] }
         status_message: { type: string, description: "Texte affiché (ex. « Meta vérifie ta pub, en général sous 24 heures »)" }
         published_at: { type: [ string, 'null' ], format: date-time }
         version: { type: integer, minimum: 1, description: Augmente à chaque modification ; à renvoyer dans PATCH (SECURITY_NOTES EC-TEAM-08) }
+    CampaignGeo:
+      type: object
+      additionalProperties: false
+      properties:
+        countries: { type: array, maxItems: 20, items: { type: string, pattern: '^[A-Z]{2}$' } }
+        cities:
+          type: array
+          maxItems: 20
+          items:
+            type: object
+            additionalProperties: false
+            required: [ name, radius_km ]
+            properties:
+              name: { type: string, minLength: 1, maxLength: 100 }
+              radius_km: { type: integer, minimum: 1, maximum: 80 }
+    CampaignTargeting:
+      type: object
+      additionalProperties: false
+      properties:
+        age_min: { type: integer, minimum: 18, maximum: 65 }
+        age_max: { type: integer, minimum: 18, maximum: 65 }
+        genders: { type: string, enum: [ all, male, female ] }
+        advantage_plus: { type: boolean }
+        interests:
+          type: array
+          maxItems: 15
+          description: "Centres d'intérêt Meta. Décision produit : l'IA peut les proposer, l'utilisateur les modifie. Sans identifiant Meta (résolu à la publication, S16), un intérêt est envoyé comme interests: []."
+          items:
+            type: object
+            additionalProperties: false
+            required: [ name ]
+            properties:
+              name: { type: string, minLength: 1, maxLength: 80 }
+              id: { type: [ string, 'null' ], pattern: '^[0-9]{3,25}$' }
+    CampaignCost:
+      type: object
+      description: |
+        Coût estimé de la campagne : budget par jour × nombre de jours (début et fin inclus) + TVA du pays. Tout est calculé par
+        le serveur, en entiers (centimes de dollar, FCFA). Aucune TVA ni aucun taux de change n'est inventé : si la TVA du
+        pays n'est pas configurée dans l'administration, `status` vaut `vat_not_configured` et les totaux sont `null`.
+      required: [ status ]
+      properties:
+        status: { type: string, enum: [ ok, incomplete, vat_not_configured, fx_not_available ], description: "ok : tout est calculé ; incomplete : budget ou dates manquants ; vat_not_configured : pas de TVA connue pour le pays ; fx_not_available : pas de taux de change." }
+        vat_country: { type: [ string, 'null' ], description: "Pays dont la TVA est appliquée (pays de facturation du compte publicitaire, sinon pays du propriétaire)." }
+        vat_rate: { type: [ number, 'null' ] }
+        days: { type: [ integer, 'null' ] }
+        budget_usd_cents: { type: [ integer, 'null' ], description: Budget total hors TVA }
+        vat_usd_cents: { type: [ integer, 'null' ] }
+        total_usd_cents: { type: [ integer, 'null' ] }
+        total: { oneOf: [ { $ref: '#/components/schemas/Money' }, { type: 'null' } ], description: Total TVA comprise en FCFA et en dollars }
+        fx: { oneOf: [ { $ref: '#/components/schemas/FxRate' }, { type: 'null' } ] }
     CampaignUpdate:
       type: object
       additionalProperties: false
@@ -1683,15 +1782,14 @@ components:
         name: { type: string, minLength: 1, maxLength: 200 }
         objective: { type: string, enum: [ OUTCOME_ENGAGEMENT, OUTCOME_TRAFFIC, OUTCOME_AWARENESS, OUTCOME_SALES ] }
         destination: { type: string, enum: [ WHATSAPP, MESSENGER, INSTAGRAM_DIRECT, WEBSITE, APP, ON_POST, NONE ] }
-        geo: { type: object }
-        targeting: { type: object, properties: { age_min: { type: integer, minimum: 18, maximum: 65 }, age_max: { type: integer, minimum: 18, maximum: 65 }, genders: { type: string, enum: [ all, male, female ] } } }
-        daily_budget_usd_cents: { type: integer, minimum: 100 }
+        geo: { $ref: '#/components/schemas/CampaignGeo' }
+        targeting: { $ref: '#/components/schemas/CampaignTargeting' }
+        daily_budget_usd_cents: { type: integer, minimum: 100, maximum: 1000000 }
         start_date: { type: string, format: date }
         end_date: { type: string, format: date }
         copy: { $ref: '#/components/schemas/AdCopy' }
         tracking: { type: [ object, 'null' ], properties: { pixel_id: { type: string, pattern: '^[0-9]{5,25}$' } } }
         ab_test: { type: boolean }
-        visual_ids: { type: array, minItems: 1, maxItems: 2, items: { type: string, format: uuid } }
         version: { type: integer, minimum: 1, description: Version lue ; périmée → 409 conflict avec meta.current_version }
       required: [ version ]
     AdCopy:
@@ -1710,13 +1808,55 @@ components:
         next_cursor: { type: [ string, 'null' ] }
     Proposal:
       type: object
-      required: [ version, proposal ]
+      required: [ version, status, proposal, chosen ]
       properties:
-        version: { type: integer }
+        version: { type: integer, minimum: 1, description: "Numéro d'ordre dans la campagne (onglet « Proposition 1, 2, 3 »)" }
+        status: { type: string, enum: [ ready ], description: "Seules les propositions terminées sont listées ; un flux SSE interrompu n'en laisse aucune." }
         chosen: { type: boolean }
-        proposal: { type: object, description: CampaignProposal du Stratège (docs/agents/02) }
-        estimate: { type: object, properties: { reach_min: { type: integer }, reach_max: { type: integer } } }
+        proposal: { $ref: '#/components/schemas/CampaignProposal' }
+        cost: { $ref: '#/components/schemas/CampaignCost' }
         created_at: { type: string, format: date-time }
+    CampaignProposal:
+      type: object
+      description: Sortie validée du Stratège (docs/agents/02-stratege-campagne.md §6), après contrôle R3 par le code. Le coût en FCFA et la TVA ne viennent jamais de l'agent.
+      required: [ objective, destination, optimization_goal, geo, advanced_targeting, budget, schedule, copy, warnings, visual_brief, flags ]
+      properties:
+        objective: { type: string, enum: [ OUTCOME_ENGAGEMENT, OUTCOME_TRAFFIC, OUTCOME_AWARENESS, OUTCOME_SALES ] }
+        objective_reason: { type: string }
+        destination: { type: string, enum: [ WHATSAPP, MESSENGER, INSTAGRAM_DIRECT, WEBSITE, APP, ON_POST, NONE ] }
+        optimization_goal: { type: string, enum: [ CONVERSATIONS, LINK_CLICKS, LANDING_PAGE_VIEWS, POST_ENGAGEMENT, REACH, OFFSITE_CONVERSIONS ] }
+        geo:
+          type: object
+          required: [ countries, cities ]
+          properties:
+            countries: { type: array, items: { type: string } }
+            cities: { type: array, items: { type: object, required: [ name, radius_km ], properties: { name: { type: string }, radius_km: { type: integer } } } }
+            reason: { type: string }
+        advanced_targeting:
+          type: object
+          properties:
+            age_min: { type: integer }
+            age_max: { type: integer }
+            genders: { type: string, enum: [ all, male, female ] }
+            advantage_plus: { type: boolean }
+        budget:
+          type: object
+          required: [ daily_usd_cents ]
+          properties:
+            daily_usd_cents: { type: integer, minimum: 100 }
+            reason: { type: string }
+        schedule:
+          type: object
+          required: [ start_date, end_date ]
+          properties:
+            start_date: { type: string, format: date }
+            end_date: { type: string, format: date }
+            reason: { type: string }
+        copy: { $ref: '#/components/schemas/AdCopy' }
+        tracking: { type: [ object, 'null' ], properties: { pixel_id: { type: string } } }
+        warnings: { type: array, items: { type: string } }
+        visual_brief: { type: string }
+        flags: { type: array, items: { type: string } }
     CampaignStats:
       type: object
       required: [ summary, daily ]
