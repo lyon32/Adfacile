@@ -554,7 +554,7 @@ paths:
       summary: Créer un brouillon de campagne à partir d'une analyse
       requestBody:
         required: true
-        content: { application/json: { schema: { type: object, required: [ analysis_id, page_id, platform ], properties: { analysis_id: { type: string, format: uuid }, page_id: { type: string, format: uuid }, platform: { type: string, enum: [ meta ] } } } } }
+        content: { application/json: { schema: { type: object, required: [ analysis_id, platform ], properties: { analysis_id: { type: string, format: uuid }, page_id: { type: string, format: uuid, description: "Absente tant que Meta n'est pas connecté : on peut préparer la campagne sans publier (APPFLOW §8.0)." }, platform: { type: string, enum: [ meta ] } } } } }
       description: |
         L'analyse doit être au statut `ready` (questions répondues) et appartenir à l'espace ; la Page doit appartenir à l'espace.
         Le brouillon reprend le compte publicitaire actif. Aucun appel IA, aucune dépense.
@@ -1672,6 +1672,7 @@ components:
         profile: { type: [ object, 'null' ], description: BusinessProfile de l'Analyste (docs/agents/01) }
         questions: { type: array, items: { $ref: '#/components/schemas/Question' } }
         unreadable_sources: { type: array, items: { type: integer } }
+        page_id: { type: [ string, 'null' ], format: uuid, description: "Page choisie à l'étape Sources ; sert à créer le brouillon de campagne." }
         error_code: { type: [ string, 'null' ], description: "Code de la liste fermée quand status = failed (ex. provider_unavailable, source_unreadable)." }
         flags: { type: array, items: { type: string }, description: "Signalements affichables : SOURCE_UNREADABLE:{index}, MODEL_WITHOUT_VISION, IMAGES_NOT_READ, IMAGE_VALUES_UNVERIFIED, MULTIPLE_BUSINESSES, PRODUCT_NOT_DETECTED. Une injection de consigne n'est jamais exposée (elle est ignorée et enregistrée pour l'administration)." }
         answers: { type: array, items: { $ref: '#/components/schemas/Answer' }, description: 'Réponses déjà données aux questions (affichées pré-remplies au retour sur l’étape).' }

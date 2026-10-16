@@ -49,6 +49,12 @@ describe('createDraft', () => {
     await createDraft(ctx, input);
     expect(db.rows('campaigns')[0]?.ad_account_id).toBeNull();
   });
+  it('sans Page (Meta pas connecté) : le brouillon est créé, la Page reste vide', async () => {
+    const { ctx, db } = world();
+    const draft = await createDraft(ctx, { analysis_id: ANALYSIS, platform: 'meta' });
+    expect(draft.page_id).toBeNull();
+    expect(db.rows('campaigns')[0]?.page_id).toBeNull();
+  });
   it('refus : viewer, lecture seule, espace suspendu', async () => {
     expect(await code(createDraft(world({ role: 'viewer' }).ctx, input))).toBe('role_insufficient');
     expect(await code(createDraft(world({ access: 'read_only' }).ctx, input))).toBe(

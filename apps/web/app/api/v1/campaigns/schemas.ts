@@ -12,7 +12,7 @@ import { z } from 'zod';
 
 export const createCampaignSchema = z.strictObject({
   analysis_id: z.uuid(),
-  page_id: z.uuid(),
+  page_id: z.uuid().optional(),
   platform: z.literal('meta'),
 });
 

@@ -43,6 +43,7 @@ export const AnalysisSchema = z.object({
   blocked_reason: z.string().nullable().optional(),
   questions: z.array(QuestionSchema).default([]),
   unreadable_sources: z.array(z.number()).default([]),
+  page_id: z.string().nullable().optional(),
   error_code: z.string().nullable().optional(),
   flags: z.array(z.string()).default([]),
   answers: z.array(z.object({ question_id: z.string(), answer: z.string() })).default([]),

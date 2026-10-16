@@ -1850,6 +1850,11 @@ export interface components {
             profile?: Record<string, never> | null;
             questions?: components["schemas"]["Question"][];
             unreadable_sources?: number[];
+            /**
+             * Format: uuid
+             * @description Page choisie à l'étape Sources ; sert à créer le brouillon de campagne.
+             */
+            page_id?: string | null;
             /** @description Code de la liste fermée quand status = failed (ex. provider_unavailable, source_unreadable). */
             error_code?: string | null;
             /** @description Signalements affichables : SOURCE_UNREADABLE:{index}, MODEL_WITHOUT_VISION, IMAGES_NOT_READ, IMAGE_VALUES_UNVERIFIED, MULTIPLE_BUSINESSES, PRODUCT_NOT_DETECTED. Une injection de consigne n'est jamais exposée (elle est ignorée et enregistrée pour l'administration). */
