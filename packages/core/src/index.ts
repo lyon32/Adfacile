@@ -47,3 +47,8 @@ export * from './campaigns/campaign-schemas';
 export * from './campaigns/campaign-view';
 export * from './campaigns/create-draft';
 export * from './campaigns/update-campaign';
+export * from './agent-journal';
+export * from './campaigns/fake-stratege';
+export * from './campaigns/proposal-deps';
+export * from './campaigns/proposals';
+export * from './campaigns/fake-proposal-deps';

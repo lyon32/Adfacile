@@ -22,14 +22,58 @@ const DEFAULTS: Record<string, () => Row> = {
   uploads: () => ({ status: 'pending', verified_mime: null, verified_size: null }),
   sources: () => ({ status: 'ok', extractor: null, extracted_text: null }),
   business_profiles: () => ({ answers: [], conflicts: [], sensitive_signals: [], flags: [] }),
+  campaign_proposals: () => ({
+    status: 'ready',
+    chosen: false,
+    error_code: null,
+    agent_run_id: null,
+    created_at: new Date().toISOString(),
+  }),
+  campaigns: () => ({
+    version: 1,
+    status: 'draft',
+    editable: true,
+    platform: 'meta',
+    geo: {},
+    targeting: {},
+    copy: {},
+    tracking: null,
+    ab_test: false,
+    daily_budget_usd_cents: null,
+    start_date: null,
+    end_date: null,
+    objective: null,
+    destination: null,
+    optimization_goal: null,
+    visual_brief: null,
+    vat_rate: null,
+    fx_rate_xaf: null,
+    published_at: null,
+    chosen_proposal_version: null,
+  }),
 };
 
+/** Contraintes simulées d'une table (les vraies sont prouvées par PGlite et les tests d'intégration). */
+export interface TableRules {
+  /** Jeux de colonnes uniques ; une valeur `null` ne viole jamais l'unicité (comme SQL). */
+  unique?: string[][];
+  /** Chaque mise à jour augmente `version` de 1 (déclencheur `bump_version`). */
+  bumpVersion?: boolean;
+}
+
 export class MemoryDb {
+  readonly rules: Record<string, TableRules> = {};
+  /** Appelé juste avant chaque insertion : permet de simuler une écriture concurrente. */
+  beforeInsert: ((table: string, db: MemoryDb) => void) | undefined;
+  /** Appelé juste avant chaque mise à jour : permet de simuler une modification concurrente. */
+  beforeUpdate: ((table: string, db: MemoryDb) => void) | undefined;
   readonly tables: Record<string, Row[]> = {};
   readonly objects = new Map<string, { bytes: Uint8Array; createdAt: string }>();
   readonly storageCalls: string[] = [];
   /** Fait échouer la prochaine requête sur cette table (`table:op`). */
   failNext = new Set<string>();
+  /** Code SQL renvoyé par un échec simulé (`table:op` → ex. `23514`) ; `XX000` par défaut. */
+  failCodes: Record<string, string> = {};
   private counter = 0;
 
   rows(table: string): Row[] {
@@ -110,6 +154,7 @@ class Query implements PromiseLike<Result> {
   private returning = false;
   private mode: 'many' | 'maybe' | 'single' = 'many';
   private max = Infinity;
+  private sort: { column: string; ascending: boolean } | undefined;
 
   constructor(
     private readonly db: MemoryDb,
@@ -143,7 +188,12 @@ class Query implements PromiseLike<Result> {
     this.filters.push((row) => values.includes(row[column]));
     return this;
   }
-  order(): this {
+  lte(column: string, value: unknown): this {
+    this.filters.push((row) => String(row[column]) <= String(value));
+    return this;
+  }
+  order(column?: string, options?: { ascending?: boolean }): this {
+    if (column !== undefined) this.sort = { column, ascending: options?.ascending !== false };
     return this;
   }
   limit(n: number): this {
@@ -161,26 +211,50 @@ class Query implements PromiseLike<Result> {
 
   private run(): Result {
     if (this.db.failNext.delete(`${this.table}:${this.op}`)) {
-      return { data: null, error: { code: 'XX000', message: 'échec simulé' } };
+      const code = this.db.failCodes[`${this.table}:${this.op}`] ?? 'XX000';
+      return { data: null, error: { code, message: 'échec simulé' } };
     }
     const rows = this.db.rows(this.table);
     let affected: Row[];
     if (this.op === 'insert') {
+      this.db.beforeInsert?.(this.table, this.db);
       const list = Array.isArray(this.payload) ? this.payload : [this.payload];
       affected = list.map((row) => ({
         id: this.db.nextId(),
         ...(DEFAULTS[this.table]?.() ?? {}),
         ...row,
       }));
+      for (const candidate of affected) {
+        for (const columns of this.db.rules[this.table]?.unique ?? []) {
+          const clash = rows.some((row) =>
+            columns.every(
+              (c) => candidate[c] !== null && candidate[c] !== undefined && row[c] === candidate[c],
+            ),
+          );
+          if (clash) {
+            return {
+              data: null,
+              error: { code: '23505', message: `doublon sur ${columns.join(', ')}` },
+            };
+          }
+        }
+      }
       rows.push(...affected);
     } else {
+      if (this.op === 'update') this.db.beforeUpdate?.(this.table, this.db);
       const matching = rows.filter((row) => this.filters.every((f) => f(row)));
       if (this.op === 'update') {
-        for (const row of matching) Object.assign(row, this.payload);
+        for (const row of matching) {
+          Object.assign(row, this.payload);
+          if (this.db.rules[this.table]?.bumpVersion === true)
+            row.version = Number(row.version) + 1;
+        }
       } else if (this.op === 'delete') {
         for (const row of matching) rows.splice(rows.indexOf(row), 1);
       }
-      affected = matching.slice(0, this.max);
+      const ordered =
+        this.sort === undefined ? matching : [...matching].sort((a, b) => compare(a, b, this.sort));
+      affected = ordered.slice(0, this.max);
     }
     if ((this.op === 'insert' || this.op === 'update' || this.op === 'delete') && !this.returning) {
       return { data: null, error: null };
@@ -201,4 +275,12 @@ class Query implements PromiseLike<Result> {
   ): PromiseLike<R1 | R2> {
     return Promise.resolve(this.run()).then(onfulfilled, onrejected);
   }
+}
+
+function compare(a: Row, b: Row, sort: { column: string; ascending: boolean } | undefined): number {
+  if (sort === undefined) return 0;
+  const x = a[sort.column] as number | string;
+  const y = b[sort.column] as number | string;
+  const order = x < y ? -1 : x > y ? 1 : 0;
+  return sort.ascending ? order : -order;
 }

@@ -1,6 +1,12 @@
 // Routes « campagnes » contre la pile Supabase locale (vraie base, vraie RLS) : brouillon, lecture, modification avec
 // verrou optimiste (EC-TEAM-08), coût et TVA. Les 5 cas de chaque route (API_SPEC §15) + les cas propres.
-import { describeRoute, na, seedWorkspace, testServiceClient, type SeededWorkspace } from '@pubeka/testing';
+import {
+  describeRoute,
+  na,
+  seedWorkspace,
+  testServiceClient,
+  type SeededWorkspace,
+} from '@pubeka/testing';
 import { beforeAll, expect } from 'vitest';
 import {
   create,
@@ -24,7 +30,8 @@ beforeAll(async () => {
   await ensureTestVat('CM', 0.1925); // valeur d'essai
 });
 
-const asBody = async (res: Response): Promise<CampaignBody> => (await json(res)) as unknown as CampaignBody;
+const asBody = async (res: Response): Promise<CampaignBody> =>
+  (await json(res)) as unknown as CampaignBody;
 const problemOf = async (res: Response) =>
   (await json(res)) as unknown as {
     code: string;
@@ -37,7 +44,11 @@ describeRoute('createCampaign', {
   success: async () => {
     const pageId = await seedPage(s);
     const analysisId = await seedReadyAnalysis(s, pageId);
-    const res = await create(s, s.owner, { analysis_id: analysisId, page_id: pageId, platform: 'meta' });
+    const res = await create(s, s.owner, {
+      analysis_id: analysisId,
+      page_id: pageId,
+      platform: 'meta',
+    });
     expect(res.status).toBe(201);
     expect(res.headers.get('location')).toMatch(/\/campaigns\/[0-9a-f-]{36}$/);
     const draft = await asBody(res);
@@ -53,7 +64,11 @@ describeRoute('createCampaign', {
     expect(draft.name).toContain('Chez Awa');
     expect(draft.cost.status).toBe('incomplete');
     // Un éditeur peut aussi créer.
-    const editorRes = await create(s, s.editor, { analysis_id: analysisId, page_id: pageId, platform: 'meta' });
+    const editorRes = await create(s, s.editor, {
+      analysis_id: analysisId,
+      page_id: pageId,
+      platform: 'meta',
+    });
     expect(editorRes.status).toBe(201);
   },
   unauthenticated: async () => {
@@ -62,16 +77,28 @@ describeRoute('createCampaign', {
   },
   otherWorkspace: async () => {
     const other = { ...s, workspace: s.strangerWorkspace };
-    const res = await create(other, s.owner, { analysis_id: crypto.randomUUID(), page_id: crypto.randomUUID(), platform: 'meta' });
+    const res = await create(other, s.owner, {
+      analysis_id: crypto.randomUUID(),
+      page_id: crypto.randomUUID(),
+      platform: 'meta',
+    });
     expect(res.status).toBe(404);
   },
   forbiddenRole: async () => {
-    const res = await create(s, s.viewer, { analysis_id: crypto.randomUUID(), page_id: crypto.randomUUID(), platform: 'meta' });
+    const res = await create(s, s.viewer, {
+      analysis_id: crypto.randomUUID(),
+      page_id: crypto.randomUUID(),
+      platform: 'meta',
+    });
     expect(res.status).toBe(403);
     expect((await problemOf(res)).code).toBe('role_insufficient');
   },
   invalidBody: async () => {
-    const good = { analysis_id: crypto.randomUUID(), page_id: crypto.randomUUID(), platform: 'meta' };
+    const good = {
+      analysis_id: crypto.randomUUID(),
+      page_id: crypto.randomUUID(),
+      platform: 'meta',
+    };
     expect((await create(s, s.owner, {})).status).toBe(400);
     expect((await create(s, s.owner, { ...good, platform: 'google' })).status).toBe(400);
     expect((await create(s, s.owner, { ...good, analysis_id: 'pas-un-uuid' })).status).toBe(400);
@@ -80,23 +107,39 @@ describeRoute('createCampaign', {
   extra: {
     'analyse d’un autre espace ou inconnue : 404': async () => {
       const pageId = await seedPage(s);
-      const res = await create(s, s.owner, { analysis_id: crypto.randomUUID(), page_id: pageId, platform: 'meta' });
+      const res = await create(s, s.owner, {
+        analysis_id: crypto.randomUUID(),
+        page_id: pageId,
+        platform: 'meta',
+      });
       expect(res.status).toBe(404);
       const foreignPage = await seedPage({ ...s, workspace: s.strangerWorkspace });
       const analysisId = await seedReadyAnalysis(s, pageId);
-      const res2 = await create(s, s.owner, { analysis_id: analysisId, page_id: foreignPage, platform: 'meta' });
+      const res2 = await create(s, s.owner, {
+        analysis_id: analysisId,
+        page_id: foreignPage,
+        platform: 'meta',
+      });
       expect(res2.status).toBe(404);
     },
     'analyse pas encore répondue : 409 conflict (analysis_not_ready)': async () => {
       const pageId = await seedPage(s);
       const analysisId = await seedReadyAnalysis(s, pageId, 'questions');
-      const res = await create(s, s.owner, { analysis_id: analysisId, page_id: pageId, platform: 'meta' });
+      const res = await create(s, s.owner, {
+        analysis_id: analysisId,
+        page_id: pageId,
+        platform: 'meta',
+      });
       expect(res.status).toBe(409);
       expect((await problemOf(res)).meta).toMatchObject({ reason: 'analysis_not_ready' });
     },
     'espace en lecture seule : 403 workspace_read_only': async () => {
       const ro = await seedWorkspace({ status: 'read_only' });
-      const res = await create(ro, ro.owner, { analysis_id: crypto.randomUUID(), page_id: crypto.randomUUID(), platform: 'meta' });
+      const res = await create(ro, ro.owner, {
+        analysis_id: crypto.randomUUID(),
+        page_id: crypto.randomUUID(),
+        platform: 'meta',
+      });
       expect(res.status).toBe(403);
       expect((await problemOf(res)).code).toBe('workspace_read_only');
     },
@@ -148,9 +191,17 @@ describeRoute('updateCampaign', {
       daily_budget_usd_cents: 500,
       start_date: inDays(2),
       end_date: inDays(8),
-      copy: { primary_text: 'Baskets à Cocody 👟', headline: 'Livraison 24 h', cta: 'SEND_WHATSAPP_MESSAGE' },
+      copy: {
+        primary_text: 'Baskets à Cocody 👟',
+        headline: 'Livraison 24 h',
+        cta: 'SEND_WHATSAPP_MESSAGE',
+      },
       geo: { countries: ['CM'], cities: [{ name: 'Douala', radius_km: 10 }] },
-      targeting: { age_min: 18, age_max: 45, interests: [{ name: 'Mode' }, { name: 'mode' }, { name: 'Sport' }] },
+      targeting: {
+        age_min: 18,
+        age_max: 45,
+        interests: [{ name: 'Mode' }, { name: 'mode' }, { name: 'Sport' }],
+      },
     });
     expect(res.status).toBe(200);
     const updated = await asBody(res);
@@ -183,22 +234,36 @@ describeRoute('updateCampaign', {
     expect(updated.cost.total?.xaf).toBe(Math.round((4174 * (fx ?? 0)) / 100));
     expect(updated.vat_rate).toBe(0.1925);
     // Une seconde modification repart de la version rendue.
-    const second = await patch(s, s.owner, draft.id, { version: 2, copy: { headline: 'Nouveau titre' } });
+    const second = await patch(s, s.owner, draft.id, {
+      version: 2,
+      copy: { headline: 'Nouveau titre' },
+    });
     expect(second.status).toBe(200);
     const after = await asBody(second);
     expect(after.version).toBe(3);
     // Fusion champ par champ : le texte principal est resté.
-    expect(after.copy).toMatchObject({ headline: 'Nouveau titre', primary_text: 'Baskets à Cocody 👟' });
+    expect(after.copy).toMatchObject({
+      headline: 'Nouveau titre',
+      primary_text: 'Baskets à Cocody 👟',
+    });
   },
   unauthenticated: async () => {
     const draft = await newDraft(s);
-    expect((await patch(s, { ...s.owner, headers: {} }, draft.id, { version: 1, name: 'x' })).status).toBe(401);
+    expect(
+      (await patch(s, { ...s.owner, headers: {} }, draft.id, { version: 1, name: 'x' })).status,
+    ).toBe(401);
   },
   otherWorkspace: async () => {
     const draft = await newDraft(s);
     const stranger = await seedWorkspace();
-    expect((await patch(stranger, stranger.owner, draft.id, { version: 1, name: 'pirate' })).status).toBe(404);
-    const row = await testServiceClient().from('campaigns').select('name').eq('id', draft.id).single();
+    expect(
+      (await patch(stranger, stranger.owner, draft.id, { version: 1, name: 'pirate' })).status,
+    ).toBe(404);
+    const row = await testServiceClient()
+      .from('campaigns')
+      .select('name')
+      .eq('id', draft.id)
+      .single();
     expect(row.data?.name).not.toBe('pirate');
   },
   forbiddenRole: async () => {
@@ -213,28 +278,42 @@ describeRoute('updateCampaign', {
     expect((await patch(s, s.owner, draft.id, { version: 0, name: 'x' })).status).toBe(400);
     expect((await patch(s, s.owner, draft.id, { version: 1, status: 'active' })).status).toBe(400);
     expect((await patch(s, s.owner, draft.id, { version: 1, vat_rate: 0 })).status).toBe(400);
-    expect((await patch(s, s.owner, draft.id, { version: 1, objective: 'OUTCOME_LEADS' })).status).toBe(400);
-    expect((await patch(s, s.owner, draft.id, { version: 1, daily_budget_usd_cents: 5.5 })).status).toBe(400);
+    expect(
+      (await patch(s, s.owner, draft.id, { version: 1, objective: 'OUTCOME_LEADS' })).status,
+    ).toBe(400);
+    expect(
+      (await patch(s, s.owner, draft.id, { version: 1, daily_budget_usd_cents: 5.5 })).status,
+    ).toBe(400);
     expect((await patch(s, s.owner, draft.id, { version: 1 })).status).toBe(400); // aucun champ
-    expect((await patch(s, s.owner, draft.id, { version: 1, copy: { unknown: 'x' } })).status).toBe(400);
+    expect((await patch(s, s.owner, draft.id, { version: 1, copy: { unknown: 'x' } })).status).toBe(
+      400,
+    );
     // Aucune de ces tentatives n'a modifié la campagne.
     expect((await asBody(await read(s, s.owner, draft.id))).version).toBe(1);
   },
   extra: {
-    'EC-TEAM-08 : version périmée → 409 conflict avec meta.current_version, rien n’est modifié': async () => {
-      const draft = await newDraft(s);
-      expect((await patch(s, s.owner, draft.id, { version: 1, name: 'Première' })).status).toBe(200);
-      const stale = await patch(s, s.editor, draft.id, { version: 1, name: 'Seconde' });
-      expect(stale.status).toBe(409);
-      const problem = await problemOf(stale);
-      expect(problem.code).toBe('conflict');
-      expect(problem.meta).toMatchObject({ current_version: 2, reason: 'stale_version' });
-      expect((await asBody(await read(s, s.owner, draft.id))).name).toBe('Première');
-    },
+    'EC-TEAM-08 : version périmée → 409 conflict avec meta.current_version, rien n’est modifié':
+      async () => {
+        const draft = await newDraft(s);
+        expect((await patch(s, s.owner, draft.id, { version: 1, name: 'Première' })).status).toBe(
+          200,
+        );
+        const stale = await patch(s, s.editor, draft.id, { version: 1, name: 'Seconde' });
+        expect(stale.status).toBe(409);
+        const problem = await problemOf(stale);
+        expect(problem.code).toBe('conflict');
+        expect(problem.meta).toMatchObject({ current_version: 2, reason: 'stale_version' });
+        expect((await asBody(await read(s, s.owner, draft.id))).name).toBe('Première');
+      },
     'EC-TEAM-08 : deux modifications SIMULTANÉES de la même version, une seule gagne': async () => {
       const draft = await newDraft(s);
       const results = await Promise.all(
-        Array.from({ length: 8 }, (_, i) => patch(s, i % 2 === 0 ? s.owner : s.editor, draft.id, { version: 1, name: `Concurrent ${String(i)}` })),
+        Array.from({ length: 8 }, (_, i) =>
+          patch(s, i % 2 === 0 ? s.owner : s.editor, draft.id, {
+            version: 1,
+            name: `Concurrent ${String(i)}`,
+          }),
+        ),
       );
       const statuses = results.map((r) => r.status).sort();
       expect(statuses.filter((x) => x === 200)).toHaveLength(1);
@@ -252,60 +331,105 @@ describeRoute('updateCampaign', {
       const problem = await problemOf(low);
       expect(problem.code).toBe('budget_too_low');
       expect(problem.meta).toMatchObject({ min_usd_cents: 100 });
-      expect((await patch(s, s.owner, draft.id, { version: 1, daily_budget_usd_cents: 1_000_001 })).status).toBe(400);
-      expect((await patch(s, s.owner, draft.id, { version: 1, daily_budget_usd_cents: 100 })).status).toBe(200);
+      expect(
+        (await patch(s, s.owner, draft.id, { version: 1, daily_budget_usd_cents: 1_000_001 }))
+          .status,
+      ).toBe(400);
+      expect(
+        (await patch(s, s.owner, draft.id, { version: 1, daily_budget_usd_cents: 100 })).status,
+      ).toBe(200);
     },
     'dates : début passé, fin avant début, plus de 365 jours : 400 champ par champ': async () => {
       const draft = await newDraft(s);
-      const past = await patch(s, s.owner, draft.id, { version: 1, start_date: '2020-01-01', end_date: inDays(5) });
+      const past = await patch(s, s.owner, draft.id, {
+        version: 1,
+        start_date: '2020-01-01',
+        end_date: inDays(5),
+      });
       expect(past.status).toBe(400);
-      expect((await problemOf(past)).errors).toContainEqual(expect.objectContaining({ field: 'start_date' }));
-      const reverse = await patch(s, s.owner, draft.id, { version: 1, start_date: inDays(9), end_date: inDays(4) });
+      expect((await problemOf(past)).errors).toContainEqual(
+        expect.objectContaining({ field: 'start_date' }),
+      );
+      const reverse = await patch(s, s.owner, draft.id, {
+        version: 1,
+        start_date: inDays(9),
+        end_date: inDays(4),
+      });
       expect(reverse.status).toBe(400);
-      const long = await patch(s, s.owner, draft.id, { version: 1, start_date: inDays(2), end_date: inDays(400) });
+      const long = await patch(s, s.owner, draft.id, {
+        version: 1,
+        start_date: inDays(2),
+        end_date: inDays(400),
+      });
       expect(long.status).toBe(400);
-      expect((await problemOf(long)).errors?.[0]).toMatchObject({ field: 'end_date', code: 'too_large' });
+      expect((await problemOf(long)).errors?.[0]).toMatchObject({
+        field: 'end_date',
+        code: 'too_large',
+      });
     },
     'textes : trop longs, HTML, objectif et destination incompatibles : 400': async () => {
       const draft = await newDraft(s);
-      const long = await patch(s, s.owner, draft.id, { version: 1, copy: { headline: 'x'.repeat(41) } });
-      expect((await problemOf(long)).errors?.[0]).toMatchObject({ field: 'copy.headline', code: 'too_long' });
-      const html = await patch(s, s.owner, draft.id, { version: 1, copy: { primary_text: '<img src=x onerror=alert(1)>' } });
-      expect((await problemOf(html)).errors?.[0]).toMatchObject({ field: 'copy.primary_text', code: 'invalid_format' });
-      const mismatch = await patch(s, s.owner, draft.id, { version: 1, objective: 'OUTCOME_TRAFFIC', destination: 'WHATSAPP' });
+      const long = await patch(s, s.owner, draft.id, {
+        version: 1,
+        copy: { headline: 'x'.repeat(41) },
+      });
+      expect((await problemOf(long)).errors?.[0]).toMatchObject({
+        field: 'copy.headline',
+        code: 'too_long',
+      });
+      const html = await patch(s, s.owner, draft.id, {
+        version: 1,
+        copy: { primary_text: '<img src=x onerror=alert(1)>' },
+      });
+      expect((await problemOf(html)).errors?.[0]).toMatchObject({
+        field: 'copy.primary_text',
+        code: 'invalid_format',
+      });
+      const mismatch = await patch(s, s.owner, draft.id, {
+        version: 1,
+        objective: 'OUTCOME_TRAFFIC',
+        destination: 'WHATSAPP',
+      });
       expect((await problemOf(mismatch)).errors?.[0]).toMatchObject({ field: 'destination' });
     },
     'pixel qui n’appartient pas à la Page : 400 ; pixel de la Page : 200': async () => {
       const draft = await newDraft(s);
-      const bad = await patch(s, s.owner, draft.id, { version: 1, tracking: { pixel_id: '999999999999' } });
+      const bad = await patch(s, s.owner, draft.id, {
+        version: 1,
+        tracking: { pixel_id: '999999999999' },
+      });
       expect(bad.status).toBe(400);
       expect((await problemOf(bad)).errors?.[0]).toMatchObject({ field: 'tracking.pixel_id' });
-      const good = await patch(s, s.owner, draft.id, { version: 1, tracking: { pixel_id: '123456789012' } });
+      const good = await patch(s, s.owner, draft.id, {
+        version: 1,
+        tracking: { pixel_id: '123456789012' },
+      });
       expect(good.status).toBe(200);
       expect((await asBody(good)).tracking).toEqual({ pixel_id: '123456789012' });
     },
-    'TVA du pays non configurée : statut explicite, totaux vides, aucune TVA inventée': async () => {
-      const other = await seedWorkspace();
-      await setOwnerCountry(other, 'GA'); // aucun taux de TVA n'est enregistré pour ce pays
-      const draft = await newDraft(other);
-      const res = await patch(other, other.owner, draft.id, {
-        version: 1,
-        daily_budget_usd_cents: 500,
-        start_date: inDays(2),
-        end_date: inDays(8),
-      });
-      expect(res.status).toBe(200);
-      const body = await asBody(res);
-      expect(body.cost).toMatchObject({
-        status: 'vat_not_configured',
-        vat_country: 'GA',
-        vat_rate: null,
-        budget_usd_cents: 3500,
-        total_usd_cents: null,
-        total: null,
-      });
-      expect(body.vat_rate).toBeNull();
-    },
+    'TVA du pays non configurée : statut explicite, totaux vides, aucune TVA inventée':
+      async () => {
+        const other = await seedWorkspace();
+        await setOwnerCountry(other, 'GA'); // aucun taux de TVA n'est enregistré pour ce pays
+        const draft = await newDraft(other);
+        const res = await patch(other, other.owner, draft.id, {
+          version: 1,
+          daily_budget_usd_cents: 500,
+          start_date: inDays(2),
+          end_date: inDays(8),
+        });
+        expect(res.status).toBe(200);
+        const body = await asBody(res);
+        expect(body.cost).toMatchObject({
+          status: 'vat_not_configured',
+          vat_country: 'GA',
+          vat_rate: null,
+          budget_usd_cents: 3500,
+          total_usd_cents: null,
+          total: null,
+        });
+        expect(body.vat_rate).toBeNull();
+      },
     'pays du propriétaire inconnu : TVA non configurée, pays null': async () => {
       const other = await seedWorkspace();
       await setOwnerCountry(other, null);
@@ -314,7 +438,10 @@ describeRoute('updateCampaign', {
     },
     'campagne déjà publiée (statut ≠ brouillon) : 409 campaign_not_editable': async () => {
       const draft = await newDraft(s);
-      const moved = await testServiceClient().from('campaigns').update({ status: 'publishing' }).eq('id', draft.id);
+      const moved = await testServiceClient()
+        .from('campaigns')
+        .update({ status: 'publishing' })
+        .eq('id', draft.id);
       expect(moved.error).toBeNull();
       const res = await patch(s, s.owner, draft.id, { version: 2, name: 'x' });
       expect(res.status).toBe(409);
@@ -323,7 +450,10 @@ describeRoute('updateCampaign', {
     'espace en lecture seule : 403 workspace_read_only, rien n’est modifié': async () => {
       const ro = await seedWorkspace();
       const draft = await newDraft(ro);
-      await testServiceClient().from('workspaces').update({ status: 'read_only' }).eq('id', ro.workspace.id);
+      await testServiceClient()
+        .from('workspaces')
+        .update({ status: 'read_only' })
+        .eq('id', ro.workspace.id);
       const res = await patch(ro, ro.owner, draft.id, { version: 1, name: 'x' });
       expect(res.status).toBe(403);
       expect((await problemOf(res)).code).toBe('workspace_read_only');
