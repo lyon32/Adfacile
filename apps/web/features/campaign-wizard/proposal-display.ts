@@ -21,7 +21,6 @@ export interface Display {
   headline: string | null;
   description: string | null;
   cta: (typeof CTAS)[number] | null;
-  interests: string[];
   warnings: string[];
 }
 
@@ -42,7 +41,6 @@ export const EMPTY_DISPLAY: Display = {
   headline: null,
   description: null,
   cta: null,
-  interests: [],
   warnings: [],
 };
 
@@ -64,7 +62,6 @@ export function fromProposal(body: ProposalBody, daily: MoneyView | null | undef
     headline: body.copy.headline,
     description: body.copy.description,
     cta: body.copy.cta,
-    interests: [],
     warnings: body.warnings,
   };
 }
@@ -86,7 +83,6 @@ export function fromCampaign(campaign: Campaign, source: ProposalBody | null): D
     headline: campaign.copy.headline ?? base.headline,
     description: campaign.copy.description ?? base.description,
     cta: campaign.copy.cta ?? base.cta,
-    interests: (campaign.targeting.interests ?? []).map((i) => i.name),
   };
 }
 

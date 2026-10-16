@@ -1936,11 +1936,6 @@ export interface components {
             /** @enum {string} */
             genders?: "all" | "male" | "female";
             advantage_plus?: boolean;
-            /** @description Centres d'intérêt Meta. Décision produit : l'IA peut les proposer, l'utilisateur les modifie. Sans identifiant Meta (résolu à la publication, S16), un intérêt est envoyé comme interests: []. */
-            interests?: {
-                name: string;
-                id?: string | null;
-            }[];
         };
         /**
          * @description Coût estimé de la campagne : budget par jour × nombre de jours (début et fin inclus) + TVA du pays. Tout est calculé par

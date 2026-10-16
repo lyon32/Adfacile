@@ -472,9 +472,9 @@ describe('chooseProposal', () => {
     });
   }
 
-  it('copie la proposition dans le brouillon, garde les intérêts de l’utilisateur, enregistre TVA et change', async () => {
+  it('copie la proposition dans le brouillon, garde le ciblage automatique, enregistre TVA et change', async () => {
     const { ctx, db } = world();
-    const id = addDraft(db, { targeting: { interests: [{ name: 'Mode' }] } });
+    const id = addDraft(db);
     withProposal(db, id);
     const view = await chooseProposal(ctx, id, 1, 1);
     expect(view).toMatchObject({
@@ -483,7 +483,8 @@ describe('chooseProposal', () => {
       objective: 'OUTCOME_ENGAGEMENT',
       optimization_goal: 'CONVERSATIONS',
     });
-    expect(view.targeting).toMatchObject({ interests: [{ name: 'Mode' }], advantage_plus: true });
+    expect(view.targeting).toMatchObject({ advantage_plus: true });
+    expect(view.targeting).not.toHaveProperty('interests');
     expect(db.rows('campaigns')[0]).toMatchObject({
       vat_rate: 0.1925,
       fx_rate_xaf: 600,

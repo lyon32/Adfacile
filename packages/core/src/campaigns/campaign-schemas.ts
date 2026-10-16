@@ -9,7 +9,6 @@ import { ANGLES, CTAS, DESTINATIONS, OBJECTIVES, OPTIMIZATION_GOALS } from '@pub
 export { ANGLES, CTAS, DESTINATIONS, OBJECTIVES, OPTIMIZATION_GOALS };
 
 const PIXEL_ID = /^[0-9]{5,25}$/;
-const META_INTEREST_ID = /^[0-9]{3,25}$/;
 
 export const geoSchema = z.strictObject({
   countries: z
@@ -27,15 +26,6 @@ export const targetingSchema = z.strictObject({
   age_max: z.number().int().min(18).max(65).optional(),
   genders: z.enum(['all', 'male', 'female']).optional(),
   advantage_plus: z.boolean().optional(),
-  interests: z
-    .array(
-      z.strictObject({
-        name: z.string().min(1).max(160),
-        id: z.string().regex(META_INTEREST_ID).nullable().optional(),
-      }),
-    )
-    .max(40)
-    .optional(),
 });
 
 export const copySchema = z.strictObject({

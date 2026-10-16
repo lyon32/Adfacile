@@ -1755,17 +1755,6 @@ components:
         age_max: { type: integer, minimum: 18, maximum: 65 }
         genders: { type: string, enum: [ all, male, female ] }
         advantage_plus: { type: boolean }
-        interests:
-          type: array
-          maxItems: 15
-          description: "Centres d'intérêt Meta. Décision produit : l'IA peut les proposer, l'utilisateur les modifie. Sans identifiant Meta (résolu à la publication, S16), un intérêt est envoyé comme interests: []."
-          items:
-            type: object
-            additionalProperties: false
-            required: [ name ]
-            properties:
-              name: { type: string, minLength: 1, maxLength: 80 }
-              id: { type: [ string, 'null' ], pattern: '^[0-9]{3,25}$' }
     CampaignCost:
       type: object
       description: |

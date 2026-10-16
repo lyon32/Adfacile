@@ -86,6 +86,20 @@ describe('machine d’état des campagnes', () => {
     for (const s of CAMPAIGN_STATUSES) expect(canTransition(s, s)).toBe(false);
   });
 
+  it('108 paires (9 états × 12 événements) : 18 autorisées, 90 interdites', () => {
+    let allowed = 0;
+    for (const from of CAMPAIGN_STATUSES)
+      for (const event of CAMPAIGN_EVENTS) if (nextCampaignStatus(from, event).ok) allowed += 1;
+    expect([allowed, CAMPAIGN_STATUSES.length * CAMPAIGN_EVENTS.length - allowed]).toEqual([
+      18, 90,
+    ]);
+  });
+
+  it('DÉCISION 16/10/2026 : une campagne arrêtée repart par « recover » une fois le paiement corrigé chez Meta', () => {
+    expect(nextCampaignStatus('stopped', 'recover')).toEqual({ ok: true, status: 'active' });
+    expect(allowedTargets('stopped')).toEqual(['active']);
+  });
+
   it('seuls ended n’a aucune sortie ; draft ne peut qu’être publié', () => {
     expect(allowedTargets('ended')).toEqual([]);
     expect(allowedTargets('draft')).toEqual(['publishing']);

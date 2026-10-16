@@ -24,7 +24,7 @@ const CAMPAIGN: Campaign = {
   objective: 'OUTCOME_ENGAGEMENT',
   destination: 'WHATSAPP',
   geo: { countries: ['CI'], cities: [{ name: 'Abidjan', radius_km: 10 }] },
-  targeting: { interests: [{ name: 'Mode' }] },
+  targeting: {},
   daily_budget_usd_cents: 400,
   start_date: '2026-10-13',
   end_date: '2026-10-19',
@@ -173,16 +173,10 @@ describe('validateForm (mêmes limites que le serveur)', () => {
     expect(errors['city.2.radius']).toBe('city_radius');
     expect(errors['city.3.radius']).toBeUndefined();
   });
-  it('destination incompatible avec l’objectif ; trop d’intérêts', () => {
+  it('destination incompatible avec l’objectif', () => {
     expect(validateForm(form({ objective: 'OUTCOME_TRAFFIC' }), TODAY).destination).toBe(
       'destination_mismatch',
     );
-    expect(
-      validateForm(
-        form({ interests: Array.from({ length: 16 }, (_, i) => `i${String(i)}`) }),
-        TODAY,
-      ).interests,
-    ).toBe('interests_too_many');
   });
 });
 
@@ -208,13 +202,10 @@ describe('buildPatch', () => {
       copy: { headline: 'Nouveau' },
     });
   });
-  it('zone et intérêts : remplacés en entier', () => {
-    const patch = buildPatch(
-      form({ cities: [{ name: 'Douala', radius: '15' }], interests: ['Mode', 'Sport'] }),
-      CAMPAIGN,
-    );
+  it('zone : remplacée en entier, jamais de ciblage par centres d’intérêt', () => {
+    const patch = buildPatch(form({ cities: [{ name: 'Douala', radius: '15' }] }), CAMPAIGN);
     expect(patch?.geo).toEqual({ countries: ['CI'], cities: [{ name: 'Douala', radius_km: 15 }] });
-    expect(patch?.targeting).toEqual({ interests: [{ name: 'Mode' }, { name: 'Sport' }] });
+    expect(patch).not.toHaveProperty('targeting');
   });
   it('objectif, destination, dates et bouton', () => {
     const patch = buildPatch(

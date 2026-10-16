@@ -15,7 +15,6 @@ export const MAX_DAILY_BUDGET_USD_CENTS = 1_000_000;
 /** Durée maximale, début et fin compris (SECURITY_NOTES §3.2). */
 export const MAX_CAMPAIGN_DAYS = 365;
 export const COPY_LIMITS = { primary_text: 125, headline: 40, description: 30 } as const;
-export const MAX_INTERESTS = 15;
 export const MAX_CITIES = 20;
 export const MAX_COUNTRIES = 20;
 export const MAX_CITY_RADIUS_KM = 80;
@@ -34,7 +33,6 @@ export interface CampaignFields {
   targeting: {
     age_min?: number | undefined;
     age_max?: number | undefined;
-    interests?: { name: string }[] | undefined;
   };
   geo: {
     countries?: string[] | undefined;
@@ -139,27 +137,9 @@ export function checkCampaignFields(
 
   // Ciblage
   if (changed.has('targeting')) {
-    const { age_min: min, age_max: max, interests } = fields.targeting;
+    const { age_min: min, age_max: max } = fields.targeting;
     if (min !== undefined && max !== undefined && min > max) {
       add('targeting.age_min', 'invalid_value', 'L’âge minimum dépasse l’âge maximum.');
-    }
-    if (interests !== undefined) {
-      if (interests.length > MAX_INTERESTS) {
-        add(
-          'targeting.interests',
-          'too_long',
-          `${String(MAX_INTERESTS)} centres d’intérêt au maximum.`,
-        );
-      }
-      interests.forEach((interest, index) => {
-        if (containsHtml(interest.name)) {
-          add(
-            `targeting.interests.${String(index)}.name`,
-            'invalid_format',
-            'Le HTML n’est pas permis.',
-          );
-        }
-      });
     }
   }
 

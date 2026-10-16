@@ -303,11 +303,13 @@ Affichage **progressif** (les champs se remplissent pendant l'écriture du Strat
 │ Zone : Douala · 10 km              Budget : 3 000 FCFA/jour       │
 │ Dates : 11 → 17 oct.               Ciblage : automatique (Advantage+) │
 │ Texte : « … »  Titre : « … »  Bouton : Écrivez-nous sur WhatsApp  │
-│ Estimation : 4 000 à 9 000 personnes touchées                     │
-│ Coût : 21 000 FCFA (TVA 19,25 % incluse) · ≈ 34,70 $              │
+│ Coût : 25 044 FCFA (21 000 + TVA 4 044) · ≈ 41,74 $               │
 └──────────────────────────────────────────────────────────────────┘
 [Autre proposition]   [Continuer]
 ```
+- **Coût** : la TVA est **ajoutée** au budget (budget + TVA = total, « TVA comprise dans le total »). L'exemple ci-dessus suppose 7 jours à 3 000 FCFA par jour, soit 5 $ par jour, avec une TVA de 19,25 % et 1 $ = 600 FCFA : ce sont des **valeurs d'essai pour l'exemple**, jamais des valeurs du produit (la TVA par pays et le taux de change viennent de l'administration). Calcul exact en entiers : 5 $ × 7 = 35,00 $ ; TVA 19,25 % = 6,74 $ (arrondi à la demi-unité vers le haut) ; total 41,74 $ = 25 044 FCFA.
+- **Estimation de la portée** : à venir avec la publication (S16), fournie par Meta (estimation de diffusion). L'écran n'affiche aucun chiffre inventé avant.
+- **Ciblage** : automatique (Advantage+) d'abord. Le formulaire [Modifier] n'a pas de champ de centres d'intérêt ; les intérêts proposés par l'IA viendront plus tard (voir ROADMAP, « À planifier »).
 - **[Modifier]** ouvre chaque champ en édition : objectif (avec description courte de chaque objectif), zone (carte + rayon), budget (min 1 $ ≈ 600 FCFA, conversion en direct), dates, textes (compteur de caractères, limite 125), bouton, langue de la pub.
 - **[Autre proposition]** : nouvelle proposition avec un angle différent ; les précédentes restent accessibles (onglets « Proposition 1, 2, 3 »).
 - Pixel : si objectif Ventes ou Trafic et pixel disponible → liste déroulante ; sans pixel : « Sans pixel, on ne verra pas ce qui se passe sur ton site. **[Installer un pixel]** · **[Continuer sans]** ».
@@ -324,7 +326,7 @@ Option **[Tester 2 visuels (test A/B)]** : sélection de 2 visuels ; compte pour
 ### 8.5 Étape « Aperçu »
 - Onglets : Fil Facebook · Fil Instagram · Stories · Reels · Messenger.
 - Formats manquants : « Ce visuel n'existe qu'en 4:5. **[Créer le format 9:16]** (inclus, sans crédit) » → extension par IA si nécessaire.
-- Récapitulatif final (objectif, zone, budget, dates, coût total TVA incluse).
+- Récapitulatif final (objectif, zone, budget, dates, coût total, TVA comprise dans le total).
 
 ### 8.6 Étape « Publier »
 - **Première publication du compte** : fenêtre de responsabilité à accepter une fois — « La plateforme vérifie chaque pub. Pubeka n'est pas responsable si ton compte publicitaire est restreint à cause du contenu publié. **[J'ai compris]** ».
@@ -411,13 +413,14 @@ stateDiagram-v2
   Publication --> Erreur : échec d'envoi
   Vérification --> EnDiffusion : validée
   Vérification --> Refusée : refusée par Meta
-  Refusée --> Vérification : corrigée et republiée (sans quota)
+  Refusée --> Publication : corrigée et republiée (sans quota), puis Vérification
   EnDiffusion --> EnPause : Mettre en pause
   EnPause --> EnDiffusion : Reprendre
   EnDiffusion --> Terminée : date de fin / budget épuisé
   EnDiffusion --> Arrêtée : paiement Meta refusé
-  Arrêtée --> EnDiffusion : paiement corrigé
+  Arrêtée --> EnDiffusion : paiement corrigé, le client relance (Relancer)
 ```
+*Une campagne « Refusée » repart vers « Publication » (puis « Vérification »). Une campagne « Arrêtée » repart vers « En diffusion » quand le client, après avoir réglé sa facture ou alimenté ses fonds publicitaires chez Meta, revient sur Pubeka et la relance lui-même (événement `recover`, route `relaunch` de S16).*
 | Pastille | Texte affiché |
 |---|---|
 | Brouillon | « Pas encore publiée » |
@@ -425,7 +428,7 @@ stateDiagram-v2
 | En diffusion | « Ta pub est visible. » |
 | En pause | « Mise en pause par toi le JJ/MM. » |
 | Refusée | « Meta a refusé ta pub. **[Voir pourquoi]** » |
-| Arrêtée | « Le paiement Meta a échoué. **[Voir le guide]** » |
+| Arrêtée | « Le paiement Meta a échoué. Paie ta facture ou alimente tes fonds sur Meta, puis reviens ici. **[Voir le guide]** · **[Relancer]** » |
 | Terminée | « Terminée le JJ/MM. **[Relancer]** » |
 
 ### 11.3 Onglets

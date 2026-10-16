@@ -154,18 +154,6 @@ describe('ciblage et zone', () => {
       code: 'invalid_value',
     });
   });
-  it('intérêts : doublons ignorés à la casse près, 15 au plus, pas de HTML', () => {
-    const many = Array.from({ length: 16 }, (_, i) => ({ name: `Intérêt ${String(i)}` }));
-    expect(run({ targeting: { interests: many } }, ['targeting'])?.opts.errors?.[0]?.field).toBe(
-      'targeting.interests',
-    );
-    expect(
-      run({ targeting: { interests: [{ name: '<b>x</b>' }] } }, ['targeting'])?.opts.errors?.[0],
-    ).toMatchObject({
-      field: 'targeting.interests.0.name',
-      code: 'invalid_format',
-    });
-  });
   it('rayon de ville entre 1 et 80 km, 20 villes au plus', () => {
     expect(run({ geo: { cities: [{ name: 'Douala', radius_km: 0 }] } }, ['geo'])?.code).toBe(
       'validation_failed',

@@ -286,9 +286,14 @@ data: {"path":"copy.headline","value":"Livraison gratuite à Douala"}
 event: done
 data: {"version":3, ...Proposal complète...}
 
+event: retry
+data: {}
+
 event: error
 data: {"type":"…","title":"…","status":502,"code":"meta_error","request_id":"req_…"}
 ```
+
+`retry` : la première sortie du Stratège était invalide (règles de contenu) et une seconde tentative commence ; le client **efface l'aperçu déjà affiché** et reprend à zéro (au plus un `retry` par génération). Les `field` ne sont envoyés que pour des valeurs plausibles (listes fermées, bornes, dates réelles, textes sans nombre ni lien inventé) ; l'aperçu n'est jamais enregistré, seul `done` fait foi.
 
 Une erreur **avant** le début du flux renvoie une réponse HTTP normale (`application/problem+json`). Une erreur **pendant** le flux arrive dans un événement `error` qui suit exactement le format du §3, puis le flux se ferme.
 

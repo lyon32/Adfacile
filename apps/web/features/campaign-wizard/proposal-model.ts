@@ -79,13 +79,11 @@ export interface EditForm {
   description: string;
   cta: (typeof CTAS)[number];
   cities: { name: string; radius: string }[];
-  interests: string[];
 }
 
 export const LIMITS = { primaryText: 125, headline: 40, description: 30 } as const;
 export const MIN_BUDGET_CENTS = 100;
 export const MAX_BUDGET_CENTS = 1_000_000;
-export const MAX_INTERESTS = 15;
 
 export function codePointLength(text: string): number {
   return Array.from(text).length;
@@ -112,7 +110,6 @@ export function formFromCampaign(campaign: Campaign): EditForm | null {
     description: campaign.copy.description ?? '',
     cta: campaign.copy.cta ?? 'LEARN_MORE',
     cities: (campaign.geo.cities ?? []).map((c) => ({ name: c.name, radius: String(c.radius_km) })),
-    interests: (campaign.targeting.interests ?? []).map((i) => i.name),
   };
 }
 
@@ -133,8 +130,7 @@ export type FormErrorKey =
   | 'html'
   | 'city_name'
   | 'city_radius'
-  | 'destination_mismatch'
-  | 'interests_too_many';
+  | 'destination_mismatch';
 
 export type FormErrors = Partial<Record<string, FormErrorKey>>;
 
@@ -187,7 +183,6 @@ export function validateForm(form: EditForm, today: string): FormErrors {
   });
   if (!OBJECTIVE_DESTINATIONS[form.objective].includes(form.destination))
     errors.destination = 'destination_mismatch';
-  if (form.interests.length > MAX_INTERESTS) errors.interests = 'interests_too_many';
   return errors;
 }
 
@@ -235,9 +230,6 @@ export function buildPatch(form: EditForm, campaign: Campaign): CampaignPatchBod
   const before = initial?.cities.map((c) => ({ name: c.name, radius_km: Number(c.radius) })) ?? [];
   if (JSON.stringify(cities) !== JSON.stringify(before)) {
     patch.geo = { countries: campaign.geo.countries ?? [], cities };
-  }
-  if (JSON.stringify(form.interests) !== JSON.stringify(initial?.interests ?? [])) {
-    patch.targeting = { interests: form.interests.map((name) => ({ name })) };
   }
   // Seule la version : rien n'a changé.
   return Object.keys(patch).length > 1 ? patch : null;

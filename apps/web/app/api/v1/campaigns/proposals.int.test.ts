@@ -588,20 +588,6 @@ describeRoute('chooseProposal', {
         expect(after.version).toBe(1);
         expect(after.objective).toBeNull();
       },
-    'les centres d’intérêt saisis par l’utilisateur survivent au choix d’une proposition':
-      async () => {
-        const draft = await newDraft(s);
-        const withInterests = await patch(s, s.owner, draft.id, {
-          version: 1,
-          targeting: { interests: [{ name: 'Mode' }] },
-        });
-        expect(withInterests.status).toBe(200);
-        await generate(s, s.owner, draft.id);
-        const res = (await json(
-          await choose(s, s.owner, draft.id, 1, { version: 2 }),
-        )) as unknown as CampaignBody;
-        expect(res.targeting.interests).toEqual([{ name: 'Mode' }]);
-      },
     'campagne qui n’est plus un brouillon : 409': async () => {
       const draft = await newDraft(s);
       await generate(s, s.owner, draft.id);

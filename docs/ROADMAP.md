@@ -177,7 +177,9 @@
 - **Lire** : APPFLOW §8.5-8.6 · LLD §6.8 · SECURITY_NOTES §5.3-5.4 · PRD F3, F6.
 - **Livrables** : aperçu multi-emplacements (F3), estimation (F6), clause de responsabilité ; route `publish` (quota, transaction, idempotence) ; tâche `campaign.publish` avec rapprochement des résultats ambigus (EC-META-05) ; pause, reprise, relance (F9).
 - **Fait quand** : EC-CAMP-01 à 09 ; TR-PLA-08, TR-PLA-09, TR-PLA-10 ; **une campagne réelle publiée sur le compte publicitaire de test** (TRD §17, critère 1) ; parcours P2 au vert.
+- **Décisions du 16/10/2026** : l'**estimation de portée** vient de Meta (estimation de diffusion) en S16, sans chiffre inventé ; la **relance** d'une campagne arrêtée (`stopped → active`, événement `recover`) est une action du client, via la route `relaunch`.
 - **Hors périmètre** : statistiques (S17).
+- **À planifier (décision du 16/10/2026)** : ciblage automatique Advantage+ d'abord ; les centres d'intérêt proposés par l'IA (prompt v4, banc réel, identifiants Meta) viendront plus tard, le champ a été retiré du formulaire et du contrat.
 
 ### Phase 5 — Vie de la campagne
 
