@@ -122,6 +122,13 @@ describeRoute('createCampaign', {
       });
       expect(res2.status).toBe(404);
     },
+    'sans Page (Meta pas connecté) : 201, page_id vide': async () => {
+      const pageId = await seedPage(s);
+      const analysisId = await seedReadyAnalysis(s, pageId);
+      const res = await create(s, s.owner, { analysis_id: analysisId, platform: 'meta' });
+      expect(res.status).toBe(201);
+      expect((await asBody(res)).page_id).toBeNull();
+    },
     'analyse pas encore répondue : 409 conflict (analysis_not_ready)': async () => {
       const pageId = await seedPage(s);
       const analysisId = await seedReadyAnalysis(s, pageId, 'questions');

@@ -103,6 +103,7 @@ export function toView(row: AnalysisRow, profile: ProfileRow | null): AnalysisVi
       : ((profile?.profile ?? null) as Exclude<AnalysisView['profile'], undefined>),
     questions: blocked ? [] : asList<components['schemas']['Question']>(profile?.questions),
     unreadable_sources: row.unreadable_sources,
+    page_id: row.page_id,
     error_code: row.error_code,
     flags,
     answers: asList<components['schemas']['Answer']>(profile?.answers),

@@ -12,7 +12,7 @@ import {
 
 export interface CreateDraftInput {
   analysis_id: string;
-  page_id: string;
+  page_id?: string | undefined;
   platform: 'meta';
 }
 
@@ -47,14 +47,18 @@ export async function createDraft(ctx: MemberCtx, input: CreateDraftInput): Prom
   if (analysis.error !== null) throw new AppError('internal_error', { cause: analysis.error });
   if (analysis.data === null) throw new AppError('not_found');
 
-  const page = await ctx.db
-    .from('pages')
-    .select('id')
-    .eq('workspace_id', workspaceId)
-    .eq('id', input.page_id)
-    .maybeSingle();
-  if (page.error !== null) throw new AppError('internal_error', { cause: page.error });
-  if (page.data === null) throw new AppError('not_found');
+  // La Page est facultative : sans Meta connecté on prépare quand même la campagne (APPFLOW §8.0). Si elle est donnée,
+  // elle doit appartenir à CET espace.
+  if (input.page_id !== undefined) {
+    const page = await ctx.db
+      .from('pages')
+      .select('id')
+      .eq('workspace_id', workspaceId)
+      .eq('id', input.page_id)
+      .maybeSingle();
+    if (page.error !== null) throw new AppError('internal_error', { cause: page.error });
+    if (page.data === null) throw new AppError('not_found');
+  }
 
   // Les questions doivent avoir reçu leurs réponses : le Stratège travaille sur la fiche ET les réponses.
   if (analysis.data.status !== 'ready' || analysis.data.business_profile_id === null) {
@@ -82,7 +86,7 @@ export async function createDraft(ctx: MemberCtx, input: CreateDraftInput): Prom
     .from('campaigns')
     .insert({
       workspace_id: workspaceId,
-      page_id: input.page_id,
+      page_id: input.page_id ?? null,
       ad_account_id: account.data?.id ?? null,
       analysis_id: input.analysis_id,
       created_by: ctx.user.id,
