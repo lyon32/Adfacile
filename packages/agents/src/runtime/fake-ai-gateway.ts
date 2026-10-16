@@ -22,6 +22,11 @@ export type FakeReply =
 export interface FakeAiGatewayOptions {
   /** Sortie d'agent par défaut, servie quand aucune réponse programmée n'est en attente. */
   fixtures?: Partial<Record<AgentName, unknown>>;
+  /**
+   * Sortie d'agent calculée depuis la requête (ex. des dates relatives à « aujourd'hui »), servie quand aucune réponse
+   * n'est programmée. Prioritaire sur `fixtures` pour le même agent.
+   */
+  dynamicFixtures?: Partial<Record<AgentName, (request: AiCompletionRequest) => unknown>>;
   /** Coût simulé par appel, en dollars. */
   costUsdPerCall?: number;
 }
@@ -78,6 +83,8 @@ export class FakeAiGateway implements AiGateway {
 
   private fixtureFor(request: AiCompletionRequest): FakeReply {
     const agent = request.trace?.agent;
+    const dynamic = agent === undefined ? undefined : this.options.dynamicFixtures?.[agent];
+    if (dynamic !== undefined) return { json: dynamic(request) };
     const fixtures = this.options.fixtures;
     if (agent !== undefined && fixtures !== undefined && agent in fixtures) {
       return { json: fixtures[agent] };
