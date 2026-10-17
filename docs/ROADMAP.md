@@ -51,6 +51,8 @@
 | 8. Notifications, support, Optimiseur | S27-S29 | ⬜ ⬜ ⬜ |
 | 9. Administration, site public, lancement | S30-S36 | ⬜ ⬜ ⬜ ⬜ ⬜ ⬜ ⬜ |
 
+**⏳ Sessions en attente de preuve réelle (17/10/2026)** : **S14** et **S15** ont leur code fusionné et déployé mais n’ont **jamais été testées avec un vrai modèle** (crédits OpenRouter absents). Elles restent **⬜ non cochées** : aucune coche, aucun « ✅ » dans le journal avant l’analyse réelle d’un site (S14) et la proposition réelle avec premiers mots < 3 s (S15), à prouver **ensemble**. **Avant de lancer CHAQUE session suivante, le chef de projet demande à la personne si les crédits sont disponibles**, pour revenir les tester.
+
 **Chemin le plus court vers une première campagne publiée depuis Pubeka** : S01 → S02 → S03 → S04 et S05 → S06 → S08 → S09 → S11 → S13 → S14 → S15 → S16, avec **S10 (portage Meta) en parallèle dès S02**. C'est la preuve la plus importante (TRD §17, critère 1) : à viser en premier.
 
 ---
