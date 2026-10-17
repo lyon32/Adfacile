@@ -21,6 +21,7 @@ export type PublishFailureKind =
   | 'fx_not_available'
   | 'rate_limited'
   | 'read_only'
+  | 'publish_disabled'
   | 'meta_known'
   | 'unknown';
 
@@ -110,6 +111,11 @@ function failureOf(
       if (meta.reason === 'account_currency_unknown') return { kind: 'account_currency' };
       return { kind: 'unknown' };
     }
+    case 'provider_unavailable':
+      // Interrupteur de sécurité (PUBEKA_META_PUBLISH) : seule cette raison donne ce message ; sinon, le message général.
+      return meta.reason === 'publish_disabled'
+        ? { kind: 'publish_disabled' }
+        : { kind: 'unknown' };
     case 'meta_error':
       // Erreur connue de Meta : sa traduction simple ; sinon le message général avec un ticket proposé.
       return metaTitle || metaMessage

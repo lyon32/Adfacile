@@ -148,7 +148,7 @@ export function FailurePanel(props: FailurePanelProps): ReactNode {
             {t('no_payment_method.action')}
           </Button>
         ) : null}
-        {link === undefined ? null : (
+        {link === undefined || kind === 'publish_disabled' ? null : (
           <Link
             href={link}
             className={cn(buttonVariants({ variant: 'primary' }), 'w-full sm:w-auto')}
