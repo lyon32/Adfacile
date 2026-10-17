@@ -57,23 +57,23 @@ await check('une campagne neuve n’a ni référence, ni phase de publication, n
 });
 
 // --- Contraintes de la référence de publication -------------------------
-for (const ref of ['pk-1a2b3c4d-1', 'pk-00000000-12', 'pk-abcdef12-9999']) {
+for (const ref of ['pk-1a2b3c4d5e6f-1', 'pk-000000000000-12', 'pk-abcdef123456-9999']) {
   await check(`référence valide acceptée : ${ref}`, async () => {
     const id = await newCampaign();
     await db.query(`update public.campaigns set publish_ref=$2 where id=$1`, [id, ref]);
     return (await q(`select publish_ref from public.campaigns where id=$1`, [id]))[0].publish_ref === ref;
   });
 }
-for (const ref of ['', 'PK-1a2b3c4d-1', 'pk-1a2b3c4-1', 'pk-1a2b3c4d-', 'pk-1a2b3c4d-12345', 'pk-1a2b3c4g-1', "pk-1a2b3c4d-1' or 1=1"]) {
+for (const ref of ['', 'PK-1a2b3c4d5e6f-1', 'pk-1a2b3c4d-1', 'pk-1a2b3c4d5e6f-', 'pk-1a2b3c4d5e6f-12345', 'pk-1a2b3c4d5e6g-1', "pk-1a2b3c4d5e6f-1' or 1=1"]) {
   await check(`référence invalide refusée : « ${ref} »`, async () => {
     const id = await newCampaign();
     return rejects(() => db.query(`update public.campaigns set publish_ref=$2 where id=$1`, [id, ref]), /check|violates/i);
   });
 }
-await check('deux campagnes ne partagent pas la même référence (rapprochement non ambigu)', async () => {
+await check('deux campagnes du même espace ne partagent pas la même référence (rapprochement non ambigu)', async () => {
   const a = await newCampaign(); const b = await newCampaign();
-  await db.query(`update public.campaigns set publish_ref='pk-deadbeef-1' where id=$1`, [a]);
-  return rejects(() => db.query(`update public.campaigns set publish_ref='pk-deadbeef-1' where id=$1`, [b]), /unique|duplicate/i);
+  await db.query(`update public.campaigns set publish_ref='pk-deadbeefcafe-1' where id=$1`, [a]);
+  return rejects(() => db.query(`update public.campaigns set publish_ref='pk-deadbeefcafe-1' where id=$1`, [b]), /unique|duplicate/i);
 });
 
 // --- Phase et état du quota ---------------------------------------------
@@ -108,7 +108,7 @@ await check('le numéro de tentative ne peut pas être négatif', async () => {
 await check('un membre ne peut pas se donner une référence de publication (écriture serveur seulement)', async () =>
   rejects(() => as('authenticated', U1, async (tx) => {
     const id = (await tx.query(`select id from public.campaigns limit 1`)).rows[0]?.id ?? (await newCampaign());
-    await tx.query(`update public.campaigns set publish_ref='pk-aaaaaaaa-1' where id=$1`, [id]);
+    await tx.query(`update public.campaigns set publish_ref='pk-aaaaaaaaaaaa-1' where id=$1`, [id]);
     await tx.query(`select 1`);
   }), /permission denied|violates|row-level/i));
 await check('un membre ne peut pas effacer le quota ou la phase', async () =>

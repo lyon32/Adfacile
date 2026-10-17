@@ -11,11 +11,11 @@
 begin;
 
 -- ---- 1. campaigns -----------------------------------------------------
--- publish_ref : « pk-<8 premiers caractères hexadécimaux de l'identifiant>-<numéro de tentative> ». Il est écrit en
+-- publish_ref : « pk-<12 derniers caractères hexadécimaux de l'identifiant>-<numéro de tentative> ». Il est écrit en
 -- base AVANT le premier appel à Meta et placé dans le nom de la campagne chez Meta : si la réponse de Meta se perd, la
 -- tâche retrouve la campagne par ce libellé au lieu de la recréer (SECURITY_NOTES EC-META-05).
 alter table public.campaigns
-  add column publish_ref             text check (publish_ref ~ '^pk-[0-9a-f]{8}-[0-9]{1,4}$'),
+  add column publish_ref             text check (publish_ref ~ '^pk-[0-9a-f]{12}-[0-9]{1,4}$'),
   add column publish_attempt         int  not null default 0 check (publish_attempt >= 0),
   add column publish_idempotency_key uuid,
   add column publish_phase           text not null default 'none'
@@ -26,8 +26,8 @@ alter table public.campaigns
     check (quota_state in ('none','held','counted','released')),
   add column paused_at               timestamptz;
 
--- Une référence de publication ne désigne qu'une campagne Pubeka.
-create unique index campaigns_publish_ref_uniq on public.campaigns (publish_ref) where publish_ref is not null;
+-- Une référence de publication ne désigne qu'une campagne de l'espace (48 bits de l'identifiant : aucune collision en pratique).
+create unique index campaigns_publish_ref_uniq on public.campaigns (workspace_id, publish_ref) where publish_ref is not null;
 -- Retrouver la publication d'une clé d'idempotence (rejeu de la même clé : même résultat).
 create index campaigns_publish_key_idx on public.campaigns (workspace_id, publish_idempotency_key)
   where publish_idempotency_key is not null;
