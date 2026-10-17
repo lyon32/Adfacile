@@ -290,7 +290,7 @@ for (const theme of ['light', 'dark'] as const) {
       await page.getByRole('button', { name: 'J’ai compris' }).click();
       const alert = page.getByRole('alert').filter({ hasText: error.text });
       await expect(alert).toBeVisible({ timeout: 20_000 });
-      await expect(alert).not.toContainText(/meta_|_error|req_E2E|\b[45]\d\d\b/);
+      await expect(alert).not.toContainText(/meta_|_error|req_E2E|HTTP|erreur [45]\d\d/);
       await checkScreen(page, error.capture, info, theme);
     });
   }
