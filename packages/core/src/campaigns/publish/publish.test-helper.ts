@@ -99,6 +99,7 @@ export function publishWorld(
   }
   Object.assign(db.rows('ad_accounts')[0] ?? {}, {
     id: AD_ROW,
+    name: 'Compte de test',
     meta_ad_account_id: META_AD_ACCOUNT,
     currency: 'USD',
     has_payment_method: true,

@@ -772,6 +772,25 @@ paths:
         '409': { $ref: '#/components/responses/Conflict' }
         '424': { $ref: '#/components/responses/FailedDependency' }
         '502': { $ref: '#/components/responses/BadGateway' }
+  /workspaces/{workspaceId}/campaigns/{campaignId}/readiness:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/CampaignId' }
+    get:
+      tags: [ Campagnes ]
+      operationId: getPublicationReadiness
+      summary: Ce qu'il faut savoir avant de publier (photo, clause, état de Meta, Page, rayon des villes)
+      description: |
+        Alimente les écrans Aperçu et Publier. Lecture seule, tout membre (même en lecture seule de l'espace) : rien n'est modifié.
+        `visual.url` est une adresse signée valable 15 minutes (API_SPEC §13) vers la photo téléversée à l'étape Sources, utilisée comme
+        visuel de la pub tant que l'étape Visuel n'existe pas. `liability_required` est vrai tant que l'espace n'a pas accepté la clause de
+        responsabilité. `cities[].effective_radius_km` est le rayon réellement envoyé à Meta (17 à 80 km pour une ville).
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/PublicationReadiness' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
   /workspaces/{workspaceId}/campaigns/{campaignId}/estimate:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -1800,6 +1819,42 @@ components:
         paused_at: { type: [ string, 'null' ], format: date-time, description: "Mise en pause par le client (« Mise en pause par toi le JJ/MM »)" }
         publication_error: { oneOf: [ { $ref: '#/components/schemas/PublicationError' }, { type: 'null' } ] }
         version: { type: integer, minimum: 1, description: Augmente à chaque modification ; à renvoyer dans PATCH (SECURITY_NOTES EC-TEAM-08) }
+    PublicationReadiness:
+      type: object
+      required: [ liability_required, visual, meta, page, cities ]
+      properties:
+        liability_required: { type: boolean }
+        visual:
+          type: object
+          required: [ status, url, expires_at ]
+          properties:
+            status: { type: string, enum: [ ready, missing, expired ] }
+            url: { type: [ string, 'null' ], format: uri }
+            expires_at: { type: [ string, 'null' ], format: date-time }
+        meta:
+          type: object
+          required: [ connection, ad_account, payment_method ]
+          properties:
+            connection: { type: string, enum: [ ok, expiring, expired, revoked, none ] }
+            ad_account:
+              oneOf:
+                - type: object
+                  required: [ name, currency ]
+                  properties: { name: { type: [ string, 'null' ] }, currency: { type: [ string, 'null' ] } }
+                - type: 'null'
+            payment_method: { type: string, enum: [ present, missing, unknown ] }
+        page:
+          oneOf:
+            - type: object
+              required: [ id, name, active ]
+              properties: { id: { type: string, format: uuid }, name: { type: [ string, 'null' ] }, active: { type: boolean } }
+            - type: 'null'
+        cities:
+          type: array
+          items:
+            type: object
+            required: [ name, radius_km, effective_radius_km ]
+            properties: { name: { type: string }, radius_km: { type: integer }, effective_radius_km: { type: integer } }
     ReachEstimate:
       type: object
       required: [ status, reason, audience, source, fetched_at ]
