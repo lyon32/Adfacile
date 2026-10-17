@@ -252,6 +252,17 @@ Une réponse d'agent ou un résultat de génération est traité comme une donn�
 | EC-META-10 | Limite de requêtes de Meta atteinte | Les tâches attendent selon les en-têtes de Meta ; les statistiques gardent leur dernière valeur avec l'heure de mise à jour affichée | — |
 | EC-META-11 | Compte publicitaire dans une autre monnaie que le dollar | 🧪 Budget converti dans la monnaie du compte ; minimum de Meta pour cette monnaie à vérifier avant publication | `422 budget_too_low` |
 
+### Interrupteur de la publication réelle (kill-switch, S16)
+
+Risque : avec Meta RÉEL (préproduction, production), un clic sur « Publier » crée puis ACTIVE une vraie campagne, donc dépense de l'argent réel. Mesure : `PUBEKA_META_PUBLISH=enabled` est exigé (ENV_SETUP §1.1) ; absent ou autre valeur, **désactivé**, par défaut aussi en production. Désactivé :
+
+- `publish` refuse en `503 provider_unavailable` (`meta.reason: publish_disabled`) juste après les contrôles de rôle et d'espace, AVANT toute lecture, écriture, clause enregistrée, quota ou tâche ;
+- la tâche `campaign.publish` refuse avant de lire le jeton ou d'appeler Meta (rien créé : échec net, quota rendu ; des éléments existent peut-être chez Meta : elle reste en attente et reprend par rapprochement quand l'interrupteur est activé, sans jamais recréer) ;
+- `resume` et `relaunch` en mode `recover` (activent chez Meta) refusent de même ; `relaunch` en mode `copy` ne touche pas à Meta ;
+- `pause` n'est jamais bloquée (elle arrête la dépense), la lecture reste libre, ainsi que l'estimation de portée (lecture seule).
+
+Avec la fausse Meta (`PUBEKA_FAKE_PROVIDERS` contenant `meta`, ou `all`) l'interrupteur n'est pas exigé : rien n'est dépensé. Preuves : `publish-switch.test.ts`, `publish-deps.test.ts`, tests de `publishCampaign`, `runPublication`, `campaign-control` et leurs tests d'intégration (compteur de la fausse Meta à 0).
+
 ### 5.4 Campagnes
 
 | # | Situation | Comportement attendu | Réponse |

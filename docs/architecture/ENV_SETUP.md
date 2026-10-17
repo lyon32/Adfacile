@@ -41,6 +41,7 @@ Les exemples montrent **la forme** de la valeur, jamais une vraie valeur.
 | `PUBLIC_WEBHOOK_BASE_URL` | Adresse **publique** que les fournisseurs rappellent (fal, Higgsfield, BytePlus). En local : l'adresse du tunnel (§3.8). | W J | ○ | `https://xxxx.trycloudflare.com` · `https://app.pubeka.com` |
 | `PUBEKA_JOB_DISPATCH` | `trigger` (normal) ou `inline` : les tâches s'exécutent dans le même processus, pour les tests d'intégration et les parcours (TESTING §6.1). **`inline` refusé en production.** 🔶 | W J | ○ | `trigger` · `inline` |
 | `PUBEKA_FAKE_PROVIDERS` | Remplace les services externes par de fausses implémentations (pas de coût, pas de réseau). **Refusée au démarrage si `NEXT_PUBLIC_APP_ENV=production`.** 🔶 | W J | ○ | `all` · ou liste : `meta,saspay,media,ai,email` |
+| `PUBEKA_META_PUBLISH` | **Interrupteur de sécurité de la publication RÉELLE** chez Meta (S16). Seule la valeur exacte `enabled` l'autorise ; absente, vide ou autre valeur : **désactivée** (par défaut, y compris en production : `env.ts` ne la force pas). Désactivée, `publish`, la tâche `campaign.publish`, `resume` et `relaunch` en mode `recover` (qui créent ou ACTIVENT une campagne, donc dépensent) refusent en `503 provider_unavailable` / `meta.reason: publish_disabled`, sans écriture, sans quota ni appel à Meta ; `pause` (qui arrête la dépense) et la lecture restent permises. **Pas exigée avec la fausse Meta** (`PUBEKA_FAKE_PROVIDERS` contenant `meta`, ou `all` : tests, développement, CI). À régler sur Vercel ET sur Trigger.dev (la tâche lit sa propre copie : absente côté Trigger.dev, la tâche refuse). Ne la mettre à `enabled` que quand on décide de publier pour de vrai. 🔶 | W J | ○ | `enabled` |
 
 ### 1.2 Supabase
 
@@ -157,6 +158,8 @@ Toutes les variables sont lues **uniquement** par `packages/shared/src/env.ts` (
 2. refuse `PUBEKA_FAKE_PROVIDERS` en production ;
 3. refuse une clé `sk_test_` en production et une clé `sk_live_` hors production ;
 4. refuse toute variable secrète dont le nom commence par `NEXT_PUBLIC_` (liste des noms autorisés à être publics dans `env.ts`).
+
+`PUBEKA_META_PUBLISH` n'est volontairement **pas** contrôlée ici : ni forcée ni refusée, elle ne vaut `enabled` que si quelqu'un l'a réglée. Préproduction : elle utilise Meta réel (`PUBEKA_FAKE_PROVIDERS=saspay,media,ai,email`, sans `meta`) ; sans l'interrupteur, un clic sur « Publier » ne crée donc aucune campagne réelle. Journal de déploiement : noter chaque fois qu'elle passe à `enabled` ou revient à l'état désactivé, et où (Vercel, Trigger.dev).
 
 ---
 

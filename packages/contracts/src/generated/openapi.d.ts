@@ -676,6 +676,10 @@ export interface paths {
          *     `meta.new_total` — EC-CAMP-05 ; `publication_in_progress` ; `invalid_transition`), `409 already_published`,
          *     `424 meta_not_connected`, `424 meta_token_expired`, `424 meta_payment_method_missing`. Une campagne refusée par Meta qui est republiée
          *     ne décompte aucun quota (EC-CAMP-07).
+         *
+         *     Interrupteur de sécurité : quand Meta est RÉEL (pas de fausse Meta), la publication exige que `PUBEKA_META_PUBLISH=enabled` soit
+         *     réglé sur l'environnement ; sinon `503 provider_unavailable` avec `meta.reason: publish_disabled`, renvoyé juste après les
+         *     contrôles de rôle et d'espace modifiable et AVANT toute écriture, tout décompte de quota et tout appel à Meta.
          */
         post: operations["publishCampaign"];
         delete?: never;
@@ -725,6 +729,8 @@ export interface paths {
          * Reprendre une campagne en pause
          * @description Propriétaire ou éditeur, espace modifiable, Page dans la formule (`402 page_limit_reached` sinon, EC-CAMP-09). Meta est appelé d'abord ;
          *     le statut ne change que si Meta a répondu. Déjà en diffusion : `200` sans appel. Autres états : `409 conflict`.
+         *     Reprendre ACTIVE la campagne chez Meta : même interrupteur de sécurité que la publication (`503 provider_unavailable`,
+         *     `meta.reason: publish_disabled`, aucun appel à Meta). La mise en pause, elle, n'est JAMAIS bloquée.
          */
         post: operations["resumeCampaign"];
         delete?: never;
@@ -752,6 +758,8 @@ export interface paths {
          *       C'est une ACTION DU CLIENT, faite après qu'il a réglé sa facture ou alimenté ses fonds publicitaires chez Meta : Pubeka ne la
          *       détecte pas tout seul. Meta est appelé d'abord ; s'il refuse, le message de Meta (traduit) est renvoyé dans `meta.title` et
          *       `meta.message` et le statut reste `stopped` (jamais un échec muet). Réponse `200`.
+         *     Interrupteur de sécurité : `recover` ACTIVE la campagne chez Meta, donc `503 provider_unavailable` avec `meta.reason: publish_disabled`
+         *       (aucun appel à Meta) quand Meta est réel et que `PUBEKA_META_PUBLISH` n'est pas `enabled` ; `copy` ne touche pas à Meta (brouillon local).
          *     - `copy` : crée un nouveau brouillon à partir de la campagne (même visuel, ou à renouveler). Compte comme une nouvelle campagne
          *       à sa publication. Réponse `201`.
          */
@@ -3942,6 +3950,7 @@ export interface operations {
             409: components["responses"]["Conflict"];
             424: components["responses"]["FailedDependency"];
             502: components["responses"]["BadGateway"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     relaunchCampaign: {
@@ -3986,6 +3995,7 @@ export interface operations {
             409: components["responses"]["Conflict"];
             424: components["responses"]["FailedDependency"];
             502: components["responses"]["BadGateway"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     getPublicationReadiness: {
