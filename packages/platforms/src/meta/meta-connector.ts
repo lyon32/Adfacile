@@ -74,10 +74,11 @@ export interface MetaConnectorConfig {
   /** Attente des vidéos (tests). */
   upload?: Omit<UploadOptions, 'allowedMediaHosts'> | undefined;
   /**
-   * Taux FCFA pour 1 $ : OBLIGATOIRE, fourni par `core` (table des taux de `billing`). Aucun défaut silencieux,
-   * contrairement à `XAF_PER_USD` d'AdFacile qui retombait sur 610.
+   * Taux FCFA pour 1 $, fourni par `core` (table des taux de change). Aucun défaut silencieux, contrairement à
+   * `XAF_PER_USD` d'AdFacile qui retombait sur 610. Absent, le connecteur sert à la CONNEXION seule (comptes, Pages, bilan
+   * de santé : aucun montant converti); créer ou modifier une campagne lève alors une erreur plutôt que d'inventer un taux.
    */
-  xafPerUsd: number;
+  xafPerUsd?: number | undefined;
   onStep?: ((name: string, detail?: { current: number; total: number }) => void) | undefined;
 }
 
@@ -193,7 +194,7 @@ export class MetaConnector implements PlatformConnector {
       });
     }
     assertMediaHostsConfigured(config.allowedMediaHosts);
-    minDailyBudgetFcfa(config.xafPerUsd);
+    if (config.xafPerUsd !== undefined) minDailyBudgetFcfa(config.xafPerUsd);
     this.graph = new GraphClient({
       ...(config.fetch ? { fetch: config.fetch } : {}),
       ...(config.graphVersion ? { version: config.graphVersion } : {}),
@@ -352,6 +353,17 @@ export class MetaConnector implements PlatformConnector {
     });
   }
 
+  /** Taux de change nécessaire pour exprimer les budgets : jamais inventé. */
+  private requireRate(): number {
+    const rate = this.config.xafPerUsd;
+    if (rate === undefined) {
+      throw new AppError('internal_error', {
+        cause: new Error('taux de change absent : la publication lit le taux enregistré (S16)'),
+      });
+    }
+    return rate;
+  }
+
   createCampaign(token: PlatformToken, spec: PublishSpec): Promise<PlatformCampaignRefs> {
     return this.run(() =>
       createFullCampaign(
@@ -360,7 +372,7 @@ export class MetaConnector implements PlatformConnector {
           now: this.config.now,
           upload: { ...this.config.upload, allowedMediaHosts: this.config.allowedMediaHosts },
           ...(this.config.onStep ? { onStep: this.config.onStep } : {}),
-          xafPerUsd: this.config.xafPerUsd,
+          xafPerUsd: this.requireRate(),
         },
         token.accessToken,
         spec,
@@ -374,7 +386,7 @@ export class MetaConnector implements PlatformConnector {
     patch: PublishPatch,
   ): Promise<void> {
     return this.run(() =>
-      patchCampaign(this.graph, token.accessToken, refs, patch, this.config.xafPerUsd),
+      patchCampaign(this.graph, token.accessToken, refs, patch, this.requireRate()),
     );
   }
 

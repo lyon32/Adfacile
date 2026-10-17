@@ -365,7 +365,6 @@ Détail des corps de requête et de réponse : [`api/openapi.yaml`](../../api/op
 |---|---|---|
 | GET | `/public/maintenance` | Mode maintenance actif ? |
 | GET | `/public/plans` | Formules et prix |
-| GET | `/public/fx-rates` | Taux USD → XAF / XOF |
 
 ### Compte
 

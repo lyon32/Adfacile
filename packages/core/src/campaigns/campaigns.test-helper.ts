@@ -30,7 +30,7 @@ export function world(
     quote: 'XAF',
     rate: 600,
     source: 'manual',
-    fetched_at: '2026-10-10T00:00:00Z',
+    fetched_at: '2026-10-12T08:00:00Z',
   });
   db.rows('pages').push({
     id: PAGE,

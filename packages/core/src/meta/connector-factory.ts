@@ -12,14 +12,6 @@ import type { MetaAccountConnector, MetaDeps } from './deps';
 import type { StateCodec } from './oauth-state';
 import { metaRedirectUri, validateMetaRedirectUri } from './redirect-uri';
 
-/**
- * Taux FCFA/$ exigé par le constructeur du connecteur. Les routes de S11 (connexion, comptes,
- * bilan de santé) ne convertissent aucun montant, et le type `MetaAccountConnector` interdit
- * d'appeler la création de campagne avec ce connecteur : la publication (S16) lira le vrai taux
- * dans les taux de change enregistrés. Valeur d'ordre de grandeur, jamais utilisée pour un prix.
- */
-const CONNECTION_ONLY_XAF_PER_USD = 600;
-
 function usesFakeMeta(env: Pick<Env, 'PUBEKA_FAKE_PROVIDERS'>): boolean {
   const list = env.PUBEKA_FAKE_PROVIDERS;
   if (list === undefined) return false;
@@ -46,7 +38,7 @@ export function createMetaConnector(env: Env, now: () => Date): MetaAccountConne
     now,
     // Seul le stockage de Pubeka peut être lu comme média (anti-SSRF).
     allowedMediaHosts: [new URL(env.SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL).hostname],
-    xafPerUsd: CONNECTION_ONLY_XAF_PER_USD,
+    // Aucun taux ici : ce connecteur ne sert qu'à la connexion (S11); la publication (S16) lira le taux enregistré.
   });
 }
 

@@ -6,6 +6,7 @@
 import { AppError } from '@pubeka/contracts';
 import type { MemberCtx } from '../context';
 import { isKnownCurrency } from '@pubeka/shared';
+import { isFxFresh } from '../fx/freshness';
 import type { CostFxInput, CostFxSource } from './cost';
 
 export interface CostContext {
@@ -60,14 +61,16 @@ export async function loadCostContext(scope: Scope): Promise<CostContext> {
 
   const fxRows = await svc
     .from('exchange_rates')
-    .select('rate, source, fetched_at')
+    .select('rate, source, fetched_at, provider_updated_at')
     .eq('base', 'USD')
     .eq('quote', currency)
     .order('fetched_at', { ascending: false })
     .limit(1);
   if (fxRows.error !== null) throw fail(fxRows.error);
 
-  const fx = fxRows.data[0];
+  // Un taux de plus de 48 h n'est plus utilisé (voir fx/freshness.ts) : l'écran affiche alors le dollar seul.
+  const latestFx = fxRows.data[0];
+  const fx = latestFx !== undefined && isFxFresh(latestFx, scope.now()) ? latestFx : undefined;
   const source =
     fx === undefined ? undefined : FX_SOURCES.find((candidate) => candidate === fx.source);
   if (fx !== undefined && source === undefined) throw new AppError('internal_error');

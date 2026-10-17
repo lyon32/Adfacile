@@ -63,7 +63,10 @@ export const CostSchema = z.object({
   budget_usd_cents: z.number().nullable().optional(),
   total: MoneySchema.nullable().optional(),
   daily: MoneySchema.nullable().optional(),
-  fx: z.object({ rate: z.number(), quote: z.string() }).nullable().optional(),
+  fx: z
+    .object({ rate: z.number(), quote: z.string(), source: z.string().optional() })
+    .nullable()
+    .optional(),
 });
 export type Cost = z.infer<typeof CostSchema>;
 

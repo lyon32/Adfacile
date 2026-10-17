@@ -10,6 +10,7 @@ import {
 import { beforeAll, expect } from 'vitest';
 import {
   create,
+  ensureOnlyStaleFx,
   ensureTestFx,
   inDays,
   json,
@@ -446,41 +447,64 @@ describeRoute('updateCampaign', {
       expect(good.status).toBe(200);
       expect((await asBody(good)).tracking).toEqual({ pixel_id: '123456789012' });
     },
-    'S15b : propriétaire au Nigeria — coût en naira, en kobo (2 décimales), avec le taux de la base (valeur d’essai)': async () => {
-      await ensureTestFx('NGN', 1500);
-      const ng = await seedWorkspace();
-      await setOwnerCountry(ng, 'NG');
-      const draft = await newDraft(ng);
-      const res = await patch(ng, ng.owner, draft.id, {
-        version: 1,
-        daily_budget_usd_cents: 500,
-        start_date: inDays(2),
-        end_date: inDays(8),
-      });
-      expect(res.status).toBe(200);
-      const body = await asBody(res);
-      const rate = (
-        await testServiceClient()
-          .from('exchange_rates')
-          .select('rate')
-          .eq('quote', 'NGN')
-          .order('fetched_at', { ascending: false })
-          .limit(1)
-          .single()
-      ).data?.rate;
-      expect(body.cost.status).toBe('ok');
-      expect(body.cost.total?.currency).toBe('NGN');
-      // 3 500 centimes = 35 $ ; en kobo : 35 × taux × 100.
-      expect(body.cost.total?.local_minor).toBe(Math.round((3500 * (rate ?? 0) * 100) / 100));
-      expect(body.cost).not.toHaveProperty('xaf');
-      const row = await testServiceClient()
-        .from('campaigns')
-        .select('fx_currency, fx_rate_xaf')
-        .eq('id', draft.id)
-        .single();
-      expect(row.data?.fx_currency).toBe('NGN');
-      expect(row.data?.fx_rate_xaf).toBe(rate);
-    },
+    'S15b : propriétaire au Nigeria — coût en naira, en kobo (2 décimales), avec le taux de la base (valeur d’essai)':
+      async () => {
+        await ensureTestFx('NGN', 1500);
+        const ng = await seedWorkspace();
+        await setOwnerCountry(ng, 'NG');
+        const draft = await newDraft(ng);
+        const res = await patch(ng, ng.owner, draft.id, {
+          version: 1,
+          daily_budget_usd_cents: 500,
+          start_date: inDays(2),
+          end_date: inDays(8),
+        });
+        expect(res.status).toBe(200);
+        const body = await asBody(res);
+        const rate = (
+          await testServiceClient()
+            .from('exchange_rates')
+            .select('rate')
+            .eq('quote', 'NGN')
+            .order('fetched_at', { ascending: false })
+            .limit(1)
+            .single()
+        ).data?.rate;
+        expect(body.cost.status).toBe('ok');
+        expect(body.cost.total?.currency).toBe('NGN');
+        // 3 500 centimes = 35 $ ; en kobo : 35 × taux × 100.
+        expect(body.cost.total?.local_minor).toBe(Math.round((3500 * (rate ?? 0) * 100) / 100));
+        expect(body.cost).not.toHaveProperty('xaf');
+        const row = await testServiceClient()
+          .from('campaigns')
+          .select('fx_currency, fx_rate_xaf')
+          .eq('id', draft.id)
+          .single();
+        expect(row.data?.fx_currency).toBe('NGN');
+        expect(row.data?.fx_rate_xaf).toBe(rate);
+      },
+    'S15b : taux de change périmé (5 jours) : le coût reste en dollars, aucun montant local inventé':
+      async () => {
+        await ensureOnlyStaleFx('KES', 130);
+        const ke = await seedWorkspace();
+        await setOwnerCountry(ke, 'KE');
+        const draft = await newDraft(ke);
+        const res = await patch(ke, ke.owner, draft.id, {
+          version: 1,
+          daily_budget_usd_cents: 500,
+          start_date: inDays(2),
+          end_date: inDays(8),
+        });
+        expect(res.status).toBe(200);
+        const body = await asBody(res);
+        expect(body.cost).toMatchObject({
+          status: 'fx_not_available',
+          budget_usd_cents: 3500,
+          total: null,
+          daily: null,
+          fx: null,
+        });
+      },
     'pays du propriétaire inconnu : taux de change indisponible, le coût reste en dollars, rien n’est inventé':
       async () => {
         const other = await seedWorkspace();

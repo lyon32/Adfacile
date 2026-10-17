@@ -130,6 +130,23 @@ describe('getCampaign', () => {
   });
 });
 
+describe('getCampaign : taux de change périmé', () => {
+  it('un taux de plus de 48 h n’est plus utilisé : le coût reste en dollars (fx_not_available), aucun montant local inventé', async () => {
+    const { ctx, db } = world();
+    db.rows('exchange_rates')[0]!.fetched_at = '2026-10-09T08:00:00Z'; // 73 h avant NOW
+    const id = addDraft(db, {
+      daily_budget_usd_cents: 500,
+      start_date: '2026-10-13',
+      end_date: '2026-10-19',
+    });
+    const view = await getCampaign(ctx, id);
+    expect(view.cost).toMatchObject({ status: 'fx_not_available', budget_usd_cents: 3500 });
+    expect(view.cost.total).toBeNull();
+    expect(view.cost.daily).toBeNull();
+    expect(view.cost.fx).toBeNull();
+  });
+});
+
 describe('updateCampaign', () => {
   it('fusionne copy et targeting, remplace geo, augmente la version, enregistre le change', async () => {
     const { ctx, db } = world();

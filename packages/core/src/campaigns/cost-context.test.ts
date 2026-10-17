@@ -101,6 +101,48 @@ describe('loadCostContext', () => {
     expect(client.calls.some((c) => c.target === 'exchange_rates')).toBe(false);
   });
 
+  describe('fraîcheur : un taux de plus de 48 h n’est plus utilisé', () => {
+    const rowAt = (providerHoursAgo: number | null, fetchedHoursAgo = 1) => ({
+      rate: 1500,
+      source: 'exchangerate-api',
+      fetched_at: new Date(NOW.getTime() - fetchedHoursAgo * 3_600_000).toISOString(),
+      provider_updated_at:
+        providerHoursAgo === null
+          ? null
+          : new Date(NOW.getTime() - providerHoursAgo * 3_600_000).toISOString(),
+    });
+    const withRate = (row: ReturnType<typeof rowAt>) =>
+      new FakeClient().reply(
+        ok({ owner_id: 'o1' }),
+        ok({ country_code: 'NG' }),
+        ok({ currency: 'NGN' }),
+        ok([row]),
+      );
+
+    it('publié il y a 47 h : utilisé', async () => {
+      const result = await loadCostContext(ctxWith(withRate(rowAt(47))));
+      expect(result.fx?.rate).toBe(1500);
+    });
+    it('publié il y a 49 h : ignoré, l’écran n’aura que le dollar (fx null)', async () => {
+      const result = await loadCostContext(ctxWith(withRate(rowAt(49))));
+      expect(result.fx).toBeNull();
+    });
+    it('lu il y a 1 h mais publié il y a 49 h : la publication du fournisseur prime, ignoré', async () => {
+      const result = await loadCostContext(ctxWith(withRate(rowAt(49, 1))));
+      expect(result.fx).toBeNull();
+    });
+    it('taux saisi à la main (sans publication) : la date d’écriture compte', async () => {
+      expect((await loadCostContext(ctxWith(withRate(rowAt(null, 47))))).fx).not.toBeNull();
+      expect((await loadCostContext(ctxWith(withRate(rowAt(null, 49))))).fx).toBeNull();
+    });
+    it('la lecture demande la date de publication', async () => {
+      const client = withRate(rowAt(1));
+      await loadCostContext(ctxWith(client));
+      const call = client.calls.find((c) => c.target === 'exchange_rates');
+      expect(JSON.stringify(call)).toContain('provider_updated_at');
+    });
+  });
+
   it('pays introuvable : fx null', async () => {
     const client = new FakeClient().reply(ok({ owner_id: 'o1' }), ok({ country_code: null }));
     const result = await loadCostContext(ctxWith(client));

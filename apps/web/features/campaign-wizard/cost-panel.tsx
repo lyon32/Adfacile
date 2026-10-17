@@ -60,6 +60,20 @@ export function CostPanel({ cost }: { cost: Cost }): ReactNode {
       ) : null}
 
       {cost.status === 'ok' ? <p className="text-meta text-muted">{t('note')}</p> : null}
+
+      {/* Attribution exigée par ExchangeRate-API (accès ouvert) partout où un montant converti est affiché. */}
+      {cost.status === 'ok' && cost.fx?.source === 'exchangerate-api' ? (
+        <p className="text-meta text-muted">
+          <a
+            href="https://www.exchangerate-api.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2"
+          >
+            {t('attribution')}
+          </a>
+        </p>
+      ) : null}
     </section>
   );
 }

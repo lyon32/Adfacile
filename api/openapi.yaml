@@ -74,16 +74,6 @@ paths:
         '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/Plan' } } } } } } }
         '429': { $ref: '#/components/responses/TooManyRequests' }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
-  /public/fx-rates:
-    get:
-      tags: [ Public ]
-      operationId: getFxRates
-      summary: Taux de change USD → monnaie locale en vigueur
-      security: []
-      responses:
-        '200': { description: OK, content: { application/json: { schema: { type: object, required: [ data ], properties: { data: { type: array, items: { $ref: '#/components/schemas/FxRate' } } } } } } }
-        '429': { $ref: '#/components/responses/TooManyRequests' }
-        '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
   # ------------------------------------------------------------------ Compte
   /me:

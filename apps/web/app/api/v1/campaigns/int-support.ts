@@ -19,10 +19,31 @@ export const campaignParams = (workspaceId: string, campaignId: string) => ({
 type Who = SeededWorkspace['owner'];
 
 /**
- * Au moins un taux de change existe pour la monnaie (valeur d'ESSAI, ancienne : les autres tests posent des taux plus
- * récents). Le taux d'essai par défaut du FCFA est 600 ; ce n'est pas une donnée du produit.
+ * Un taux de change FRAIS existe pour la monnaie (valeur d'ESSAI écrite « à la main » à l'instant : un taux de plus de
+ * 48 h n'est plus utilisé). Le taux d'essai par défaut du FCFA est 600 ; ce n'est pas une donnée du produit.
  */
 export async function ensureTestFx(quote = 'XAF', rate = 600): Promise<void> {
+  const svc = testServiceClient();
+  const since = new Date(Date.now() - 12 * 3_600_000).toISOString();
+  const have = await svc
+    .from('exchange_rates')
+    .select('id')
+    .eq('quote', quote)
+    .gte('fetched_at', since)
+    .limit(1);
+  if ((have.data ?? []).length > 0) return;
+  const r = await svc.from('exchange_rates').insert({
+    base: 'USD',
+    quote,
+    rate,
+    source: 'manual',
+    fetched_at: new Date().toISOString(),
+  });
+  expect(r.error).toBeNull();
+}
+
+/** Un taux PÉRIMÉ (5 jours) et rien de plus récent pour cette monnaie : le coût doit rester en dollars. */
+export async function ensureOnlyStaleFx(quote: string, rate: number): Promise<void> {
   const svc = testServiceClient();
   const have = await svc.from('exchange_rates').select('id').eq('quote', quote).limit(1);
   if ((have.data ?? []).length > 0) return;
@@ -31,7 +52,7 @@ export async function ensureTestFx(quote = 'XAF', rate = 600): Promise<void> {
     quote,
     rate,
     source: 'manual',
-    fetched_at: '2026-01-02T00:00:00Z',
+    fetched_at: new Date(Date.now() - 5 * 24 * 3_600_000).toISOString(),
   });
   expect(r.error).toBeNull();
 }

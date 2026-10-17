@@ -489,6 +489,41 @@ describe('étape Proposition', () => {
     expect(screen.getByText(/6\s?000,00\s?NGN par jour/)).toBeTruthy(); // 600 000 kobo
   });
 
+  it('S15b : attribution obligatoire d’ExchangeRate-API sous les montants convertis (lien discret, sécurisé)', async () => {
+    const cost = { ...COST_NGN, fx: { rate: 1500, quote: 'NGN', source: 'exchangerate-api' } };
+    stubApi({
+      [CAMPAIGN_GET]: json(campaign()),
+      [PROPOSALS]: json({ data: [proposal(1, cost)] }),
+    });
+    mount();
+    await screen.findByText('Coût total');
+    const link = screen.getByRole('link', { name: 'Taux fournis par Exchange Rate API' });
+    expect(link.getAttribute('href')).toBe('https://www.exchangerate-api.com');
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(link.getAttribute('target')).toBe('_blank');
+  });
+
+  it('S15b : en anglais, le lien d’attribution est le texte demandé par le fournisseur', async () => {
+    const cost = { ...COST_NGN, fx: { rate: 1500, quote: 'NGN', source: 'exchangerate-api' } };
+    stubApi({
+      [CAMPAIGN_GET]: json(campaign()),
+      [PROPOSALS]: json({ data: [proposal(1, cost)] }),
+    });
+    mount({}, { locale: 'en' });
+    await screen.findByText('Total cost');
+    expect(screen.getByRole('link', { name: 'Rates By Exchange Rate API' })).toBeTruthy();
+  });
+
+  it('S15b : pas d’attribution quand le taux ne vient pas de ce fournisseur ou qu’aucun montant converti n’est affiché', async () => {
+    stubApi({
+      [CAMPAIGN_GET]: json(campaign()),
+      [PROPOSALS]: json({ data: [proposal(1, COST_OK)] }), // taux saisi à la main (source absente)
+    });
+    mount();
+    await screen.findByText('Coût total');
+    expect(screen.queryByRole('link', { name: /Exchange Rate API/ })).toBeNull();
+  });
+
   it('S15b : pays non CFA (Tunisie) — dinar à 3 décimales', async () => {
     stubApi({
       [CAMPAIGN_GET]: json(campaign()),

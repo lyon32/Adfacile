@@ -1,4 +1,5 @@
-// Données publiques (API_SPEC §14 « Public ») : maintenance, formules, taux de change.
+// Données publiques (API_SPEC §14 « Public ») : maintenance, formules. Les taux de change ne sont PAS publics : le fournisseur
+// interdit de les redistribuer (S15b).
 // Lues avec le client service : ces tables ne sont pas ouvertes au rôle anonyme.
 import { AppError } from '@pubeka/contracts';
 import { unwrap } from '@pubeka/db';
@@ -17,14 +18,6 @@ export interface PublicPlan {
   max_pages: number;
   max_members: number;
   features: Record<string, boolean>;
-}
-
-export interface PublicFxRate {
-  base: 'USD';
-  quote: 'XAF' | 'XOF';
-  rate: number;
-  source: 'saspay' | 'fallback' | 'manual';
-  fetched_at: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -71,35 +64,4 @@ export async function listPlans(ctx: ServiceCtx): Promise<PublicPlan[]> {
       features,
     };
   });
-}
-
-const QUOTES = ['XAF', 'XOF'] as const;
-const SOURCES = ['saspay', 'fallback', 'manual'] as const;
-
-/** Dernier taux connu pour chaque monnaie (XAF, XOF). */
-export async function listFxRates(ctx: ServiceCtx): Promise<PublicFxRate[]> {
-  const out: PublicFxRate[] = [];
-  for (const quote of QUOTES) {
-    const rows = unwrap(
-      await ctx.svc
-        .from('exchange_rates')
-        .select('quote, rate, source, fetched_at')
-        .eq('base', 'USD')
-        .eq('quote', quote)
-        .order('fetched_at', { ascending: false })
-        .limit(1),
-    );
-    const row = rows[0];
-    if (row === undefined) continue;
-    const source = SOURCES.find((s) => s === row.source);
-    if (source === undefined) throw new AppError('internal_error');
-    out.push({
-      base: 'USD',
-      quote,
-      rate: row.rate,
-      source,
-      fetched_at: new Date(row.fetched_at).toISOString(),
-    });
-  }
-  return out;
 }

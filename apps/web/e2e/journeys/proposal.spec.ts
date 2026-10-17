@@ -233,7 +233,7 @@ for (const theme of ['light', 'dark'] as const) {
               budget_usd_cents: 2800,
               total: { local_minor: 4_200_000, usd_cents: 2800, currency: 'NGN' },
               daily: { local_minor: 600_000, usd_cents: 400, currency: 'NGN' },
-              fx: { rate: 1500, quote: 'NGN' },
+              fx: { rate: 1500, quote: 'NGN', source: 'exchangerate-api' },
             }
           : {
               status: 'fx_not_available',
@@ -257,6 +257,10 @@ for (const theme of ['light', 'dark'] as const) {
         ),
       ).toBeVisible();
       if (status === 'naira') await expect(page.getByText(/42\s?000,00\s?NGN/)).toBeVisible();
+      if (status === 'naira')
+        await expect(
+          page.getByRole('link', { name: 'Taux fournis par Exchange Rate API' }),
+        ).toBeVisible();
       if (status === 'ok') await expect(page.getByText(/16\s?800\s?FCFA/)).toBeVisible();
       await checkScreen(
         page,

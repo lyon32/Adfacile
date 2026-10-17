@@ -770,7 +770,8 @@
           "budget": "Budget sur {days, plural, one {# jour} other {# jours}}",
           "note": "Tu paies ce montant à Meta, hors frais éventuels de ta banque ou de ta carte.",
           "fx_missing": "Le taux de change n’est pas disponible : le coût est affiché en dollars seulement.",
-          "incomplete": "Indique un budget et des dates pour voir le coût."
+          "incomplete": "Indique un budget et des dates pour voir le coût.",
+          "attribution": "Taux fournis par Exchange Rate API"
         },
         "actions": {
           "edit": "Modifier",
