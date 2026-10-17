@@ -101,6 +101,16 @@ export function addDraft(db: MemoryDb, over: Record<string, unknown> = {}): stri
     fx_rate_xaf: null,
     published_at: null,
     chosen_proposal_version: null,
+    meta_campaign_id: null,
+    meta_adset_id: null,
+    publish_ref: null,
+    publish_attempt: 0,
+    publish_idempotency_key: null,
+    publish_phase: 'none',
+    publish_started_at: null,
+    publish_error: null,
+    quota_state: 'none',
+    paused_at: null,
     ...over,
   });
   return id;
