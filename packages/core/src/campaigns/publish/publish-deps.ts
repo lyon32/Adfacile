@@ -5,6 +5,7 @@ import type { Env } from '@pubeka/shared';
 import { createFullMetaConnector } from '../../meta/connector-factory';
 import { loadToken } from '../../meta/token';
 import type { CampaignControlDeps } from './campaign-control';
+import { metaPublishAllowed } from './publish-switch';
 import type { RunPublicationDeps } from './run-publication';
 
 export function createRunPublicationDeps(env: Env, now: () => Date): RunPublicationDeps {
@@ -13,6 +14,8 @@ export function createRunPublicationDeps(env: Env, now: () => Date): RunPublicat
   activeEncryptionKey(keys, env.TOKEN_ENCRYPTION_ACTIVE_KEY_ID);
   return {
     connector: createFullMetaConnector(env, now),
+    // Interrupteur de publication réelle (PUBEKA_META_PUBLISH), évalué à chaque appel par les cas d'usage.
+    metaPublishEnabled: () => metaPublishAllowed(env),
     loadToken: (svc, workspaceId, connection) => loadToken(svc, { keys }, workspaceId, connection),
   };
 }
@@ -23,6 +26,8 @@ export function createCampaignControlDeps(env: Env, now: () => Date): CampaignCo
   activeEncryptionKey(keys, env.TOKEN_ENCRYPTION_ACTIVE_KEY_ID);
   return {
     connector: createFullMetaConnector(env, now),
+    // Interrupteur de publication réelle (PUBEKA_META_PUBLISH), évalué à chaque appel par les cas d'usage.
+    metaPublishEnabled: () => metaPublishAllowed(env),
     loadToken: (svc, workspaceId, connection) => loadToken(svc, { keys }, workspaceId, connection),
   };
 }

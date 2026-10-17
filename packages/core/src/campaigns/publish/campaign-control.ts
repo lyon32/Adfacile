@@ -14,6 +14,7 @@
 //  - RELANCE `copy` (PRD F9) : un nouveau brouillon copié de la campagne ; il compte comme une nouvelle campagne à sa publication.
 //    « Nouveaux visuels » (`similar`, `change`) relève de l'étape Visuel (S23) : refusé clairement tant qu'elle n'existe pas.
 import { AppError } from '@pubeka/contracts';
+import { assertMetaPublishEnabled, type MetaPublishGate } from './publish-switch';
 import {
   isAmbiguousMetaFailure,
   toAppError,
@@ -55,7 +56,7 @@ export type ControlConnector = Pick<
   'pause' | 'resume' | 'getStatus' | 'estimateDelivery' | 'searchLocations'
 >;
 
-export interface CampaignControlDeps {
+export interface CampaignControlDeps extends MetaPublishGate {
   connector: ControlConnector;
   loadToken: RunPublicationDeps['loadToken'];
 }
@@ -186,6 +187,8 @@ export async function resumeCampaign(
 ): Promise<CampaignView> {
   assertRole(ctx, ['owner', 'editor']);
   assertWritable(ctx);
+  // Reprendre = ACTIVER chez Meta (dépense réelle) : bloqué quand l'interrupteur de publication réelle est désactivé.
+  assertMetaPublishEnabled(deps);
   const row = await loadPublishRow(ctx.db, ctx.workspace.id, campaignId);
   if (row.status === 'active') return view(ctx, row);
   if (!nextCampaignStatus(row.status, 'resume').ok)
@@ -209,6 +212,8 @@ async function recover(
   version: number,
   deps: CampaignControlDeps,
 ): Promise<CampaignView> {
+  // Relancer une campagne arrêtée = l'ACTIVER chez Meta : même interrupteur que la publication.
+  assertMetaPublishEnabled(deps);
   const row = await loadPublishRow(ctx.db, ctx.workspace.id, campaignId);
   if (row.version !== version) throw conflict('stale_version', { current_version: row.version });
   if (!nextCampaignStatus(row.status, 'recover').ok)

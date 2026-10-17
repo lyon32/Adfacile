@@ -72,6 +72,8 @@
 
 Les secrets **de l'application** vivent dans Vercel et Trigger.dev (ENV_SETUP §2). GitHub ne garde que les jetons qui servent à **déployer** (§9.3).
 
+**Publication réelle chez Meta (interrupteur, S16)** : la préproduction a Meta RÉEL (pas de `meta` dans `PUBEKA_FAKE_PROVIDERS`). `PUBEKA_META_PUBLISH` y est **absente**, donc la publication, la reprise et la relance refusent (`503`, `publish_disabled`) : aucun clic ne peut créer ni activer une vraie campagne. Il en va de même en production. Elle ne passe à `enabled` (Vercel ET Trigger.dev) que sur décision du chef de projet, et le journal de déploiement le note. Les tests et la CI n'en ont pas besoin (fausse Meta).
+
 Préversions de PR : elles partagent le projet Supabase de développement avec la préproduction. Une PR qui contient une **nouvelle migration** n'a donc pas sa migration en préversion (elle n'est appliquée qu'après la fusion) : la préversion peut échouer sur les écrans concernés. C'est accepté ; la CI, elle, teste la migration sur sa propre base locale.
 
 ---

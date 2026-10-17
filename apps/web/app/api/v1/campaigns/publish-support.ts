@@ -41,9 +41,12 @@ export class JobRecorder {
   private readonly seen = new Set<string>();
   readonly events: string[] = [];
   refuse: { code: 'campaign_quota_reached' } | undefined;
+  /** Interrupteur de publication réelle simulé : activé par défaut (fausse Meta). */
+  publishEnabled = true;
 
   deps(): PublishCampaignDeps {
     return {
+      metaPublishEnabled: () => this.publishEnabled,
       jobs: {
         enqueue: (taskId, payload, key) => {
           if (!this.seen.has(`${taskId}:${key}`)) {

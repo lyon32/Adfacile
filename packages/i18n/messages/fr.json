@@ -1033,6 +1033,10 @@
           "uncertain": {
             "title": "Meta n’a pas confirmé la création.",
             "body": "Pubeka a vérifié chez Meta : rien n’a été créé. Ton quota n’est pas décompté. Tu peux republier."
+          },
+          "publish_disabled": {
+            "title": "La publication réelle n’est pas activée sur cet environnement.",
+            "body": "Ta campagne reste en brouillon et ton quota n’est pas décompté. Rien n’a été envoyé à Meta."
           }
         }
       }

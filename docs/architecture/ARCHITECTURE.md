@@ -221,6 +221,8 @@ VisualSpec (Designer) ──►│──► génération de la scène (modèle c
 | `media-byteplus-video` (plus tard) | 3 (compte individuel) / 10 (entreprise) | BytePlus |
 | `agents` | selon la passerelle IA | — |
 | `meta-publish` | 5 (à mesurer ; limites de débit de Meta par compte publicitaire) | Meta (S16 : `campaign.publish`) |
+Interrupteur de sécurité (S16) : tant que `PUBEKA_META_PUBLISH` n'est pas `enabled`, `campaign.publish` refuse quand Meta est réel (SECURITY_NOTES, « Interrupteur de la publication réelle »).
+
 
 Expérience pendant l'attente (validé) :
 1. Les visuels s'affichent **un par un** dès qu'ils sont prêts.
