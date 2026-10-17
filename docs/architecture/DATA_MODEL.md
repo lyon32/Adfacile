@@ -2,7 +2,7 @@
 
 > Version 1 · 10 octobre 2026 · **Document de référence des données.** Remplace l'ancien `MODELE-DE-DONNEES.md`.
 > Source de vérité : les migrations SQL [`supabase/migrations/`](../../supabase/migrations/). La section 6 (schémas des tables) est **générée automatiquement** à partir de la base réelle par [`supabase/scripts/gen-data-model.mjs`](../../supabase/scripts/gen-data-model.mjs) : elle ne peut pas diverger du SQL.
-> Sécurité des données : [SECURITE-BACKEND.md](SECURITE-BACKEND.md) · tests : [`supabase/tests/security.test.mjs`](../../supabase/tests/security.test.mjs) (44/44), [`api-support.test.mjs`](../../supabase/tests/api-support.test.mjs) (migration 0003) et [`login-attempts.test.mjs`](../../supabase/tests/login-attempts.test.mjs) (migration 0004) et [`uploads.test.mjs`](../../supabase/tests/uploads.test.mjs) (migrations 0008 et 0009) et [`campaign-drafts.test.mjs`](../../supabase/tests/campaign-drafts.test.mjs) (migration 0010).
+> Sécurité des données : [SECURITE-BACKEND.md](SECURITE-BACKEND.md) · tests : [`supabase/tests/security.test.mjs`](../../supabase/tests/security.test.mjs) (44/44), [`api-support.test.mjs`](../../supabase/tests/api-support.test.mjs) (migration 0003) et [`login-attempts.test.mjs`](../../supabase/tests/login-attempts.test.mjs) (migration 0004) et [`uploads.test.mjs`](../../supabase/tests/uploads.test.mjs) (migrations 0008 et 0009) et [`campaign-drafts.test.mjs`](../../supabase/tests/campaign-drafts.test.mjs) (migration 0010) et [`africa-countries.test.mjs`](../../supabase/tests/africa-countries.test.mjs) (migration 0012 : les 54 pays d'Afrique, leurs monnaies, les taux de change de toute monnaie).
 
 ---
 
@@ -868,15 +868,17 @@ RLS : activée · 1 politique(s)
 | optimization_goal | text | oui |  |
 | visual_brief | text | oui |  |
 | chosen_proposal_version | integer | oui |  |
+| fx_currency | character(3) | oui |  |
 
 | Contrainte | Définition |
 |---|---|
-| Contrôle | `CHECK (((end_date IS NULL) OR (start_date IS NULL) OR (end_date >= start_date)))` |
 | Contrôle | `CHECK ((chosen_proposal_version >= 1))` |
 | Contrôle | `CHECK (((daily_budget_usd_cents IS NULL) OR (daily_budget_usd_cents <= 1000000)))` |
 | Contrôle | `CHECK (((daily_budget_usd_cents IS NULL) OR (daily_budget_usd_cents >= 100)))` |
 | Contrôle | `CHECK ((destination = ANY (ARRAY['WHATSAPP'::text, 'MESSENGER'::text, 'INSTAGRAM_DIRECT'::text, 'WEBSITE'::text, 'APP'::text, 'ON_POST'::text, 'NONE'::text])))` |
-| Contrôle | `CHECK (((start_date IS NULL) OR (end_date IS NULL) OR ((end_date - start_date) <= 365)))` |
+| Contrôle | `CHECK (((start_date IS NULL) OR (end_date IS NULL) OR ((end_date - start_date) <= 364)))` |
+| Contrôle | `CHECK (((start_date IS NULL) OR (end_date IS NULL) OR (end_date > start_date)))` |
+| Contrôle | `CHECK ((fx_currency ~ '^[A-Z]{3}$'::text))` |
 | Contrôle | `CHECK ((fx_rate_xaf > (0)::numeric))` |
 | Contrôle | `CHECK ((meta_adset_id ~ '^[0-9]{5,25}$'::text))` |
 | Contrôle | `CHECK ((meta_campaign_id ~ '^[0-9]{5,25}$'::text))` |
@@ -990,9 +992,9 @@ RLS : activée · 1 politique(s)
 
 | Contrainte | Définition |
 |---|---|
-| Contrôle | `CHECK ((quote = ANY (ARRAY['XAF'::bpchar, 'XOF'::bpchar])))` |
+| Contrôle | `CHECK ((quote ~ '^[A-Z]{3}$'::text))` |
 | Contrôle | `CHECK ((rate > (0)::numeric))` |
-| Contrôle | `CHECK ((source = ANY (ARRAY['saspay'::text, 'fallback'::text, 'manual'::text])))` |
+| Contrôle | `CHECK ((source = ANY (ARRAY['saspay'::text, 'fallback'::text, 'manual'::text, 'exchangerate-api'::text])))` |
 | n | `NOT NULL base` |
 | n | `NOT NULL fetched_at` |
 | n | `NOT NULL id` |
@@ -1544,7 +1546,7 @@ RLS : activée · 1 politique(s)
 |---|---|
 | Contrôle | `CHECK ((char_length(city) <= 120))` |
 | Contrôle | `CHECK ((country_code ~ '^[A-Z]{2}$'::text))` |
-| Contrôle | `CHECK ((currency_display = ANY (ARRAY['XAF'::text, 'XOF'::text])))` |
+| Contrôle | `CHECK ((currency_display ~ '^[A-Z]{3}$'::text))` |
 | Contrôle | `CHECK (((email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'::text) AND (char_length(email) <= 254)))` |
 | Contrôle | `CHECK ((char_length(first_name) <= 80))` |
 | Contrôle | `CHECK ((char_length(last_name) <= 80))` |

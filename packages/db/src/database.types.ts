@@ -641,6 +641,7 @@ export type Database = {
           destination: string | null;
           editable: boolean;
           end_date: string | null;
+          fx_currency: string | null;
           fx_rate_xaf: number | null;
           geo: NonNullable<Json>;
           id: string;
@@ -674,6 +675,7 @@ export type Database = {
           destination?: string | null;
           editable?: boolean;
           end_date?: string | null;
+          fx_currency?: string | null;
           fx_rate_xaf?: number | null;
           geo?: NonNullable<Json>;
           id?: string;
@@ -707,6 +709,7 @@ export type Database = {
           destination?: string | null;
           editable?: boolean;
           end_date?: string | null;
+          fx_currency?: string | null;
           fx_rate_xaf?: number | null;
           geo?: NonNullable<Json>;
           id?: string;

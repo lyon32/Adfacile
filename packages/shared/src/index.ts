@@ -4,3 +4,4 @@ export * from './env';
 export * from './ids';
 export * from './logger';
 export * from './money';
+export * from './currency';

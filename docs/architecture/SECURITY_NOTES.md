@@ -146,7 +146,7 @@ Les trois barrières sont **indépendantes** : une seule qui manque ne suffit pa
 | URL fournie par l'utilisateur | `http` ou `https` seulement, ≤ 2 048 caractères, **pas d'identifiants** dans l'adresse (`user:pass@`), nom de domaine converti en punycode, puis `assertPublicUrl()` (adresses privées, locales et de métadonnées refusées, revérifié après chaque redirection, 5 au maximum) | `400` (format) ou `422 unsafe_url` |
 | Identifiants Meta | Page, campagne : chiffres seulement ; compte publicitaire : `act_` + chiffres ; pixel : 5 à 25 chiffres | `400` |
 | Couleur | `#RRGGBB` | `400` |
-| Montant | **entier** ; FCFA sans décimales, dollars en centimes ; jamais négatif sauf retrait de crédits par l'administration | `400` |
+| Montant | **entier** ; unité mineure de chaque monnaie (ISO 4217 : FCFA 0 décimale, naira 2, dinar tunisien 3), dollars en centimes ; jamais négatif sauf retrait de crédits par l'administration | `400` |
 | Budget quotidien | ≥ **100 centimes** (1 $, TR-PLA-10) ; maximum 1 000 000 centimes (10 000 $) 🔶 contre les fautes de frappe | `422 budget_too_low` / `400` |
 | Montants de campagne | Coût = budget par jour × jours, en entiers ; **TVA retirée pour le moment (décision du 17/10/2026), à réactiver sur décision** | — |
 | Dates de campagne | `YYYY-MM-DD` dans le fuseau de l'utilisateur ; début ≥ aujourd'hui ; fin > début (deux jours au moins) ; durée ≤ 365 jours, début et fin compris 🔶 | `400` / `422` |
