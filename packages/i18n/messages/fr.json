@@ -439,12 +439,12 @@
       },
       "payment-method": {
         "title": "Ajouter un moyen de paiement",
-        "intro": "Meta facture tes pubs sur ton compte publicitaire : sans moyen de paiement, elles ne sont pas diffusées.",
-        "step_1": "Dans le gestionnaire de publicités, ouvre « Paramètres de paiement ».",
-        "step_2": "Ajoute une carte bancaire ou des fonds prépayés.",
-        "step_3": "Pas de carte internationale ? Une carte virtuelle prépayée, comme celles de Keecash, peut convenir.",
-        "step_4": "Reviens ici et appuie sur « Revérifier ».",
-        "note": "Le paiement des pubs se fait chez Meta, en dollars. Pubeka ne prend jamais ta carte."
+        "intro": "Meta débite tes pubs sur ton compte publicitaire. Sans moyen de paiement, elles ne sont pas diffusées. La recharge des fonds Meta se fait uniquement avec une carte bancaire, quel que soit ton pays.",
+        "step_1": "Dans le gestionnaire de publicités de Meta, ouvre « Paramètres de paiement ».",
+        "step_2": "Ajoute une carte bancaire (Visa ou Mastercard). C’est la seule façon d’alimenter tes fonds Meta Ads.",
+        "step_3": "Pas de carte bancaire ? Pubeka te propose Keecash, une carte virtuelle. Tu peux aussi utiliser ta propre carte virtuelle.",
+        "step_4": "Alimente tes fonds Meta Ads du montant de ta campagne : quand ils sont épuisés, Meta arrête la diffusion sans prélever ta carte. Puis reviens ici.",
+        "note": "Les pubs se paient chez Meta, jamais chez Pubeka. L’abonnement Pubeka se règle à part, par Mobile Money."
       },
       "facebook-page": {
         "title": "Créer une Page Facebook",
@@ -841,6 +841,199 @@
         "retained": {
           "title": "Proposition retenue",
           "body": "Ta campagne est enregistrée comme brouillon. L’étape Visuel arrive bientôt."
+        }
+      },
+      "preview": {
+        "title": "Aperçu de ta pub",
+        "body": "Voici comment ta pub peut apparaître. Vérifie chaque emplacement avant de publier.",
+        "loading": "Préparation de l’aperçu…",
+        "load_failed": "Impossible de préparer l’aperçu. Réessaie.",
+        "tabs_label": "Emplacements",
+        "tabs": {
+          "facebook_feed": "Fil Facebook",
+          "instagram_feed": "Fil Instagram",
+          "stories": "Stories",
+          "reels": "Reels",
+          "messenger": "Messenger"
+        },
+        "frame_label": "Aperçu : {placement}",
+        "sponsored": "Sponsorisé",
+        "page_unknown": "Ta Page",
+        "photo_alt": "Ta photo, telle qu’elle apparaît dans la pub",
+        "photo_missing": "Photo indisponible",
+        "react_like": "J’aime",
+        "react_comment": "Commenter",
+        "react_share": "Partager",
+        "disclosure": "Aperçu construit par Pubeka avec ton texte et ta photo. L’affichage réel chez Meta peut varier légèrement.",
+        "vertical": {
+          "notice": "Ta photo est recadrée en 9:16 pour cet emplacement.",
+          "create": "Créer le format 9:16",
+          "soon": "Disponible avec l’étape Visuel."
+        },
+        "radius_notice": "Meta impose au moins 17 km autour d’une ville. {city} sera ciblée sur {effective} km (tu avais choisi {requested} km).",
+        "recap_title": "Récapitulatif",
+        "estimate": {
+          "title": "Audience estimée par Meta",
+          "range": "Entre {lower} et {upper} personnes",
+          "explain": "Personnes actives le mois dernier sur les plateformes choisies qui correspondent à ton ciblage. Ce n’est pas le nombre de personnes qui verront ta pub avec ce budget.",
+          "loading": "Meta calcule l’estimation…",
+          "unavailable": "Meta ne donne pas d’estimation pour l’instant. Tu peux publier sans."
+        },
+        "photo_block": {
+          "missing_title": "Ta pub a besoin d’une photo",
+          "missing_body": "Ajoute une photo à l’étape Sources pour pouvoir publier.",
+          "expired_title": "Ta photo n’est plus disponible",
+          "expired_body": "Le fichier a expiré. Renvoie-le à l’étape Sources.",
+          "action": "Modifier mes sources"
+        },
+        "actions": {
+          "continue": "Continuer vers la publication",
+          "back": "Retour à la proposition"
+        }
+      },
+      "publish": {
+        "title": "Publier ta campagne",
+        "body": "Dernière vérification avant l’envoi à Meta.",
+        "checks_title": "Prêt à publier ?",
+        "checks": {
+          "page": "Page",
+          "account": "Compte publicitaire",
+          "payment": "Moyen de paiement",
+          "photo": "Photo",
+          "ok": "Prêt",
+          "ko": "À régler",
+          "unknown": "Meta le vérifiera",
+          "page_ok": "{name}",
+          "page_ko": "Cette Page n’est pas dans ta formule.",
+          "page_none": "Aucune Page choisie.",
+          "account_ok": "{name}",
+          "account_ko": "Aucun compte publicitaire relié.",
+          "account_expired": "Ta connexion à Meta a expiré.",
+          "payment_ok": "Présent",
+          "payment_ko": "Absent : Meta ne diffusera pas ta pub.",
+          "photo_ok": "Prête",
+          "photo_ko": "Indisponible"
+        },
+        "pay_note": "Les pubs se paient chez Meta. Alimente tes fonds Meta Ads : quand ils sont épuisés, Meta arrête la diffusion sans prélever ta carte.",
+        "guide": "Voir le guide",
+        "actions": {
+          "publish": "Publier la campagne",
+          "publishing": "Publication en cours…",
+          "back": "Retour à l’aperçu",
+          "confirm_total": "Confirmer et publier",
+          "retry": "Réessayer"
+        },
+        "liability": {
+          "title": "Avant ta première publication",
+          "body": "La plateforme vérifie chaque pub. Pubeka n’est pas responsable si ton compte publicitaire est restreint à cause du contenu publié.",
+          "confirm": "J’ai compris",
+          "cancel": "Annuler"
+        },
+        "progress": {
+          "title": "Publication en cours…",
+          "body": "Pubeka envoie ta campagne à Meta. Garde cette page ouverte.",
+          "verifying_title": "On vérifie",
+          "verifying_body": "Meta met du temps à répondre. Pubeka vérifie ce qui a été créé chez Meta avant de conclure : ne republie pas."
+        },
+        "success": {
+          "title": "Ta campagne est envoyée à Meta",
+          "body": "Meta la vérifie, en général sous 24 heures. On te prévient dès qu’elle est en diffusion.",
+          "view": "Voir ma campagne",
+          "another": "Créer une autre pub"
+        },
+        "errors": {
+          "no_payment_method": {
+            "title": "Ton compte publicitaire n’a pas de moyen de paiement.",
+            "body": "Ta campagne reste en brouillon et ton quota n’est pas décompté.",
+            "action": "Voir le guide"
+          },
+          "reconnect": {
+            "title": "Reconnecte ton compte Meta.",
+            "body": "Ta connexion à Meta a expiré. Ta campagne reste en brouillon et ton quota n’est pas décompté.",
+            "action": "Reconnecter"
+          },
+          "not_connected": {
+            "title": "Connecte ton compte Meta pour publier.",
+            "body": "Ta campagne reste en brouillon.",
+            "action": "Connecter"
+          },
+          "quota": {
+            "title": "Tu as publié toutes les campagnes de ta formule.",
+            "body": "Ta campagne reste en brouillon. Passe à une formule supérieure pour la publier.",
+            "action": "Voir les formules"
+          },
+          "page_limit": {
+            "title": "Cette Page n’est pas dans ta formule.",
+            "body": "Elle sera utilisable à partir du {date}. Ta campagne reste en brouillon.",
+            "body_nodate": "Choisis une Page de ta formule ou passe à une formule supérieure. Ta campagne reste en brouillon.",
+            "action": "Voir les formules"
+          },
+          "fields": {
+            "title": "Corrige ces points avant de publier",
+            "body": "Ta campagne reste en brouillon.",
+            "action": "Retour à la proposition"
+          },
+          "budget_too_low": {
+            "title": "Le budget minimum est de 1 $ par jour.",
+            "body": "Augmente ton budget dans la proposition.",
+            "action": "Retour à la proposition"
+          },
+          "visual_expired": {
+            "title": "Ta photo n’est plus disponible.",
+            "body": "Renvoie-la à l’étape Sources. Ta campagne reste en brouillon.",
+            "action": "Modifier mes sources"
+          },
+          "total_changed": {
+            "title": "Le taux de change a bougé.",
+            "body": "Le coût total est maintenant de {amount}. Confirme pour publier avec ce montant.",
+            "body_nofx": "Le taux de change n’est plus disponible : le coût en monnaie locale ne peut pas être confirmé. Réessaie plus tard.",
+            "action": "Confirmer et publier"
+          },
+          "in_progress": {
+            "title": "Une publication est déjà en cours.",
+            "body": "Attends la fin de la publication de cette campagne.",
+            "action": "Voir l’avancement"
+          },
+          "already_published": {
+            "title": "Cette campagne est déjà envoyée à Meta.",
+            "body": "Rien n’a été publié une deuxième fois.",
+            "action": "Voir ma campagne"
+          },
+          "account_currency": {
+            "title": "La monnaie de ton compte publicitaire est inconnue.",
+            "body": "Revérifie ton compte Meta dans les réglages, puis réessaie.",
+            "action": "Ouvrir les réglages Meta"
+          },
+          "fx_not_available": {
+            "title": "Le taux de change de ton compte n’est pas disponible.",
+            "body": "Pubeka ne convertit jamais un budget sans taux à jour. Réessaie plus tard. Ta campagne reste en brouillon.",
+            "action": "Réessayer"
+          },
+          "rate_limited": {
+            "title": "Trop de tentatives.",
+            "body": "Réessaie dans quelques minutes.",
+            "action": "Réessayer"
+          },
+          "read_only": {
+            "title": "Ton espace est en lecture seule.",
+            "body": "Tu ne peux pas publier tant que ton abonnement n’est pas actif.",
+            "action": "Voir mon abonnement"
+          },
+          "meta_known": {
+            "title_fallback": "Meta a refusé la publication.",
+            "body_fallback": "Lis le message de Meta ci-dessous. Ton quota n’est pas décompté.",
+            "action": "Réessayer"
+          },
+          "unknown": {
+            "title": "La publication a échoué.",
+            "body": "Réessaie dans quelques minutes. Si le problème continue, écris au support.",
+            "action": "Réessayer",
+            "support": "Écrire au support"
+          },
+          "uncertain": {
+            "title": "Meta n’a pas confirmé la création.",
+            "body": "Pubeka a vérifié chez Meta : rien n’a été créé. Ton quota n’est pas décompté. Tu peux republier."
+          }
         }
       }
     }

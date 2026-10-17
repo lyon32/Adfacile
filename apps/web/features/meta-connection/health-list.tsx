@@ -43,13 +43,14 @@ const GUIDE_SLUGS = [
   'pixel',
   'permissions',
 ] as const;
-type GuideSlug = (typeof GUIDE_SLUGS)[number];
+export type GuideSlug = (typeof GUIDE_SLUGS)[number];
 
 function guideSlug(value: string | undefined): GuideSlug | null {
   return GUIDE_SLUGS.find((slug) => slug === value) ?? null;
 }
 
-function Guide({
+/** Panneau « Comment faire » d'un élément du bilan de santé ; réutilisé par l'écran Publier (moyen de paiement manquant). */
+export function Guide({
   slug,
   onClose,
 }: {

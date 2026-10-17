@@ -439,12 +439,12 @@
       },
       "payment-method": {
         "title": "Add a payment method",
-        "intro": "Meta bills your ads to your ad account: without a payment method, they do not run.",
-        "step_1": "In the ads manager, open “Payment settings”.",
-        "step_2": "Add a bank card or prepaid funds.",
-        "step_3": "No international card? A prepaid virtual card, such as those from Keecash, can work.",
-        "step_4": "Come back here and press “Check again”.",
-        "note": "Ads are paid at Meta, in dollars. Pubeka never takes your card."
+        "intro": "Meta charges your ads to your ad account. Without a payment method, they do not run. Meta funds can only be topped up with a bank card, whatever your country.",
+        "step_1": "In Meta’s Ads Manager, open “Payment settings”.",
+        "step_2": "Add a bank card (Visa or Mastercard). It is the only way to top up your Meta Ads funds.",
+        "step_3": "No bank card? Pubeka suggests Keecash, a virtual card. You can also use your own virtual card.",
+        "step_4": "Top up your Meta Ads funds by the amount of your campaign: when they run out, Meta stops delivery without charging your card. Then come back here.",
+        "note": "Ads are paid at Meta, never at Pubeka. The Pubeka subscription is paid separately, by Mobile Money."
       },
       "facebook-page": {
         "title": "Create a Facebook Page",
@@ -841,6 +841,199 @@
         "retained": {
           "title": "Proposal selected",
           "body": "Your campaign is saved as a draft. The Visual step is coming soon."
+        }
+      },
+      "preview": {
+        "title": "Preview your ad",
+        "body": "Here is how your ad can appear. Check every placement before publishing.",
+        "loading": "Preparing the preview…",
+        "load_failed": "Could not prepare the preview. Try again.",
+        "tabs_label": "Placements",
+        "tabs": {
+          "facebook_feed": "Facebook feed",
+          "instagram_feed": "Instagram feed",
+          "stories": "Stories",
+          "reels": "Reels",
+          "messenger": "Messenger"
+        },
+        "frame_label": "Preview: {placement}",
+        "sponsored": "Sponsored",
+        "page_unknown": "Your Page",
+        "photo_alt": "Your photo, as it appears in the ad",
+        "photo_missing": "Photo unavailable",
+        "react_like": "Like",
+        "react_comment": "Comment",
+        "react_share": "Share",
+        "disclosure": "Preview built by Pubeka from your text and photo. The real display at Meta may differ slightly.",
+        "vertical": {
+          "notice": "Your photo is cropped to 9:16 for this placement.",
+          "create": "Create the 9:16 format",
+          "soon": "Available with the Visual step."
+        },
+        "radius_notice": "Meta requires at least 17 km around a city. {city} will be targeted at {effective} km (you had chosen {requested} km).",
+        "recap_title": "Summary",
+        "estimate": {
+          "title": "Audience estimated by Meta",
+          "range": "Between {lower} and {upper} people",
+          "explain": "People active last month on the chosen platforms who match your targeting. This is not the number of people who will see your ad with this budget.",
+          "loading": "Meta is calculating the estimate…",
+          "unavailable": "Meta has no estimate for now. You can publish without it."
+        },
+        "photo_block": {
+          "missing_title": "Your ad needs a photo",
+          "missing_body": "Add a photo in the Sources step to be able to publish.",
+          "expired_title": "Your photo is no longer available",
+          "expired_body": "The file has expired. Send it again in the Sources step.",
+          "action": "Edit my sources"
+        },
+        "actions": {
+          "continue": "Continue to publishing",
+          "back": "Back to the proposal"
+        }
+      },
+      "publish": {
+        "title": "Publish your campaign",
+        "body": "One last check before sending it to Meta.",
+        "checks_title": "Ready to publish?",
+        "checks": {
+          "page": "Page",
+          "account": "Ad account",
+          "payment": "Payment method",
+          "photo": "Photo",
+          "ok": "Ready",
+          "ko": "To fix",
+          "unknown": "Meta will check",
+          "page_ok": "{name}",
+          "page_ko": "This Page is not in your plan.",
+          "page_none": "No Page chosen.",
+          "account_ok": "{name}",
+          "account_ko": "No ad account linked.",
+          "account_expired": "Your connection to Meta has expired.",
+          "payment_ok": "Present",
+          "payment_ko": "Missing: Meta will not run your ad.",
+          "photo_ok": "Ready",
+          "photo_ko": "Unavailable"
+        },
+        "pay_note": "Ads are paid at Meta. Top up your Meta Ads funds: when they run out, Meta stops delivery without charging your card.",
+        "guide": "See the guide",
+        "actions": {
+          "publish": "Publish the campaign",
+          "publishing": "Publishing…",
+          "back": "Back to the preview",
+          "confirm_total": "Confirm and publish",
+          "retry": "Try again"
+        },
+        "liability": {
+          "title": "Before your first publication",
+          "body": "The platform reviews every ad. Pubeka is not responsible if your ad account is restricted because of the published content.",
+          "confirm": "I understand",
+          "cancel": "Cancel"
+        },
+        "progress": {
+          "title": "Publishing…",
+          "body": "Pubeka is sending your campaign to Meta. Keep this page open.",
+          "verifying_title": "We are checking",
+          "verifying_body": "Meta is slow to answer. Pubeka is checking what was created at Meta before concluding: do not publish again."
+        },
+        "success": {
+          "title": "Your campaign has been sent to Meta",
+          "body": "Meta reviews it, usually within 24 hours. We will tell you as soon as it is running.",
+          "view": "View my campaign",
+          "another": "Create another ad"
+        },
+        "errors": {
+          "no_payment_method": {
+            "title": "Your ad account has no payment method.",
+            "body": "Your campaign stays a draft and your quota is not used.",
+            "action": "See the guide"
+          },
+          "reconnect": {
+            "title": "Reconnect your Meta account.",
+            "body": "Your connection to Meta has expired. Your campaign stays a draft and your quota is not used.",
+            "action": "Reconnect"
+          },
+          "not_connected": {
+            "title": "Connect your Meta account to publish.",
+            "body": "Your campaign stays a draft.",
+            "action": "Connect"
+          },
+          "quota": {
+            "title": "You have published all the campaigns in your plan.",
+            "body": "Your campaign stays a draft. Move to a higher plan to publish it.",
+            "action": "See plans"
+          },
+          "page_limit": {
+            "title": "This Page is not in your plan.",
+            "body": "It will be usable from {date}. Your campaign stays a draft.",
+            "body_nodate": "Choose a Page from your plan or move to a higher plan. Your campaign stays a draft.",
+            "action": "See plans"
+          },
+          "fields": {
+            "title": "Fix these points before publishing",
+            "body": "Your campaign stays a draft.",
+            "action": "Back to the proposal"
+          },
+          "budget_too_low": {
+            "title": "The minimum budget is $1 per day.",
+            "body": "Raise your budget in the proposal.",
+            "action": "Back to the proposal"
+          },
+          "visual_expired": {
+            "title": "Your photo is no longer available.",
+            "body": "Send it again in the Sources step. Your campaign stays a draft.",
+            "action": "Edit my sources"
+          },
+          "total_changed": {
+            "title": "The exchange rate has moved.",
+            "body": "The total cost is now {amount}. Confirm to publish with this amount.",
+            "body_nofx": "The exchange rate is no longer available: the cost in local currency cannot be confirmed. Try again later.",
+            "action": "Confirm and publish"
+          },
+          "in_progress": {
+            "title": "A publication is already in progress.",
+            "body": "Wait for this campaign’s publication to finish.",
+            "action": "See progress"
+          },
+          "already_published": {
+            "title": "This campaign has already been sent to Meta.",
+            "body": "Nothing was published a second time.",
+            "action": "View my campaign"
+          },
+          "account_currency": {
+            "title": "The currency of your ad account is unknown.",
+            "body": "Check your Meta account again in the settings, then try again.",
+            "action": "Open Meta settings"
+          },
+          "fx_not_available": {
+            "title": "The exchange rate for your account is not available.",
+            "body": "Pubeka never converts a budget without an up-to-date rate. Try again later. Your campaign stays a draft.",
+            "action": "Try again"
+          },
+          "rate_limited": {
+            "title": "Too many attempts.",
+            "body": "Try again in a few minutes.",
+            "action": "Try again"
+          },
+          "read_only": {
+            "title": "Your workspace is read-only.",
+            "body": "You cannot publish until your subscription is active.",
+            "action": "See my subscription"
+          },
+          "meta_known": {
+            "title_fallback": "Meta refused the publication.",
+            "body_fallback": "Read Meta’s message below. Your quota is not used.",
+            "action": "Try again"
+          },
+          "unknown": {
+            "title": "The publication failed.",
+            "body": "Try again in a few minutes. If the problem continues, write to support.",
+            "action": "Try again",
+            "support": "Write to support"
+          },
+          "uncertain": {
+            "title": "Meta did not confirm the creation.",
+            "body": "Pubeka checked at Meta: nothing was created. Your quota is not used. You can publish again."
+          }
         }
       }
     }
