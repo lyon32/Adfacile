@@ -98,6 +98,8 @@ interface Run {
   inputs: PublishInputs;
   token: PlatformToken;
   adAccountId: string;
+  /** Faux quand l'interrupteur de publication réelle est désactivé : lectures et rapprochement permis, aucune ACTIVATION. */
+  canActivate: boolean;
 }
 
 function accountOf(inputs: PublishInputs): string {
@@ -240,6 +242,13 @@ async function persistRefs(
   return true;
 }
 
+/** Meta montre la campagne en diffusion ou en vérification : aucun ordre d'activation n'est nécessaire. */
+function isLiveRemotely(effectiveStatus: string): boolean {
+  return ['ACTIVE', 'PENDING_REVIEW', 'PREAPPROVED', 'IN_PROCESS', 'IN_REVIEW'].includes(
+    effectiveStatus.toUpperCase(),
+  );
+}
+
 /** Cherche chez Meta ce qui existe pour cette campagne Pubeka, adopte ou nettoie. Voir l'en-tête du fichier. */
 async function reconcile(
   run: Run,
@@ -280,7 +289,12 @@ async function reconcile(
     const refs = refsOf(complete, run.adAccountId);
     if (!(await persistRefs(run, refs, 'creating')))
       return { outcome: 'skipped', reason: 'already_running' };
-    return activate({ ...run, row: { ...run.row, publish_phase: 'created' } }, refs, true);
+    return activate(
+      { ...run, row: { ...run.row, publish_phase: 'created' } },
+      refs,
+      true,
+      isLiveRemotely(complete.effectiveStatus),
+    );
   }
   for (const partial of mine) await removeRemote(run, refsOf(partial, run.adAccountId));
   if (mine.length === 0 && !lookup.exhaustive)
@@ -298,8 +312,12 @@ async function activate(
   run: Run,
   refs: PlatformCampaignRefs,
   adopted: boolean,
+  alreadyLive = false,
 ): Promise<PublicationOutcome> {
   const { connector } = run.deps;
+  // Interrupteur désactivé : on n'envoie aucun ordre d'activation (la campagne reste en pause chez Meta) ; une campagne que Meta
+  // montre DÉJÀ en diffusion n'a pas besoin d'ordre : on reflète son état.
+  if (!alreadyLive && !run.canActivate) return { outcome: 'pending', reason: 'publish_disabled' };
   const claimed = await updateWhilePublishing(
     run.svc,
     run.row,
@@ -309,7 +327,7 @@ async function activate(
   if (claimed === null) return { outcome: 'skipped', reason: 'already_running' };
   const active: Run = { ...run, row: claimed };
   try {
-    await connector.resume(run.token, refs);
+    if (!alreadyLive) await connector.resume(run.token, refs);
     return await accept(active, adopted, 'activating');
   } catch (error) {
     if (!isAmbiguousMetaFailure(error)) {
@@ -493,11 +511,12 @@ export async function runPublication(
   if (row.status !== 'publishing') return { outcome: 'skipped', reason: 'not_publishing' };
   if (row.publish_phase === 'done') return { outcome: 'skipped', reason: 'done' };
 
-  // Interrupteur de sécurité, AVANT toute lecture du jeton ou appel à Meta : Meta réel et publication non activée.
-  // Rien créé encore : échec net (quota rendu). Des éléments existent peut-être chez Meta : on n'y touche pas, la tâche
-  // reste en attente et reprend (rapprochement, jamais de recréation) quand l'interrupteur est activé.
-  if (!deps.metaPublishEnabled()) {
-    if (row.publish_phase !== 'none') return { outcome: 'pending', reason: 'publish_disabled' };
+  // Interrupteur de sécurité (Meta réel et publication non activée). Rien n'a encore été créé chez Meta (phase « none ») : échec
+  // net, quota rendu, AVANT toute lecture du jeton. Sinon (des éléments existent peut-être chez Meta) : la reprise reste en
+  // LECTURE SEULE : on rapproche et on reflète l'état de Meta (campagne déjà active, introuvable…), on supprime les restes en
+  // pause, mais on n'ACTIVE rien (`canActivate` faux) ; la campagne reste « en publication » jusqu'à l'activation de l'interrupteur.
+  const canActivate = deps.metaPublishEnabled();
+  if (!canActivate && row.publish_phase === 'none') {
     const latest = await loadPublishRow(svc, workspaceId, campaignId);
     const error = publishDisabledError();
     await failPublication(svc, deps, ctx.now(), latest, error);
@@ -506,7 +525,7 @@ export async function runPublication(
 
   // Tout est relu : l'état a pu changer depuis la route (Page retirée de la formule, jeton révoqué, compte désactivé).
   const inputs = await loadPublishInputs(svc, workspaceId, row, ctx.now());
-  const base = { svc, ctx, deps, row, inputs } as const;
+  const base = { svc, ctx, deps, row, inputs, canActivate } as const;
   const early = { ...base, token: { accessToken: '', expiresAt: null }, adAccountId: '' };
   try {
     await assertPageInPlan({ svc, workspaceId }, inputs.page, row.page_id);

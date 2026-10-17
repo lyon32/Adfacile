@@ -677,6 +677,13 @@ export interface paths {
          *     `424 meta_not_connected`, `424 meta_token_expired`, `424 meta_payment_method_missing`. Une campagne refusée par Meta qui est republiée
          *     ne décompte aucun quota (EC-CAMP-07).
          *
+         *     Clause de responsabilité : acceptée UNE fois par espace de travail (date et utilisateur enregistrés) ; sinon `400 validation_failed`
+         *     (champ `accept_liability`, `meta.reason: liability_required`) : une seule vérité, pas de `422`.
+         *
+         *     Monnaie du compte publicitaire : une monnaie absente de la liste officielle de Meta (franc CFA et la plupart des monnaies
+         *     africaines) donne `400 validation_failed` sur `ad_account.currency` avec `meta.reason: ad_account_currency_unsupported`,
+         *     `meta.currency` et `meta.guide: ad-account-currency` ; brouillon gardé, quota intact.
+         *
          *     Interrupteur de sécurité : quand Meta est RÉEL (pas de fausse Meta), la publication exige que `PUBEKA_META_PUBLISH=enabled` soit
          *     réglé sur l'environnement ; sinon `503 provider_unavailable` avec `meta.reason: publish_disabled`, renvoyé juste après les
          *     contrôles de rôle et d'espace modifiable et AVANT toute écriture, tout décompte de quota et tout appel à Meta.
@@ -783,7 +790,7 @@ export interface paths {
         /**
          * Ce qu'il faut savoir avant de publier (photo, clause, état de Meta, Page, rayon des villes)
          * @description Alimente les écrans Aperçu et Publier. Lecture seule, tout membre (même en lecture seule de l'espace) : rien n'est modifié.
-         *     `visual.url` est une adresse signée valable 15 minutes (API_SPEC §13) vers la photo téléversée à l'étape Sources, utilisée comme
+         *     `visual.url` est une adresse signée valable 15 minutes, soit 900 s (API_SPEC §13 ; l'adresse donnée à Meta pour télécharger la photo pendant la création vaut 3 600 s) vers la photo téléversée à l'étape Sources, utilisée comme
          *     visuel de la pub tant que l'étape Visuel n'existe pas. `liability_required` est vrai tant que l'espace n'a pas accepté la clause de
          *     responsabilité. `cities[].effective_radius_km` est le rayon réellement envoyé à Meta (17 à 80 km pour une ville).
          */
@@ -2028,6 +2035,8 @@ export interface components {
                 ad_account: {
                     name: string | null;
                     currency: string | null;
+                    /** @description Meta accepte-t-elle cette monnaie pour un compte publicitaire (liste officielle « Currency codes » du Marketing API, relevée le 18/10/2026) ? `null` : monnaie pas encore lue */
+                    currency_supported: boolean | null;
                 } | null;
                 /** @enum {string} */
                 payment_method: "present" | "missing" | "unknown";
@@ -2096,6 +2105,8 @@ export interface components {
             fix?: "destination" | "retry" | "reconnect" | "billing" | null;
             /** @description Vrai si le résultat chez Meta était incertain : la tâche a cherché la campagne chez Meta avant de conclure */
             uncertain?: boolean;
+            /** @description Raison courte quand l'écran distingue un cas : `reconcile_timeout` (plus de 24 h sans issue chez Meta, quota rendu) */
+            reason?: string;
             /** Format: date-time */
             at: string;
         };

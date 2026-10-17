@@ -3,7 +3,7 @@
 // planifiée), jamais un taux codé en dur ; plus vieux que 48 h il n'est plus utilisé (même règle que l'affichage des coûts).
 import { AppError } from '@pubeka/contracts';
 import type { DbClient } from '@pubeka/db';
-import { metaCurrencyOffset, toAppError, type AccountCurrency } from '@pubeka/platforms';
+import { isMetaSupportedCurrency, type AccountCurrency } from '@pubeka/platforms';
 import { isFxFresh } from '../../fx/freshness';
 
 function conflict(reason: string, currency: string | null): AppError {
@@ -44,15 +44,31 @@ export async function loadAccountCurrency(
   return account;
 }
 
+/** Liste officielle des monnaies des comptes publicitaires (Marketing API, « Currency codes »), relevée le 18/10/2026. */
+export const META_CURRENCIES_URL = 'https://developers.facebook.com/docs/marketing-api/currencies';
+
+/** Le guide de l'écran qui explique comment obtenir un compte dans une monnaie acceptée. */
+export const CURRENCY_GUIDE_SLUG = 'ad-account-currency';
+
+/** Refus net : Meta n'accepte pas cette monnaie pour un compte publicitaire. Le message renvoie vers le guide et la liste officielle. */
+export function unsupportedCurrencyError(code: string, cause?: unknown): AppError {
+  const named = code === '' ? 'inconnue' : code;
+  return new AppError('validation_failed', {
+    errors: [
+      {
+        field: 'ad_account.currency',
+        code: 'unsupported_by_meta',
+        message:
+          `Meta n’accepte pas la monnaie ${named} pour un compte publicitaire, d’après sa documentation officielle (${META_CURRENCIES_URL}, relevée le 18/10/2026). ` +
+          'Utilise un compte publicitaire dans une monnaie acceptée, par exemple le dollar américain (USD) : le guide explique comment faire.',
+      },
+    ],
+    meta: { reason: 'ad_account_currency_unsupported', currency: code, guide: CURRENCY_GUIDE_SLUG },
+    ...(cause === undefined ? {} : { cause }),
+  });
+}
+
 /** Vérifie, sans appeler Meta, que Meta connaît la monnaie du compte (sinon `validation_failed` sur le champ concerné). */
 function assertSupportedByMeta(account: AccountCurrency): void {
-  try {
-    metaCurrencyOffset(account.code);
-  } catch (error) {
-    const converted = toAppError(error);
-    throw new AppError('validation_failed', {
-      errors: (converted.opts.errors ?? []).map((e) => ({ ...e, field: 'ad_account.currency' })),
-      cause: error,
-    });
-  }
+  if (!isMetaSupportedCurrency(account.code)) throw unsupportedCurrencyError(account.code);
 }

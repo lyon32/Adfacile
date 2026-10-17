@@ -9,6 +9,7 @@ import {
 } from './dispatcher';
 import { analysisRunHandler } from './handlers/analysis-run';
 import { campaignPublishHandler } from './handlers/campaign-publish';
+import { campaignReconcileHandler } from './handlers/campaign-reconcile';
 import { fxRefreshHandler } from './handlers/fx-refresh';
 import { systemPingHandler } from './handlers/system-ping';
 
@@ -18,6 +19,7 @@ export const inlineHandlers = [
   registerHandler(analysisRunHandler),
   registerHandler(fxRefreshHandler),
   registerHandler(campaignPublishHandler),
+  registerHandler(campaignReconcileHandler),
 ];
 
 export type DispatcherEnv = Pick<

@@ -23,7 +23,7 @@ export interface FailurePanelProps {
   failure: PublishFailure;
   campaignId: string;
   busy: boolean;
-  onGuide: () => void;
+  onGuide: (slug: 'payment-method' | 'ad-account-currency') => void;
   onRetry: () => void;
   onConfirmTotal: (total: { amount_minor: number; currency: string }) => void;
   onBackToProposal: () => void;
@@ -132,9 +132,14 @@ export function FailurePanel(props: FailurePanelProps): ReactNode {
         : t(`${kind}.body`);
   const link = LINKS[kind];
 
+  const title =
+    kind === 'currency_unsupported'
+      ? t('currency_unsupported.title', { currency: failure.currency ?? '' })
+      : t(`${kind}.title`);
+
   return (
     <Card role="alert" className="flex flex-col gap-3">
-      {heading(t(`${kind}.title`), body)}
+      {heading(title, body)}
       {kind === 'fields' && failure.fields !== undefined ? (
         <ul className="text-meta flex list-disc flex-col gap-1 pl-5">
           {failure.fields.map((item) => (
@@ -144,9 +149,34 @@ export function FailurePanel(props: FailurePanelProps): ReactNode {
       ) : null}
       <div className="flex flex-col gap-2 sm:flex-row">
         {kind === 'no_payment_method' ? (
-          <Button type="button" className="w-full sm:w-auto" onClick={props.onGuide}>
+          <Button
+            type="button"
+            className="w-full sm:w-auto"
+            onClick={() => {
+              props.onGuide('payment-method');
+            }}
+          >
             {t('no_payment_method.action')}
           </Button>
+        ) : null}
+        {kind === 'currency_unsupported' ? (
+          <Button
+            type="button"
+            className="w-full sm:w-auto"
+            onClick={() => {
+              props.onGuide('ad-account-currency');
+            }}
+          >
+            {t('currency_unsupported.action')}
+          </Button>
+        ) : null}
+        {kind === 'unverified' ? (
+          <Link
+            href="/support"
+            className={cn(buttonVariants({ variant: 'quiet' }), 'w-full sm:w-auto')}
+          >
+            {t('unverified.action')}
+          </Link>
         ) : null}
         {link === undefined || kind === 'publish_disabled' ? null : (
           <Link

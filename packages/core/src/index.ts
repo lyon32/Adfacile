@@ -57,6 +57,7 @@ export * from './campaigns/publish/reach-estimate';
 export * from './campaigns/publish/publication-readiness';
 export * from './campaigns/publish/publish-deps';
 export * from './campaigns/publish/publish-switch';
+export * from './campaigns/publish/reconcile-publications';
 export * from './agent-journal';
 export * from './campaigns/fake-stratege';
 export * from './campaigns/proposal-deps';

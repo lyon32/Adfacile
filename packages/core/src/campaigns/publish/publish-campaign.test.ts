@@ -684,8 +684,41 @@ describe('Meta : connexion, moyen de paiement, monnaie', () => {
       publishCampaign(w.ctx, w.campaignId, { idempotencyKey: KEY_A, ...accept }, w.deps),
     );
     expect(error.code).toBe('validation_failed');
-    expect(error.opts.errors?.[0]).toMatchObject({ field: 'ad_account.currency' });
+    expect(error.opts.errors?.[0]).toMatchObject({
+      field: 'ad_account.currency',
+      code: 'unsupported_by_meta',
+    });
+    // Le message dit CLAIREMENT que Meta n'accepte pas cette monnaie pour un compte publicitaire, cite la liste officielle et
+    // propose une monnaie acceptée ; il renvoie vers le guide (`meta.reason`) et nomme la monnaie.
+    const message = error.opts.errors?.[0]?.message ?? '';
+    expect(message).toContain('XAF');
+    expect(message).toContain('https://developers.facebook.com/docs/marketing-api/currencies');
+    expect(message).toMatch(/n’accepte pas/);
+    expect(message).toMatch(/dollar/);
+    expect(error.opts.meta).toMatchObject({
+      reason: 'ad_account_currency_unsupported',
+      currency: 'XAF',
+      guide: 'ad-account-currency',
+    });
   });
+
+  it.each(['XOF', 'GHS', 'MAD', 'TND', 'UGX', 'TZS', 'RWF', 'CDF'])(
+    'EC-META-11 : %s, absente de la liste officielle de Meta, est refusée de la même façon (jamais convertie au hasard)',
+    async (code) => {
+      const w = publishWorld();
+      const account = w.db.rows('ad_accounts')[0];
+      if (account !== undefined) account.currency = code;
+      const error = await failure(
+        publishCampaign(w.ctx, w.campaignId, { idempotencyKey: KEY_A, ...accept }, w.deps),
+      );
+      expect(error.opts.meta).toMatchObject({
+        reason: 'ad_account_currency_unsupported',
+        currency: code,
+      });
+      expect(rowOf(w.db, w.campaignId).status).toBe('draft');
+      expect(w.hooks.events).toEqual([]);
+    },
+  );
 
   it('une monnaie de compte encore inconnue (jamais lue chez Meta) : conflit explicite', async () => {
     const w = publishWorld();

@@ -22,6 +22,8 @@ export type PublishFailureKind =
   | 'rate_limited'
   | 'read_only'
   | 'publish_disabled'
+  | 'currency_unsupported'
+  | 'unverified'
   | 'meta_known'
   | 'unknown';
 
@@ -38,6 +40,8 @@ export interface PublishFailure {
   availableFrom?: string | null;
   /** Le résultat chez Meta était incertain (la vérification a été faite avant de conclure). */
   uncertain?: boolean;
+  /** Monnaie du compte publicitaire refusée par Meta (kind `currency_unsupported`). */
+  currency?: string;
 }
 
 function text(value: unknown): string | undefined {
@@ -71,6 +75,9 @@ function failureOf(
   const metaMessage = text(meta.message);
   switch (code) {
     case 'validation_failed': {
+      // Monnaie du compte refusée par Meta : un cas dédié (message et guide), pas une liste de champs.
+      if (meta.reason === 'ad_account_currency_unsupported')
+        return { kind: 'currency_unsupported', currency: text(meta.currency) ?? '' };
       const fields = issues.map((e) => ({ field: e.field, message: e.message }));
       return fields.some((f) => f.field === 'accept_liability')
         ? { kind: 'liability' }
@@ -142,7 +149,10 @@ export function failureFromRecord(record: {
   title?: string | undefined;
   message?: string | undefined;
   uncertain?: boolean | undefined;
+  reason?: string | undefined;
 }): PublishFailure {
+  // Plus de 24 h sans issue : Pubeka n'a pas pu vérifier chez Meta (jamais un état indéfini).
+  if (record.reason === 'reconcile_timeout') return { kind: 'unverified', uncertain: true };
   const base = failureOf(
     record.code,
     {
