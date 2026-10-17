@@ -73,14 +73,12 @@ async function live(
     publish_attempt: 1,
     quota_state: 'counted',
   });
-  w.db
-    .rows('ads')
-    .push({
-      workspace_id: w.ctx.workspace.id,
-      campaign_id: w.campaignId,
-      meta_ad_id: refs.adId,
-      meta_creative_id: refs.creativeId,
-    });
+  w.db.rows('ads').push({
+    workspace_id: w.ctx.workspace.id,
+    campaign_id: w.campaignId,
+    meta_ad_id: refs.adId,
+    meta_creative_id: refs.creativeId,
+  });
   fake.pauseAttempts = 0;
   fake.resumeAttempts = 0;
   return {

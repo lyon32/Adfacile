@@ -402,7 +402,12 @@ export class FakeMetaConnector implements PlatformConnector {
   getStatus(token: PlatformToken, refs: PlatformCampaignRefs): Promise<PlatformStatus> {
     return this.respond(token, () => {
       const campaign = this.find(refs);
-      return campaign.statusOverride ?? { status: campaign.status, rawStatus: campaign.status.toUpperCase() };
+      return (
+        campaign.statusOverride ?? {
+          status: campaign.status,
+          rawStatus: campaign.status.toUpperCase(),
+        }
+      );
     });
   }
 
