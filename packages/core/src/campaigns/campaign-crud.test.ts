@@ -101,8 +101,10 @@ describe('getCampaign', () => {
       end_date: '2026-10-19',
     });
     const view = await getCampaign(ctx, id);
-    expect(view.cost).toMatchObject({ status: 'ok', total_usd_cents: 4174 });
-    expect(view.cost.total).toEqual({ xaf: 25044, usd_cents: 4174, currency: 'XAF' });
+    // 7 jours × 500 centimes = 3 500 centimes ; au taux d'essai 600 : 21 000 FCFA, sans TVA.
+    expect(view.cost).toMatchObject({ status: 'ok', budget_usd_cents: 3500 });
+    expect(view.cost.total).toEqual({ xaf: 21000, usd_cents: 3500, currency: 'XAF' });
+    expect(view).not.toHaveProperty('vat_rate');
     const stranger = world();
     stranger.db.rows('campaigns').push({ ...db.rows('campaigns')[0]!, workspace_id: OTHER_W });
     expect(await code(getCampaign(stranger.ctx, id))).toBe('not_found');
@@ -129,7 +131,7 @@ describe('getCampaign', () => {
 });
 
 describe('updateCampaign', () => {
-  it('fusionne copy et targeting, remplace geo, augmente la version, enregistre TVA et change', async () => {
+  it('fusionne copy et targeting, remplace geo, augmente la version, enregistre le change', async () => {
     const { ctx, db } = world();
     const id = addDraft(db, {
       copy: { primary_text: 'Ancien texte', headline: 'Ancien titre' },
@@ -158,19 +160,17 @@ describe('updateCampaign', () => {
       tracking: { pixel_id: '123456789012' },
     });
     expect(db.rows('campaigns')[0]).toMatchObject({
-      vat_rate: 0.1925,
       fx_rate_xaf: 600,
       version: 2,
     });
   });
-  it('TVA et change absents : instantané nul, jamais une valeur par défaut', async () => {
+  it('change absent : instantané nul, jamais une valeur par défaut', async () => {
     const { ctx, db } = world();
-    db.rows('vat_rates').length = 0;
     db.rows('exchange_rates').length = 0;
     const id = addDraft(db);
     const view = await updateCampaign(ctx, id, { version: 1, name: 'x' });
-    expect(view.vat_rate).toBeNull();
-    expect(db.rows('campaigns')[0]).toMatchObject({ vat_rate: null, fx_rate_xaf: null });
+    expect(view.cost.status).toBe('incomplete');
+    expect(db.rows('campaigns')[0]).toMatchObject({ fx_rate_xaf: null });
   });
   it('refus : viewer, lecture seule, campagne introuvable ou d’un autre espace', async () => {
     const id = addDraft(world().db);

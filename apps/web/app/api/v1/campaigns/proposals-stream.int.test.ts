@@ -10,7 +10,6 @@ import {
   call,
   campaignParams,
   ensureTestFx,
-  ensureTestVat,
   json,
   newDraft,
   resetRateLimits,
@@ -32,7 +31,6 @@ let fake: FakeProposalRun;
 beforeAll(async () => {
   s = await seedWorkspace();
   await ensureTestFx();
-  await ensureTestVat('CM', 0.1925);
   await setOwnerCountry(s, 'CM');
 });
 beforeEach(async () => {

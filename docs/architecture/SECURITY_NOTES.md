@@ -148,6 +148,7 @@ Les trois barrières sont **indépendantes** : une seule qui manque ne suffit pa
 | Couleur | `#RRGGBB` | `400` |
 | Montant | **entier** ; FCFA sans décimales, dollars en centimes ; jamais négatif sauf retrait de crédits par l'administration | `400` |
 | Budget quotidien | ≥ **100 centimes** (1 $, TR-PLA-10) ; maximum 1 000 000 centimes (10 000 $) 🔶 contre les fautes de frappe | `422 budget_too_low` / `400` |
+| Montants de campagne | Coût = budget par jour × jours, en entiers ; **TVA retirée pour le moment (décision du 17/10/2026), à réactiver sur décision** | — |
 | Dates de campagne | `YYYY-MM-DD` dans le fuseau de l'utilisateur ; début ≥ aujourd'hui ; fin > début (deux jours au moins) ; durée ≤ 365 jours, début et fin compris 🔶 | `400` / `422` |
 | Textes de la pub | texte principal ≤ 125, titre ≤ 40, description ≤ 30 caractères ; pas de HTML | `400` |
 | Textes libres | ticket ≤ 10 000, message à l'aide ≤ 2 000, consigne de modification d'un visuel 3 à 500, nom 1 à 120 ; enregistrés tels quels, **affichés échappés** | `400` |

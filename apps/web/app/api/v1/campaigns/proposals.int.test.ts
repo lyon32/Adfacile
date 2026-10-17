@@ -15,7 +15,6 @@ import {
   call,
   campaignParams,
   ensureTestFx,
-  ensureTestVat,
   json,
   newDraft,
   patch,
@@ -43,7 +42,6 @@ let fake: FakeProposalRun;
 beforeAll(async () => {
   s = await seedWorkspace();
   await ensureTestFx();
-  await ensureTestVat('CM', 0.1925);
   await setOwnerCountry(s, 'CM');
 });
 beforeEach(async () => {
@@ -129,8 +127,8 @@ describeRoute('generateProposal', {
     expect(first).toMatchObject({ version: 1, status: 'ready', chosen: false });
     expect(first.proposal.objective).toBe('OUTCOME_ENGAGEMENT');
     expect(first.proposal.budget.daily_usd_cents).toBeGreaterThanOrEqual(100);
-    // Le coût est calculé par le serveur (4 $ × 7 jours + TVA d'essai du Cameroun), jamais par l'agent.
-    expect(first.cost).toMatchObject({ status: 'ok', total_usd_cents: 2800 + 539 });
+    // Le coût est calculé par le serveur (4 $ × 7 jours, sans TVA), jamais par l'agent.
+    expect(first.cost).toMatchObject({ status: 'ok', budget_usd_cents: 2800 });
     expect(fake.gateway.calls).toHaveLength(1);
     expect(fake.gateway.calls[0]?.trace).toMatchObject({
       agent: 'stratege',

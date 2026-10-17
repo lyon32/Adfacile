@@ -472,7 +472,7 @@ describe('chooseProposal', () => {
     });
   }
 
-  it('copie la proposition dans le brouillon, garde le ciblage automatique, enregistre TVA et change', async () => {
+  it('copie la proposition dans le brouillon, garde le ciblage automatique, enregistre le change', async () => {
     const { ctx, db } = world();
     const id = addDraft(db);
     withProposal(db, id);
@@ -486,7 +486,6 @@ describe('chooseProposal', () => {
     expect(view.targeting).toMatchObject({ advantage_plus: true });
     expect(view.targeting).not.toHaveProperty('interests');
     expect(db.rows('campaigns')[0]).toMatchObject({
-      vat_rate: 0.1925,
       fx_rate_xaf: 600,
       chosen_proposal_version: 1,
     });

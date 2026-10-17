@@ -59,7 +59,7 @@ Contrainte commune : beaucoup utilisent **uniquement un téléphone**. L'applica
 1. **L'IA remplit, l'utilisateur valide.** Aucun long formulaire. Tout champ est pré-rempli et reste modifiable.
 2. **Chaque génération doit être parfaite.** Chaque visuel ou campagne générée consomme du quota. Un résultat raté est un échec produit, pas un « essai ».
 3. **Un agent = un rôle.** Aucun agent ne fait le travail d'un autre (voir §6).
-4. **Transparence de l'argent.** Montants en dollars et en FCFA, TVA incluse, en temps réel.
+4. **Transparence de l'argent.** Montants en dollars et en monnaie locale, en temps réel (TVA retirée pour le moment (décision du 17/10/2026), à réactiver sur décision).
 5. **Pas d'incohérence affichée.** Un utilisateur qui n'a rien lancé ne voit aucun chiffre fictif.
 6. **Guider plutôt que bloquer.** Toute configuration manquante est détectée et expliquée pas à pas.
 7. **Le client reste propriétaire.** Les campagnes sont créées dans **son** Business Manager et **son** compte publicitaire, et payées par **son** moyen de paiement Meta. Pubeka n'avance jamais d'argent à Meta.
@@ -70,7 +70,7 @@ Contrainte commune : beaucoup utilisent **uniquement un téléphone**. L'applica
 
 ### 4.1 Inscription et intégration
 1. Inscription ou connexion via **Google, Apple ou e-mail** (pas de connexion Facebook pour le compte Pubeka).
-2. Choix du **pays** (qui fixe la TVA et la devise par défaut), de la **devise d'affichage** (XOF ou XAF) et de la **langue de l'interface** (FR ou EN).
+2. Choix du **pays** (qui fixe la devise par défaut), de la **devise d'affichage** (XOF ou XAF) et de la **langue de l'interface** (FR ou EN).
 3. Démarrage de l'**essai gratuit** : 1 campagne, 3 visuels, 7 jours, sans moyen de paiement.
 4. **Connexion du compte Meta** (Facebook Login for Business, permissions publicitaires).
 5. **Bilan de santé du compte** (F1) : une liste de contrôle verte ou rouge avec un bouton « Comment faire » pour chaque élément.
@@ -110,7 +110,7 @@ Contrainte commune : beaucoup utilisent **uniquement un téléphone**. L'applica
    - **destination** : WhatsApp, Messenger, Instagram Direct, site web ou publication ;
    - **ciblage** : Advantage+ par défaut, invisible pour l'utilisateur, en dehors de la zone ;
    - **estimation** de portée et de résultats, à partir de l'estimation de Meta (F6) ;
-   - **coût total** : budget + TVA du pays, en $ et en FCFA.
+   - **coût total** : budget par jour × nombre de jours, en $ et en monnaie locale (sans TVA).
    Tout est modifiable. L'utilisateur peut aussi demander « Une autre proposition ».
 6. **Aperçu détaillé** (F3) : fil Facebook, fil Instagram, Stories, Reels, Messenger.
 7. **Formats supplémentaires** (optionnel) : ajouter les formats 9:16, 1:1 ou 1.91:1 à partir du visuel choisi. Chaque format consomme du quota visuels.
@@ -249,10 +249,12 @@ Détail des crédits, coûts par génération et marges : [plans-et-credits.md](
 ### 9.2 Budget publicitaire (payé à Meta par le client)
 - Le client paie Meta avec **sa carte** ou des **fonds prépayés** dans son compte publicitaire.
 - Si le client n'a pas de carte : le guide recommande une carte virtuelle (**Keecash**).
-- Pubeka affiche : **budget + TVA du pays = total**, en $ et en FCFA (**taux du marché en temps réel**, via une API gratuite), par jour et pour toute la durée.
+- Pubeka affiche : **budget par jour × jours = total** (sans TVA), en $ et en monnaie locale (**taux du marché en temps réel**, via une API gratuite), par jour et pour toute la durée.
 - Mention : « hors frais éventuels de ta banque ou de ta carte ».
 
 ### 9.3 TVA Meta par pays
+> **TVA retirée pour le moment (décision du 17/10/2026), à réactiver sur décision.** Pubeka n'ajoute aucune TVA au coût affiché ; la table `vat_rates` et la colonne `ad_accounts.vat_country` restent en base, dormantes. Le tableau ci-dessous reste une information de référence.
+
 Meta ajoute la TVA locale selon le pays de facturation (« Sold To ») du compte publicitaire. **Table des taxes par pays modifiable sans redéploiement.** État connu :
 
 | Pays | TVA Meta | Statut |

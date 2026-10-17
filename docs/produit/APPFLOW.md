@@ -303,11 +303,11 @@ Affichage **progressif** (les champs se remplissent pendant l'écriture du Strat
 │ Zone : Douala · 10 km              Budget : 3 000 FCFA/jour       │
 │ Dates : 11 → 17 oct.               Ciblage : automatique (Advantage+) │
 │ Texte : « … »  Titre : « … »  Bouton : Écrivez-nous sur WhatsApp  │
-│ Coût : 25 044 FCFA (21 000 + TVA 4 044) · ≈ 41,74 $               │
+│ Coût : 21 000 FCFA · ≈ 35,00 $                                    │
 └──────────────────────────────────────────────────────────────────┘
 [Autre proposition]   [Continuer]
 ```
-- **Coût** : la TVA est **ajoutée** au budget (budget + TVA = total, « TVA comprise dans le total »). L'exemple ci-dessus suppose 7 jours à 3 000 FCFA par jour, soit 5 $ par jour, avec une TVA de 19,25 % et 1 $ = 600 FCFA : ce sont des **valeurs d'essai pour l'exemple**, jamais des valeurs du produit (la TVA par pays et le taux de change viennent de l'administration). Calcul exact en entiers : 5 $ × 7 = 35,00 $ ; TVA 19,25 % = 6,74 $ (arrondi à la demi-unité vers le haut) ; total 41,74 $ = 25 044 FCFA.
+- **Coût** : budget par jour × nombre de jours (début et fin compris), **sans TVA** (TVA retirée pour le moment (décision du 17/10/2026), à réactiver sur décision). L'exemple ci-dessus suppose 7 jours à 3 000 FCFA par jour, soit 5 $ par jour, avec 1 $ = 600 FCFA : ce sont des **valeurs d'essai pour l'exemple**, jamais des valeurs du produit (le taux de change réel de chaque monnaie vient du marché, voir ARCHITECTURE §9.3). Calcul exact en entiers : 5 $ × 7 = 35,00 $ = 21 000 FCFA. Taux de change indisponible ou trop ancien : l'écran n'affiche que le dollar.
 - **Estimation de la portée** : à venir avec la publication (S16), fournie par Meta (estimation de diffusion). L'écran n'affiche aucun chiffre inventé avant.
 - **Ciblage** : automatique (Advantage+) d'abord. Le formulaire [Modifier] n'a pas de champ de centres d'intérêt ; les intérêts proposés par l'IA viendront plus tard (voir ROADMAP, « À planifier »).
 - **[Modifier]** ouvre chaque champ en édition : objectif (avec description courte de chaque objectif), zone (carte + rayon), budget (min 1 $ ≈ 600 FCFA, conversion en direct), dates, textes (compteur de caractères, limite 125), bouton, langue de la pub.
@@ -326,7 +326,7 @@ Option **[Tester 2 visuels (test A/B)]** : sélection de 2 visuels ; compte pour
 ### 8.5 Étape « Aperçu »
 - Onglets : Fil Facebook · Fil Instagram · Stories · Reels · Messenger.
 - Formats manquants : « Ce visuel n'existe qu'en 4:5. **[Créer le format 9:16]** (inclus, sans crédit) » → extension par IA si nécessaire.
-- Récapitulatif final (objectif, zone, budget, dates, coût total, TVA comprise dans le total).
+- Récapitulatif final (objectif, zone, budget, dates, coût total, sans TVA).
 
 ### 8.6 Étape « Publier »
 - **Première publication du compte** : fenêtre de responsabilité à accepter une fois — « La plateforme vérifie chaque pub. Pubeka n'est pas responsable si ton compte publicitaire est restreint à cause du contenu publié. **[J'ai compris]** ».
@@ -473,7 +473,7 @@ Webhook Meta « refusée » ⟶ Modérateur ⟶ rapport
 
 | Section | Contenu | Remarques |
 |---|---|---|
-| Profil | Nom, e-mail, téléphone, pays, ville, devise, langue, thème | Changer de pays recalcule fuseau et TVA |
+| Profil | Nom, e-mail, téléphone, pays, ville, devise, langue, thème | Changer de pays recalcule fuseau et monnaie |
 | Kit de marque (par Page) | Logo, couleurs, police, numéro WhatsApp, slogan, **ton des pubs (vous / tu)**, langue des pubs, afficher le numéro sur les visuels | Lignes de réglage avec interrupteurs |
 | Pages | Pages connectées, activation selon la formule, Page figée pour la période | Message de limite |
 | Comptes Meta | Connexion, type (utilisateur système / classique), date d'expiration, comptes publicitaires, **[Revérifier]**, **[Déconnecter]** | Bilan de santé |

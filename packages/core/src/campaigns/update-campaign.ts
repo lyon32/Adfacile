@@ -137,10 +137,9 @@ export async function updateCampaign(
     await assertPixelBelongs(ctx, row, patch.tracking.pixel_id);
   }
 
-  // Instantané de la TVA et du change à l'écriture (S16 compare avec les taux du jour : EC-CAMP-05).
+  // Instantané du change à l'écriture (S16 compare avec les taux du jour : EC-CAMP-05).
   const costContext = await loadCostContext(ctx);
   const values: TablesUpdate<'campaigns'> = {
-    vat_rate: costContext.vat.rate,
     fx_rate_xaf: costContext.fx?.rate ?? null,
   };
   if (patch.name !== undefined) values.name = patch.name;

@@ -93,7 +93,7 @@
     "save_failed": "Impossible d’enregistrer pour le moment. Réessaie dans quelques instants.",
     "country": {
       "title": "D’où publies-tu ?",
-      "body": "Pubeka règle l’heure, la monnaie et la TVA selon ton pays.",
+      "body": "Pubeka règle l’heure et la monnaie selon ton pays.",
       "country": "Pays",
       "country_placeholder": "Choisis ton pays",
       "city": "Ville",
@@ -766,15 +766,11 @@
         "days": "{count, plural, one {# jour} other {# jours}}",
         "cost": {
           "title": "Coût estimé",
-          "total": "Total TVA comprise",
+          "total": "Coût total",
           "budget": "Budget sur {days, plural, one {# jour} other {# jours}}",
-          "vat": "TVA {rate} ({country})",
           "note": "Tu paies ce montant à Meta, hors frais éventuels de ta banque ou de ta carte.",
-          "vat_missing_title": "TVA non configurée",
-          "vat_missing_body": "La TVA de ton pays n’est pas encore configurée : le coût total ne peut pas être calculé pour l’instant. Le budget hors TVA est affiché.",
           "fx_missing": "Le taux de change n’est pas disponible : le coût est affiché en dollars seulement.",
-          "incomplete": "Indique un budget et des dates pour voir le coût.",
-          "budget_only": "Budget hors TVA"
+          "incomplete": "Indique un budget et des dates pour voir le coût."
         },
         "actions": {
           "edit": "Modifier",

@@ -19,7 +19,7 @@
 | Argent | Objet `Money` : `{ "xaf": 7500, "usd_cents": 1250, "currency": "XAF" }`. Montants FCFA en **entiers** (pas de décimales), dollars en **centimes**. Jamais de nombres à virgule pour l'argent. |
 | Espace de travail | Toute ressource métier est sous `/workspaces/{workspaceId}/…`. L'espace est **toujours explicite** : le serveur ne devine jamais l'espace « courant ». |
 | Champs inconnus | Les corps de requête sont validés strictement (`additionalProperties: false`) : un champ inconnu renvoie `400 validation_failed`. Cela bloque l'injection de champs comme `role`, `credits` ou `price`. |
-| Prix | **Jamais envoyés par le client.** Le serveur calcule chaque montant (formule, crédits, frais, TVA). |
+| Prix | **Jamais envoyés par le client.** Le serveur calcule chaque montant (formule, crédits, frais ; TVA retirée pour le moment, décision du 17/10/2026). |
 
 ---
 

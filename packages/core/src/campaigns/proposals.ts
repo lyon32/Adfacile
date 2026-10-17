@@ -112,7 +112,6 @@ async function viewOf(
     dailyBudgetUsdCents: parsed.data.budget.daily_usd_cents,
     startDate: parsed.data.schedule.start_date,
     endDate: parsed.data.schedule.end_date,
-    vat: costContext.vat,
     fx: costContext.fx,
   });
   return toProposalView(row, parsed.data, campaign.chosen_proposal_version, cost);
@@ -624,7 +623,6 @@ export async function chooseProposal(
       tracking: p.tracking,
       visual_brief: p.visual_brief === '' ? null : p.visual_brief,
       chosen_proposal_version: version,
-      vat_rate: costContext.vat.rate,
       fx_rate_xaf: costContext.fx?.rate ?? null,
     })
     .eq('workspace_id', ctx.workspace.id)

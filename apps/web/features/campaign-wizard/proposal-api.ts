@@ -57,13 +57,9 @@ const MoneySchema = z.object({
 export type MoneyView = z.infer<typeof MoneySchema>;
 
 export const CostSchema = z.object({
-  status: z.enum(['ok', 'incomplete', 'vat_not_configured', 'fx_not_available']),
-  vat_country: z.string().nullable().optional(),
-  vat_rate: z.number().nullable().optional(),
+  status: z.enum(['ok', 'incomplete', 'fx_not_available']),
   days: z.number().nullable().optional(),
   budget_usd_cents: z.number().nullable().optional(),
-  vat_usd_cents: z.number().nullable().optional(),
-  total_usd_cents: z.number().nullable().optional(),
   total: MoneySchema.nullable().optional(),
   daily: MoneySchema.nullable().optional(),
   fx: z.object({ rate: z.number() }).nullable().optional(),

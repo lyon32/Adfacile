@@ -1,13 +1,13 @@
 // Assistant de campagne, étape Proposition (APPFLOW §8.3) : parcours réel contre la pile locale et la FAUSSE IA, sans défilement
 // horizontal (TR-PLT-01), accessible (axe), clair et sombre, FR. Les états qu'on ne peut pas obtenir de la fausse IA
-// (écriture en cours, erreur au milieu du flux, TVA configurée, conflit de version) sont simulés côté navigateur.
+// (écriture en cours, erreur au milieu du flux, taux de change, conflit de version) sont simulés côté navigateur.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { createConfirmedUser, overflowsHorizontally, patchMe, signIn } from './support';
 
 // Un compte neuf par test : la limite « IA » (20 par heure et par espace) ne doit pas fausser un parcours.
 
-// Écrans SANS montant : les autres affichent des FCFA calculés avec la TVA et le taux d'ESSAI posés par les tests (pas des
+// Écrans SANS montant : les autres affichent des FCFA calculés avec le taux de change d'ESSAI posés par les tests (pas des
 // données du produit) ; leurs captures le disent dans le nom du fichier.
 const SANS_MONTANT = new Set([
   'proposition-depart',
@@ -80,10 +80,12 @@ for (const theme of ['light', 'dark'] as const) {
     // Pas de Meta connecté : WhatsApp n'est pas lié, la proposition passe par Messenger avec un avertissement.
     await expect(page.getByText('Messenger', { exact: true })).toBeVisible();
     await expect(page.getByText(/WhatsApp non lié/)).toBeVisible();
-    // Sans TVA configurée pour le pays (aucune donnée n'est inventée) : le message est clair, sans total.
-    const noVat = page.getByText('TVA non configurée');
-    const total = page.getByText('Total TVA comprise');
-    await expect(noVat.or(total)).toBeVisible();
+    // Taux de change du pays indisponible (aucune donnée n'est inventée) : le message est clair et le dollar seul s'affiche ;
+    // sinon le coût total est là. Jamais de TVA (retirée le 17/10/2026).
+    const noFx = page.getByText(/taux de change n’est pas disponible/);
+    const total = page.getByText('Coût total');
+    await expect(noFx.or(total)).toBeVisible();
+    await expect(page.getByText(/TVA/)).toHaveCount(0);
     await checkScreen(page, 'proposition-complete', info, theme);
 
     // [Modifier] : formulaire, erreurs champ par champ, puis enregistrement.
@@ -198,7 +200,9 @@ for (const theme of ['light', 'dark'] as const) {
     await checkScreen(page, 'proposition-erreur-flux', info, theme);
   });
 
-  test(`états du coût : TVA configurée, TVA non configurée (${theme})`, async ({ page }, info) => {
+  test(`états du coût : taux de change disponible, taux de change indisponible (${theme})`, async ({
+    page,
+  }, info) => {
     await reachProposalStart(page, theme);
     const listed = page.waitForResponse(
       async (r) =>
@@ -211,30 +215,25 @@ for (const theme of ['light', 'dark'] as const) {
     await page.getByRole('button', { name: 'Générer la proposition' }).click();
     await expect(page.getByText('Coût estimé')).toBeVisible({ timeout: 30_000 });
     const real = (await (await listed).json()) as { data: Record<string, unknown>[] };
-    const cost = (status: 'ok' | 'vat_not_configured') =>
+    const cost = (status: 'ok' | 'fx_not_available') =>
       status === 'ok'
         ? {
             status: 'ok',
-            vat_country: 'CM',
-            vat_rate: 0.1925,
             days: 7,
             budget_usd_cents: 2800,
-            vat_usd_cents: 539,
-            total_usd_cents: 3339,
-            total: { xaf: 20034, usd_cents: 3339, currency: 'XAF' },
+            total: { xaf: 16800, usd_cents: 2800, currency: 'XAF' },
             daily: { xaf: 2400, usd_cents: 400, currency: 'XAF' },
             fx: { rate: 600 },
           }
         : {
-            status: 'vat_not_configured',
-            vat_country: 'GA',
+            status: 'fx_not_available',
             days: 7,
             budget_usd_cents: 2800,
             total: null,
-            daily: { xaf: 2400, usd_cents: 400, currency: 'XAF' },
-            fx: { rate: 600 },
+            daily: null,
+            fx: null,
           };
-    for (const status of ['ok', 'vat_not_configured'] as const) {
+    for (const status of ['ok', 'fx_not_available'] as const) {
       await page.route('**/api/v1/workspaces/*/campaigns/*/proposals', async (route) => {
         if (route.request().method() !== 'GET') return route.continue();
         return route.fulfill({
@@ -243,11 +242,11 @@ for (const theme of ['light', 'dark'] as const) {
       });
       await page.reload();
       await expect(
-        page.getByText(status === 'ok' ? 'Total TVA comprise' : 'TVA non configurée'),
+        page.getByText(status === 'ok' ? 'Coût total' : /taux de change n’est pas disponible/),
       ).toBeVisible();
       await checkScreen(
         page,
-        `proposition-cout-${status === 'ok' ? 'tva' : 'sans-tva'}`,
+        `proposition-cout-${status === 'ok' ? 'change' : 'sans-change'}`,
         info,
         theme,
       );
