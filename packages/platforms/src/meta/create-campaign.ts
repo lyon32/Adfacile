@@ -10,10 +10,14 @@
 //                 https://developers.facebook.com/docs/marketing-api/reference/adgroup
 import { AppError } from '@pubeka/contracts';
 import { z } from 'zod';
-import type { MediaItem, PlatformCampaignRefs, PublishSpec } from '../types';
+import type { AccountCurrency, MediaItem, PlatformCampaignRefs, PublishSpec } from '../types';
+import {
+  accountMinPerDayMinor,
+  PUBEKA_MIN_DAILY_USD_CENTS,
+  usdCentsToAccountMinor,
+} from './account-currency';
 import { debutDeJournee, finDeJournee } from './ad-account-time';
 import { getBillingEvent } from './campaign-objectives';
-import { FB_MIN_DAILY_BUDGET_CENTS, minDailyBudgetFcfa } from './currency';
 import {
   buildCreativeMedia,
   flexibleMode,
@@ -52,11 +56,6 @@ export interface CreateCampaignDeps {
   upload: UploadOptions;
   /** Avancement pour l'écran (campagne, ensemble, medias, video, publicite). Ne doit jamais faire échouer la création. */
   onStep?: (name: string, detail?: { current: number; total: number }) => void;
-  /**
-   * Taux FCFA pour 1 $ : OBLIGATOIRE, fourni par `core` (table des taux de `billing`). Aucun taux par défaut :
-   * il sert à exprimer en FCFA le minimum de budget dans les messages.
-   */
-  xafPerUsd: number;
 }
 
 const idSchema = z.looseObject({ id: z.string().optional() });
@@ -109,13 +108,30 @@ export function normalizeObjective(objective: string): string {
     : objective;
 }
 
-function assertBudget(cents: number | undefined, minXaf: number): number {
-  if (cents === undefined || !Number.isInteger(cents) || cents < FB_MIN_DAILY_BUDGET_CENTS) {
+/**
+ * Budget en centimes de dollar → unité mineure de la monnaie du compte, après avoir vérifié le minimum de Pubeka (1 $ par
+ * jour, TR-PLA-10). Le minimum est redonné dans la monnaie du compte (`meta.minAccountMinor`, `meta.currency`).
+ */
+function assertBudget(cents: number | undefined, account: AccountCurrency): number {
+  if (cents === undefined || !Number.isInteger(cents) || cents < PUBEKA_MIN_DAILY_USD_CENTS) {
     throw new AppError('budget_too_low', {
-      meta: { minUsdCents: FB_MIN_DAILY_BUDGET_CENTS, minXaf },
+      meta: {
+        minUsdCents: PUBEKA_MIN_DAILY_USD_CENTS,
+        currency: account.code,
+        ...minimumInAccount(account),
+      },
     });
   }
-  return cents;
+  return usdCentsToAccountMinor(cents, account);
+}
+
+function minimumInAccount(account: AccountCurrency): { minAccountMinor?: number } {
+  try {
+    return { minAccountMinor: accountMinPerDayMinor(account) };
+  } catch {
+    // Monnaie ou taux inutilisable : le refus de la monnaie est donné ailleurs, ici on n'invente rien.
+    return {};
+  }
 }
 
 /** Les médias à téléverser : un seul pour image/vidéo, plusieurs pour le carrousel et le format flexible. */
@@ -141,9 +157,11 @@ export async function createFullCampaign(
     }
   };
 
-  // Configuration obligatoire, vérifiée avant tout appel : hôtes de médias (anti-SSRF) et taux de change.
+  // Configuration obligatoire, vérifiée avant tout appel : hôtes de médias (anti-SSRF) et monnaie du compte.
   assertMediaHostsConfigured(deps.upload.allowedMediaHosts);
-  const minXaf = minDailyBudgetFcfa(deps.xafPerUsd);
+  const account = spec.account;
+  // Monnaie et taux utilisables : refus immédiat (aucun objet créé) plutôt qu'un budget faux chez Meta.
+  usdCentsToAccountMinor(PUBEKA_MIN_DAILY_USD_CENTS, account);
 
   const objective = normalizeObjective(spec.objective);
   const adAccountId = spec.adAccountId.startsWith('act_')
@@ -160,13 +178,17 @@ export async function createFullCampaign(
   if (spec.targeting.locations.length === 0) {
     throw new MetaValidationError('Au moins une localisation est requise');
   }
-  // L'utilisateur saisit des FCFA ; le compte publicitaire est en USD et Meta attend des centimes. Le
-  // minimum est celui de Meta (1 $/jour, TR-PLA-10).
-  const dailyBudgetUsdCents = assertBudget(spec.dailyBudgetUsdCents, minXaf);
+  // Le budget de Pubeka est en centimes de dollar ; Meta attend l'unité mineure de la monnaie du COMPTE (EC-META-11).
+  // Le minimum est de 1 $ par jour (TR-PLA-10).
+  const dailyBudgetMinor = assertBudget(spec.dailyBudgetUsdCents, account);
   const lifetime = spec.budgetType === 'lifetime' && Boolean(spec.endDate);
-  const lifetimeBudgetUsdCents = lifetime
-    ? assertBudget(spec.lifetimeBudgetUsdCents ?? dailyBudgetUsdCents, minXaf)
+  const lifetimeBudgetMinor = lifetime
+    ? assertBudget(spec.lifetimeBudgetUsdCents ?? spec.dailyBudgetUsdCents, account)
     : null;
+  const bidAmountMinor =
+    spec.costPerResultUsdCents !== undefined && spec.costPerResultUsdCents > 0
+      ? usdCentsToAccountMinor(spec.costPerResultUsdCents, account)
+      : null;
   const mediaType = spec.creative.mediaType;
   const items = mediaItemsOf(spec);
   if (mediaType === 'video' && items.length === 0) {
@@ -204,7 +226,7 @@ export async function createFullCampaign(
     const adSetPayload: Record<string, unknown> = {
       name: spec.adsetName ?? `${spec.campaignName} - AdSet`,
       campaign_id: campaignId,
-      daily_budget: dailyBudgetUsdCents,
+      daily_budget: dailyBudgetMinor,
       billing_event: getBillingEvent(),
       optimization_goal: destination.optimization_goal,
       bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
@@ -231,14 +253,14 @@ export async function createFullCampaign(
     if (flexibleMode(mediaType, objective) === 'dynamic') adSetPayload.is_dynamic_creative = true;
 
     // Objectif de coût par résultat (optionnel) — bascule en stratégie « coût maîtrisé ».
-    if (spec.costPerResultUsdCents !== undefined && spec.costPerResultUsdCents > 0) {
+    if (bidAmountMinor !== null) {
       adSetPayload.bid_strategy = 'COST_CAP';
-      adSetPayload.bid_amount = spec.costPerResultUsdCents;
+      adSetPayload.bid_amount = bidAmountMinor;
     }
 
-    if (lifetimeBudgetUsdCents !== null) {
+    if (lifetimeBudgetMinor !== null) {
       delete adSetPayload.daily_budget;
-      adSetPayload.lifetime_budget = lifetimeBudgetUsdCents;
+      adSetPayload.lifetime_budget = lifetimeBudgetMinor;
     }
 
     if (spec.endDate) {

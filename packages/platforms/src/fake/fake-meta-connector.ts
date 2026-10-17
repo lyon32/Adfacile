@@ -2,11 +2,15 @@
 // Pubeka doit savoir traiter. C'est la même que celle activée par PUBEKA_FAKE_PROVIDERS en développement.
 // Elle respecte le contrat commun (`platformConnectorContract`) : mêmes codes d'erreur que le vrai connecteur.
 import { AppError } from '@pubeka/contracts';
+import { PUBEKA_MIN_DAILY_USD_CENTS, usdCentsToAccountMinor } from '../meta/account-currency';
 import { FB_MIN_DAILY_BUDGET_CENTS } from '../meta/currency';
+import { MetaValidationError, toAppError } from '../meta/errors';
 import type {
   DailyStats,
   DateRange,
   HealthCheckItem,
+  LocationMatch,
+  LocationQuery,
   PlatformAdAccount,
   PlatformCampaignRefs,
   PlatformConnector,
@@ -137,6 +141,24 @@ export class FakeMetaConnector implements PlatformConnector {
     ]);
   }
 
+  /** Lieux connus de la fausse Meta : `seedLocation` en ajoute ; chaque nom donne la clé `loc-<nom en minuscules>`. */
+  private readonly locations: LocationMatch[] = [];
+  seedLocation(match: LocationMatch): void {
+    this.locations.push(match);
+  }
+
+  searchLocations(token: PlatformToken, query: LocationQuery): Promise<LocationMatch[]> {
+    return this.respond(token, () => {
+      const wanted = query.name.trim().toLowerCase();
+      return this.locations.filter(
+        (l) =>
+          l.type === query.type &&
+          l.name.toLowerCase() === wanted &&
+          (query.countryCode === undefined || l.countryCode === query.countryCode),
+      );
+    });
+  }
+
   healthCheck(
     token: PlatformToken,
     adAccountId: string,
@@ -158,9 +180,15 @@ export class FakeMetaConnector implements PlatformConnector {
     return this.respond(token, () => {
       if (
         !Number.isInteger(spec.dailyBudgetUsdCents) ||
-        spec.dailyBudgetUsdCents < FB_MIN_DAILY_BUDGET_CENTS
+        spec.dailyBudgetUsdCents < PUBEKA_MIN_DAILY_USD_CENTS
       ) {
-        throw new AppError('budget_too_low', { meta: { minUsdCents: FB_MIN_DAILY_BUDGET_CENTS } });
+        throw new AppError('budget_too_low', { meta: { minUsdCents: PUBEKA_MIN_DAILY_USD_CENTS } });
+      }
+      // Comme le vrai connecteur : le budget est converti dans la monnaie du compte (refus si taux ou monnaie inutilisables).
+      try {
+        usdCentsToAccountMinor(spec.dailyBudgetUsdCents, spec.account);
+      } catch (error) {
+        throw toAppError(error);
       }
       if (this.paymentMissing) throw new AppError('meta_payment_method_missing');
       this.sequence += 4;
@@ -192,6 +220,10 @@ export class FakeMetaConnector implements PlatformConnector {
   ): Promise<void> {
     return this.respond(token, () => {
       const campaign = this.find(refs);
+      if (patch.dailyBudgetUsdCents !== undefined && patch.account === undefined) {
+        // Comme le vrai connecteur : sans monnaie du compte, le budget ne peut pas être exprimé.
+        throw toAppError(new MetaValidationError('La monnaie du compte publicitaire est requise.'));
+      }
       if (
         patch.dailyBudgetUsdCents !== undefined &&
         patch.dailyBudgetUsdCents < FB_MIN_DAILY_BUDGET_CENTS

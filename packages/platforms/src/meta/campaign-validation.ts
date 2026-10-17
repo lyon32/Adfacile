@@ -2,21 +2,13 @@
 // Porté de `validateCampaignData` (backend/src/controllers/campaignController.js), règles inchangées.
 // Les erreurs sont des phrases affichables ; `core` les convertit en `validation_failed`.
 import { toAppError, MetaValidationError } from './errors';
-import { FB_MIN_DAILY_BUDGET_CENTS, minDailyBudgetFcfa } from './currency';
+import { PUBEKA_MIN_DAILY_USD_CENTS } from './account-currency';
 import { checkMediaItems } from './media-specs';
 import { isMessagingDestination, normalizeApps } from './messaging-destinations';
 import type { PublishSpec } from '../types';
 import type { AppError } from '@pubeka/contracts';
 
-export interface ValidationOptions {
-  /** Taux FCFA pour 1 $, pour exprimer le minimum de budget dans la monnaie de l'utilisateur. */
-  xafPerUsd: number;
-}
-
-export function validateCampaignData(
-  data: PublishSpec,
-  options: ValidationOptions,
-): { valid: boolean; errors: string[] } {
+export function validateCampaignData(data: PublishSpec): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   // Niveau campagne
@@ -37,11 +29,9 @@ export function validateCampaignData(
     errors.push("L'âge minimum ne peut pas dépasser l'âge maximum");
   }
 
-  // Le seuil suit le minimum réellement appliqué par le connecteur (1 $, TR-PLA-10), exprimé en FCFA.
-  if (!data.dailyBudgetUsdCents || data.dailyBudgetUsdCents < FB_MIN_DAILY_BUDGET_CENTS) {
-    errors.push(
-      `Le budget minimum est de ${String(minDailyBudgetFcfa(options.xafPerUsd))} FCFA par jour`,
-    );
+  // Le seuil suit le minimum réellement appliqué par le connecteur (1 $ par jour, TR-PLA-10).
+  if (!data.dailyBudgetUsdCents || data.dailyBudgetUsdCents < PUBEKA_MIN_DAILY_USD_CENTS) {
+    errors.push('Le budget minimum est de 1 $ par jour');
   }
 
   // Calendrier
@@ -81,8 +71,8 @@ export function validateCampaignData(
 }
 
 /** Même contrôle, qui lève `validation_failed` (avec une entrée par message) si la campagne est invalide. */
-export function assertValidCampaign(data: PublishSpec, options: ValidationOptions): void {
-  const { valid, errors } = validateCampaignData(data, options);
+export function assertValidCampaign(data: PublishSpec): void {
+  const { valid, errors } = validateCampaignData(data);
   if (!valid) {
     const error: AppError = toAppError(
       new MetaValidationError('Données de campagne invalides', errors),

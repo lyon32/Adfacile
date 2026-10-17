@@ -17,6 +17,7 @@ export const CONTRACT_SPEC: PublishSpec = {
   campaignName: 'Contrat',
   objective: 'OUTCOME_TRAFFIC',
   adAccountId: 'act_100000000001',
+  account: { code: 'USD' },
   page: {
     id: '200000000001',
     name: 'Page de test',
@@ -65,6 +66,17 @@ export function platformConnectorContract(name: string, make: () => ContractTarg
       expect(pages.every((p) => p.id.length > 0 && p.name.length > 0)).toBe(true);
     });
 
+    it('cherche un lieu en lecture seule : une liste (vide si le lieu est inconnu)', async () => {
+      const { connector, token } = make();
+      const found = await connector.searchLocations(token, {
+        name: 'Lieu-qui-n-existe-pas-zzz',
+        countryCode: 'CM',
+        type: 'city',
+      });
+      expect(Array.isArray(found)).toBe(true);
+      expect(found).toHaveLength(0);
+    });
+
     it('rend un bilan de santé sans jeton ni secret', async () => {
       const { connector, token } = make();
       const items = await connector.healthCheck(
@@ -108,10 +120,17 @@ export function platformConnectorContract(name: string, make: () => ContractTarg
       const { connector, token } = make();
       const refs = await connector.createCampaign(token, CONTRACT_SPEC);
       await expect(
-        connector.updateCampaign(token, refs, { name: 'Autre', dailyBudgetUsdCents: 800 }),
+        connector.updateCampaign(token, refs, {
+          name: 'Autre',
+          dailyBudgetUsdCents: 800,
+          account: CONTRACT_SPEC.account,
+        }),
       ).resolves.toBeUndefined();
       await expect(
-        connector.updateCampaign(token, refs, { dailyBudgetUsdCents: 10 }),
+        connector.updateCampaign(token, refs, {
+          dailyBudgetUsdCents: 10,
+          account: CONTRACT_SPEC.account,
+        }),
       ).rejects.toMatchObject({ code: 'budget_too_low' });
     });
 

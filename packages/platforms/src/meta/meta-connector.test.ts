@@ -29,7 +29,6 @@ function connecteur(
       now: NOW,
       fetch: graph.fetch,
       allowedMediaHosts: ['cdn.test'],
-      xafPerUsd: 610,
       ...extra,
     }),
   };
@@ -120,24 +119,66 @@ describe('MetaConnector — configuration', () => {
     }
   });
 
-  it('refuse de démarrer sans hôtes de médias ni taux de change (obligatoires)', () => {
+  it('refuse de démarrer sans hôtes de médias (obligatoires)', () => {
     expect(() => connecteur(undefined, { allowedMediaHosts: [] })).toThrow(AppError);
-    // Un taux fourni doit être valide; absent, il n'est pas inventé (connexion seule, voir le test suivant).
-    expect(() => connecteur(undefined, { xafPerUsd: 0 })).toThrow(AppError);
     // @ts-expect-error les hôtes de médias sont obligatoires
     expect(() => new MetaConnector({ appId: APP_ID, appSecret: 's', now: NOW })).toThrow(AppError);
   });
 
-  it('S15b : sans taux de change, le connecteur sert à la connexion (comptes, Pages, bilan) mais refuse de créer ou modifier une campagne', async () => {
-    const { graph, meta } = connecteur(() => ({ data: [] }), { xafPerUsd: undefined });
-    await expect(meta.listAdAccounts(TOKEN)).resolves.toBeDefined();
-    const created = await meta.createCampaign(TOKEN, CONTRACT_SPEC).catch((e: unknown) => e);
+  it('S16 : un compte hors dollar sans taux est refusé à la création ET à la modification, sans aucun appel d’écriture', async () => {
+    const { graph, meta } = connecteur(() => ({ data: [] }));
+    const sansTaux = { ...CONTRACT_SPEC, account: { code: 'NGN' } };
+    const created = await meta.createCampaign(TOKEN, sansTaux).catch((e: unknown) => e);
     expect(created).toBeInstanceOf(AppError);
-    expect(created).toMatchObject({ code: 'internal_error' });
-    const updated = await meta.updateCampaign(TOKEN, REFS, { name: 'N' }).catch((e: unknown) => e);
-    expect(updated).toMatchObject({ code: 'internal_error' });
-    // Aucun appel d'écriture n'est parti vers Meta.
+    expect(created).toMatchObject({ code: 'validation_failed' });
+    const updated = await meta
+      .updateCampaign(TOKEN, REFS, { dailyBudgetUsdCents: 500, account: { code: 'NGN' } })
+      .catch((e: unknown) => e);
+    expect(updated).toMatchObject({ code: 'validation_failed' });
     expect(graph.calls.filter((c) => c.method === 'POST')).toHaveLength(0);
+  });
+
+  it('S16 : convertit le budget dans la monnaie du compte (5 $ à 1 500 NGN = 750 000 unités mineures)', async () => {
+    const posts: Record<string, unknown>[] = [];
+    const { meta } = connecteur((call) => {
+      if (call.method === 'POST') {
+        posts.push((call.body ?? {}) as Record<string, unknown>);
+        return { id: `${call.path.split('/').pop() ?? ''}-id` };
+      }
+      return { timezone_name: 'Africa/Lagos' };
+    });
+    await meta.createCampaign(TOKEN, {
+      ...CONTRACT_SPEC,
+      account: { code: 'NGN', perUsd: 1500 },
+    });
+    expect(posts.find((p) => 'daily_budget' in p)).toMatchObject({ daily_budget: 750_000 });
+  });
+
+  it('S16 : cherche un lieu (Targeting Search) sans rien écrire', async () => {
+    const { graph, meta } = connecteur(() => ({
+      data: [
+        { key: '2447439', name: 'Douala', type: 'city', country_code: 'CM', region: 'Littoral' },
+        { name: 'sans clé' },
+      ],
+    }));
+    const found = await meta.searchLocations(TOKEN, {
+      name: 'Douala',
+      countryCode: 'CM',
+      type: 'city',
+    });
+    expect(found).toEqual([
+      { key: '2447439', name: 'Douala', type: 'city', countryCode: 'CM', region: 'Littoral' },
+    ]);
+    const call = graph.calls[0];
+    expect(call?.method).toBe('GET');
+    expect(call?.path).toBe('search');
+    expect(call?.params).toMatchObject({
+      type: 'adgeolocation',
+      q: 'Douala',
+      location_types: '["city"]',
+      country_code: 'CM',
+    });
+    expect(graph.calls.filter((c) => c.method !== 'GET')).toHaveLength(0);
   });
 
   it('transmet les hôtes de médias à la création : un média hors liste est refusé', async () => {
@@ -320,7 +361,7 @@ describe('MetaConnector — campagne', () => {
         call.method === 'POST'
           ? { id: `${call.path.split('/').pop() ?? ''}-id` }
           : { timezone_name: 'Africa/Douala' },
-      { onStep: (n) => etapes.push(n), xafPerUsd: 600, upload: {} },
+      { onStep: (n) => etapes.push(n), upload: {} },
     );
     const refs = await meta.createCampaign(TOKEN, CONTRACT_SPEC);
     expect(refs).toMatchObject({ campaignId: 'campaigns-id', adId: 'ads-id' });

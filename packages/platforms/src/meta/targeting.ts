@@ -18,6 +18,20 @@ export function getOptimizationGoal(objective: string | undefined): string {
     : 'LINK_CLICKS';
 }
 
+/** Rayon autour d'une ville accepté par Meta : de 17 à 80 km (documentation « Basic Targeting »). */
+export const META_CITY_RADIUS_MIN_KM = 17;
+export const META_CITY_RADIUS_MAX_KM = 80;
+const DEFAULT_CITY_RADIUS_KM = 25;
+
+/** Rayon envoyé à Meta : celui du client ramené dans la plage de Meta ; 25 km (AdFacile) quand il n'est pas donné. */
+export function cityRadiusKm(requested: number | undefined): number {
+  if (requested === undefined || !Number.isFinite(requested)) return DEFAULT_CITY_RADIUS_KM;
+  return Math.min(
+    META_CITY_RADIUS_MAX_KM,
+    Math.max(META_CITY_RADIUS_MIN_KM, Math.round(requested)),
+  );
+}
+
 interface GeoLocations {
   countries?: string[];
   cities?: { key: string; radius: number; distance_unit: 'kilometer' }[];
@@ -84,7 +98,7 @@ export function buildTargeting(targeting: PublishTargeting): MetaTargeting {
       geoMarkets.push({ key: loc.key });
     } else {
       // Ville, et par défaut tout type inconnu.
-      cities.push({ key: loc.key, radius: 25, distance_unit: 'kilometer' });
+      cities.push({ key: loc.key, radius: cityRadiusKm(loc.radiusKm), distance_unit: 'kilometer' });
     }
   }
 
