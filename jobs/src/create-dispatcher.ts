@@ -8,12 +8,14 @@ import {
   type JobDispatcher,
 } from './dispatcher';
 import { analysisRunHandler } from './handlers/analysis-run';
+import { fxRefreshHandler } from './handlers/fx-refresh';
 import { systemPingHandler } from './handlers/system-ping';
 
 /** Gestionnaires disponibles en mode `inline` : un par tâche, la même logique que sous Trigger.dev. */
 export const inlineHandlers = [
   registerHandler(systemPingHandler),
   registerHandler(analysisRunHandler),
+  registerHandler(fxRefreshHandler),
 ];
 
 export type DispatcherEnv = Pick<
