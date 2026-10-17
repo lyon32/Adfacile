@@ -16,6 +16,7 @@
 // Idempotence : la phase (`none → creating → created → activating → done`) est avancée par des écritures gardées ; deux
 // exécutions simultanées ou une tâche rejouée ne créent jamais deux campagnes. Aucun jeton n'est journalisé.
 import { AppError, type ErrorCode } from '@pubeka/contracts';
+import { publishDisabledError, type MetaPublishGate } from './publish-switch';
 import { check, unwrap, type ServiceClient } from '@pubeka/db';
 import {
   assertValidCampaign,
@@ -68,7 +69,7 @@ export type PublishConnector = Pick<
   | 'searchLocations'
 >;
 
-export interface RunPublicationDeps extends PublishHooks {
+export interface RunPublicationDeps extends PublishHooks, MetaPublishGate {
   connector: PublishConnector;
   /** Jeton Meta DÉCHIFFRÉ de la connexion, lu côté serveur seulement (jamais journalisé). */
   loadToken: (
@@ -84,7 +85,10 @@ export type PublicationOutcome =
   | { outcome: 'skipped'; reason: 'not_found' | 'not_publishing' | 'already_running' | 'done' }
   | { outcome: 'accepted'; adopted: boolean }
   | { outcome: 'failed'; code: ErrorCode; uncertain: boolean }
-  | { outcome: 'pending'; reason: 'lookup_failed' | 'lookup_incomplete' | 'activation_unknown' };
+  | {
+      outcome: 'pending';
+      reason: 'lookup_failed' | 'lookup_incomplete' | 'activation_unknown' | 'publish_disabled';
+    };
 
 interface Run {
   svc: ServiceClient;
@@ -488,6 +492,17 @@ export async function runPublication(
   }
   if (row.status !== 'publishing') return { outcome: 'skipped', reason: 'not_publishing' };
   if (row.publish_phase === 'done') return { outcome: 'skipped', reason: 'done' };
+
+  // Interrupteur de sécurité, AVANT toute lecture du jeton ou appel à Meta : Meta réel et publication non activée.
+  // Rien créé encore : échec net (quota rendu). Des éléments existent peut-être chez Meta : on n'y touche pas, la tâche
+  // reste en attente et reprend (rapprochement, jamais de recréation) quand l'interrupteur est activé.
+  if (!deps.metaPublishEnabled()) {
+    if (row.publish_phase !== 'none') return { outcome: 'pending', reason: 'publish_disabled' };
+    const latest = await loadPublishRow(svc, workspaceId, campaignId);
+    const error = publishDisabledError();
+    await failPublication(svc, deps, ctx.now(), latest, error);
+    return { outcome: 'failed', code: error.code, uncertain: false };
+  }
 
   // Tout est relu : l'état a pu changer depuis la route (Page retirée de la formule, jeton révoqué, compte désactivé).
   const inputs = await loadPublishInputs(svc, workspaceId, row, ctx.now());

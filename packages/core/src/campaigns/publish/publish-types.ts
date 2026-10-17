@@ -1,6 +1,7 @@
 // Types communs de la publication (S16) : la route `publish` (cas d'usage `publishCampaign`) et la tâche `campaign.publish`
 // (`runPublication`) se partagent la tâche, la clé d'idempotence, les points d'accroche du quota et les colonnes lues.
 import { z } from 'zod';
+import type { MetaPublishGate } from './publish-switch';
 import type { JobEnqueuer } from '../../analysis/deps';
 import type { CampaignStatus } from '../campaign-state';
 import type { CampaignRow } from '../campaign-view';
@@ -32,7 +33,7 @@ export interface PublishHooks {
 }
 
 /** Ce dont la route a besoin : lancer la tâche et les points d'accroche. Aucun appel à Meta dans la route. */
-export interface PublishCampaignDeps extends PublishHooks {
+export interface PublishCampaignDeps extends PublishHooks, MetaPublishGate {
   jobs: JobEnqueuer;
 }
 

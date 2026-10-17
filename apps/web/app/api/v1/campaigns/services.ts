@@ -4,6 +4,7 @@ import 'server-only';
 import {
   createProposalDeps,
   createCampaignControlDeps,
+  metaPublishAllowed,
   type CampaignControlDeps,
   type JobEnqueuer,
   type ProposalDeps,
@@ -39,7 +40,11 @@ let publishDefault: PublishCampaignDeps | undefined;
  */
 export function publishDeps(): PublishCampaignDeps {
   if (publishOverride !== undefined) return publishOverride;
-  publishDefault ??= { jobs: createJobEnqueuer() };
+  // Interrupteur de publication réelle (PUBEKA_META_PUBLISH) : exigé seulement quand Meta est RÉEL.
+  publishDefault ??= {
+    jobs: createJobEnqueuer(),
+    metaPublishEnabled: () => metaPublishAllowed(getEnv()),
+  };
   return publishDefault;
 }
 

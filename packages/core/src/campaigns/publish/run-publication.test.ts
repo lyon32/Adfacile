@@ -55,6 +55,7 @@ async function published(
   const deps = (overrides: Partial<RunPublicationDeps> = {}): RunPublicationDeps => ({
     connector: fake,
     loadToken: () => Promise.resolve(TOKEN),
+    metaPublishEnabled: () => true,
     beforeSpend: w.hooks.beforeSpend,
     afterAccepted: w.hooks.afterAccepted,
     release: w.hooks.release,
@@ -574,6 +575,7 @@ describe('Vérifications refaites par la tâche (tout est relu en base)', () => 
       {
         connector: fake,
         loadToken: () => Promise.resolve(TOKEN),
+        metaPublishEnabled: () => true,
         afterAccepted: w.hooks.afterAccepted,
         release: w.hooks.release,
       },
@@ -583,6 +585,86 @@ describe('Vérifications refaites par la tâche (tout est relu en base)', () => 
     expect(rowOf(w.db, w.campaignId)).toMatchObject({
       status: 'in_review',
       quota_state: 'counted',
+    });
+  });
+});
+
+/** Tout appel à l'objet est compté, quelle que soit la méthode : « aucun appel au connecteur » se prouve ici, pas sur un seul compteur. */
+function counting<T extends object>(target: T): { proxy: T; calls: string[] } {
+  const calls: string[] = [];
+  const proxy = new Proxy(target, {
+    get(obj, key, receiver) {
+      const value: unknown = Reflect.get(obj, key, receiver);
+      if (typeof value !== 'function') return value;
+      return (...args: unknown[]) => {
+        calls.push(String(key));
+        return (value as (...a: unknown[]) => unknown).apply(obj, args);
+      };
+    },
+  });
+  return { proxy, calls };
+}
+
+describe('runPublication — interrupteur de publication réelle (PUBEKA_META_PUBLISH)', () => {
+  it('DÉSACTIVÉ, rien encore créé : échec net provider_unavailable, quota rendu, AUCUN appel au connecteur ni au déchiffrement du jeton', async () => {
+    const t = await published();
+    const { proxy, calls } = counting(t.fake);
+    let tokenLoads = 0;
+    const outcome = await t.run({
+      connector: proxy,
+      metaPublishEnabled: () => false,
+      loadToken: () => {
+        tokenLoads += 1;
+        return Promise.resolve(TOKEN);
+      },
+    });
+    expect(outcome).toMatchObject({ outcome: 'failed', code: 'provider_unavailable' });
+    expect(calls).toEqual([]);
+    expect(tokenLoads).toBe(0);
+    expect(t.fake.createAttempts).toBe(0);
+    expect(t.fake.resumeAttempts).toBe(0);
+    expect(rowOf(t.w.db, t.w.campaignId)).toMatchObject({
+      status: 'error',
+      publish_phase: 'none',
+      quota_state: 'released',
+      meta_campaign_id: null,
+    });
+    expect(t.w.hooks.count('release')).toBe(1);
+    expect(t.w.hooks.count('afterAccepted')).toBe(0);
+  });
+
+  it.each(['creating', 'created', 'activating'] as const)(
+    'DÉSACTIVÉ, phase « %s » (des éléments existent peut-être chez Meta) : en attente, AUCUN appel, rien n’est modifié',
+    async (phase) => {
+      const t = await published();
+      Object.assign(rowOf(t.w.db, t.w.campaignId), { publish_phase: phase });
+      const before = JSON.stringify(t.w.db.rows('campaigns'));
+      const { proxy, calls } = counting(t.fake);
+      const outcome = await t.run({ connector: proxy, metaPublishEnabled: () => false });
+      expect(outcome).toEqual({ outcome: 'pending', reason: 'publish_disabled' });
+      expect(calls).toEqual([]);
+      expect(JSON.stringify(t.w.db.rows('campaigns'))).toBe(before);
+      expect(t.w.hooks.count('release')).toBe(0);
+    },
+  );
+
+  it('réactivé : la même tâche rejouée aboutit (rien n’a été perdu)', async () => {
+    const t = await published();
+    Object.assign(rowOf(t.w.db, t.w.campaignId), { publish_phase: 'creating' });
+    expect(await t.run({ metaPublishEnabled: () => false })).toEqual({
+      outcome: 'pending',
+      reason: 'publish_disabled',
+    });
+    const again = await t.run({ metaPublishEnabled: () => true });
+    expect(again.outcome).not.toBe('pending');
+  });
+
+  it('une campagne déjà terminée ou absente reste ignorée sans erreur, interrupteur désactivé ou non', async () => {
+    const t = await published();
+    Object.assign(rowOf(t.w.db, t.w.campaignId), { publish_phase: 'done' });
+    expect(await t.run({ metaPublishEnabled: () => false })).toEqual({
+      outcome: 'skipped',
+      reason: 'done',
     });
   });
 });

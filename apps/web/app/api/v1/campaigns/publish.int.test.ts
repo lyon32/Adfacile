@@ -119,6 +119,28 @@ describeRoute('publishCampaign', {
     expect(recorder.jobs).toEqual([]);
   },
   extra: {
+    'interrupteur DÉSACTIVÉ : 503 provider_unavailable / publish_disabled, la campagne reste un brouillon, AUCUN quota, AUCUNE tâche, aucune clause enregistrée':
+      async () => {
+        const { campaign } = await publishableCampaign(s);
+        recorder.publishEnabled = false;
+        const res = await publish(s, s.owner, campaign.id, accept, randomUUID());
+        expect(res.status).toBe(503);
+        const body = await problemOf(res);
+        expect(body.code).toBe('provider_unavailable');
+        expect(body.meta).toMatchObject({ reason: 'publish_disabled' });
+        expect(await campaignRow(campaign.id)).toMatchObject({
+          status: 'draft',
+          quota_state: 'none',
+          publish_attempt: 0,
+          publish_ref: null,
+        });
+        expect(recorder.events).toEqual([]);
+        expect(recorder.jobs).toEqual([]);
+        // Réactivé : la même campagne se publie normalement (rien n'a été abîmé).
+        recorder.publishEnabled = true;
+        expect((await publish(s, s.owner, campaign.id, accept, randomUUID())).status).toBe(202);
+      },
+
     'identifiant de campagne mal formé : 400, inconnu : 404': async () => {
       expect((await publish(s, s.owner, 'pas-un-uuid')).status).toBe(400);
       expect((await publish(s, s.owner, randomUUID())).status).toBe(404);

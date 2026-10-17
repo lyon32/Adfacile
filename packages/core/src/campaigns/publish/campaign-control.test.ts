@@ -85,7 +85,11 @@ async function live(
     w,
     fake,
     id: w.campaignId,
-    deps: { connector: fake, loadToken: () => Promise.resolve(TOKEN) },
+    deps: {
+      connector: fake,
+      loadToken: () => Promise.resolve(TOKEN),
+      metaPublishEnabled: () => true,
+    },
   };
 }
 
@@ -557,5 +561,85 @@ describe('relaunchCampaign — mode copy (F9 : un nouveau brouillon, compte comm
         )
       ).code,
     ).toBe(code);
+  });
+});
+
+describe('interrupteur de publication réelle (PUBEKA_META_PUBLISH) : activer chez Meta est bloqué, ARRÊTER ne l’est jamais', () => {
+  const off = (t: Live): CampaignControlDeps => ({ ...t.deps, metaPublishEnabled: () => false });
+  /** Tout appel au connecteur est compté, quelle que soit la méthode. */
+  function counted(t: Live): { deps: CampaignControlDeps; calls: string[] } {
+    const calls: string[] = [];
+    const connector = new Proxy(t.fake, {
+      get(obj, key, receiver) {
+        const value: unknown = Reflect.get(obj, key, receiver);
+        if (typeof value !== 'function') return value;
+        return (...args: unknown[]) => {
+          calls.push(String(key));
+          return (value as (...a: unknown[]) => unknown).apply(obj, args);
+        };
+      },
+    });
+    return { deps: { ...off(t), connector }, calls };
+  }
+
+  it('reprise DÉSACTIVÉE : 503 provider_unavailable / publish_disabled, AUCUN appel à Meta, la campagne reste en pause', async () => {
+    const t = await live('paused');
+    const { deps, calls } = counted(t);
+    const error = await failure(resumeCampaign(t.w.ctx, t.id, deps));
+    expect(error.code).toBe('provider_unavailable');
+    expect(error.status).toBe(503);
+    expect(error.opts.meta).toMatchObject({ reason: 'publish_disabled' });
+    expect(calls).toEqual([]);
+    expect(t.fake.resumeAttempts).toBe(0);
+    expect(statusOf(t)).toBe('paused');
+  });
+
+  it('relance « recover » DÉSACTIVÉE : même refus, AUCUN appel à Meta, la campagne reste arrêtée', async () => {
+    const t = await live('stopped');
+    const version = Number(rowOf(t.w.db, t.id).version);
+    const { deps, calls } = counted(t);
+    const error = await failure(
+      relaunchCampaign(t.w.ctx, t.id, { mode: 'recover', version }, deps),
+    );
+    expect(error.code).toBe('provider_unavailable');
+    expect(error.opts.meta).toMatchObject({ reason: 'publish_disabled' });
+    expect(calls).toEqual([]);
+    expect(t.fake.resumeAttempts).toBe(0);
+    expect(statusOf(t)).toBe('stopped');
+  });
+
+  it('la PAUSE fonctionne interrupteur désactivé (elle arrête la dépense) : Meta appelé, statut paused', async () => {
+    const t = await live('active');
+    const view = await pauseCampaign(t.w.ctx, t.id, off(t));
+    expect(view.status).toBe('paused');
+    expect(t.fake.pauseAttempts).toBe(1);
+  });
+
+  it('la pause reste permise même en lecture seule ET interrupteur désactivé', async () => {
+    const t = await live('active', { access: 'read_only' });
+    expect((await pauseCampaign(t.w.ctx, t.id, off(t))).status).toBe('paused');
+  });
+
+  it('relance « copy » : un brouillon local, aucun appel à Meta, permis interrupteur désactivé (la publication, elle, reste bloquée)', async () => {
+    const t = await live('active');
+    const { deps, calls } = counted(t);
+    const view = await relaunchCampaign(t.w.ctx, t.id, { mode: 'copy', visual_mode: 'same' }, deps);
+    expect(view.status).toBe('draft');
+    expect(calls).toEqual([]);
+  });
+
+  it('ACTIVÉ : reprise et relance se comportent comme avant', async () => {
+    const t = await live('paused');
+    expect((await resumeCampaign(t.w.ctx, t.id, t.deps)).status).toBe('active');
+    const s = await live('stopped');
+    const version = Number(rowOf(s.w.db, s.id).version);
+    expect(
+      (await relaunchCampaign(s.w.ctx, s.id, { mode: 'recover', version }, s.deps)).status,
+    ).toBe('active');
+  });
+
+  it('droits : un lecteur reste refusé en 403, interrupteur désactivé ou non (le contrôle des droits passe avant)', async () => {
+    const t = await live('paused', { role: 'viewer' });
+    expect((await failure(resumeCampaign(t.w.ctx, t.id, off(t)))).code).toBe('role_insufficient');
   });
 });

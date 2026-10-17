@@ -11,7 +11,7 @@ import {
   testServiceClient,
   type SeededWorkspace,
 } from '@pubeka/testing';
-import { afterAll, beforeAll, beforeEach, expect } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { resetRateLimits } from './int-support';
 import {
   campaignRow,
@@ -116,6 +116,7 @@ async function fakeKnowing(
     deps: {
       connector: fake,
       loadToken: () => Promise.resolve({ accessToken: 'jeton-de-test', expiresAt: null }),
+      metaPublishEnabled: () => true,
     },
   };
 }
@@ -499,4 +500,41 @@ describeRoute('getReachEstimate', {
       expect((await estimate(ro, ro.viewer, campaign.id)).status).toBe(200);
     },
   },
+});
+
+describe('interrupteur de publication réelle (PUBEKA_META_PUBLISH), vraie base et vraies routes', () => {
+  it('DÉSACTIVÉ : la reprise et la relance « recover » sont refusées en 503 publish_disabled, la fausse Meta n’est JAMAIS appelée, les statuts ne changent pas', async () => {
+    const paused = await publishedCampaign(s);
+    const stopped = await publishedCampaign(s);
+    expect((await pause(s, s.owner, paused.campaign.id)).status).toBe(200);
+    await forceStatus(stopped.campaign.id, 'stopped');
+    const a = await fakeKnowing(paused.campaign.id, 'paused');
+    const b = await fakeKnowing(stopped.campaign.id, 'paused');
+    overrideControlDeps({ ...a.deps, metaPublishEnabled: () => false });
+    const resumed = await resume(s, s.owner, paused.campaign.id);
+    expect(resumed.status).toBe(503);
+    const body = await problemOf(resumed);
+    expect(body.code).toBe('provider_unavailable');
+    expect(body.meta).toMatchObject({ reason: 'publish_disabled' });
+    expect(a.fake.resumeAttempts).toBe(0);
+    expect((await campaignRow(paused.campaign.id))?.status).toBe('paused');
+
+    overrideControlDeps({ ...b.deps, metaPublishEnabled: () => false });
+    const version = (await campaignRow(stopped.campaign.id))?.version ?? 0;
+    const relaunched = await relaunch(s, s.owner, stopped.campaign.id, { mode: 'recover', version });
+    expect(relaunched.status).toBe(503);
+    expect((await problemOf(relaunched)).meta).toMatchObject({ reason: 'publish_disabled' });
+    expect(b.fake.resumeAttempts).toBe(0);
+    expect((await campaignRow(stopped.campaign.id))?.status).toBe('stopped');
+  });
+
+  it('DÉSACTIVÉ : la PAUSE reste permise (elle arrête la dépense) et la fausse Meta reçoit l’ordre', async () => {
+    const { campaign } = await publishedCampaign(s);
+    const { fake, deps } = await fakeKnowing(campaign.id, 'active');
+    overrideControlDeps({ ...deps, metaPublishEnabled: () => false });
+    const res = await pause(s, s.owner, campaign.id);
+    expect(res.status).toBe(200);
+    expect(fake.pauseAttempts).toBe(1);
+    expect((await campaignRow(campaign.id))?.status).toBe('paused');
+  });
 });

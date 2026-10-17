@@ -13,7 +13,7 @@ import type { MetaAccountConnector, MetaDeps } from './deps';
 import type { StateCodec } from './oauth-state';
 import { metaRedirectUri, validateMetaRedirectUri } from './redirect-uri';
 
-function usesFakeMeta(env: Pick<Env, 'PUBEKA_FAKE_PROVIDERS'>): boolean {
+export function usesFakeMeta(env: Pick<Env, 'PUBEKA_FAKE_PROVIDERS'>): boolean {
   const list = env.PUBEKA_FAKE_PROVIDERS;
   if (list === undefined) return false;
   return list === 'all' || list.split(',').some((p) => p.trim() === 'meta');
