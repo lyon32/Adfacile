@@ -7,4 +7,5 @@ export * from './queue-limits';
 export * from './handlers/system-ping';
 export * from './handlers/analysis-run';
 export * from './handlers/campaign-publish';
+export * from './handlers/campaign-reconcile';
 export * from './handlers/fx-refresh';

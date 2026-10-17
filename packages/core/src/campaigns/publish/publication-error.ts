@@ -14,6 +14,8 @@ export interface PublicationErrorRecord {
   message?: string;
   fix?: PublicationFix | null;
   uncertain?: boolean;
+  /** Raison courte (code en minuscules) quand l'écran doit distinguer un cas : `reconcile_timeout`, `publish_disabled`… */
+  reason?: string;
   at: string;
 }
 
@@ -23,6 +25,10 @@ const storedSchema = z.object({
   message: z.string().max(1000).optional(),
   fix: z.enum(PUBLICATION_FIXES).nullable().optional(),
   uncertain: z.boolean().optional(),
+  reason: z
+    .string()
+    .regex(/^[a-z_]{1,60}$/)
+    .optional(),
   at: z.string(),
 });
 
@@ -32,6 +38,10 @@ function text(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return trimmed === '' ? undefined : trimmed.slice(0, MAX_TEXT);
+}
+
+function reasonOf(value: unknown): string | undefined {
+  return typeof value === 'string' && /^[a-z_]{1,60}$/.test(value) ? value : undefined;
 }
 
 function fixOf(value: unknown): PublicationFix | null {
@@ -47,12 +57,14 @@ export function toPublicationError(
   const meta = error.opts.meta ?? {};
   const title = text(meta.title);
   const message = text(meta.message);
+  const reason = reasonOf(meta.reason);
   return {
     code: error.code,
     ...(title === undefined ? {} : { title }),
     ...(message === undefined ? {} : { message }),
     fix: fixOf(meta.fix),
     ...(options.uncertain === true ? { uncertain: true } : {}),
+    ...(reason === undefined ? {} : { reason }),
     at: at.toISOString(),
   };
 }
@@ -61,13 +73,14 @@ export function toPublicationError(
 export function readPublicationError(value: unknown): PublicationErrorRecord | null {
   const parsed = storedSchema.safeParse(value);
   if (!parsed.success || !isErrorCode(parsed.data.code)) return null;
-  const { code, title, message, fix, uncertain, at } = parsed.data;
+  const { code, title, message, fix, uncertain, reason, at } = parsed.data;
   return {
     code,
     ...(title === undefined ? {} : { title }),
     ...(message === undefined ? {} : { message }),
     ...(fix === undefined ? {} : { fix }),
     ...(uncertain === undefined ? {} : { uncertain }),
+    ...(reason === undefined ? {} : { reason }),
     at,
   };
 }
@@ -79,6 +92,7 @@ export function toJson(record: PublicationErrorRecord): Json {
     ...(record.message === undefined ? {} : { message: record.message }),
     fix: record.fix ?? null,
     ...(record.uncertain === undefined ? {} : { uncertain: record.uncertain }),
+    ...(record.reason === undefined ? {} : { reason: record.reason }),
     at: record.at,
   };
 }
