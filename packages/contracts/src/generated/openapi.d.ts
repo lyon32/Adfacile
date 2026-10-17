@@ -656,7 +656,26 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Publier sur la plateforme (décompte le quota de campagnes) */
+        /**
+         * Publier sur la plateforme (décompte le quota de campagnes)
+         * @description Action qui engage de l'argent chez Meta et un quota : `Idempotency-Key` obligatoire (UUID v4). La même clé rejoue la
+         *     même réponse (`Idempotent-Replayed: true`) sans nouvelle publication ni nouveau quota (EC-CAMP-01).
+         *
+         *     Le serveur relit TOUT depuis la base (budget, dates, textes, Page, compte publicitaire) : rien n'est repris du navigateur.
+         *     Ordre : rôle, espace modifiable, validation du corps, état de la campagne, clause de responsabilité (première publication
+         *     de l'espace), Page active dans la formule, Meta connecté, budget, dates, visuel, taux de change, quota ; puis
+         *     `draft → publishing` (ou `rejected`/`error → publishing`) en une seule instruction ; puis la tâche `campaign.publish` est
+         *     lancée et la réponse est `202`. Le statut passe ensuite à `in_review` quand Meta a reçu la campagne, ou à `error`
+         *     (quota rendu) en cas d'échec ; un résultat incertain n'est JAMAIS relancé automatiquement : la tâche cherche d'abord chez
+         *     Meta la campagne portant la référence de publication (SECURITY_NOTES EC-META-05).
+         *
+         *     Erreurs : `422 validation_failed` (EC-CAMP-08 : clause non acceptée, champ `accept_liability` ; EC-CAMP-04 : la fin devient
+         *     antérieure au début), `422 budget_too_low`, `402 campaign_quota_reached` (EC-CAMP-02), `402 page_limit_reached` (EC-CAMP-03,
+         *     `meta.available_from` ; EC-CAMP-09), `410 gone` (EC-CAMP-06 : visuel expiré), `409 conflict` (`meta.reason` : `fx_changed` avec
+         *     `meta.new_total` — EC-CAMP-05 ; `publication_in_progress` ; `invalid_transition`), `409 already_published`,
+         *     `424 meta_not_connected`, `424 meta_token_expired`, `424 meta_payment_method_missing`. Une campagne refusée par Meta qui est republiée
+         *     ne décompte aucun quota (EC-CAMP-07).
+         */
         post: operations["publishCampaign"];
         delete?: never;
         options?: never;
@@ -676,7 +695,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Mettre en pause (envoyé directement à Meta ; autorisé même en lecture seule) */
+        /**
+         * Mettre en pause (envoyé directement à Meta ; autorisé même en lecture seule)
+         * @description Propriétaire ou éditeur. Autorisé en lecture seule et même si la Page n'est plus dans la formule (EC-CAMP-09), pour que le client
+         *     puisse toujours arrêter de dépenser. Meta est appelé D'ABORD : le statut ne passe à `paused` que si Meta a répondu (EC-META-07 :
+         *     pas de faux succès, `502 meta_error`). Une campagne déjà en pause renvoie `200` sans appel (idempotent). Autres états : `409 conflict`.
+         */
         post: operations["pauseCampaign"];
         delete?: never;
         options?: never;
@@ -696,7 +720,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reprendre une campagne en pause */
+        /**
+         * Reprendre une campagne en pause
+         * @description Propriétaire ou éditeur, espace modifiable, Page dans la formule (`402 page_limit_reached` sinon, EC-CAMP-09). Meta est appelé d'abord ;
+         *     le statut ne change que si Meta a répondu. Déjà en diffusion : `200` sans appel. Autres états : `409 conflict`.
+         */
         post: operations["resumeCampaign"];
         delete?: never;
         options?: never;
@@ -716,7 +744,16 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Relancer (crée un nouveau brouillon à partir de la campagne) */
+        /**
+         * Relancer une campagne
+         * @description Deux usages, choisis par `mode` (décision du 16/10/2026 pour `recover`, PRD F9 pour `copy`) :
+         *     - `recover` : une campagne ARRÊTÉE (`stopped`, paiement Meta refusé) reprend la diffusion (`stopped → active`, événement `recover`).
+         *       C'est une ACTION DU CLIENT, faite après qu'il a réglé sa facture ou alimenté ses fonds publicitaires chez Meta : Pubeka ne la
+         *       détecte pas tout seul. Meta est appelé d'abord ; s'il refuse, le message de Meta (traduit) est renvoyé dans `meta.title` et
+         *       `meta.message` et le statut reste `stopped` (jamais un échec muet). Réponse `200`.
+         *     - `copy` : crée un nouveau brouillon à partir de la campagne (même visuel, ou à renouveler). Compte comme une nouvelle campagne
+         *       à sa publication. Réponse `201`.
+         */
         post: operations["relaunchCampaign"];
         delete?: never;
         options?: never;
@@ -1904,8 +1941,51 @@ export interface components {
             status_message?: string;
             /** Format: date-time */
             published_at?: string | null;
+            /**
+             * Format: date-time
+             * @description Mise en pause par le client (« Mise en pause par toi le JJ/MM »)
+             */
+            paused_at?: string | null;
+            publication_error?: components["schemas"]["PublicationError"] | null;
             /** @description Augmente à chaque modification ; à renvoyer dans PATCH (SECURITY_NOTES EC-TEAM-08) */
             version: number;
+        };
+        PublishRequest: {
+            /** @description Obligatoire à true pour la première publication de l'espace (clause de responsabilité, enregistrée avec la date et l'utilisateur) ; ignoré ensuite. */
+            accept_liability: boolean;
+            /**
+             * @description Coût total affiché à l'écran, en monnaie locale. Le serveur le recalcule avec le taux du jour : si l'écart dépasse 2 %,
+             *     `409 conflict` (`meta.reason: fx_changed`, `meta.new_total`) et l'écran redemande la confirmation (EC-CAMP-05).
+             */
+            confirmed_total?: {
+                amount_minor: number;
+                currency: string;
+            };
+        };
+        RelaunchRequest: {
+            /** @constant */
+            mode: "recover";
+            /** @description Version de la campagne lue par le client (verrou optimiste) */
+            version: number;
+        } | {
+            /** @constant */
+            mode: "copy";
+            /** @enum {string} */
+            visual_mode: "same" | "similar" | "change";
+        };
+        /** @description Pourquoi la dernière publication a échoué (affiché sur la campagne en erreur ou revenue en brouillon). */
+        PublicationError: {
+            code: components["schemas"]["ErrorCode"];
+            /** @description Titre de l'erreur de Meta, traduit */
+            title?: string;
+            /** @description Message de Meta, traduit en langage simple */
+            message?: string;
+            /** @enum {string|null} */
+            fix?: "destination" | "retry" | "reconnect" | "billing" | null;
+            /** @description Vrai si le résultat chez Meta était incertain : la tâche a cherché la campagne chez Meta avant de conclure */
+            uncertain?: boolean;
+            /** Format: date-time */
+            at: string;
         };
         CampaignGeo: {
             countries?: string[];
@@ -3675,10 +3755,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    /** @description Obligatoire à true pour la première publication du compte */
-                    accept_liability: boolean;
-                };
+                "application/json": components["schemas"]["PublishRequest"];
             };
         };
         responses: {
@@ -3691,11 +3768,17 @@ export interface operations {
                     "application/json": components["schemas"]["Campaign"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             402: components["responses"]["PaymentRequired"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            410: components["responses"]["Gone"];
             422: components["responses"]["Unprocessable"];
             424: components["responses"]["FailedDependency"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     pauseCampaign: {
@@ -3720,7 +3803,10 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            424: components["responses"]["FailedDependency"];
             502: components["responses"]["BadGateway"];
         };
     };
@@ -3746,8 +3832,12 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            402: components["responses"]["PaymentRequired"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            424: components["responses"]["FailedDependency"];
+            502: components["responses"]["BadGateway"];
         };
     };
     relaunchCampaign: {
@@ -3762,14 +3852,20 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    /** @enum {string} */
-                    visual_mode: "same" | "similar" | "change";
-                };
+                "application/json": components["schemas"]["RelaunchRequest"];
             };
         };
         responses: {
-            /** @description Nouveau brouillon */
+            /** @description Campagne arrêtée relancée (mode recover) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Campaign"];
+                };
+            };
+            /** @description Nouveau brouillon (mode copy) */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -3778,7 +3874,14 @@ export interface operations {
                     "application/json": components["schemas"]["Campaign"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            402: components["responses"]["PaymentRequired"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            424: components["responses"]["FailedDependency"];
+            502: components["responses"]["BadGateway"];
         };
     };
     getCampaignStats: {
