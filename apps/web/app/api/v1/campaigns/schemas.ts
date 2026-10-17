@@ -47,3 +47,9 @@ export const publishSchema = z.strictObject({
     })
     .optional(),
 });
+
+/** Relancer : `recover` (campagne arrêtée, version lue) ou `copy` (nouveau brouillon). Champ inconnu → 400. */
+export const relaunchSchema = z.discriminatedUnion('mode', [
+  z.strictObject({ mode: z.literal('recover'), version: z.number().int().min(1) }),
+  z.strictObject({ mode: z.literal('copy'), visual_mode: z.enum(['same', 'similar', 'change']) }),
+]);

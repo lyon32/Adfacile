@@ -36,6 +36,7 @@ export interface FakeCampaign {
   status: PlatformStatus['status'];
   rejection: string | null;
   deleted: boolean;
+  statusOverride?: PlatformStatus | undefined;
 }
 
 export interface FakeMetaOptions {
@@ -56,6 +57,7 @@ export class FakeMetaConnector implements PlatformConnector {
   private resumeTimeout: { applied: boolean } | undefined;
   private createRefusal: AppError | undefined;
   private resumeRefusal: AppError | undefined;
+  private pauseRefusal: AppError | undefined;
   private lookupFailures = 0;
   private lookupTruncated = false;
   private paymentMissing = false;
@@ -110,6 +112,20 @@ export class FakeMetaConnector implements PlatformConnector {
 
   /** Nombre de créations REÇUES par la fausse Meta (aboutissent ou non) : prouve qu'on ne recrée jamais d'office. */
   createAttempts = 0;
+
+  /** Nombre de mises en pause REÇUES (aboutissent ou non). */
+  pauseAttempts = 0;
+
+  /** Meta répond à `getStatus` avec ce statut (ex. facturation encore en échec), quel que soit le statut interne. */
+  simulateRemoteStatus(refs: PlatformCampaignRefs, status: PlatformStatus | undefined): void {
+    const campaign = this.campaigns.get(refs.campaignId);
+    if (campaign) campaign.statusOverride = status;
+  }
+
+  /** Meta refuse clairement la prochaine mise en pause. */
+  simulatePauseRefusal(error: AppError): void {
+    this.pauseRefusal = error;
+  }
 
   /** Nombre d'activations REÇUES (aboutissent ou non) : prouve qu'une activation incertaine n'est jamais rejouée. */
   resumeAttempts = 0;
@@ -305,7 +321,14 @@ export class FakeMetaConnector implements PlatformConnector {
 
   pause(token: PlatformToken, refs: PlatformCampaignRefs): Promise<void> {
     return this.respond(token, () => {
-      this.find(refs).status = 'paused';
+      this.pauseAttempts += 1;
+      const campaign = this.find(refs);
+      if (this.pauseRefusal !== undefined) {
+        const refusal = this.pauseRefusal;
+        this.pauseRefusal = undefined;
+        throw refusal;
+      }
+      campaign.status = 'paused';
     });
   }
 
@@ -379,7 +402,12 @@ export class FakeMetaConnector implements PlatformConnector {
   getStatus(token: PlatformToken, refs: PlatformCampaignRefs): Promise<PlatformStatus> {
     return this.respond(token, () => {
       const campaign = this.find(refs);
-      return { status: campaign.status, rawStatus: campaign.status.toUpperCase() };
+      return (
+        campaign.statusOverride ?? {
+          status: campaign.status,
+          rawStatus: campaign.status.toUpperCase(),
+        }
+      );
     });
   }
 

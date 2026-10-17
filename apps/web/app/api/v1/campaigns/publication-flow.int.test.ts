@@ -2,7 +2,12 @@
 // réel) : le clic sur Publier passe la campagne en publication, la tâche crée chez la fausse Meta, active, et la campagne arrive
 // en « envoyée à Meta ». C'est le parcours P2 côté serveur (le parcours d'écran vient en 9/9).
 import { randomUUID } from 'node:crypto';
-import { queryTestDb, seedWorkspace, testServiceClient, type SeededWorkspace } from '@pubeka/testing';
+import {
+  queryTestDb,
+  seedWorkspace,
+  testServiceClient,
+  type SeededWorkspace,
+} from '@pubeka/testing';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { resetRateLimits } from './int-support';
 import { campaignRow, json, publish, publishableCampaign } from './publish-support';
@@ -49,12 +54,18 @@ describe('publication de bout en bout (fausse Meta, tâche inline)', () => {
   it('rejouer la même clé ne publie pas une deuxième fois', async () => {
     const { campaign } = await publishableCampaign(s, { connected: true });
     const key = randomUUID();
-    expect((await publish(s, s.owner, campaign.id, { accept_liability: true }, key)).status).toBe(202);
-    const before = await queryTestDb(`select meta_campaign_id from public.campaigns where id='${campaign.id}'`);
+    expect((await publish(s, s.owner, campaign.id, { accept_liability: true }, key)).status).toBe(
+      202,
+    );
+    const before = await queryTestDb(
+      `select meta_campaign_id from public.campaigns where id='${campaign.id}'`,
+    );
     const replay = await publish(s, s.owner, campaign.id, { accept_liability: true }, key);
     expect(replay.status).toBe(202);
     expect(replay.headers.get('idempotent-replayed')).toBe('true');
-    const after = await queryTestDb(`select meta_campaign_id from public.campaigns where id='${campaign.id}'`);
+    const after = await queryTestDb(
+      `select meta_campaign_id from public.campaigns where id='${campaign.id}'`,
+    );
     expect(after).toEqual(before);
   });
 

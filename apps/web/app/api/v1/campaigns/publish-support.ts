@@ -3,10 +3,13 @@
 // n'est une donnée du produit. Aucun appel à Meta : la file de tâches est remplacée par un enregistreur.
 import { randomUUID } from 'node:crypto';
 import type { PublishCampaignDeps } from '@pubeka/core';
-import { testServiceClient, type SeededWorkspace } from '@pubeka/testing';
+import { queryTestDb, testServiceClient, type SeededWorkspace } from '@pubeka/testing';
 import { expect } from 'vitest';
 import { call, connectWorkspace } from '../meta/int-support';
+import { POST as pauseRoute } from '../workspaces/[workspaceId]/campaigns/[campaignId]/pause/route';
 import { POST as publishRoute } from '../workspaces/[workspaceId]/campaigns/[campaignId]/publish/route';
+import { POST as relaunchRoute } from '../workspaces/[workspaceId]/campaigns/[campaignId]/relaunch/route';
+import { POST as resumeRoute } from '../workspaces/[workspaceId]/campaigns/[campaignId]/resume/route';
 import {
   campaignParams,
   create,
@@ -82,7 +85,11 @@ export interface PublishableCampaign {
 /** Connexion complète par la route (fausse Meta) : jeton chiffré, compte et Page réels de la base. */
 async function connectedAccount(s: SeededWorkspace): Promise<void> {
   const svc = testServiceClient();
-  const have = await svc.from('meta_connections').select('id').eq('workspace_id', s.workspace.id).limit(1);
+  const have = await svc
+    .from('meta_connections')
+    .select('id')
+    .eq('workspace_id', s.workspace.id)
+    .limit(1);
   if ((have.data ?? []).length === 0) {
     const res = await connectWorkspace(s);
     expect([302, 307]).toContain(res.status);
@@ -92,7 +99,12 @@ async function connectedAccount(s: SeededWorkspace): Promise<void> {
 async function connectedPage(s: SeededWorkspace): Promise<string> {
   await connectedAccount(s);
   const svc = testServiceClient();
-  const page = await svc.from('pages').select('id').eq('workspace_id', s.workspace.id).limit(1).single();
+  const page = await svc
+    .from('pages')
+    .select('id')
+    .eq('workspace_id', s.workspace.id)
+    .limit(1)
+    .single();
   expect(page.error).toBeNull();
   const id = page.data?.id ?? '';
   const ok = await svc
@@ -103,7 +115,9 @@ async function connectedPage(s: SeededWorkspace): Promise<string> {
   return id;
 }
 
-async function connectedAdAccount(s: SeededWorkspace): Promise<{ adAccountId: string; connectionId: string }> {
+async function connectedAdAccount(
+  s: SeededWorkspace,
+): Promise<{ adAccountId: string; connectionId: string }> {
   await connectedAccount(s);
   const svc = testServiceClient();
   const account = await svc
@@ -114,7 +128,10 @@ async function connectedAdAccount(s: SeededWorkspace): Promise<{ adAccountId: st
     .single();
   expect(account.error).toBeNull();
   const id = account.data?.id ?? '';
-  const ok = await svc.from('ad_accounts').update({ has_payment_method: true, currency: 'USD', is_active: true }).eq('id', id);
+  const ok = await svc
+    .from('ad_accounts')
+    .update({ has_payment_method: true, currency: 'USD', is_active: true })
+    .eq('id', id);
   expect(ok.error).toBeNull();
   return { adAccountId: id, connectionId: account.data?.meta_connection_id ?? '' };
 }
@@ -185,7 +202,9 @@ export async function publishableCampaign(
 
   const analysisId = await seedReadyAnalysis(s, pageId);
   const path = `${s.workspace.id}/${randomUUID()}.jpg`;
-  const stored = await svc.storage.from('sources').upload(path, PHOTO, { contentType: 'image/jpeg' });
+  const stored = await svc.storage
+    .from('sources')
+    .upload(path, PHOTO, { contentType: 'image/jpeg' });
   expect(stored.error).toBeNull();
   const source = await svc
     .from('sources')
@@ -194,7 +213,10 @@ export async function publishableCampaign(
     .single();
   expect(source.error).toBeNull();
   const sourceId = source.data?.id ?? '';
-  const linked = await svc.from('analyses').update({ source_ids: [sourceId] }).eq('id', analysisId);
+  const linked = await svc
+    .from('analyses')
+    .update({ source_ids: [sourceId] })
+    .eq('id', analysisId);
   expect(linked.error).toBeNull();
 
   const created = await create(s, s.owner, {
@@ -258,3 +280,41 @@ export async function campaignRow(campaignId: string) {
   expect(r.error).toBeNull();
   return r.data;
 }
+
+/** Campagne publiée jusqu'au bout (fausse Meta, tâche inline) : « envoyée à Meta », prête à être mise en pause. */
+export async function publishedCampaign(s: SeededWorkspace): Promise<PublishableCampaign> {
+  const made = await publishableCampaign(s, { connected: true });
+  const res = await publish(s, s.owner, made.campaign.id, { accept_liability: true });
+  expect(res.status).toBe(202);
+  expect((await campaignRow(made.campaign.id))?.status).toBe('in_review');
+  return made;
+}
+
+/** Pose un statut sans passer par la garde (réplica = déclencheurs coupés), pour atteindre un état de test. */
+export async function forceStatus(campaignId: string, status: string): Promise<void> {
+  await queryTestDb(
+    `set session_replication_role = replica; update public.campaigns set status='${status}' where id='${campaignId}'; set session_replication_role = origin;`,
+  );
+}
+
+function control(
+  route: typeof pauseRoute,
+  action: string,
+  s: SeededWorkspace,
+  who: Who,
+  campaignId: string,
+  body?: unknown,
+): Promise<Response> {
+  const id = s.workspace.id;
+  return route(
+    call('POST', `/workspaces/${id}/campaigns/${campaignId}/${action}`, who.headers, body),
+    campaignParams(id, campaignId),
+  );
+}
+
+export const pause = (s: SeededWorkspace, who: Who, campaignId: string) =>
+  control(pauseRoute, 'pause', s, who, campaignId);
+export const resume = (s: SeededWorkspace, who: Who, campaignId: string) =>
+  control(resumeRoute, 'resume', s, who, campaignId);
+export const relaunch = (s: SeededWorkspace, who: Who, campaignId: string, body: unknown) =>
+  control(relaunchRoute, 'relaunch', s, who, campaignId, body);
