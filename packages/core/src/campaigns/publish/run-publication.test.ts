@@ -139,15 +139,13 @@ describe('runPublication — succès', () => {
     // Le compte devient un compte en naira APRÈS la route (la tâche relit tout) avec un taux frais.
     const account = t.w.db.rows('ad_accounts')[0];
     if (account !== undefined) account.currency = 'NGN';
-    t.w.db
-      .rows('exchange_rates')
-      .push({
-        base: 'USD',
-        quote: 'NGN',
-        rate: 1500,
-        source: 'manual',
-        fetched_at: '2026-10-12T08:00:00Z',
-      });
+    t.w.db.rows('exchange_rates').push({
+      base: 'USD',
+      quote: 'NGN',
+      rate: 1500,
+      source: 'manual',
+      fetched_at: '2026-10-12T08:00:00Z',
+    });
     await t.run();
     expect([...t.fake.campaigns.values()][0]?.spec.account).toEqual({ code: 'NGN', perUsd: 1500 });
   });
