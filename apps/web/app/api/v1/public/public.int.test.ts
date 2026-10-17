@@ -1,8 +1,7 @@
 // Routes /api/v1/public/* contre la pile Supabase locale. Sans connexion : les cas 401, 404
 // et 403 sont sans objet ; leurs cas propres sont la maintenance et la limite par IP.
-import { describeRoute, na, setMaintenance, testServiceClient } from '@pubeka/testing';
+import { describeRoute, na, setMaintenance } from '@pubeka/testing';
 import { afterAll, expect } from 'vitest';
-import { GET as getFxRates } from './fx-rates/route';
 import { GET as getMaintenance } from './maintenance/route';
 import { GET as getPlans } from './plans/route';
 
@@ -94,42 +93,5 @@ describeRoute('listPlans', {
         await setMaintenance(false);
       }
     },
-  },
-});
-
-describeRoute('getFxRates', {
-  unauthenticated: na('route publique : aucune session demandée'),
-  otherWorkspace: na('route publique : aucun espace'),
-  forbiddenRole: na('route publique : aucun rôle'),
-  invalidBody: na('GET sans corps ni paramètre'),
-  success: async () => {
-    const svc = testServiceClient();
-    await svc.from('exchange_rates').insert([
-      {
-        base: 'USD',
-        quote: 'XAF',
-        rate: 600,
-        source: 'manual',
-        fetched_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        base: 'USD',
-        quote: 'XAF',
-        rate: 605.5,
-        source: 'saspay',
-        fetched_at: new Date().toISOString(),
-      },
-    ]);
-    const res = await getFxRates(call('fx-rates'));
-    expect(res.status).toBe(200);
-    const { data } = (await res.json()) as {
-      data: { base: string; quote: string; rate: number }[];
-    };
-    expect(data.find((r) => r.quote === 'XAF')).toMatchObject({ rate: 605.5, source: 'saspay' });
-    for (const r of data) {
-      expect(r.base).toBe('USD');
-      expect(['XAF', 'XOF']).toContain(r.quote);
-      expect(r.rate).toBeGreaterThan(0);
-    }
   },
 });

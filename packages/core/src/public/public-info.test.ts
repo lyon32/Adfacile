@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FakeClient } from '../fake-client.test-helper';
-import { getMaintenance, listFxRates, listPlans } from './public-info';
+import { getMaintenance, listPlans } from './public-info';
 
 const now = (): Date => new Date('2026-10-12T09:00:00Z');
 const ctx = (svc: FakeClient) => ({ requestId: 'req_TEST', svc: svc.asService(), now });
@@ -77,41 +77,5 @@ describe('listPlans', () => {
   it('code de formule inconnu → internal_error', async () => {
     const svc = new FakeClient().reply({ data: [{ code: 'gold', features: {} }], error: null });
     await expect(listPlans(ctx(svc))).rejects.toMatchObject({ code: 'internal_error' });
-  });
-});
-
-describe('listFxRates', () => {
-  it('dernier taux de chaque monnaie, monnaie sans taux omise', async () => {
-    const svc = new FakeClient().reply(
-      {
-        data: [
-          {
-            quote: 'XAF',
-            rate: 605.1234,
-            source: 'saspay',
-            fetched_at: '2026-10-12T06:00:00+00:00',
-          },
-        ],
-        error: null,
-      },
-      { data: [], error: null },
-    );
-    await expect(listFxRates(ctx(svc))).resolves.toEqual([
-      {
-        base: 'USD',
-        quote: 'XAF',
-        rate: 605.1234,
-        source: 'saspay',
-        fetched_at: '2026-10-12T06:00:00.000Z',
-      },
-    ]);
-  });
-
-  it('source inconnue → internal_error', async () => {
-    const svc = new FakeClient().reply({
-      data: [{ quote: 'XAF', rate: 1, source: 'autre', fetched_at: '2026-10-12T06:00:00Z' }],
-      error: null,
-    });
-    await expect(listFxRates(ctx(svc))).rejects.toMatchObject({ code: 'internal_error' });
   });
 });

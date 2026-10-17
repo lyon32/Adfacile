@@ -117,7 +117,7 @@ pubeka/                                  ← ce dépôt (Adfacile), renommé plu
 │     │  │  └─ references/
 │     │  │
 │     │  └─ api/v1/                      un dossier = un chemin d'openapi.yaml
-│     │     ├─ public/{maintenance,plans,fx-rates}/route.ts
+│     │     ├─ public/{maintenance,plans}/route.ts
 │     │     ├─ me/route.ts · me/export/route.ts
 │     │     ├─ workspaces/route.ts
 │     │     ├─ workspaces/[workspaceId]/

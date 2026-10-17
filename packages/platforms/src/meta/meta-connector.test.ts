@@ -122,9 +122,22 @@ describe('MetaConnector — configuration', () => {
 
   it('refuse de démarrer sans hôtes de médias ni taux de change (obligatoires)', () => {
     expect(() => connecteur(undefined, { allowedMediaHosts: [] })).toThrow(AppError);
+    // Un taux fourni doit être valide; absent, il n'est pas inventé (connexion seule, voir le test suivant).
     expect(() => connecteur(undefined, { xafPerUsd: 0 })).toThrow(AppError);
-    // @ts-expect-error les deux paramètres sont obligatoires
+    // @ts-expect-error les hôtes de médias sont obligatoires
     expect(() => new MetaConnector({ appId: APP_ID, appSecret: 's', now: NOW })).toThrow(AppError);
+  });
+
+  it('S15b : sans taux de change, le connecteur sert à la connexion (comptes, Pages, bilan) mais refuse de créer ou modifier une campagne', async () => {
+    const { graph, meta } = connecteur(() => ({ data: [] }), { xafPerUsd: undefined });
+    await expect(meta.listAdAccounts(TOKEN)).resolves.toBeDefined();
+    const created = await meta.createCampaign(TOKEN, CONTRACT_SPEC).catch((e: unknown) => e);
+    expect(created).toBeInstanceOf(AppError);
+    expect(created).toMatchObject({ code: 'internal_error' });
+    const updated = await meta.updateCampaign(TOKEN, REFS, { name: 'N' }).catch((e: unknown) => e);
+    expect(updated).toMatchObject({ code: 'internal_error' });
+    // Aucun appel d'écriture n'est parti vers Meta.
+    expect(graph.calls.filter((c) => c.method === 'POST')).toHaveLength(0);
   });
 
   it('transmet les hôtes de médias à la création : un média hors liste est refusé', async () => {

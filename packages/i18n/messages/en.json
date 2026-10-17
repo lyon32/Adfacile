@@ -770,7 +770,8 @@
           "budget": "Budget over {days, plural, one {# day} other {# days}}",
           "note": "You pay this amount to Meta, excluding any fees from your bank or card.",
           "fx_missing": "The exchange rate is not available: the cost is shown in dollars only.",
-          "incomplete": "Enter a budget and dates to see the cost."
+          "incomplete": "Enter a budget and dates to see the cost.",
+          "attribution": "Rates By Exchange Rate API"
         },
         "actions": {
           "edit": "Edit",

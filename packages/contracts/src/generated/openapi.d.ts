@@ -38,23 +38,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/public/fx-rates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Taux de change USD → monnaie locale en vigueur */
-        get: operations["getFxRates"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/me": {
         parameters: {
             query?: never;
@@ -2585,30 +2568,6 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["Plan"][];
-                    };
-                };
-            };
-            429: components["responses"]["TooManyRequests"];
-            503: components["responses"]["ServiceUnavailable"];
-        };
-    };
-    getFxRates: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["FxRate"][];
                     };
                 };
             };
