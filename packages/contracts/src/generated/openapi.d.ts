@@ -573,7 +573,7 @@ export interface paths {
         };
         /**
          * Détail d'une campagne
-         * @description Le coût (`cost`) est recalculé à chaque lecture avec la TVA du pays et le taux de change en vigueur.
+         * @description Le coût (`cost`) est recalculé à chaque lecture avec le taux de change en vigueur (sans TVA : retirée pour le moment, décision du 17/10/2026).
          */
         get: operations["getCampaign"];
         put?: never;
@@ -1902,8 +1902,6 @@ export interface components {
             /** @description Budget par jour en centimes de dollar (la valeur qui fait foi) ; l'équivalent en FCFA est dans cost.daily */
             daily_budget_usd_cents?: number | null;
             cost: components["schemas"]["CampaignCost"];
-            /** @description Taux de TVA enregistré lors de la dernière écriture (fraction : 0,1925 = 19,25 %) ; null si la TVA du pays n'est pas configurée. */
-            vat_rate?: number | null;
             /** Format: date */
             start_date?: string | null;
             /** Format: date */
@@ -1938,27 +1936,23 @@ export interface components {
             advantage_plus?: boolean;
         };
         /**
-         * @description Coût estimé de la campagne : budget par jour × nombre de jours (début et fin inclus) + TVA du pays. Tout est calculé par
-         *     le serveur, en entiers (centimes de dollar, FCFA). Aucune TVA ni aucun taux de change n'est inventé : si la TVA du
-         *     pays n'est pas configurée dans l'administration, `status` vaut `vat_not_configured` et les totaux sont `null`.
+         * @description Coût estimé de la campagne : budget par jour × nombre de jours (début et fin inclus). Tout est calculé par le
+         *     serveur, en entiers (centimes de dollar, unités de la monnaie locale). Aucune TVA (retirée pour le moment, décision du
+         *     17/10/2026, à réactiver sur décision) et aucun taux de change inventé : sans taux de change valide, `status` vaut
+         *     `fx_not_available` et seul le dollar est donné (`total` et `daily` sont `null`).
          */
         CampaignCost: {
             /**
-             * @description ok : tout est calculé ; incomplete : budget ou dates manquants ; vat_not_configured : pas de TVA connue pour le pays ; fx_not_available : pas de taux de change.
+             * @description ok : tout est calculé ; incomplete : budget ou dates manquants ; fx_not_available : pas de taux de change valide.
              * @enum {string}
              */
-            status: "ok" | "incomplete" | "vat_not_configured" | "fx_not_available";
-            /** @description Pays dont la TVA est appliquée (pays de facturation du compte publicitaire, sinon pays du propriétaire). */
-            vat_country?: string | null;
-            vat_rate?: number | null;
+            status: "ok" | "incomplete" | "fx_not_available";
             days?: number | null;
-            /** @description Budget total hors TVA */
+            /** @description Coût total en centimes de dollar (budget par jour × jours, sans TVA) */
             budget_usd_cents?: number | null;
-            vat_usd_cents?: number | null;
-            total_usd_cents?: number | null;
-            /** @description Total TVA comprise en FCFA et en dollars */
+            /** @description Coût total en monnaie locale et en dollars */
             total?: components["schemas"]["Money"] | null;
-            /** @description Budget par jour (hors TVA) en FCFA et en dollars */
+            /** @description Budget par jour en monnaie locale et en dollars */
             daily?: components["schemas"]["Money"] | null;
             fx?: components["schemas"]["FxRate"] | null;
         };
@@ -2011,7 +2005,7 @@ export interface components {
             /** Format: date-time */
             created_at?: string;
         };
-        /** @description Sortie validée du Stratège (docs/agents/02-stratege-campagne.md §6), après contrôle R3 par le code. Le coût en FCFA et la TVA ne viennent jamais de l'agent. */
+        /** @description Sortie validée du Stratège (docs/agents/02-stratege-campagne.md §6), après contrôle R3 par le code. Le coût en monnaie locale ne vient jamais de l'agent. */
         CampaignProposal: {
             /** @enum {string} */
             objective: "OUTCOME_ENGAGEMENT" | "OUTCOME_TRAFFIC" | "OUTCOME_AWARENESS" | "OUTCOME_SALES";

@@ -93,7 +93,7 @@
     "save_failed": "We could not save right now. Try again in a moment.",
     "country": {
       "title": "Where do you publish from?",
-      "body": "Pubeka sets the time, the currency and the VAT for your country.",
+      "body": "Pubeka sets the time and the currency for your country.",
       "country": "Country",
       "country_placeholder": "Choose your country",
       "city": "City",
@@ -766,15 +766,11 @@
         "days": "{count, plural, one {# day} other {# days}}",
         "cost": {
           "title": "Estimated cost",
-          "total": "Total including VAT",
+          "total": "Total cost",
           "budget": "Budget over {days, plural, one {# day} other {# days}}",
-          "vat": "VAT {rate} ({country})",
           "note": "You pay this amount to Meta, excluding any fees from your bank or card.",
-          "vat_missing_title": "VAT not configured",
-          "vat_missing_body": "VAT for your country is not configured yet, so the total cost cannot be calculated for now. The budget excluding VAT is shown.",
           "fx_missing": "The exchange rate is not available: the cost is shown in dollars only.",
-          "incomplete": "Enter a budget and dates to see the cost.",
-          "budget_only": "Budget excluding VAT"
+          "incomplete": "Enter a budget and dates to see the cost."
         },
         "actions": {
           "edit": "Edit",

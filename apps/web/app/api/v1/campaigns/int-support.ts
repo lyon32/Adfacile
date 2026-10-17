@@ -1,4 +1,4 @@
-// Aide des tests d'intégration « campagnes » : Page, analyse prête, TVA et change de TEST, appels de route.
+// Aide des tests d'intégration « campagnes » : Page, analyse prête et change de TEST, appels de route.
 // Les taux écrits ici sont des valeurs de test dans la base locale ; le produit n'en contient aucun.
 import { randomUUID } from 'node:crypto';
 import { queryTestDb, testServiceClient, type SeededWorkspace } from '@pubeka/testing';
@@ -17,14 +17,6 @@ export const campaignParams = (workspaceId: string, campaignId: string) => ({
 });
 
 type Who = SeededWorkspace['owner'];
-
-/** Taux de TVA d'ESSAI pour un pays (valeur de test, idempotent). */
-export async function ensureTestVat(country: string, rate: number): Promise<void> {
-  const r = await testServiceClient()
-    .from('vat_rates')
-    .upsert({ country_code: country, rate, valid_from: '2020-01-01' });
-  expect(r.error).toBeNull();
-}
 
 /** Au moins un taux de change existe (valeur de test, ancienne : les autres tests posent des taux plus récents). */
 export async function ensureTestFx(): Promise<void> {
@@ -145,19 +137,14 @@ export interface CampaignBody {
   daily_budget_usd_cents: number | null;
   start_date: string | null;
   end_date: string | null;
-  vat_rate: number | null;
   copy: Record<string, unknown>;
   targeting: Record<string, unknown>;
   geo: Record<string, unknown>;
   tracking: { pixel_id: string } | null;
   cost: {
     status: string;
-    vat_country: string | null;
-    vat_rate: number | null;
     days: number | null;
     budget_usd_cents: number | null;
-    vat_usd_cents: number | null;
-    total_usd_cents: number | null;
     total: { xaf: number; usd_cents: number; currency: string } | null;
     daily: { xaf: number; usd_cents: number } | null;
   };

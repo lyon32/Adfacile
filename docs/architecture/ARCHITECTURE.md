@@ -286,10 +286,10 @@ Détail chiffré : [plans-et-credits.md](../produit/plans-et-credits.md).
 - **Essai gratuit** : 1 campagne, 3 visuels, 7 jours, sans moyen de paiement ; **un essai par compte** (détection des doublons plus tard) (Q51).
 - **Parrainage** : parrain et filleul récompensés **quand le filleul paie** (Q74).
 
-### 9.3 Monnaie et TVA
+### 9.3 Monnaie et TVA (retirée)
 - **Taux de change en temps réel** : SasPay (`/exchange-rates/`) en principal, source gratuite en secours ; mis en cache (Q66).
 - Montants affichés **en FCFA, dollars en petit dessous**.
-- **TVA de Meta par pays** dans une table modifiable depuis l'administration ; calcul `budget + TVA = total`.
+- **TVA** : TVA retirée pour le moment (décision du 17/10/2026), à réactiver sur décision. Le coût est `budget par jour × jours` ; la table `vat_rates` (modifiable depuis l'administration) et `ad_accounts.vat_country` restent en base, dormantes (aucune migration destructive).
 
 ---
 

@@ -1,4 +1,4 @@
-// Monde en mémoire pour les tests unitaires des campagnes : un espace, son propriétaire, une Page, une analyse prête, la TVA et
+// Monde en mémoire pour les tests unitaires des campagnes : un espace, son propriétaire, une Page, une analyse prête et
 // le change D'ESSAI (valeurs de test, pas des données du produit). Les contraintes de la vraie base sont prouvées par
 // PGlite et par les tests d'intégration.
 import { MemoryDb } from '../analysis/memory-db.test-helper';
@@ -25,7 +25,6 @@ export function world(
   db.rows('workspaces').push({ id: W, owner_id: OWNER });
   db.rows('profiles').push({ id: OWNER, country_code: 'CM' });
   db.rows('countries').push({ code: 'CM', currency: 'XAF' });
-  db.rows('vat_rates').push({ country_code: 'CM', rate: 0.1925, valid_from: '2020-01-01' });
   db.rows('exchange_rates').push({
     base: 'USD',
     quote: 'XAF',

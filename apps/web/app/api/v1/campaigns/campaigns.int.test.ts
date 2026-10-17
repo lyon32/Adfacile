@@ -1,5 +1,5 @@
 // Routes « campagnes » contre la pile Supabase locale (vraie base, vraie RLS) : brouillon, lecture, modification avec
-// verrou optimiste (EC-TEAM-08), coût et TVA. Les 5 cas de chaque route (API_SPEC §15) + les cas propres.
+// verrou optimiste (EC-TEAM-08), coût (sans TVA). Les 5 cas de chaque route (API_SPEC §15) + les cas propres.
 import {
   describeRoute,
   na,
@@ -11,7 +11,6 @@ import { beforeAll, expect } from 'vitest';
 import {
   create,
   ensureTestFx,
-  ensureTestVat,
   inDays,
   json,
   newDraft,
@@ -27,7 +26,6 @@ let s: SeededWorkspace;
 beforeAll(async () => {
   s = await seedWorkspace();
   await ensureTestFx();
-  await ensureTestVat('CM', 0.1925); // valeur d'essai
 });
 
 const asBody = async (res: Response): Promise<CampaignBody> =>
@@ -218,7 +216,7 @@ describeRoute('updateCampaign', {
       daily_budget_usd_cents: 500,
     });
     expect(updated.targeting).toMatchObject({ age_min: 18, age_max: 45 });
-    // Coût : 7 jours × 500 centimes, TVA d'essai du Cameroun, change lu en base.
+    // Coût : 7 jours × 500 centimes = 3 500 centimes, change lu en base, aucune TVA (retirée le 17/10/2026).
     const fx = (
       await testServiceClient()
         .from('exchange_rates')
@@ -230,15 +228,12 @@ describeRoute('updateCampaign', {
     ).data?.rate;
     expect(updated.cost).toMatchObject({
       status: 'ok',
-      vat_country: 'CM',
-      vat_rate: 0.1925,
       days: 7,
       budget_usd_cents: 3500,
-      vat_usd_cents: 674,
-      total_usd_cents: 4174,
     });
-    expect(updated.cost.total?.xaf).toBe(Math.round((4174 * (fx ?? 0)) / 100));
-    expect(updated.vat_rate).toBe(0.1925);
+    expect(updated.cost.total?.xaf).toBe(Math.round((3500 * (fx ?? 0)) / 100));
+    expect(updated.cost).not.toHaveProperty('vat_rate');
+    expect(updated).not.toHaveProperty('vat_rate');
     // Une seconde modification repart de la version rendue.
     const second = await patch(s, s.owner, draft.id, {
       version: 2,
@@ -283,7 +278,7 @@ describeRoute('updateCampaign', {
     expect((await patch(s, s.owner, draft.id, { name: 'sans version' })).status).toBe(400);
     expect((await patch(s, s.owner, draft.id, { version: 0, name: 'x' })).status).toBe(400);
     expect((await patch(s, s.owner, draft.id, { version: 1, status: 'active' })).status).toBe(400);
-    expect((await patch(s, s.owner, draft.id, { version: 1, vat_rate: 0 })).status).toBe(400);
+    expect((await patch(s, s.owner, draft.id, { version: 1, vat_rate: 0 })).status).toBe(400); // plus aucun champ de TVA dans le contrat
     expect(
       (await patch(s, s.owner, draft.id, { version: 1, objective: 'OUTCOME_LEADS' })).status,
     ).toBe(400);
@@ -450,10 +445,10 @@ describeRoute('updateCampaign', {
       expect(good.status).toBe(200);
       expect((await asBody(good)).tracking).toEqual({ pixel_id: '123456789012' });
     },
-    'TVA du pays non configurée : statut explicite, totaux vides, aucune TVA inventée':
+    'pays du propriétaire inconnu : taux de change indisponible, le coût reste en dollars, rien n’est inventé':
       async () => {
         const other = await seedWorkspace();
-        await setOwnerCountry(other, 'GA'); // aucun taux de TVA n'est enregistré pour ce pays
+        await setOwnerCountry(other, null);
         const draft = await newDraft(other);
         const res = await patch(other, other.owner, draft.id, {
           version: 1,
@@ -464,21 +459,13 @@ describeRoute('updateCampaign', {
         expect(res.status).toBe(200);
         const body = await asBody(res);
         expect(body.cost).toMatchObject({
-          status: 'vat_not_configured',
-          vat_country: 'GA',
-          vat_rate: null,
+          status: 'fx_not_available',
+          days: 7,
           budget_usd_cents: 3500,
-          total_usd_cents: null,
           total: null,
+          daily: null,
         });
-        expect(body.vat_rate).toBeNull();
       },
-    'pays du propriétaire inconnu : TVA non configurée, pays null': async () => {
-      const other = await seedWorkspace();
-      await setOwnerCountry(other, null);
-      const draft = await newDraft(other);
-      expect((await asBody(await read(other, other.owner, draft.id))).cost.vat_country).toBeNull();
-    },
     'campagne déjà publiée (statut ≠ brouillon) : 409 campaign_not_editable': async () => {
       const draft = await newDraft(s);
       const moved = await testServiceClient()

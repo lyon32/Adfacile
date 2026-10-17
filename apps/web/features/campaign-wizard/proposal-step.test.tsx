@@ -30,24 +30,19 @@ afterEach(() => {
 
 const COST_OK = {
   status: 'ok',
-  vat_country: 'CM',
-  vat_rate: 0.1925,
   days: 7,
   budget_usd_cents: 2800,
-  vat_usd_cents: 539,
-  total_usd_cents: 3339,
-  total: { xaf: 20034, usd_cents: 3339, currency: 'XAF' },
+  total: { xaf: 16800, usd_cents: 2800, currency: 'XAF' },
   daily: { xaf: 2400, usd_cents: 400, currency: 'XAF' },
   fx: { rate: 600 },
 };
-const COST_NO_VAT = {
-  status: 'vat_not_configured',
-  vat_country: 'GA',
+const COST_NO_FX = {
+  status: 'fx_not_available',
   days: 7,
   budget_usd_cents: 2800,
   total: null,
-  daily: { xaf: 2400, usd_cents: 400, currency: 'XAF' },
-  fx: { rate: 600 },
+  daily: null,
+  fx: null,
 };
 
 function body(over: Record<string, unknown> = {}) {
@@ -305,7 +300,7 @@ describe('étape Proposition', () => {
       await Promise.resolve();
     });
     await screen.findByText('Coût estimé');
-    expect(screen.getByText(/20\s?034/)).toBeTruthy();
+    expect(screen.getByText(/16\s?800/)).toBeTruthy();
     const generate = calls.find((c) => c.method === 'POST' && c.path.endsWith('/proposals'));
     expect(generate?.headers.accept).toBe('text/event-stream');
     expect(generate?.headers['idempotency-key']).toMatch(/^[0-9a-f-]{36}$/);
@@ -451,16 +446,16 @@ describe('étape Proposition', () => {
     expect(window.sessionStorage.length).toBe(0);
   });
 
-  it('TVA non configurée : le dit clairement, aucun total inventé, le budget hors TVA reste visible', async () => {
+  it('taux de change indisponible : le dit clairement, le coût reste en dollars, aucune monnaie locale inventée', async () => {
     stubApi({
       [CAMPAIGN_GET]: json(campaign()),
-      [PROPOSALS]: json({ data: [proposal(1, COST_NO_VAT)] }),
+      [PROPOSALS]: json({ data: [proposal(1, COST_NO_FX)] }),
     });
     mount();
-    expect(await screen.findByText('TVA non configurée')).toBeTruthy();
-    expect(screen.getByText(/ne peut pas être calculé/)).toBeTruthy();
-    expect(screen.queryByText('Total TVA comprise')).toBeNull();
-    expect(screen.getByText(/Budget hors TVA/)).toBeTruthy();
+    expect(await screen.findByText(/taux de change n’est pas disponible/)).toBeTruthy();
+    expect(screen.queryByText('Coût total')).toBeNull();
+    expect(screen.queryByText(/FCFA/)).toBeNull();
+    expect(screen.getAllByText(/28,00/).length).toBeGreaterThan(0);
   });
 
   it('DÉCISION 16/10/2026 : aucune estimation de portée n’est affichée (elle viendra de Meta avec la publication)', async () => {
@@ -484,11 +479,12 @@ describe('étape Proposition', () => {
     await screen.findByText('Messages ou interactions');
     expect(screen.getByText('Vos clients peuvent vous écrire directement.')).toBeTruthy();
     expect(screen.getByText(/Du 13 octobre au 19 octobre/)).toBeTruthy();
-    expect(screen.getByText('Total TVA comprise')).toBeTruthy();
-    expect(screen.getByText(/20\s?034\s?FCFA/)).toBeTruthy();
-    expect(screen.getByText(/33,39/)).toBeTruthy();
+    // TVA retirée pour le moment (décision du 17/10/2026) : le coût est le budget, rien n'est ajouté.
+    expect(screen.getByText('Coût total')).toBeTruthy();
+    expect(screen.getByText(/16\s?800\s?FCFA/)).toBeTruthy();
+    expect(screen.getAllByText(/28,00/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/TVA/)).toBeNull();
     expect(screen.getByText('WhatsApp non lié.')).toBeTruthy();
-    expect(screen.getByText(/TVA 19,25\s?%/)).toBeTruthy();
     // Une seule proposition : pas d'onglets.
     expect(screen.queryByRole('tablist')).toBeNull();
   });

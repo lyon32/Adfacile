@@ -32,7 +32,6 @@ export interface CampaignRow {
   geo: unknown;
   targeting: unknown;
   daily_budget_usd_cents: number | null;
-  vat_rate: number | null;
   fx_rate_xaf: number | null;
   start_date: string | null;
   end_date: string | null;
@@ -109,7 +108,6 @@ export function toCampaignView(row: CampaignRow, costContext: CostContext): Camp
     dailyBudgetUsdCents: row.daily_budget_usd_cents,
     startDate: row.start_date,
     endDate: row.end_date,
-    vat: costContext.vat,
     fx: costContext.fx,
   });
   return {
@@ -126,7 +124,6 @@ export function toCampaignView(row: CampaignRow, costContext: CostContext): Camp
     targeting: compact(readJson(targetingSchema, row.targeting, {})),
     daily_budget_usd_cents: row.daily_budget_usd_cents,
     cost,
-    vat_rate: row.vat_rate,
     start_date: row.start_date,
     end_date: row.end_date,
     copy: compact(readJson(copySchema, row.copy, {})),
