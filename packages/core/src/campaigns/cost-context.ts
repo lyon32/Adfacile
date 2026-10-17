@@ -5,7 +5,8 @@
 // restent en base mais ne sont plus lues.
 import { AppError } from '@pubeka/contracts';
 import type { MemberCtx } from '../context';
-import type { CostFxInput, FcfaCurrency } from './cost';
+import { isKnownCurrency } from '@pubeka/shared';
+import type { CostFxInput, CostFxSource } from './cost';
 
 export interface CostContext {
   fx: CostFxInput | null;
@@ -17,8 +18,11 @@ function fail(error: unknown): AppError {
   return new AppError('internal_error', { cause: error });
 }
 
-function isCurrency(value: unknown): value is FcfaCurrency {
-  return value === 'XAF' || value === 'XOF';
+const FX_SOURCES: readonly CostFxSource[] = ['saspay', 'fallback', 'manual', 'exchangerate-api'];
+
+/** Monnaie locale prise en charge (le dollar américain est la base, jamais une monnaie locale). */
+function isLocalCurrency(value: unknown): value is string {
+  return typeof value === 'string' && value !== 'USD' && isKnownCurrency(value);
 }
 
 async function billingCountry(scope: Scope): Promise<string | null> {
@@ -52,7 +56,7 @@ export async function loadCostContext(scope: Scope): Promise<CostContext> {
   if (countryRow.error !== null) throw fail(countryRow.error);
   const currency = countryRow.data?.currency ?? null;
   // Pays absent de la table (ou monnaie non prise en charge) : change inconnu, rien n'est supposé.
-  if (!isCurrency(currency)) return { fx: null };
+  if (!isLocalCurrency(currency)) return { fx: null };
 
   const fxRows = await svc
     .from('exchange_rates')
@@ -65,9 +69,7 @@ export async function loadCostContext(scope: Scope): Promise<CostContext> {
 
   const fx = fxRows.data[0];
   const source =
-    fx === undefined
-      ? undefined
-      : (['saspay', 'fallback', 'manual'] as const).find((s) => s === fx.source);
+    fx === undefined ? undefined : FX_SOURCES.find((candidate) => candidate === fx.source);
   if (fx !== undefined && source === undefined) throw new AppError('internal_error');
   return {
     fx:

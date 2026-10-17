@@ -1,5 +1,6 @@
 // Corps de PATCH /me : schéma `MeUpdate` d'openapi.yaml, strict (champ inconnu → 400).
 // Les mêmes limites sont des contraintes SQL de `profiles` (SECURITY_NOTES §3.1 règle 2).
+import { AFRICAN_CURRENCIES } from '@pubeka/shared';
 import { z } from 'zod';
 
 export const MeUpdateSchema = z.strictObject({
@@ -15,6 +16,11 @@ export const MeUpdateSchema = z.strictObject({
     .regex(/^[A-Z]{2}$/)
     .optional(),
   city: z.string().max(120).optional(),
-  currency_display: z.enum(['XAF', 'XOF']).optional(),
+  // Code ISO 4217 d'une monnaie d'Afrique prise en charge (la table de @pubeka/shared fait foi).
+  currency_display: z
+    .string()
+    .regex(/^[A-Z]{3}$/)
+    .refine((code) => AFRICAN_CURRENCIES.includes(code))
+    .optional(),
   theme: z.enum(['light', 'dark', 'system']).optional(),
 });

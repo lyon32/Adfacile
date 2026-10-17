@@ -83,6 +83,13 @@ describe('getMe', () => {
     });
   });
 
+  it('la monnaie d’un autre pays d’Afrique est rendue telle quelle (NGN), un code inconnu retombe sur XAF', async () => {
+    const ng = new FakeClient().reply({ data: { ...row, currency_display: 'NGN' }, error: null });
+    expect(await getMe(ctx(ng))).toMatchObject({ currency_display: 'NGN' });
+    const eur = new FakeClient().reply({ data: { ...row, currency_display: 'EUR' }, error: null });
+    expect(await getMe(ctx(eur))).toMatchObject({ currency_display: 'XAF' });
+  });
+
   it('profil absent → not_found', async () => {
     const db = new FakeClient().reply({ data: null, error: null });
     await expect(getMe(ctx(db))).rejects.toMatchObject({ code: 'not_found' });

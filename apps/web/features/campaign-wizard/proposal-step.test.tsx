@@ -32,9 +32,27 @@ const COST_OK = {
   status: 'ok',
   days: 7,
   budget_usd_cents: 2800,
-  total: { xaf: 16800, usd_cents: 2800, currency: 'XAF' },
-  daily: { xaf: 2400, usd_cents: 400, currency: 'XAF' },
-  fx: { rate: 600 },
+  total: { local_minor: 16800, usd_cents: 2800, currency: 'XAF' },
+  daily: { local_minor: 2400, usd_cents: 400, currency: 'XAF' },
+  fx: { rate: 600, quote: 'XAF' },
+};
+// Nigeria : naira, 2 décimales (kobo). Taux d'ESSAI de 1 500 par dollar, déclaré comme tel.
+const COST_NGN = {
+  status: 'ok',
+  days: 7,
+  budget_usd_cents: 2800,
+  total: { local_minor: 4_200_000, usd_cents: 2800, currency: 'NGN' },
+  daily: { local_minor: 600_000, usd_cents: 400, currency: 'NGN' },
+  fx: { rate: 1500, quote: 'NGN' },
+};
+// Tunisie : dinar, 3 décimales (millimes). Taux d'ESSAI de 3,1 par dollar.
+const COST_TND = {
+  status: 'ok',
+  days: 7,
+  budget_usd_cents: 2800,
+  total: { local_minor: 86_800, usd_cents: 2800, currency: 'TND' },
+  daily: { local_minor: 12_400, usd_cents: 400, currency: 'TND' },
+  fx: { rate: 3.1, quote: 'TND' },
 };
 const COST_NO_FX = {
   status: 'fx_not_available',
@@ -458,6 +476,30 @@ describe('étape Proposition', () => {
     expect(screen.getAllByText(/28,00/).length).toBeGreaterThan(0);
   });
 
+  it('S15b : pays non CFA (Nigeria) — coût en naira à 2 décimales, jamais de FCFA', async () => {
+    stubApi({
+      [CAMPAIGN_GET]: json(campaign()),
+      [PROPOSALS]: json({ data: [proposal(1, COST_NGN)] }),
+    });
+    mount();
+    await screen.findByText('Coût total');
+    expect(screen.getByText(/42\s?000,00\s?NGN/)).toBeTruthy(); // 4 200 000 kobo
+    expect(screen.getAllByText(/28,00/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/FCFA/)).toBeNull();
+    expect(screen.getByText(/6\s?000,00\s?NGN par jour/)).toBeTruthy(); // 600 000 kobo
+  });
+
+  it('S15b : pays non CFA (Tunisie) — dinar à 3 décimales', async () => {
+    stubApi({
+      [CAMPAIGN_GET]: json(campaign()),
+      [PROPOSALS]: json({ data: [proposal(1, COST_TND)] }),
+    });
+    mount();
+    await screen.findByText('Coût total');
+    expect(screen.getByText(/86,800\s?TND/)).toBeTruthy(); // 86 800 millimes
+    expect(screen.queryByText(/FCFA/)).toBeNull();
+  });
+
   it('DÉCISION 16/10/2026 : aucune estimation de portée n’est affichée (elle viendra de Meta avec la publication)', async () => {
     stubApi({
       [CAMPAIGN_GET]: json(campaign()),
@@ -671,6 +713,19 @@ describe('modification', () => {
     expect(await screen.findByText('40 caractères au maximum.')).toBeTruthy();
     expect(screen.getByText('Le budget minimum est de 1 $ par jour.')).toBeTruthy();
     expect(calls.some((c) => c.method === 'PATCH')).toBe(false);
+  });
+
+  it('S15b : l’indication du formulaire suit la monnaie du pays (naira à 1 500 par dollar : 5 $ = 7 500,00 NGN)', async () => {
+    stubApi({
+      [CAMPAIGN_GET]: json(
+        chosenCampaign({ version: 3, daily_budget_usd_cents: 500, cost: COST_NGN }),
+      ),
+      [PROPOSALS]: json({ data: [proposal(1, COST_NGN)] }),
+    });
+    mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Modifier' }));
+    fireEvent.change(await screen.findByLabelText('Budget par jour'), { target: { value: '5' } });
+    expect(screen.getByText(/Minimum 1 \$ par jour\. 7\s?500,00\s?NGN environ\./)).toBeTruthy();
   });
 
   it('enregistre seulement ce qui a changé, avec la version lue, puis referme', async () => {

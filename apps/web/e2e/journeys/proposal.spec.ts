@@ -200,7 +200,7 @@ for (const theme of ['light', 'dark'] as const) {
     await checkScreen(page, 'proposition-erreur-flux', info, theme);
   });
 
-  test(`états du coût : taux de change disponible, taux de change indisponible (${theme})`, async ({
+  test(`états du coût : FCFA, naira, taux de change indisponible (${theme})`, async ({
     page,
   }, info) => {
     await reachProposalStart(page, theme);
@@ -215,25 +215,35 @@ for (const theme of ['light', 'dark'] as const) {
     await page.getByRole('button', { name: 'Générer la proposition' }).click();
     await expect(page.getByText('Coût estimé')).toBeVisible({ timeout: 30_000 });
     const real = (await (await listed).json()) as { data: Record<string, unknown>[] };
-    const cost = (status: 'ok' | 'fx_not_available') =>
+    // Taux d'ESSAI (600 FCFA, 1 500 NGN par dollar) : valeurs de test, pas des données du produit.
+    const cost = (status: 'ok' | 'naira' | 'fx_not_available') =>
       status === 'ok'
         ? {
             status: 'ok',
             days: 7,
             budget_usd_cents: 2800,
-            total: { xaf: 16800, usd_cents: 2800, currency: 'XAF' },
-            daily: { xaf: 2400, usd_cents: 400, currency: 'XAF' },
-            fx: { rate: 600 },
+            total: { local_minor: 16800, usd_cents: 2800, currency: 'XAF' },
+            daily: { local_minor: 2400, usd_cents: 400, currency: 'XAF' },
+            fx: { rate: 600, quote: 'XAF' },
           }
-        : {
-            status: 'fx_not_available',
-            days: 7,
-            budget_usd_cents: 2800,
-            total: null,
-            daily: null,
-            fx: null,
-          };
-    for (const status of ['ok', 'fx_not_available'] as const) {
+        : status === 'naira'
+          ? {
+              status: 'ok',
+              days: 7,
+              budget_usd_cents: 2800,
+              total: { local_minor: 4_200_000, usd_cents: 2800, currency: 'NGN' },
+              daily: { local_minor: 600_000, usd_cents: 400, currency: 'NGN' },
+              fx: { rate: 1500, quote: 'NGN' },
+            }
+          : {
+              status: 'fx_not_available',
+              days: 7,
+              budget_usd_cents: 2800,
+              total: null,
+              daily: null,
+              fx: null,
+            };
+    for (const status of ['ok', 'naira', 'fx_not_available'] as const) {
       await page.route('**/api/v1/workspaces/*/campaigns/*/proposals', async (route) => {
         if (route.request().method() !== 'GET') return route.continue();
         return route.fulfill({
@@ -242,11 +252,15 @@ for (const theme of ['light', 'dark'] as const) {
       });
       await page.reload();
       await expect(
-        page.getByText(status === 'ok' ? 'Coût total' : /taux de change n’est pas disponible/),
+        page.getByText(
+          status === 'fx_not_available' ? /taux de change n’est pas disponible/ : 'Coût total',
+        ),
       ).toBeVisible();
+      if (status === 'naira') await expect(page.getByText(/42\s?000,00\s?NGN/)).toBeVisible();
+      if (status === 'ok') await expect(page.getByText(/16\s?800\s?FCFA/)).toBeVisible();
       await checkScreen(
         page,
-        `proposition-cout-${status === 'ok' ? 'change' : 'sans-change'}`,
+        `proposition-cout-${status === 'ok' ? 'fcfa' : status === 'naira' ? 'naira' : 'sans-change'}`,
         info,
         theme,
       );

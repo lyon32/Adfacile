@@ -2,7 +2,8 @@
 // Carte de lecture d'une proposition (APPFLOW §8.3) : fiche à rangées « étiquette / valeur », avec la justification en petit
 // sous chaque choix. Pendant l'écriture du Stratège, les rangées encore vides montrent un emplacement à la hauteur de leur
 // contenu (pas de saut de page) et se remplissent une à une.
-import { formatUsdApprox, formatXaf, cn, type UiLocale } from '@pubeka/ui';
+import { minorUnits } from '@pubeka/shared';
+import { formatLocalMoney, formatUsdApprox, cn, type UiLocale } from '@pubeka/ui';
 import { useLocale, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import type { Display } from './proposal-display';
@@ -113,7 +114,12 @@ export function ProposalCard({
                 amount:
                   d.dailyMoney === null
                     ? formatUsdApprox(d.budgetUsdCents, ui)
-                    : formatXaf(d.dailyMoney.xaf, ui),
+                    : formatLocalMoney(
+                        d.dailyMoney.local_minor,
+                        d.dailyMoney.currency,
+                        minorUnits(d.dailyMoney.currency),
+                        ui,
+                      ),
               })}
             </span>
             {d.dailyMoney === null ? null : (

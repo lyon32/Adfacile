@@ -18,15 +18,18 @@ export const campaignParams = (workspaceId: string, campaignId: string) => ({
 
 type Who = SeededWorkspace['owner'];
 
-/** Au moins un taux de change existe (valeur de test, ancienne : les autres tests posent des taux plus récents). */
-export async function ensureTestFx(): Promise<void> {
+/**
+ * Au moins un taux de change existe pour la monnaie (valeur d'ESSAI, ancienne : les autres tests posent des taux plus
+ * récents). Le taux d'essai par défaut du FCFA est 600 ; ce n'est pas une donnée du produit.
+ */
+export async function ensureTestFx(quote = 'XAF', rate = 600): Promise<void> {
   const svc = testServiceClient();
-  const have = await svc.from('exchange_rates').select('id').eq('quote', 'XAF').limit(1);
+  const have = await svc.from('exchange_rates').select('id').eq('quote', quote).limit(1);
   if ((have.data ?? []).length > 0) return;
   const r = await svc.from('exchange_rates').insert({
     base: 'USD',
-    quote: 'XAF',
-    rate: 600,
+    quote,
+    rate,
     source: 'manual',
     fetched_at: '2026-01-02T00:00:00Z',
   });
@@ -145,8 +148,8 @@ export interface CampaignBody {
     status: string;
     days: number | null;
     budget_usd_cents: number | null;
-    total: { xaf: number; usd_cents: number; currency: string } | null;
-    daily: { xaf: number; usd_cents: number } | null;
+    total: { local_minor: number; usd_cents: number; currency: string } | null;
+    daily: { local_minor: number; usd_cents: number; currency: string } | null;
   };
 }
 

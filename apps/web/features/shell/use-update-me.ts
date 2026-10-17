@@ -23,7 +23,7 @@ export interface MePatch {
   theme?: Theme;
   country_code?: string;
   city?: string;
-  currency_display?: 'XAF' | 'XOF';
+  currency_display?: string;
   first_name?: string;
   last_name?: string;
   phone?: string;

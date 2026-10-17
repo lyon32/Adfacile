@@ -12,7 +12,7 @@ import {
   toggled,
   type Preference,
 } from './notifications-form';
-import { ProfileFormSchema, toPatch, type ProfileFormValues } from './profile-form';
+import { ProfileForm, ProfileFormSchema, toPatch, type ProfileFormValues } from './profile-form';
 import { parseSection } from './sections';
 import { TeamPanel, errorKey, memberLabel } from './team-panel';
 
@@ -63,6 +63,35 @@ describe('profil', () => {
       'name_too_long',
       'phone_invalid',
     ]);
+  });
+
+  it('S15b : la monnaie d’affichage est un code ISO 4217 (NGN accepté), jamais une minuscule ni un code mal formé', () => {
+    expect(ProfileFormSchema.safeParse({ ...profile, currency_display: 'NGN' }).success).toBe(true);
+    expect(ProfileFormSchema.safeParse({ ...profile, currency_display: 'ngn' }).success).toBe(
+      false,
+    );
+    expect(ProfileFormSchema.safeParse({ ...profile, currency_display: 'NGNN' }).success).toBe(
+      false,
+    );
+  });
+
+  it('S15b : pour le Nigeria, le formulaire propose le naira, pour le Cameroun les deux FCFA', () => {
+    const countries = [
+      { code: 'CM', name: 'Cameroun', currency: 'XAF' },
+      { code: 'NG', name: 'Nigeria', currency: 'NGN' },
+    ];
+    wrap(
+      <ProfileForm
+        email="a@example.test"
+        countries={countries}
+        initial={{ ...profile, country_code: 'NG', currency_display: 'NGN' }}
+      />,
+    );
+    const select = screen.getByLabelText<HTMLSelectElement>('Monnaie d’affichage');
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(['NGN']);
+    fireEvent.change(screen.getByLabelText('Pays'), { target: { value: 'CM' } });
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(['XAF', 'XOF']);
+    expect(select.value).toBe('XAF');
   });
 
   it('le corps envoyé omet un téléphone vide', () => {

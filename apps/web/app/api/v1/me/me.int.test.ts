@@ -168,6 +168,15 @@ describeRoute('updateMe', {
       expect(unknown.status).toBe(400);
       expect((await json(unknown)).errors).toEqual([expect.objectContaining({ field: 'country_code', code: 'unknown_country' })]);
     },
+    'S15b : un pays non CFA (Nigeria) donne son fuseau et sa monnaie ; un code inconnu ou en minuscules est refusé (400)': async () => {
+      const ng = await PATCH(call('PATCH', awa.headers, { country_code: 'NG', currency_display: 'NGN' }));
+      expect(ng.status).toBe(200);
+      expect(await json(ng)).toMatchObject({ country_code: 'NG', timezone: 'Africa/Lagos', currency_display: 'NGN' });
+      for (const bad of ['ngn', 'EUR', 'USD', 'NGNN', '']) {
+        const res = await PATCH(call('PATCH', awa.headers, { currency_display: bad }));
+        expect(res.status, bad).toBe(400);
+      }
+    },
     '413 corps de plus de 1 Mo': async () => {
       const res = await PATCH(call('PATCH', awa.headers, { city: 'a'.repeat(1024 * 1024) }));
       expect(res.status).toBe(413);

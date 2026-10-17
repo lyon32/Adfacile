@@ -385,7 +385,7 @@ export function ProposalStep({
           <ProposalForm
             initial={form}
             today={localToday()}
-            xafPerUsd={campaign.cost.fx?.rate ?? null}
+            fx={campaign.cost.fx ?? null}
             pending={update.isPending}
             serverError={
               error === 'save_failed' || error === 'server_validation' ? t(`errors.${error}`) : null

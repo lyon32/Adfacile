@@ -487,6 +487,7 @@ describe('chooseProposal', () => {
     expect(view.targeting).not.toHaveProperty('interests');
     expect(db.rows('campaigns')[0]).toMatchObject({
       fx_rate_xaf: 600,
+      fx_currency: 'XAF',
       chosen_proposal_version: 1,
     });
     expect(db.rows('campaign_proposals')[0]?.chosen).toBe(true);

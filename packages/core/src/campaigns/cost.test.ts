@@ -5,9 +5,9 @@
 import { describe, expect, it } from 'vitest';
 import { campaignCost, daysInclusive, toScaledRate } from './cost';
 
-const fx = (rate: number) => ({
+const fx = (rate: number, quote = 'XAF') => ({
   rate,
-  quote: 'XAF' as const,
+  quote,
   source: 'manual' as const,
   fetchedAt: '2026-10-10T09:00:00.000Z',
 });
@@ -52,7 +52,7 @@ describe('campaignCost', () => {
   it('7 jours à 500 centimes, taux d’essai 600 : 3 500 centimes, 21 000 FCFA, sans TVA', () => {
     const cost = campaignCost({ ...base, fx: fx(600) });
     expect(cost).toMatchObject({ status: 'ok', days: 7, budget_usd_cents: 3500 });
-    expect(cost.total).toEqual({ xaf: 21000, usd_cents: 3500, currency: 'XAF' });
+    expect(cost.total).toEqual({ local_minor: 21000, usd_cents: 3500, currency: 'XAF' });
   });
 
   it('aucun champ de TVA dans la sortie', () => {
@@ -64,20 +64,22 @@ describe('campaignCost', () => {
 
   it('le budget par jour reste affichable : 500 centimes = 3 000 FCFA au taux d’essai', () => {
     const cost = campaignCost({ ...base, fx: fx(600) });
-    expect(cost.daily).toEqual({ xaf: 3000, usd_cents: 500, currency: 'XAF' });
+    expect(cost.daily).toEqual({ local_minor: 3000, usd_cents: 500, currency: 'XAF' });
   });
 
   it('taux de change non entier : 602,3456 par dollar', () => {
     const cost = campaignCost({ ...base, fx: fx(602.3456) });
     // 3 500 centimes × 602,3456 / 100 = 21 082,096 → 21 082 (au plus proche)
-    expect(cost.total?.xaf).toBe(21082);
+    expect(cost.total?.local_minor).toBe(21082);
   });
 
   it('arrondi de la conversion : 0,5 exactement monte, juste dessous descend', () => {
     const two = { startDate: '2026-10-11', endDate: '2026-10-12' } as const;
     // 2 jours × 1 centime = 2 centimes ; 2 × 25 / 100 = 0,5 → 1 ; 2 × 24,99 / 100 = 0,4998 → 0
-    expect(campaignCost({ dailyBudgetUsdCents: 1, ...two, fx: fx(25) }).total?.xaf).toBe(1);
-    expect(campaignCost({ dailyBudgetUsdCents: 1, ...two, fx: fx(24.99) }).total?.xaf).toBe(0);
+    expect(campaignCost({ dailyBudgetUsdCents: 1, ...two, fx: fx(25) }).total?.local_minor).toBe(1);
+    expect(campaignCost({ dailyBudgetUsdCents: 1, ...two, fx: fx(24.99) }).total?.local_minor).toBe(
+      0,
+    );
   });
 
   it('un seul jour (début = fin) : incomplète, comme la validation (fin > début, deux jours au moins)', () => {
@@ -99,7 +101,7 @@ describe('campaignCost', () => {
       fx: fx(600),
     });
     expect(cost).toMatchObject({ days: 2, budget_usd_cents: 200 });
-    expect(cost.total?.xaf).toBe(1200);
+    expect(cost.total?.local_minor).toBe(1200);
   });
 
   it('365 jours à 10 000 $ par jour, taux d’essai 650 : 365 000 000 centimes = 2 372 500 000 FCFA', () => {
@@ -111,14 +113,38 @@ describe('campaignCost', () => {
     });
     expect(cost.days).toBe(365);
     expect(cost.budget_usd_cents).toBe(365_000_000);
-    expect(cost.total?.xaf).toBe(2_372_500_000);
-    expect(Number.isSafeInteger(cost.total?.xaf)).toBe(true);
+    expect(cost.total?.local_minor).toBe(2_372_500_000);
+    expect(Number.isSafeInteger(cost.total?.local_minor)).toBe(true);
   });
 
   it('la monnaie suit le taux : XOF', () => {
     const cost = campaignCost({ ...base, fx: { ...fx(600), quote: 'XOF' } });
     expect(cost.total?.currency).toBe('XOF');
     expect(cost.fx?.quote).toBe('XOF');
+  });
+
+  describe('toutes les monnaies d’Afrique : unités mineures de chaque monnaie (valeurs d’essai)', () => {
+    it('NGN, 2 décimales : 3 500 centimes à 1 500 par dollar = 52 500,00 NGN = 5 250 000 kobo', () => {
+      const cost = campaignCost({ ...base, fx: fx(1500, 'NGN') });
+      expect(cost.total).toEqual({ local_minor: 5_250_000, usd_cents: 3500, currency: 'NGN' });
+      expect(cost.daily).toEqual({ local_minor: 750_000, usd_cents: 500, currency: 'NGN' });
+    });
+    it('TND, 3 décimales : 3 500 centimes à 3,1 par dollar = 108,500 TND = 108 500 millimes', () => {
+      const cost = campaignCost({ ...base, fx: fx(3.1, 'TND') });
+      expect(cost.total?.local_minor).toBe(108_500);
+    });
+    it('UGX, 0 décimale : 3 500 centimes à 3 700,5 = 129 517,5 -> 129 518 (0,5 monte)', () => {
+      const cost = campaignCost({ ...base, fx: fx(3700.5, 'UGX') });
+      expect(cost.total?.local_minor).toBe(129_518);
+    });
+    it('une monnaie hors de la table lève une erreur au lieu de supposer 2 décimales', () => {
+      expect(() => campaignCost({ ...base, fx: fx(1, 'EUR') })).toThrow(RangeError);
+    });
+    it('aucune monnaie supposée sans taux : fx_not_available, aucun champ de monnaie locale', () => {
+      const cost = campaignCost({ ...base, fx: null });
+      expect(cost.total).toBeNull();
+      expect(cost.fx).toBeNull();
+    });
   });
 
   describe('taux de change absent : aucune valeur par défaut', () => {

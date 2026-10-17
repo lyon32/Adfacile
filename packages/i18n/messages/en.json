@@ -793,7 +793,7 @@
           "destination": "Destination",
           "budget": "Daily budget",
           "budget_unit": "$",
-          "budget_hint": "Minimum $1 per day. About {fcfa}.",
+          "budget_hint": "Minimum $1 per day. About {amount}.",
           "start_date": "Start",
           "end_date": "End",
           "primary_text": "Main text",

@@ -49,10 +49,11 @@ export const CTAS = [
   'GET_OFFER',
 ] as const;
 
+// Montant en unités mineures de la monnaie locale (exposant ISO 4217 : `minorUnits` de @pubeka/shared).
 const MoneySchema = z.object({
-  xaf: z.number(),
+  local_minor: z.number(),
   usd_cents: z.number(),
-  currency: z.enum(['XAF', 'XOF']).optional(),
+  currency: z.string(),
 });
 export type MoneyView = z.infer<typeof MoneySchema>;
 
@@ -62,7 +63,7 @@ export const CostSchema = z.object({
   budget_usd_cents: z.number().nullable().optional(),
   total: MoneySchema.nullable().optional(),
   daily: MoneySchema.nullable().optional(),
-  fx: z.object({ rate: z.number() }).nullable().optional(),
+  fx: z.object({ rate: z.number(), quote: z.string() }).nullable().optional(),
 });
 export type Cost = z.infer<typeof CostSchema>;
 

@@ -136,7 +136,14 @@ export function Demo({
         <div className="grid gap-4 sm:grid-cols-2">
           <Card className="flex flex-col gap-2">
             <Eyebrow>{t.eyebrow}</Eyebrow>
-            <Amount amountXaf={45000} usdCents={7425} locale={locale} size="lg" />
+            <Amount
+              amountMinor={45000}
+              currency="XAF"
+              minorDigits={0}
+              usdCents={7425}
+              locale={locale}
+              size="lg"
+            />
           </Card>
           <Card className="flex flex-col items-start gap-3">
             <CardTitle>{t.cardTitle}</CardTitle>
@@ -169,9 +176,22 @@ export function Demo({
 
       <Section title={t.amounts}>
         <div className="flex flex-wrap gap-8">
-          <Amount amountXaf={5000} locale={locale} />
-          <Amount amountXaf={1250000} usdCents={206250} locale={locale} />
-          <Amount amountXaf={45000} usdCents={7425} locale={locale} size="lg" />
+          <Amount amountMinor={5000} currency="XAF" minorDigits={0} locale={locale} />
+          <Amount
+            amountMinor={1250000}
+            currency="XAF"
+            minorDigits={0}
+            usdCents={206250}
+            locale={locale}
+          />
+          <Amount
+            amountMinor={45000}
+            currency="XAF"
+            minorDigits={0}
+            usdCents={7425}
+            locale={locale}
+            size="lg"
+          />
         </div>
       </Section>
 

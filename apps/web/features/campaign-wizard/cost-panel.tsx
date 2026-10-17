@@ -2,6 +2,7 @@
 // Coût d'une proposition (PRD §9.2) : total en monnaie locale en grand, dollars dessous. Tout vient du serveur.
 // TVA retirée pour le moment (décision du 17/10/2026), à réactiver sur décision : le coût est le budget.
 // Une donnée manquante est DITE, jamais remplacée : taux de change indisponible = le dollar seul.
+import { minorUnits } from '@pubeka/shared';
 import { Amount, formatUsdApprox, type UiLocale } from '@pubeka/ui';
 import { Info } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -26,7 +27,14 @@ export function CostPanel({ cost }: { cost: Cost }): ReactNode {
       {cost.status === 'ok' && total !== null ? (
         <>
           <p className="text-meta text-muted">{t('total')}</p>
-          <Amount amountXaf={total.xaf} usdCents={total.usd_cents} locale={locale} size="lg" />
+          <Amount
+            amountMinor={total.local_minor}
+            currency={total.currency}
+            minorDigits={minorUnits(total.currency)}
+            usdCents={total.usd_cents}
+            locale={locale}
+            size="lg"
+          />
         </>
       ) : null}
 

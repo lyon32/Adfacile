@@ -11,13 +11,15 @@ import { ConnectionPanel, useMetaReadiness } from '../meta-connection/connection
 import type { ConnectNotice } from '../meta-connection/notice';
 import { SelectField } from '../settings/select-field';
 import type { CountryOption } from '../shell/countries';
+import { currencyOptions } from '../shell/currencies';
 import { useUpdateMe } from '../shell/use-update-me';
 import { STEPS, nextPath, stepNumber, type Step } from './steps';
 
 export interface OnboardingProfile {
   countryCode: string | null;
   city: string | null;
-  currency: 'XAF' | 'XOF';
+  /** Code ISO 4217 de la monnaie d'affichage. */
+  currency: string;
   locale: Locale;
 }
 
@@ -65,7 +67,7 @@ function CountryStep({
   const update = useUpdateMe();
   const [country, setCountry] = useState(profile.countryCode ?? '');
   const [city, setCity] = useState(profile.city ?? '');
-  const [currency, setCurrency] = useState<'XAF' | 'XOF'>(profile.currency);
+  const [currency, setCurrency] = useState<string>(profile.currency);
   const [missing, setMissing] = useState(false);
 
   const submit = (): void => {
@@ -114,12 +116,12 @@ function CountryStep({
       <SelectField
         label={t('country.currency')}
         value={currency}
-        options={[
-          { value: 'XAF', label: 'FCFA (XAF)' },
-          { value: 'XOF', label: 'FCFA (XOF)' },
-        ]}
+        options={currencyOptions(
+          countries.find((c) => c.code === country)?.currency ?? currency,
+          profile.locale,
+        )}
         onChange={(event) => {
-          setCurrency(event.target.value === 'XOF' ? 'XOF' : 'XAF');
+          setCurrency(event.target.value);
         }}
       />
       <Actions pending={update.isPending} failed={update.isError} />
