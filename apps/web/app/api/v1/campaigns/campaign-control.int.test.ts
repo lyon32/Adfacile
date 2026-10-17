@@ -466,10 +466,7 @@ describeRoute('getReachEstimate', {
         const { fake, deps } = await fakeKnowing(campaign.id);
         overrideControlDeps(deps);
         fake.simulateEstimate(null);
-        const body = (await json(await estimate(s, s.owner, campaign.id))) as Record<
-          string,
-          unknown
-        >;
+        const body = await json(await estimate(s, s.owner, campaign.id));
         expect(body).toMatchObject({ status: 'unavailable', reason: 'not_ready', audience: null });
       },
     'Meta ne répond pas : 200 « unavailable » (jamais une erreur à l’écran)': async () => {

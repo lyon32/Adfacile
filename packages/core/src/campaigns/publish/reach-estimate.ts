@@ -77,14 +77,16 @@ export async function getReachEstimate(
       .select('owner_id')
       .eq('id', ctx.workspace.id)
       .maybeSingle();
+    if (owner.error !== null) throw new AppError('internal_error', { cause: owner.error });
     const profile =
-      owner.data === null || owner.error !== null
+      owner.data === null
         ? null
         : await ctx.svc
             .from('profiles')
             .select('country_code')
             .eq('id', owner.data.owner_id)
             .maybeSingle();
+    if (profile?.error) throw new AppError('internal_error', { cause: profile.error });
     const locations = await resolveLocations(
       deps.connector,
       token,
