@@ -98,6 +98,15 @@ export function platformConnectorContract(name: string, make: () => ContractTarg
       expect(none).toEqual({ campaigns: [], exhaustive: true });
     });
 
+    it('donne une estimation de diffusion ou null, jamais une erreur ni un chiffre invalide', async () => {
+      const { connector, token } = make();
+      const estimate = await connector.estimateDelivery(token, CONTRACT_SPEC);
+      if (estimate !== null) {
+        expect(Number.isSafeInteger(estimate.lowerBound)).toBe(true);
+        expect(estimate.lowerBound).toBeLessThanOrEqual(estimate.upperBound);
+      }
+    });
+
     it('rend un bilan de santé sans jeton ni secret', async () => {
       const { connector, token } = make();
       const items = await connector.healthCheck(

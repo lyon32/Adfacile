@@ -36,8 +36,8 @@ export interface SpecInput {
   account: AccountCurrency;
   /** Adresse du site de la fiche du commerce. */
   website: string | null;
-  /** Adresse signée de la photo (courte durée), sur le stockage de Pubeka. */
-  mediaUrl: string;
+  /** Adresse signée de la photo (courte durée), sur le stockage de Pubeka. `null` : pas d'image (estimation de portée). */
+  mediaUrl: string | null;
   locations: TargetingLocation[];
 }
 
@@ -150,8 +150,9 @@ export function buildPublishSpec(input: SpecInput): PublishSpec {
       advantageAudience: campaign.targeting.advantage_plus === false ? 0 : 1,
     },
     creative: {
-      mediaType: 'image',
-      mediaUrl: input.mediaUrl,
+      ...(input.mediaUrl === null
+        ? { mediaType: 'none' as const }
+        : { mediaType: 'image' as const, mediaUrl: input.mediaUrl }),
       message,
       headline,
       ...(campaign.copy.description === undefined || campaign.copy.description === null

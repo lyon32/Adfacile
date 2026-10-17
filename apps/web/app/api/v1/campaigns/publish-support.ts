@@ -6,6 +6,7 @@ import type { PublishCampaignDeps } from '@pubeka/core';
 import { queryTestDb, testServiceClient, type SeededWorkspace } from '@pubeka/testing';
 import { expect } from 'vitest';
 import { call, connectWorkspace } from '../meta/int-support';
+import { GET as estimateRoute } from '../workspaces/[workspaceId]/campaigns/[campaignId]/estimate/route';
 import { POST as pauseRoute } from '../workspaces/[workspaceId]/campaigns/[campaignId]/pause/route';
 import { POST as publishRoute } from '../workspaces/[workspaceId]/campaigns/[campaignId]/publish/route';
 import { POST as relaunchRoute } from '../workspaces/[workspaceId]/campaigns/[campaignId]/relaunch/route';
@@ -318,3 +319,11 @@ export const resume = (s: SeededWorkspace, who: Who, campaignId: string) =>
   control(resumeRoute, 'resume', s, who, campaignId);
 export const relaunch = (s: SeededWorkspace, who: Who, campaignId: string, body: unknown) =>
   control(relaunchRoute, 'relaunch', s, who, campaignId, body);
+
+export function estimate(s: SeededWorkspace, who: Who, campaignId: string): Promise<Response> {
+  const id = s.workspace.id;
+  return estimateRoute(
+    call('GET', `/workspaces/${id}/campaigns/${campaignId}/estimate`, who.headers),
+    campaignParams(id, campaignId),
+  );
+}

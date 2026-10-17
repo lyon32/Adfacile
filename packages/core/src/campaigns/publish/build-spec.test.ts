@@ -241,3 +241,11 @@ describe('buildPublishSpec — données manquantes', () => {
     expect(spec.campaignName.endsWith(`[${REF}]`)).toBe(true);
   });
 });
+
+describe('buildPublishSpec — sans image (estimation de portée)', () => {
+  it('sans adresse de photo, la création est sans média (jamais une adresse inventée)', () => {
+    const spec = buildPublishSpec(input({ mediaUrl: null }));
+    expect(spec.creative.mediaType).toBe('none');
+    expect(spec.creative.mediaUrl).toBeUndefined();
+  });
+});

@@ -2,6 +2,7 @@ import { AppError } from '@pubeka/contracts';
 import type {
   CampaignLookup,
   DailyStats,
+  DeliveryEstimate,
   HealthCheckItem,
   LocationMatch,
   Platform,
@@ -34,6 +35,9 @@ export class UnavailableConnector implements PlatformConnector {
     return Promise.reject(this.refusal());
   }
   listPages(): Promise<PlatformPage[]> {
+    return Promise.reject(this.refusal());
+  }
+  estimateDelivery(): Promise<DeliveryEstimate | null> {
     return Promise.reject(this.refusal());
   }
   searchLocations(): Promise<LocationMatch[]> {
