@@ -24,3 +24,4 @@ export * from './meta/create-campaign';
 export * from './meta/meta-connector';
 export * from './fake/fake-meta-connector';
 export * from './meta/ssrf';
+export * from './meta/reference-match';

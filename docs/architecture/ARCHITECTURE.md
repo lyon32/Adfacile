@@ -220,6 +220,7 @@ VisualSpec (Designer) ──►│──► génération de la scène (modèle c
 | `media-fal` | selon le compte (2 → 40 automatiquement) ; fal met lui-même en file au-delà | fal |
 | `media-byteplus-video` (plus tard) | 3 (compte individuel) / 10 (entreprise) | BytePlus |
 | `agents` | selon la passerelle IA | — |
+| `meta-publish` | 5 (à mesurer ; limites de débit de Meta par compte publicitaire) | Meta (S16 : `campaign.publish`) |
 
 Expérience pendant l'attente (validé) :
 1. Les visuels s'affichent **un par un** dès qu'ils sont prêts.

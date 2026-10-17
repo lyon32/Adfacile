@@ -5,7 +5,9 @@ import { AppError } from '@pubeka/contracts';
 import { PUBEKA_MIN_DAILY_USD_CENTS, usdCentsToAccountMinor } from '../meta/account-currency';
 import { FB_MIN_DAILY_BUDGET_CENTS } from '../meta/currency';
 import { MetaValidationError, toAppError } from '../meta/errors';
+import { nameHasReference } from '../meta/reference-match';
 import type {
+  CampaignLookup,
   DailyStats,
   DateRange,
   HealthCheckItem,
@@ -48,8 +50,14 @@ export class FakeMetaConnector implements PlatformConnector {
   /** Dernières valeurs reçues, pour que les tests vérifient ce que `core` a transmis. */
   lastRedirectUri: string | null = null;
   lastHealthTarget: { adAccountId: string; pageId: string } | null = null;
-  private sequence = 1000;
+  private sequence = 120_000_000_000;
   private transientFailures = 0;
+  private createTimeout: { created: boolean } | undefined;
+  private resumeTimeout: { applied: boolean } | undefined;
+  private createRefusal: AppError | undefined;
+  private resumeRefusal: AppError | undefined;
+  private lookupFailures = 0;
+  private lookupTruncated = false;
   private paymentMissing = false;
   private readonly stats = new Map<string, DailyStats[]>();
 
@@ -66,6 +74,45 @@ export class FakeMetaConnector implements PlatformConnector {
   simulateTransientError(count = 1): void {
     this.transientFailures = count;
   }
+
+  /**
+   * Prochaine CRÉATION : la réponse se perd (délai dépassé). `created` dit si Meta a quand même créé la campagne (EC-META-05) :
+   * `true` = la campagne existe chez Meta mais Pubeka n'a pas reçu ses identifiants ; `false` = rien n'a été créé.
+   */
+  simulateCreateTimeout(options: { created: boolean }): void {
+    this.createTimeout = options;
+  }
+
+  /** Prochaine ACTIVATION (`resume`) : la réponse se perd ; `applied` dit si Meta a quand même activé la campagne. */
+  simulateResumeTimeout(options: { applied: boolean }): void {
+    this.resumeTimeout = options;
+  }
+
+  /** Meta refuse clairement la prochaine création (refus net : rien n'est créé), avec ce code de la liste fermée. */
+  simulateCreateRefusal(error: AppError): void {
+    this.createRefusal = error;
+  }
+
+  /** Meta refuse clairement la prochaine activation. */
+  simulateResumeRefusal(error: AppError): void {
+    this.resumeRefusal = error;
+  }
+
+  /** La lecture de rapprochement échoue (Meta ne répond pas) : la tâche ne peut pas conclure. */
+  simulateLookupFailure(times = 1): void {
+    this.lookupFailures = times;
+  }
+
+  /** La liste de rapprochement est coupée avant la fin : « rien trouvé » ne conclut pas. */
+  simulateLookupTruncated(truncated = true): void {
+    this.lookupTruncated = truncated;
+  }
+
+  /** Nombre de créations REÇUES par la fausse Meta (aboutissent ou non) : prouve qu'on ne recrée jamais d'office. */
+  createAttempts = 0;
+
+  /** Nombre d'activations REÇUES (aboutissent ou non) : prouve qu'une activation incertaine n'est jamais rejouée. */
+  resumeAttempts = 0;
 
   /** Meta refuse la publicité, avec ce motif. */
   simulateRejection(refs: PlatformCampaignRefs, reason: string): void {
@@ -190,7 +237,15 @@ export class FakeMetaConnector implements PlatformConnector {
       } catch (error) {
         throw toAppError(error);
       }
+      this.createAttempts += 1;
       if (this.paymentMissing) throw new AppError('meta_payment_method_missing');
+      if (this.createRefusal !== undefined) {
+        const refusal = this.createRefusal;
+        this.createRefusal = undefined;
+        throw refusal;
+      }
+      const timeout = this.createTimeout;
+      this.createTimeout = undefined;
       this.sequence += 4;
       const refs: PlatformCampaignRefs = {
         campaignId: String(this.sequence),
@@ -209,6 +264,13 @@ export class FakeMetaConnector implements PlatformConnector {
         rejection: null,
         deleted: false,
       });
+      if (timeout !== undefined) {
+        // La réponse se perd. Si Meta n'a rien créé, on retire la campagne que l'on vient de poser.
+        if (!timeout.created) this.campaigns.delete(refs.campaignId);
+        throw new AppError('meta_error', {
+          cause: new DOMException('délai dépassé', 'TimeoutError'),
+        });
+      }
       return refs;
     });
   }
@@ -249,7 +311,21 @@ export class FakeMetaConnector implements PlatformConnector {
 
   resume(token: PlatformToken, refs: PlatformCampaignRefs): Promise<void> {
     return this.respond(token, () => {
+      this.resumeAttempts += 1;
       const campaign = this.find(refs);
+      if (this.resumeRefusal !== undefined) {
+        const refusal = this.resumeRefusal;
+        this.resumeRefusal = undefined;
+        throw refusal;
+      }
+      const timeout = this.resumeTimeout;
+      this.resumeTimeout = undefined;
+      if (timeout !== undefined) {
+        if (timeout.applied) campaign.status = this.options.activateAs ?? 'active';
+        throw new AppError('meta_error', {
+          cause: new DOMException('délai dépassé', 'TimeoutError'),
+        });
+      }
       if (campaign.status === 'rejected') {
         throw new AppError('meta_error', {
           cause: new Error('une publicité refusée ne peut pas être activée'),
@@ -264,6 +340,39 @@ export class FakeMetaConnector implements PlatformConnector {
       if (!refs.campaignId) return false;
       this.find(refs).deleted = true;
       return true;
+    });
+  }
+
+  findCampaignsByReference(
+    token: PlatformToken,
+    adAccountId: string,
+    reference: string,
+  ): Promise<CampaignLookup> {
+    return this.respond(token, () => {
+      if (this.lookupFailures > 0) {
+        this.lookupFailures -= 1;
+        throw new AppError('meta_error', { cause: new TypeError('fetch failed') });
+      }
+      const account = adAccountId.startsWith('act_') ? adAccountId : `act_${adAccountId}`;
+      const matches = [...this.campaigns.values()].filter(
+        (c) =>
+          !c.deleted &&
+          c.refs.adAccountId === account &&
+          nameHasReference(c.spec.campaignName, reference),
+      );
+      return {
+        exhaustive: !this.lookupTruncated,
+        campaigns: this.lookupTruncated
+          ? []
+          : matches.map((c) => ({
+              campaignId: c.refs.campaignId,
+              name: c.spec.campaignName,
+              effectiveStatus: c.status.toUpperCase(),
+              adsetId: c.refs.adsetId,
+              adId: c.refs.adId,
+              creativeId: c.refs.creativeId,
+            })),
+      };
     });
   }
 

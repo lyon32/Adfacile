@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import type { PublishCampaignDeps } from '@pubeka/core';
 import { testServiceClient, type SeededWorkspace } from '@pubeka/testing';
 import { expect } from 'vitest';
-import { call } from '../meta/int-support';
+import { call, connectWorkspace } from '../meta/int-support';
 import { POST as publishRoute } from '../workspaces/[workspaceId]/campaigns/[campaignId]/publish/route';
 import {
   campaignParams,
@@ -79,6 +79,46 @@ export interface PublishableCampaign {
   sourceId: string;
 }
 
+/** Connexion complète par la route (fausse Meta) : jeton chiffré, compte et Page réels de la base. */
+async function connectedAccount(s: SeededWorkspace): Promise<void> {
+  const svc = testServiceClient();
+  const have = await svc.from('meta_connections').select('id').eq('workspace_id', s.workspace.id).limit(1);
+  if ((have.data ?? []).length === 0) {
+    const res = await connectWorkspace(s);
+    expect([302, 307]).toContain(res.status);
+  }
+}
+
+async function connectedPage(s: SeededWorkspace): Promise<string> {
+  await connectedAccount(s);
+  const svc = testServiceClient();
+  const page = await svc.from('pages').select('id').eq('workspace_id', s.workspace.id).limit(1).single();
+  expect(page.error).toBeNull();
+  const id = page.data?.id ?? '';
+  const ok = await svc
+    .from('pages')
+    .update({ active: true, whatsapp_linked: true, whatsapp_number: '+237650198196' })
+    .eq('id', id);
+  expect(ok.error).toBeNull();
+  return id;
+}
+
+async function connectedAdAccount(s: SeededWorkspace): Promise<{ adAccountId: string; connectionId: string }> {
+  await connectedAccount(s);
+  const svc = testServiceClient();
+  const account = await svc
+    .from('ad_accounts')
+    .select('id, meta_connection_id')
+    .eq('workspace_id', s.workspace.id)
+    .limit(1)
+    .single();
+  expect(account.error).toBeNull();
+  const id = account.data?.id ?? '';
+  const ok = await svc.from('ad_accounts').update({ has_payment_method: true, currency: 'USD', is_active: true }).eq('id', id);
+  expect(ok.error).toBeNull();
+  return { adAccountId: id, connectionId: account.data?.meta_connection_id ?? '' };
+}
+
 /** Un seul compte publicitaire actif par espace : créé une fois (connexion valide, dollars, moyen de paiement présent). */
 async function ensureAdAccount(
   s: SeededWorkspace,
@@ -125,18 +165,23 @@ async function ensureAdAccount(
 const PHOTO = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00]);
 
 /** Espace complet : Page active (WhatsApp relié), connexion Meta valide, compte en dollars, photo, brouillon complet. */
-export async function publishableCampaign(s: SeededWorkspace): Promise<PublishableCampaign> {
+export async function publishableCampaign(
+  s: SeededWorkspace,
+  options: { connected?: boolean } = {},
+): Promise<PublishableCampaign> {
   await ensureTestFx();
   await setOwnerCountry(s, 'CM');
   const svc = testServiceClient();
-  const pageId = await seedPage(s);
+  // `connected` : la connexion, le compte et la Page viennent de la VRAIE route de connexion (fausse Meta), avec un vrai jeton chiffré.
+  const pageId = options.connected === true ? await connectedPage(s) : await seedPage(s);
   const pageUpdate = await svc
     .from('pages')
     .update({ whatsapp_linked: true, whatsapp_number: '+237650198196' })
     .eq('id', pageId);
   expect(pageUpdate.error).toBeNull();
 
-  const { adAccountId, connectionId } = await ensureAdAccount(s);
+  const { adAccountId, connectionId } =
+    options.connected === true ? await connectedAdAccount(s) : await ensureAdAccount(s);
 
   const analysisId = await seedReadyAnalysis(s, pageId);
   const path = `${s.workspace.id}/${randomUUID()}.jpg`;

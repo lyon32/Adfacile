@@ -10,6 +10,7 @@ import { z } from 'zod';
 import type {
   DailyStats,
   DateRange,
+  CampaignLookup,
   HealthCheckItem,
   LocationMatch,
   LocationQuery,
@@ -21,6 +22,7 @@ import type {
   PlatformStatus,
   PlatformToken,
   PublishPatch,
+  RemoteCampaign,
   PublishSpec,
 } from '../types';
 import {
@@ -36,7 +38,8 @@ import {
 import { deleteCampaignOnMeta, patchCampaign, updateCampaignStatus } from './campaign-actions';
 import { createFullCampaign } from './create-campaign';
 import { assertMediaHostsConfigured } from './ssrf';
-import { toAppError } from './errors';
+import { MetaValidationError, toAppError } from './errors';
+import { MIN_REFERENCE_LENGTH, nameHasReference } from './reference-match';
 import { GraphClient, type FetchLike } from './graph';
 import type { UploadOptions } from './media-upload';
 
@@ -142,6 +145,33 @@ const insightsSchema = z.looseObject({
     .optional(),
 });
 
+const campaignListSchema = z.looseObject({
+  data: z
+    .array(
+      z.looseObject({
+        id: z.string().optional(),
+        name: z.string().optional(),
+        effective_status: z.string().optional(),
+      }),
+    )
+    .optional(),
+  paging: z.looseObject({ next: z.string().optional() }).optional(),
+});
+const adListSchema = z.looseObject({
+  data: z
+    .array(
+      z.looseObject({
+        id: z.string().optional(),
+        adset_id: z.string().optional(),
+        creative: z.looseObject({ id: z.string().optional() }).optional(),
+      }),
+    )
+    .optional(),
+});
+/** Statuts effectifs d'une campagne documentés (une campagne supprimée ou archivée n'est pas relue). */
+const LOOKUP_STATUSES: readonly string[] = ['ACTIVE', 'PAUSED', 'IN_PROCESS', 'WITH_ISSUES'];
+const LOOKUP_PAGE_SIZE = 100;
+const MAX_LOOKUP_PAGES = 20;
 const locationSearchSchema = z.looseObject({
   data: z
     .array(
@@ -428,6 +458,78 @@ export class MetaConnector implements PlatformConnector {
 
   deleteCampaign(token: PlatformToken, refs: PlatformCampaignRefs): Promise<boolean> {
     return this.run(() => deleteCampaignOnMeta(this.graph, token.accessToken, refs));
+  }
+
+  /**
+   * Rapprochement (EC-META-05) : les campagnes du compte dont le nom contient la référence de publication. LECTURE SEULE.
+   * Le filtre par nom de l'arête `campaigns` n'est pas documenté : on lit la liste par pages (`fields`, `effective_status`,
+   * `limit`, `paging.next` : https://developers.facebook.com/docs/marketing-api/reference/ad-account/campaigns/ et la pagination du
+   * Graph API) et on filtre ici. Les publicités d'une campagne : arête `ads` (`id`, `adset_id`, `creative`).
+   */
+  findCampaignsByReference(
+    token: PlatformToken,
+    adAccountId: string,
+    reference: string,
+  ): Promise<CampaignLookup> {
+    return this.run(async () => {
+      const wanted = reference.trim();
+      if (wanted.length < MIN_REFERENCE_LENGTH) {
+        throw new MetaValidationError('La référence de publication est vide ou trop courte.');
+      }
+      const matches: { id: string; name: string; status: string }[] = [];
+      let exhaustive = false;
+      let next: string | undefined;
+      for (let page = 0; page < MAX_LOOKUP_PAGES; page += 1) {
+        const raw =
+          next === undefined
+            ? await this.graph.get(`${actId(adAccountId)}/campaigns`, {
+                fields: 'id,name,effective_status',
+                effective_status: JSON.stringify(LOOKUP_STATUSES),
+                limit: LOOKUP_PAGE_SIZE,
+                access_token: token.accessToken,
+              })
+            : await this.graph.get(next);
+        const parsed = campaignListSchema.parse(raw);
+        for (const item of parsed.data ?? []) {
+          if (
+            item.id !== undefined &&
+            item.name !== undefined &&
+            nameHasReference(item.name, wanted)
+          ) {
+            matches.push({
+              id: item.id,
+              name: item.name,
+              status: item.effective_status ?? 'UNKNOWN',
+            });
+          }
+        }
+        next = parsed.paging?.next;
+        if (next === undefined) {
+          exhaustive = true;
+          break;
+        }
+      }
+      const campaigns: RemoteCampaign[] = [];
+      for (const match of matches) {
+        const ads = adListSchema.parse(
+          await this.graph.get(`${match.id}/ads`, {
+            fields: 'id,adset_id,creative',
+            limit: 5,
+            access_token: token.accessToken,
+          }),
+        );
+        const ad = ads.data?.[0];
+        campaigns.push({
+          campaignId: match.id,
+          name: match.name,
+          effectiveStatus: match.status,
+          adsetId: ad?.adset_id ?? null,
+          adId: ad?.id ?? null,
+          creativeId: ad?.creative?.id ?? null,
+        });
+      }
+      return { campaigns, exhaustive };
+    });
   }
 
   /** Statut de la publicité (le niveau qui porte la relecture) ; à défaut, celui de la campagne. */
