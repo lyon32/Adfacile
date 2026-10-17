@@ -2,14 +2,14 @@
 // une Page comptée dans la limite de la formule (1 / 3 / 10) ; une Page retirée de la formule ne peut plus publier ni être modifiée,
 // mais ses campagnes déjà publiées continuent chez Meta et peuvent être mises en pause.
 import { AppError } from '@pubeka/contracts';
-import type { MemberCtx } from '../../context';
+import type { ServiceClient } from '@pubeka/db';
 import { upgradeTarget } from '../../meta/pages';
 import { pagePlanOf } from '../../meta/plan';
 import { subscriptionsOf } from '../../workspaces/plan-limits';
 
 /** EC-CAMP-03 et EC-CAMP-09 : la Page doit être dans la formule (active). */
 export async function assertPageInPlan(
-  ctx: MemberCtx,
+  scope: { svc: ServiceClient; workspaceId: string },
   page: { active: boolean } | null,
   pageId: string | null,
 ): Promise<void> {
@@ -21,8 +21,10 @@ export async function assertPageInPlan(
     });
   }
   if (page.active) return;
-  const plan = await pagePlanOf(ctx.svc, ctx.workspace.id);
-  const subscription = (await subscriptionsOf(ctx.svc, [ctx.workspace.id])).get(ctx.workspace.id);
+  const plan = await pagePlanOf(scope.svc, scope.workspaceId);
+  const subscription = (await subscriptionsOf(scope.svc, [scope.workspaceId])).get(
+    scope.workspaceId,
+  );
   const upgradeTo = upgradeTarget(plan.plan);
   throw new AppError('page_limit_reached', {
     meta: {

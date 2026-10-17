@@ -18,7 +18,7 @@ export function sealToken(deps: MetaDeps, plain: string): { sealed: string; keyI
 /** Jeton déchiffré de la connexion de cet espace ; `not_found` si elle n'existe pas. */
 export async function loadToken(
   svc: ServiceClient,
-  deps: MetaDeps,
+  deps: Pick<MetaDeps, 'keys'>,
   workspaceId: string,
   connection: StoredConnection,
 ): Promise<PlatformToken> {

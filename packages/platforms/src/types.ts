@@ -80,6 +80,26 @@ export interface AccountCurrency {
   perUsd?: number | undefined;
 }
 
+/** Une campagne retrouvée chez la plateforme par la référence de publication de Pubeka (rapprochement, EC-META-05). */
+export interface RemoteCampaign {
+  campaignId: string;
+  name: string;
+  /** Statut effectif brut de la plateforme. */
+  effectiveStatus: string;
+  adsetId: string | null;
+  adId: string | null;
+  creativeId: string | null;
+}
+
+export interface CampaignLookup {
+  campaigns: RemoteCampaign[];
+  /**
+   * Faux si la lecture a été coupée avant la fin de la liste (compte très chargé) : « aucune campagne trouvée » n'est alors
+   * PAS une conclusion, et la tâche ne doit pas considérer que rien n'a été créé.
+   */
+  exhaustive: boolean;
+}
+
 /** Résultat de la recherche d'un lieu (Targeting Search, `type=adgeolocation`). */
 export interface LocationMatch {
   key: string;
@@ -246,6 +266,15 @@ export interface PlatformConnector {
   resume(token: PlatformToken, refs: PlatformCampaignRefs): Promise<void>;
   /** Supprime chez la plateforme (campagne et création) ; faux si rien à supprimer. */
   deleteCampaign(token: PlatformToken, refs: PlatformCampaignRefs): Promise<boolean>;
+  /**
+   * Retrouve les campagnes d'un compte dont le nom contient `reference` (lecture seule). Sert au rapprochement d'un résultat
+   * de création incertain : on regarde ce qui existe AVANT de décider, on ne recrée jamais d'office.
+   */
+  findCampaignsByReference(
+    token: PlatformToken,
+    adAccountId: string,
+    reference: string,
+  ): Promise<CampaignLookup>;
   getStatus(token: PlatformToken, refs: PlatformCampaignRefs): Promise<PlatformStatus>;
   fetchStats(
     token: PlatformToken,

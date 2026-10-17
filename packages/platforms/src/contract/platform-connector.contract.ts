@@ -77,6 +77,27 @@ export function platformConnectorContract(name: string, make: () => ContractTarg
       expect(found).toHaveLength(0);
     });
 
+    it('retrouve une campagne par la référence de publication de son nom (rapprochement, EC-META-05)', async () => {
+      const { connector, token } = make();
+      const refs = await connector.createCampaign(token, {
+        ...CONTRACT_SPEC,
+        campaignName: 'Contrat [pk-abcdef012345-1]',
+      });
+      const found = await connector.findCampaignsByReference(
+        token,
+        CONTRACT_SPEC.adAccountId,
+        'pk-abcdef012345',
+      );
+      expect(found.exhaustive).toBe(true);
+      expect(found.campaigns.map((c) => c.campaignId)).toContain(refs.campaignId);
+      const none = await connector.findCampaignsByReference(
+        token,
+        CONTRACT_SPEC.adAccountId,
+        'pk-000000000000',
+      );
+      expect(none).toEqual({ campaigns: [], exhaustive: true });
+    });
+
     it('rend un bilan de santé sans jeton ni secret', async () => {
       const { connector, token } = make();
       const items = await connector.healthCheck(

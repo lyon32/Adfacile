@@ -1,4 +1,6 @@
+import { AppError } from '@pubeka/contracts';
 import { describe, expect, it } from 'vitest';
+import { isAmbiguousMetaFailure, MetaGraphError } from '../meta/errors';
 import { CONTRACT_SPEC, platformConnectorContract } from '../contract/platform-connector.contract';
 import { FAKE_EXPIRED_TOKEN, FakeMetaConnector } from './fake-meta-connector';
 
@@ -150,5 +152,68 @@ describe('FakeMetaConnector — recherche de lieux (S16)', () => {
     await expect(
       fake.createCampaign(TOKEN, { ...CONTRACT_SPEC, account: { code: 'NGN' } }),
     ).rejects.toMatchObject({ code: 'validation_failed' });
+  });
+});
+
+describe('FakeMetaConnector — pannes de résultat incertain (EC-META-05)', () => {
+  const NAMED = { ...CONTRACT_SPEC, campaignName: 'Promo [pk-aaaaaaaaaaaa-1]' };
+
+  it('création dont la réponse se perd, campagne créée : l’appel échoue (incertain) mais la campagne existe et se retrouve', async () => {
+    const fake = new FakeMetaConnector();
+    fake.simulateCreateTimeout({ created: true });
+    const error = await fake.createCampaign(TOKEN, NAMED).catch((e: unknown) => e);
+    expect(isAmbiguousMetaFailure(error)).toBe(true);
+    const found = await fake.findCampaignsByReference(TOKEN, NAMED.adAccountId, 'pk-aaaaaaaaaaaa');
+    expect(found.campaigns).toHaveLength(1);
+    expect(found.campaigns[0]?.adId).not.toBeNull();
+    expect(fake.createAttempts).toBe(1);
+  });
+
+  it('création dont la réponse se perd, rien de créé : l’appel échoue (incertain) et rien ne se retrouve', async () => {
+    const fake = new FakeMetaConnector();
+    fake.simulateCreateTimeout({ created: false });
+    const error = await fake.createCampaign(TOKEN, NAMED).catch((e: unknown) => e);
+    expect(isAmbiguousMetaFailure(error)).toBe(true);
+    const found = await fake.findCampaignsByReference(TOKEN, NAMED.adAccountId, 'pk-aaaaaaaaaaaa');
+    expect(found).toEqual({ campaigns: [], exhaustive: true });
+  });
+
+  it('refus net de création : pas incertain, rien de créé', async () => {
+    const fake = new FakeMetaConnector();
+    fake.simulateCreateRefusal(
+      new AppError('meta_error', {
+        meta: { title: 'Refus' },
+        cause: new MetaGraphError({ code: 100, message: 'x' }, 400),
+      }),
+    );
+    const error = await fake.createCampaign(TOKEN, NAMED).catch((e: unknown) => e);
+    expect(isAmbiguousMetaFailure(error)).toBe(false);
+    expect(fake.campaigns.size).toBe(0);
+  });
+
+  it('activation dont la réponse se perd : appliquée ou non selon le scénario', async () => {
+    const fake = new FakeMetaConnector();
+    const refs = await fake.createCampaign(TOKEN, NAMED);
+    fake.simulateResumeTimeout({ applied: false });
+    expect(isAmbiguousMetaFailure(await fake.resume(TOKEN, refs).catch((e: unknown) => e))).toBe(
+      true,
+    );
+    expect((await fake.getStatus(TOKEN, refs)).status).toBe('paused');
+    fake.simulateResumeTimeout({ applied: true });
+    await fake.resume(TOKEN, refs).catch(() => undefined);
+    expect((await fake.getStatus(TOKEN, refs)).status).toBe('active');
+  });
+
+  it('lecture de rapprochement en panne, puis liste coupée', async () => {
+    const fake = new FakeMetaConnector();
+    await fake.createCampaign(TOKEN, NAMED);
+    fake.simulateLookupFailure();
+    await expect(
+      fake.findCampaignsByReference(TOKEN, NAMED.adAccountId, 'pk-aaaaaaaaaaaa'),
+    ).rejects.toMatchObject({ code: 'meta_error' });
+    fake.simulateLookupTruncated();
+    expect(
+      await fake.findCampaignsByReference(TOKEN, NAMED.adAccountId, 'pk-aaaaaaaaaaaa'),
+    ).toEqual({ campaigns: [], exhaustive: false });
   });
 });

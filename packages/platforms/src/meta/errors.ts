@@ -239,3 +239,34 @@ export function toAppError(error: unknown): AppError {
 
   return new AppError('meta_error', { cause: error });
 }
+
+/** Codes de Meta qui disent « panne temporaire » sans dire si l'opération a pu aboutir en partie. */
+const OUTAGE_CODES: ReadonlySet<number> = new Set([1, 2, 341]);
+
+function isAmbiguousCause(cause: unknown): boolean {
+  if (cause instanceof MetaOperationError && cause.cause !== undefined) {
+    return isAmbiguousCause(cause.cause);
+  }
+  if (cause instanceof MetaValidationError) return false;
+  if (cause instanceof MetaGraphError) {
+    if (cause.httpStatus >= 500) return true;
+    return cause.fbError.code !== undefined && OUTAGE_CODES.has(cause.fbError.code);
+  }
+  // Délai dépassé, connexion coupée, réponse illisible, identifiant absent de la réponse… : Meta a pu agir.
+  return true;
+}
+
+/**
+ * Meta A-T-IL PU créer quelque chose malgré l'erreur ? (SECURITY_NOTES EC-META-05)
+ *  - non : refus net (budget, jeton, paiement, validation, paramètre invalide, limitation de débit) ou erreur de Pubeka sans
+ *    lien avec Meta : l'échec est définitif ;
+ *  - oui : délai dépassé, coupure, réponse illisible, HTTP 5xx, codes 1, 2 et 341 (panne temporaire) : le résultat est incertain,
+ *    la tâche doit chercher chez Meta ce qui existe AVANT de conclure, et ne JAMAIS recréer d'office.
+ * Dans le doute, c'est incertain.
+ */
+export function isAmbiguousMetaFailure(error: unknown): boolean {
+  if (error instanceof AppError) {
+    return error.code === 'meta_error' && isAmbiguousCause(error.cause);
+  }
+  return isAmbiguousCause(error);
+}

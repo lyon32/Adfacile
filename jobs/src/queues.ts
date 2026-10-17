@@ -13,4 +13,8 @@ export const queues = {
     concurrencyLimit: QUEUE_CONCURRENCY['media-byteplus-video'],
   }),
   agents: queue({ name: 'agents', concurrencyLimit: QUEUE_CONCURRENCY.agents }),
+  metaPublish: queue({
+    name: 'meta-publish',
+    concurrencyLimit: QUEUE_CONCURRENCY['meta-publish'],
+  }),
 } as const;

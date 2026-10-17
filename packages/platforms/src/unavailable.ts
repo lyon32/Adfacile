@@ -1,5 +1,6 @@
 import { AppError } from '@pubeka/contracts';
 import type {
+  CampaignLookup,
   DailyStats,
   HealthCheckItem,
   LocationMatch,
@@ -51,6 +52,9 @@ export class UnavailableConnector implements PlatformConnector {
     return Promise.reject(this.refusal());
   }
   resume(): Promise<void> {
+    return Promise.reject(this.refusal());
+  }
+  findCampaignsByReference(): Promise<CampaignLookup> {
     return Promise.reject(this.refusal());
   }
   deleteCampaign(): Promise<boolean> {

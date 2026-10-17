@@ -102,7 +102,12 @@ export async function updateCampaign(
       .eq('id', row.page_id)
       .maybeSingle();
     if (page.error !== null) throw new AppError('internal_error', { cause: page.error });
-    if (page.data?.active === false) await assertPageInPlan(ctx, page.data, row.page_id);
+    if (page.data?.active === false)
+      await assertPageInPlan(
+        { svc: ctx.svc, workspaceId: ctx.workspace.id },
+        page.data,
+        row.page_id,
+      );
   }
   // Seuls les brouillons se modifient ici ; une modification de campagne publiée (renvoyée à Meta) n'est pas livrée par S16.
   if (row.status !== 'draft' || !row.editable) {
