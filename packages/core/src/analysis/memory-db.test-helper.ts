@@ -50,7 +50,18 @@ const DEFAULTS: Record<string, () => Row> = {
     fx_rate_xaf: null,
     published_at: null,
     chosen_proposal_version: null,
+    meta_campaign_id: null,
+    meta_adset_id: null,
+    publish_ref: null,
+    publish_attempt: 0,
+    publish_idempotency_key: null,
+    publish_phase: 'none',
+    publish_started_at: null,
+    publish_error: null,
+    quota_state: 'none',
+    paused_at: null,
   }),
+  ads: () => ({ meta_creative_id: null, status: null, variant: null }),
 };
 
 /** Contraintes simulées d'une table (les vraies sont prouvées par PGlite et les tests d'intégration). */
@@ -124,6 +135,20 @@ export class MemoryDb {
         this.objects.set(`${bucket}/${path}`, { bytes, createdAt: new Date().toISOString() });
         return Promise.resolve({ data: { path }, error: null });
       },
+      createSignedUrl: (
+        path: string,
+        expiresIn: number,
+      ): Promise<{ data: { signedUrl: string } | null; error: { message: string } | null }> => {
+        this.storageCalls.push(`sign:${bucket}/${path}`);
+        if (this.failNext.delete('storage:sign'))
+          return Promise.resolve({ data: null, error: { message: 'down' } });
+        if (!this.objects.has(`${bucket}/${path}`))
+          return Promise.resolve({ data: null, error: { message: 'Object not found' } });
+        return Promise.resolve({
+          data: { signedUrl: `https://storage.test/${bucket}/${path}?ttl=${String(expiresIn)}` },
+          error: null,
+        });
+      },
       remove: (paths: string[]): Promise<{ data: unknown; error: null }> => {
         for (const path of paths) {
           this.storageCalls.push(`remove:${bucket}/${path}`);
@@ -182,6 +207,22 @@ class Query implements PromiseLike<Result> {
   }
   eq(column: string, value: unknown): this {
     this.filters.push((row) => row[column] === value);
+    return this;
+  }
+  neq(column: string, value: unknown): this {
+    this.filters.push((row) => row[column] !== value);
+    return this;
+  }
+  is(column: string, value: null): this {
+    this.filters.push((row) => (row[column] ?? null) === value);
+    return this;
+  }
+  gte(column: string, value: unknown): this {
+    this.filters.push((row) => String(row[column]) >= String(value));
+    return this;
+  }
+  lt(column: string, value: unknown): this {
+    this.filters.push((row) => String(row[column]) < String(value));
     return this;
   }
   in(column: string, values: unknown[]): this {

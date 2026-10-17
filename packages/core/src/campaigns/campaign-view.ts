@@ -12,11 +12,12 @@ import {
 } from './campaign-schemas';
 import { campaignCost } from './cost';
 import { loadCostContext, type CostContext } from './cost-context';
+import { readPublicationError } from './publish/publication-error';
 
 export type CampaignView = components['schemas']['Campaign'];
 
 export const CAMPAIGN_COLUMNS =
-  'id, workspace_id, page_id, ad_account_id, analysis_id, name, platform, objective, destination, optimization_goal, geo, targeting, daily_budget_usd_cents, fx_rate_xaf, start_date, end_date, copy, tracking, visual_brief, ab_test, status, published_at, editable, chosen_proposal_version, version';
+  'id, workspace_id, page_id, ad_account_id, analysis_id, name, platform, objective, destination, optimization_goal, geo, targeting, daily_budget_usd_cents, fx_rate_xaf, start_date, end_date, copy, tracking, visual_brief, ab_test, status, published_at, editable, chosen_proposal_version, version, paused_at, publish_error';
 
 export interface CampaignRow {
   id: string;
@@ -44,6 +45,9 @@ export interface CampaignRow {
   editable: boolean;
   chosen_proposal_version: number | null;
   version: number;
+  /** Colonnes de S16 : absentes d'une ancienne lecture, donc facultatives ici. */
+  paused_at?: string | null;
+  publish_error?: unknown;
 }
 
 type Objective = NonNullable<CampaignView['objective']>;
@@ -133,6 +137,8 @@ export function toCampaignView(row: CampaignRow, costContext: CostContext): Camp
     editable: row.editable && row.status === 'draft',
     chosen_proposal_version: row.chosen_proposal_version,
     published_at: row.published_at,
+    paused_at: row.paused_at ?? null,
+    publication_error: readPublicationError(row.publish_error),
     version: row.version,
   };
 }
