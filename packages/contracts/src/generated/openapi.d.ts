@@ -762,6 +762,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workspaces/{workspaceId}/campaigns/{campaignId}/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: components["parameters"]["WorkspaceId"];
+                campaignId: components["parameters"]["CampaignId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Ce qu'il faut savoir avant de publier (photo, clause, état de Meta, Page, rayon des villes)
+         * @description Alimente les écrans Aperçu et Publier. Lecture seule, tout membre (même en lecture seule de l'espace) : rien n'est modifié.
+         *     `visual.url` est une adresse signée valable 15 minutes (API_SPEC §13) vers la photo téléversée à l'étape Sources, utilisée comme
+         *     visuel de la pub tant que l'étape Visuel n'existe pas. `liability_required` est vrai tant que l'espace n'a pas accepté la clause de
+         *     responsabilité. `cities[].effective_radius_km` est le rayon réellement envoyé à Meta (17 à 80 km pour une ville).
+         */
+        get: operations["getPublicationReadiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspaces/{workspaceId}/campaigns/{campaignId}/estimate": {
         parameters: {
             query?: never;
@@ -1977,6 +2003,38 @@ export interface components {
             publication_error?: components["schemas"]["PublicationError"] | null;
             /** @description Augmente à chaque modification ; à renvoyer dans PATCH (SECURITY_NOTES EC-TEAM-08) */
             version: number;
+        };
+        PublicationReadiness: {
+            liability_required: boolean;
+            visual: {
+                /** @enum {string} */
+                status: "ready" | "missing" | "expired";
+                /** Format: uri */
+                url: string | null;
+                /** Format: date-time */
+                expires_at: string | null;
+            };
+            meta: {
+                /** @enum {string} */
+                connection: "ok" | "expiring" | "expired" | "revoked" | "none";
+                ad_account: {
+                    name: string | null;
+                    currency: string | null;
+                } | null;
+                /** @enum {string} */
+                payment_method: "present" | "missing" | "unknown";
+            };
+            page: {
+                /** Format: uuid */
+                id: string;
+                name: string | null;
+                active: boolean;
+            } | null;
+            cities: {
+                name: string;
+                radius_km: number;
+                effective_radius_km: number;
+            }[];
         };
         ReachEstimate: {
             /** @enum {string} */
@@ -3928,6 +3986,33 @@ export interface operations {
             409: components["responses"]["Conflict"];
             424: components["responses"]["FailedDependency"];
             502: components["responses"]["BadGateway"];
+        };
+    };
+    getPublicationReadiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: components["parameters"]["WorkspaceId"];
+                campaignId: components["parameters"]["CampaignId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicationReadiness"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getReachEstimate: {

@@ -45,6 +45,7 @@ function input(
       metaAdAccountId: 'act_100000000001',
       currency: 'USD',
       hasPaymentMethod: true,
+      name: 'Compte',
       connectionId: 'c1',
     },
     account: { code: 'USD' },

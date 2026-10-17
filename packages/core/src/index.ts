@@ -54,6 +54,7 @@ export * from './campaigns/publish/run-publication';
 export * from './campaigns/publish/campaign-control';
 export * from './campaigns/publish/fake-meta';
 export * from './campaigns/publish/reach-estimate';
+export * from './campaigns/publish/publication-readiness';
 export * from './campaigns/publish/publish-deps';
 export * from './agent-journal';
 export * from './campaigns/fake-stratege';
