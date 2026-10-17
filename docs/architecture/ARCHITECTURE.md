@@ -290,7 +290,13 @@ Détail chiffré : [plans-et-credits.md](../produit/plans-et-credits.md).
 - **Tous les pays d'Afrique** (décision du 17/10/2026) : la table `countries` porte les 54 pays (migration 0012), chacun avec sa monnaie ISO 4217, son fuseau IANA par défaut (celui de la capitale) et ses noms FR et EN (CLDR). Sources : ISO 3166-1, ISO 4217 (SIX), CLDR, IANA `zone.tab`.
 - **Unités mineures par monnaie** : `packages/shared/src/currency.ts` porte l'exposant ISO 4217 de chaque monnaie (0 : FCFA, franc guinéen, ougandais, rwandais… ; 2 : naira, rand… ; 3 : dinar tunisien et libyen). Aucun « /100 » ni « 2 décimales » codé en dur pour une monnaie locale ; une monnaie absente de la table lève une erreur. Le formatage passe par `Intl.NumberFormat` (FR/EN), le FCFA s'écrit « FCFA ».
 - **Montants** : `local_minor` (entier, unité mineure de `currency`) et `usd_cents`. Conversion en entiers (taux au dix-millième, arrondi à la demi-unité vers le haut).
-- **Taux de change** : voir ci-dessous (source et fraîcheur).
+- **Taux de change : ExchangeRate-API, accès ouvert** (décision du 17/10/2026, source `exchangerate-api`).
+  - Point d'accès : `GET https://open.er-api.com/v6/latest/USD` (doc : https://www.exchangerate-api.com/docs/free ; conditions : https://www.exchangerate-api.com/terms). **Aucune clé, aucune variable d'environnement, rien à créer.** Un seul appel donne les 166 monnaies, dont les 42 d'Afrique prises en charge (relevé réel du 17/10/2026 : ZWG et ZWL y figurent, SLL/MRO/STD n'y figurent pas, on utilise SLE/MRU/STN).
+  - **Une mise à jour par jour** (`time_next_update_unix`). La tâche `fx.refresh` (Trigger.dev, `0 */6 * * *` UTC, un seul essai) ne fait la requête que si la prochaine mise à jour annoncée est passée; HTTP 429 puis blocage de 20 minutes si l'on insiste : une erreur est journalisée et on attend la prochaine exécution (jamais de nouvel essai).
+  - **Fraîcheur** : un taux publié il y a plus de **48 h** (`provider_updated_at`, sinon `fetched_at`) n'est plus utilisé : l'écran affiche le dollar seul (`fx_not_available`). 48 h laissent passer une mise à jour manquée.
+  - **Taux aberrants rejetés et journalisés** : zéro, négatif, NaN, infini, arrondi à zéro, hors de la colonne `numeric(12,4)`, variation de plus de 50 % d'une publication à l'autre (un vrai décrochage de monnaie demande alors un taux saisi à la main, `manual`, depuis l'administration, S31). Un échec ou un rejet laisse les anciens taux en place.
+  - **Licence** : usage personnel OU commercial permis, mise en cache permise; **redistribution interdite** (Pubeka n'affiche que des montants convertis : aucune route ne publie le tableau des taux, la route publique `/public/fx-rates` de S05 est supprimée, `exchange_rates` n'est plus lisible par les connectés); **attribution obligatoire** : lien « Rates By Exchange Rate API » (FR : « Taux fournis par Exchange Rate API ») sous les montants convertis de l'écran Proposition, **à reprendre en S16, S17 et S24 partout où un montant converti s'affiche**. Service fourni « tel quel », offre gratuite pouvant être interrompue sans préavis, taux donnés à titre indicatif (la mention « coût estimé » reste affichée).
+  - **Risque à lever avant S36** : le point d'accès ouvert n'a aucune garantie de disponibilité; prévoir une offre payante du même fournisseur (clé d'API) si la continuité devient critique.
 - Montants affichés **en monnaie locale, dollars en petit dessous**.
 - **TVA** : TVA retirée pour le moment (décision du 17/10/2026), à réactiver sur décision. Le coût est `budget par jour × jours` ; la table `vat_rates` (modifiable depuis l'administration) et `ad_accounts.vat_country` restent en base, dormantes (aucune migration destructive).
 
@@ -307,7 +313,7 @@ Détail chiffré : [plans-et-credits.md](../produit/plans-et-credits.md).
 | Rappels d'abonnement (J-3, J-1, J0, fin de grâce) | Chaque jour |
 | Attribution et expiration des crédits mensuels (date anniversaire) | Chaque jour |
 | Suppression des fichiers de plus de 7 jours (sauf campagnes) | Chaque jour |
-| Taux de change | Toutes les heures |
+| Taux de change (`fx.refresh`; appelle le fournisseur une fois par jour au plus) | Toutes les 6 heures |
 | Résumé du lundi (e-mail) | Chaque lundi |
 | Séquence de bienvenue (J1 connecter Meta, J3 première pub, J6 fin d'essai) | Chaque heure |
 | Soldes et budgets fournisseurs (alerte solde bas, budget 15 $) | Toutes les heures |
@@ -345,7 +351,7 @@ Fonctions (Q17, Q27) :
 - **Catalogue de modèles** : visibilité, modèle recommandé, réglages des niveaux, coût et crédits.
 - **Table de routage** et budgets par fournisseur (15 $/mois), soldes.
 - **Coûts IA** par utilisateur, par agent, par modèle ; temps d'attente moyen par file.
-- **Table de TVA** par pays ; taux de change (forcer une valeur en cas de panne).
+- **Table de TVA** par pays ; taux de change (saisir une valeur à la main, source `manual`, en cas de panne ou de décrochage d'une monnaie).
 - **Bibliothèque de références** des visuels.
 - **Mode maintenance** (« Retour à 14 h ») sans redéploiement (Q75).
 - Paramètres : seuils de marge, prix du crédit, quotas des formules, plafond quotidien.

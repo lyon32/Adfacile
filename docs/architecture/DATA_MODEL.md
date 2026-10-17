@@ -2,7 +2,7 @@
 
 > Version 1 · 10 octobre 2026 · **Document de référence des données.** Remplace l'ancien `MODELE-DE-DONNEES.md`.
 > Source de vérité : les migrations SQL [`supabase/migrations/`](../../supabase/migrations/). La section 6 (schémas des tables) est **générée automatiquement** à partir de la base réelle par [`supabase/scripts/gen-data-model.mjs`](../../supabase/scripts/gen-data-model.mjs) : elle ne peut pas diverger du SQL.
-> Sécurité des données : [SECURITE-BACKEND.md](SECURITE-BACKEND.md) · tests : [`supabase/tests/security.test.mjs`](../../supabase/tests/security.test.mjs) (44/44), [`api-support.test.mjs`](../../supabase/tests/api-support.test.mjs) (migration 0003) et [`login-attempts.test.mjs`](../../supabase/tests/login-attempts.test.mjs) (migration 0004) et [`uploads.test.mjs`](../../supabase/tests/uploads.test.mjs) (migrations 0008 et 0009) et [`campaign-drafts.test.mjs`](../../supabase/tests/campaign-drafts.test.mjs) (migration 0010) et [`africa-countries.test.mjs`](../../supabase/tests/africa-countries.test.mjs) (migration 0012 : les 54 pays d'Afrique, leurs monnaies, les taux de change de toute monnaie).
+> Sécurité des données : [SECURITE-BACKEND.md](SECURITE-BACKEND.md) · tests : [`supabase/tests/security.test.mjs`](../../supabase/tests/security.test.mjs) (44/44), [`api-support.test.mjs`](../../supabase/tests/api-support.test.mjs) (migration 0003) et [`login-attempts.test.mjs`](../../supabase/tests/login-attempts.test.mjs) (migration 0004) et [`uploads.test.mjs`](../../supabase/tests/uploads.test.mjs) (migrations 0008 et 0009) et [`campaign-drafts.test.mjs`](../../supabase/tests/campaign-drafts.test.mjs) (migration 0010) et [`africa-countries.test.mjs`](../../supabase/tests/africa-countries.test.mjs) (migration 0012 : les 54 pays d'Afrique, leurs monnaies, les taux de change de toute monnaie) et [`exchange-rates.test.mjs`](../../supabase/tests/exchange-rates.test.mjs) (migration 0013 : fraîcheur et accès aux taux).
 
 ---
 
@@ -989,6 +989,8 @@ RLS : activée · 1 politique(s)
 | rate | numeric | non |  |
 | source | text | non |  |
 | fetched_at | timestamp with time zone | non | now() |
+| provider_updated_at | timestamp with time zone | oui |  |
+| next_update_at | timestamp with time zone | oui |  |
 
 | Contrainte | Définition |
 |---|---|
@@ -1003,7 +1005,12 @@ RLS : activée · 1 politique(s)
 | n | `NOT NULL source` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
-RLS : activée · 1 politique(s)
+| Index | Définition |
+|---|---|
+| exchange_rates_quote_fetched_idx | `public.exchange_rates USING btree (quote, fetched_at DESC)` |
+| exchange_rates_quote_provider_uniq | `UNIQUE public.exchange_rates USING btree (quote, provider_updated_at) WHERE (provider_updated_at IS NOT NULL)` |
+
+RLS : activée · 0 politique(s)
 
 #### `public.generation_jobs`
 

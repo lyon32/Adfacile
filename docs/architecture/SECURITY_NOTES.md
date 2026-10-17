@@ -260,6 +260,8 @@ Une réponse d'agent ou un résultat de génération est traité comme une donn�
 | EC-CAMP-02 | Quota atteint entre l'aperçu et la publication (un autre membre a publié) | Brouillon conservé, proposition de formule supérieure | `402 campaign_quota_reached` |
 | EC-CAMP-03 | Formule 1 Page : publier avec la Page B alors que la Page A est déjà utilisée ce mois-ci | Refus avec la date à partir de laquelle la Page B sera utilisable (✅ Q28) | `402 page_limit_reached` |
 | EC-CAMP-04 | La date de début est passée au moment de publier (minuit, fuseau) | Début ramené à « maintenant » ; si la fin devient antérieure au début, refus avec la correction proposée | `422` |
+| EC-FX-01 | Le fournisseur des taux est en panne, bloque l'adresse (429) ou renvoie un taux aberrant | Anciens taux conservés jusqu'à 48 h, puis dollar seul (`fx_not_available`) ; erreur journalisée, aucune relance automatique ; taux nul, négatif, NaN ou variant de plus de 50 % rejeté | — |
+| EC-FX-02 | Quelqu'un tente de lire ou de publier le tableau des taux | Table réservée au service (aucune politique pour les connectés), aucune route ne l'expose (le fournisseur interdit la redistribution) | `403` / absent |
 | EC-CAMP-05 | Le taux de change a bougé entre l'aperçu et la publication | Montant recalculé ; si l'écart dépasse 2 % 🔶, l'écran redemande la confirmation | `409 conflict` (`meta.new_total`) |
 | EC-CAMP-06 | Publication avec un visuel dont les fichiers ont expiré (7 jours) | Refus, propositions : « Générer un visuel similaire » ou en choisir un autre | `410 gone` |
 | EC-CAMP-07 | Republication après refus | **Aucun** quota décompté (✅ TR-PLA-09) | `202` |

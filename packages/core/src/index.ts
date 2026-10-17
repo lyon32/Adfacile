@@ -52,3 +52,8 @@ export * from './campaigns/fake-stratege';
 export * from './campaigns/proposal-deps';
 export * from './campaigns/proposals';
 export * from './campaigns/fake-proposal-deps';
+export * from './fx/fx-source';
+export * from './fx/exchange-rate-api-source';
+export * from './fx/fake-fx-source';
+export * from './fx/freshness';
+export * from './fx/refresh-exchange-rates';

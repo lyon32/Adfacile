@@ -171,7 +171,7 @@
 | TR-PAY-09 | Frais SasPay **affichés et payés par le client** ; **aucun remboursement** | MVP | Revue |
 | TR-PAY-10 | Essai : 1 campagne, 3 visuels, 7 jours, sans moyen de paiement, **un par compte** | MVP | Tests |
 | TR-PAY-11 | Parrainage : **2 crédits bonus au parrain et 2 au filleul**, **uniquement au premier paiement** du filleul | MVP | Tests |
-| TR-PAY-12 | Taux de change USD → XAF/XOF : SasPay, source gratuite en secours, valeur forçable dans l'administration ; **TVA Meta par pays** dans une table modifiable | MVP | Tests |
+| TR-PAY-12 | Taux de change USD → monnaie locale de chacun des 54 pays d'Afrique : ExchangeRate-API (accès ouvert, une mise à jour par jour), périmé au-delà de 48 h (dollar seul), valeur forçable dans l'administration; TVA retirée pour le moment (décision du 17/10/2026), à réactiver sur décision | MVP | Tests |
 
 ---
 

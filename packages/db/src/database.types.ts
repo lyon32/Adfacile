@@ -865,6 +865,8 @@ export type Database = {
           base: string;
           fetched_at: string;
           id: number;
+          next_update_at: string | null;
+          provider_updated_at: string | null;
           quote: string;
           rate: number;
           source: string;
@@ -873,6 +875,8 @@ export type Database = {
           base?: string;
           fetched_at?: string;
           id?: never;
+          next_update_at?: string | null;
+          provider_updated_at?: string | null;
           quote: string;
           rate: number;
           source: string;
@@ -881,6 +885,8 @@ export type Database = {
           base?: string;
           fetched_at?: string;
           id?: never;
+          next_update_at?: string | null;
+          provider_updated_at?: string | null;
           quote?: string;
           rate?: number;
           source?: string;
