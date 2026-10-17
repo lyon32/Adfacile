@@ -52,6 +52,7 @@ import {
   type PublishPayload,
   type PublishRow,
 } from './publish-types';
+import { loadRefs } from './remote-refs';
 import { applyTransition, recordStatusEvent, updateWhilePublishing } from './transitions';
 
 const logger = createLogger({ base: { module: 'run-publication' } });
@@ -520,12 +521,12 @@ export async function runPublication(
         // Une exécution précédente a commencé la création sans conclure : on rapproche, on ne recrée pas.
         return await reconcile(run, undefined);
       case 'created': {
-        const refs = await loadRefs(run);
+        const refs = await loadRefs(run.svc, run.row, run.adAccountId);
         // Identifiants introuvables (ne devrait pas arriver) : on retourne au rapprochement plutôt que de deviner.
         return refs === null ? await reconcile(run, undefined) : await activate(run, refs, false);
       }
       case 'activating': {
-        const refs = await loadRefs(run);
+        const refs = await loadRefs(run.svc, run.row, run.adAccountId);
         return refs === null
           ? { outcome: 'pending', reason: 'activation_unknown' }
           : await resolveActivation(run, refs, false, undefined);
@@ -536,27 +537,4 @@ export async function runPublication(
     if (error instanceof AppError) return fail(run, error);
     throw error;
   }
-}
-
-/** Identifiants enregistrés d'une campagne déjà créée chez Meta (la campagne et l'ensemble sont sur `campaigns`, la publicité dans `ads`). */
-async function loadRefs(run: Run): Promise<PlatformCampaignRefs | null> {
-  const { row } = run;
-  if (row.meta_campaign_id === null) return null;
-  const ad = unwrap<{ meta_ad_id: string | null; meta_creative_id: string | null } | null>(
-    await run.svc
-      .from('ads')
-      .select('meta_ad_id, meta_creative_id')
-      .eq('workspace_id', row.workspace_id)
-      .eq('campaign_id', row.id)
-      .order('id', { ascending: true })
-      .limit(1)
-      .maybeSingle(),
-  );
-  return {
-    campaignId: row.meta_campaign_id,
-    adsetId: row.meta_adset_id,
-    adId: ad?.meta_ad_id ?? null,
-    creativeId: ad?.meta_creative_id ?? null,
-    adAccountId: run.adAccountId,
-  };
 }

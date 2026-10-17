@@ -3,6 +3,8 @@ import 'server-only';
 // Les points d'accroche des quotas et des crédits (`beforeSpend`, `afterAccepted`) arrivent avec S24.
 import {
   createProposalDeps,
+  createCampaignControlDeps,
+  type CampaignControlDeps,
   type JobEnqueuer,
   type ProposalDeps,
   type PublishCampaignDeps,
@@ -47,4 +49,22 @@ export function overridePublishDeps(deps: PublishCampaignDeps | undefined): void
     throw new Error('overridePublishDeps est réservé aux tests');
   }
   publishOverride = deps;
+}
+
+let controlOverride: CampaignControlDeps | undefined;
+let controlDefault: CampaignControlDeps | undefined;
+
+/** Dépendances de la pause, de la reprise et de la relance : le connecteur Meta (réel, ou faux selon PUBEKA_FAKE_PROVIDERS) et le jeton. */
+export function controlDeps(): CampaignControlDeps {
+  if (controlOverride !== undefined) return controlOverride;
+  controlDefault ??= createCampaignControlDeps(getEnv(), () => new Date());
+  return controlDefault;
+}
+
+/** Tests d'intégration seulement. Refusé en production. */
+export function overrideControlDeps(deps: CampaignControlDeps | undefined): void {
+  if (getEnv().NEXT_PUBLIC_APP_ENV === 'production') {
+    throw new Error('overrideControlDeps est réservé aux tests');
+  }
+  controlOverride = deps;
 }

@@ -101,7 +101,11 @@ describeRoute('metaWebhookVerify', {
     // Jeton faux, mode inattendu : 403, et le défi n'est jamais renvoyé.
     for (const query of [
       { 'hub.mode': 'subscribe', 'hub.verify_token': 'faux', 'hub.challenge': CHALLENGE },
-      { 'hub.mode': 'subscribe', 'hub.verify_token': `${VERIFY_TOKEN}x`, 'hub.challenge': CHALLENGE },
+      {
+        'hub.mode': 'subscribe',
+        'hub.verify_token': `${VERIFY_TOKEN}x`,
+        'hub.challenge': CHALLENGE,
+      },
       { 'hub.mode': 'unsubscribe', 'hub.verify_token': VERIFY_TOKEN, 'hub.challenge': CHALLENGE },
     ]) {
       const res = verify(get(query));
