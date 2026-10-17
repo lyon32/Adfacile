@@ -9,7 +9,9 @@ import { useState, type ReactNode } from 'react';
 import { useConnections } from '../meta-connection/api';
 import { useAnalysis } from './api';
 import { BlockedPanel, FailedPanel } from './outcome-panels';
+import { PreviewStep } from './preview-step';
 import { ProposalStep } from './proposal-step';
+import { PublishStep } from './publish-step';
 import { QuestionsStep } from './questions-step';
 import { SourcesStep } from './sources-step';
 import { Stepper, type WizardStep } from './stepper';
@@ -133,6 +135,41 @@ function AnalysisFlow({
       );
     case 'questions':
     case 'ready':
+      if (
+        (stage === 'apercu' || stage === 'publier') &&
+        data.status === 'ready' &&
+        campaignId !== null
+      ) {
+        return (
+          <Shell step={stage === 'apercu' ? 'preview' : 'publish'}>
+            {stage === 'apercu' ? (
+              <PreviewStep
+                workspaceId={workspaceId}
+                campaignId={campaignId}
+                onBack={() => {
+                  void setStage('proposition');
+                }}
+                onNext={() => {
+                  void setStage('publier');
+                }}
+                onSources={onBack}
+              />
+            ) : (
+              <PublishStep
+                workspaceId={workspaceId}
+                campaignId={campaignId}
+                onBackToPreview={() => {
+                  void setStage('apercu');
+                }}
+                onBackToProposal={() => {
+                  void setStage('proposition');
+                }}
+                onSources={onBack}
+              />
+            )}
+          </Shell>
+        );
+      }
       if (stage === 'proposition' && data.status === 'ready') {
         return (
           <Shell step="proposal">
@@ -146,6 +183,9 @@ function AnalysisFlow({
               }}
               onBack={() => {
                 void setStage(null);
+              }}
+              onNext={() => {
+                void setStage('apercu');
               }}
             />
           </Shell>

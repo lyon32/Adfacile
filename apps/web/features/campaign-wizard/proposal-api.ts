@@ -94,7 +94,22 @@ export const CampaignSchema = z.object({
   version: z.number(),
   name: z.string(),
   editable: z.boolean(),
+  page_id: z.string().nullable().optional(),
   analysis_id: z.string().nullable().optional(),
+  published_at: z.string().nullable().optional(),
+  paused_at: z.string().nullable().optional(),
+  /** Pourquoi la dernière publication a échoué (Meta : titre et message déjà traduits côté serveur). */
+  publication_error: z
+    .object({
+      code: z.string(),
+      title: z.string().optional(),
+      message: z.string().optional(),
+      fix: z.string().nullable().optional(),
+      uncertain: z.boolean().optional(),
+      at: z.string(),
+    })
+    .nullable()
+    .optional(),
   objective: z.enum(OBJECTIVES).nullable().optional(),
   destination: z.enum(DESTINATIONS).nullable().optional(),
   geo: GeoSchema.default({}),

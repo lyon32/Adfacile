@@ -35,6 +35,8 @@ export interface ProposalStepProps {
   campaignId: string | null;
   onCampaign: (campaignId: string) => void;
   onBack: () => void;
+  /** Étape suivante (Aperçu) une fois la proposition retenue ; absent : le panneau « Proposition retenue » reste affiché. */
+  onNext?: () => void;
 }
 
 type ErrorKey =
@@ -80,6 +82,7 @@ export function ProposalStep({
   campaignId,
   onCampaign,
   onBack,
+  onNext,
 }: ProposalStepProps): ReactNode {
   const t = useTranslations('campaign.wizard.proposal');
   const common = useTranslations('common');
@@ -190,7 +193,9 @@ export function ProposalStep({
 
   async function onContinue(): Promise<void> {
     setError(null);
-    if (await ensureChosen()) setRetained(true);
+    if (!(await ensureChosen())) return;
+    if (onNext === undefined) setRetained(true);
+    else onNext();
   }
 
   async function onEdit(): Promise<void> {
