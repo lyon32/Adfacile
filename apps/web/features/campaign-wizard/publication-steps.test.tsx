@@ -255,6 +255,17 @@ describe('Étape Aperçu', () => {
     dom(screen.getByRole('tab', { name: 'Fil Facebook' })).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('A11Y : chaque onglet pointe vers le panneau qui existe, et le panneau est nommé par l’onglet actif', async () => {
+    stubApi(ROUTES());
+    mount(<PreviewStep {...previewProps()} />);
+    const tab = await screen.findByRole('tab', { name: 'Fil Facebook' });
+    const controls = tab.getAttribute('aria-controls') ?? '';
+    const panel = document.getElementById(controls);
+    expect(panel).not.toBeNull();
+    expect(panel?.getAttribute('role')).toBe('tabpanel');
+    expect(panel?.getAttribute('aria-labelledby')).toBe(tab.id);
+  });
+
   it('dit que l’aperçu est construit par Pubeka', async () => {
     stubApi(ROUTES());
     mount(<PreviewStep {...previewProps()} />);
