@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PublishSpec } from '../types';
 import { assertValidCampaign, validateCampaignData } from './campaign-validation';
-import { minDailyBudgetFcfa } from './currency';
 
 // Tests portés de backend/src/controllers/campaignValidation.test.js (TR-PLA-02, TR-PLA-10).
 // Campagne minimale valide, servant de base aux variantes.
@@ -9,6 +8,7 @@ const BASE: PublishSpec = {
   objective: 'OUTCOME_TRAFFIC',
   campaignName: 'Campagne test',
   adAccountId: 'act_1',
+  account: { code: 'USD' },
   page: {
     id: '799671609906273',
     name: 'Lyon Deals',
@@ -25,12 +25,9 @@ const BASE: PublishSpec = {
   creative: { message: 'Texte', headline: 'Titre', link: 'https://exemple.com' },
 };
 
-// Le taux de change est obligatoire : ces tests reprennent le cours d'AdFacile (610 FCFA pour 1 $).
-const OPT = { xafPerUsd: 610 };
-const valider = (data: PublishSpec, options: { xafPerUsd: number } = OPT) =>
-  validateCampaignData(data, options);
+const valider = (data: PublishSpec) => validateCampaignData(data);
 const assertValide = (data: PublishSpec) => {
-  assertValidCampaign(data, OPT);
+  assertValidCampaign(data);
 };
 
 const erreurs = (data: PublishSpec): string => valider(data).errors.join(' ');
@@ -60,16 +57,14 @@ describe('validation de campagne — règles auparavant absentes', () => {
     expect(erreurs({ ...BASE, budgetType: 'lifetime' })).toMatch(/date de fin/i);
   });
 
-  it('emploie le minimum de budget réellement appliqué, pas 1000 en dur (TR-PLA-10)', () => {
-    expect(erreurs({ ...BASE, dailyBudgetUsdCents: 99 })).toContain(
-      String(minDailyBudgetFcfa(610)),
-    );
+  it('emploie le minimum de budget réellement appliqué, 1 $ par jour, pas 1000 en dur (TR-PLA-10)', () => {
+    expect(erreurs({ ...BASE, dailyBudgetUsdCents: 99 })).toContain('1 $ par jour');
     expect(valider({ ...BASE, dailyBudgetUsdCents: 100 }).valid).toBe(true);
   });
 
-  it('exprime le minimum de budget au taux fourni', () => {
-    const r = valider({ ...BASE, dailyBudgetUsdCents: 1 }, { xafPerUsd: 600 });
-    expect(r.errors.join(' ')).toContain('600 FCFA');
+  it('le minimum est exprimé en dollars : aucune monnaie locale ni taux dans le message', () => {
+    const r = valider({ ...BASE, dailyBudgetUsdCents: 1 });
+    expect(r.errors.join(' ')).not.toMatch(/FCFA/);
   });
 
   it("n'exige pas de titre pour une publicité de messagerie", () => {

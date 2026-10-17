@@ -2,8 +2,12 @@
 // `deleteCampaignOnFacebook` (backend/src/services/facebookAdsService.js), comportement inchangé.
 // Documentation : https://developers.facebook.com/docs/marketing-api/reference/ad-campaign-group#Updating
 import type { PlatformCampaignRefs, PublishPatch } from '../types';
+import {
+  accountMinPerDayMinor,
+  PUBEKA_MIN_DAILY_USD_CENTS,
+  usdCentsToAccountMinor,
+} from './account-currency';
 import { finDeJournee } from './ad-account-time';
-import { FB_MIN_DAILY_BUDGET_CENTS, minDailyBudgetFcfa } from './currency';
 import { getAdAccountTimezone } from './create-campaign';
 import { MetaValidationError } from './errors';
 import type { GraphClient } from './graph';
@@ -74,23 +78,39 @@ export async function patchCampaign(
   accessToken: string,
   refs: PlatformCampaignRefs,
   patch: PublishPatch,
-  xafPerUsd: number,
 ): Promise<void> {
   const auth = { access_token: accessToken };
 
+  let dailyBudgetMinor: number | undefined;
   if (patch.dailyBudgetUsdCents !== undefined) {
+    const account = patch.account;
+    if (account === undefined) {
+      throw new MetaValidationError(
+        'La monnaie du compte publicitaire est requise pour modifier le budget.',
+      );
+    }
     if (
       !Number.isInteger(patch.dailyBudgetUsdCents) ||
-      patch.dailyBudgetUsdCents < FB_MIN_DAILY_BUDGET_CENTS
+      patch.dailyBudgetUsdCents < PUBEKA_MIN_DAILY_USD_CENTS
     ) {
+      let minAccountMinor: number | undefined;
+      try {
+        minAccountMinor = accountMinPerDayMinor(account);
+      } catch {
+        minAccountMinor = undefined;
+      }
       throw new AppError('budget_too_low', {
-        meta: { minUsdCents: FB_MIN_DAILY_BUDGET_CENTS, minXaf: minDailyBudgetFcfa(xafPerUsd) },
+        meta: {
+          minUsdCents: PUBEKA_MIN_DAILY_USD_CENTS,
+          currency: account.code,
+          ...(minAccountMinor === undefined ? {} : { minAccountMinor }),
+        },
       });
     }
+    dailyBudgetMinor = usdCentsToAccountMinor(patch.dailyBudgetUsdCents, account);
   }
   const adsetChanges: Record<string, unknown> = {};
-  if (patch.dailyBudgetUsdCents !== undefined)
-    adsetChanges.daily_budget = patch.dailyBudgetUsdCents;
+  if (dailyBudgetMinor !== undefined) adsetChanges.daily_budget = dailyBudgetMinor;
   if (patch.endDate !== undefined) {
     if (!refs.adAccountId)
       throw new MetaValidationError(
