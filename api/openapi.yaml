@@ -667,16 +667,40 @@ paths:
       tags: [ Campagnes ]
       operationId: publishCampaign
       summary: Publier sur la plateforme (décompte le quota de campagnes)
+      description: |
+        Action qui engage de l'argent chez Meta et un quota : `Idempotency-Key` obligatoire (UUID v4). La même clé rejoue la
+        même réponse (`Idempotent-Replayed: true`) sans nouvelle publication ni nouveau quota (EC-CAMP-01).
+
+        Le serveur relit TOUT depuis la base (budget, dates, textes, Page, compte publicitaire) : rien n'est repris du navigateur.
+        Ordre : rôle, espace modifiable, validation du corps, état de la campagne, clause de responsabilité (première publication
+        de l'espace), Page active dans la formule, Meta connecté, budget, dates, visuel, taux de change, quota ; puis
+        `draft → publishing` (ou `rejected`/`error → publishing`) en une seule instruction ; puis la tâche `campaign.publish` est
+        lancée et la réponse est `202`. Le statut passe ensuite à `in_review` quand Meta a reçu la campagne, ou à `error`
+        (quota rendu) en cas d'échec ; un résultat incertain n'est JAMAIS relancé automatiquement : la tâche cherche d'abord chez
+        Meta la campagne portant la référence de publication (SECURITY_NOTES EC-META-05).
+
+        Erreurs : `422 validation_failed` (EC-CAMP-08 : clause non acceptée, champ `accept_liability` ; EC-CAMP-04 : la fin devient
+        antérieure au début), `422 budget_too_low`, `402 campaign_quota_reached` (EC-CAMP-02), `402 page_limit_reached` (EC-CAMP-03,
+        `meta.available_from` ; EC-CAMP-09), `410 gone` (EC-CAMP-06 : visuel expiré), `409 conflict` (`meta.reason` : `fx_changed` avec
+        `meta.new_total` — EC-CAMP-05 ; `publication_in_progress` ; `invalid_transition`), `409 already_published`,
+        `424 meta_not_connected`, `424 meta_token_expired`, `424 meta_payment_method_missing`. Une campagne refusée par Meta qui est republiée
+        ne décompte aucun quota (EC-CAMP-07).
       requestBody:
         required: true
-        content: { application/json: { schema: { type: object, required: [ accept_liability ], properties: { accept_liability: { type: boolean, description: 'Obligatoire à true pour la première publication du compte' } } } } }
+        content: { application/json: { schema: { $ref: '#/components/schemas/PublishRequest' } } }
       responses:
         '202': { description: Publication en cours (statut publishing puis in_review), content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+        '410': { $ref: '#/components/responses/Gone' }
         '422': { $ref: '#/components/responses/Unprocessable' }
         '424': { $ref: '#/components/responses/FailedDependency' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /workspaces/{workspaceId}/campaigns/{campaignId}/pause:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -685,11 +709,18 @@ paths:
       tags: [ Campagnes ]
       operationId: pauseCampaign
       summary: Mettre en pause (envoyé directement à Meta ; autorisé même en lecture seule)
+      description: |
+        Propriétaire ou éditeur. Autorisé en lecture seule et même si la Page n'est plus dans la formule (EC-CAMP-09), pour que le client
+        puisse toujours arrêter de dépenser. Meta est appelé D'ABORD : le statut ne passe à `paused` que si Meta a répondu (EC-META-07 :
+        pas de faux succès, `502 meta_error`). Une campagne déjà en pause renvoie `200` sans appel (idempotent). Autres états : `409 conflict`.
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '502': { $ref: '#/components/responses/BadGateway' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '424': { $ref: '#/components/responses/FailedDependency' }
+        '502': { $ref: '#/components/responses/BadGateway' }
   /workspaces/{workspaceId}/campaigns/{campaignId}/resume:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -698,11 +729,18 @@ paths:
       tags: [ Campagnes ]
       operationId: resumeCampaign
       summary: Reprendre une campagne en pause
+      description: |
+        Propriétaire ou éditeur, espace modifiable, Page dans la formule (`402 page_limit_reached` sinon, EC-CAMP-09). Meta est appelé d'abord ;
+        le statut ne change que si Meta a répondu. Déjà en diffusion : `200` sans appel. Autres états : `409 conflict`.
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '424': { $ref: '#/components/responses/FailedDependency' }
+        '502': { $ref: '#/components/responses/BadGateway' }
   /workspaces/{workspaceId}/campaigns/{campaignId}/relaunch:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -710,13 +748,29 @@ paths:
     post:
       tags: [ Campagnes ]
       operationId: relaunchCampaign
-      summary: Relancer (crée un nouveau brouillon à partir de la campagne)
+      summary: Relancer une campagne
+      description: |
+        Deux usages, choisis par `mode` (décision du 16/10/2026 pour `recover`, PRD F9 pour `copy`) :
+        - `recover` : une campagne ARRÊTÉE (`stopped`, paiement Meta refusé) reprend la diffusion (`stopped → active`, événement `recover`).
+          C'est une ACTION DU CLIENT, faite après qu'il a réglé sa facture ou alimenté ses fonds publicitaires chez Meta : Pubeka ne la
+          détecte pas tout seul. Meta est appelé d'abord ; s'il refuse, le message de Meta (traduit) est renvoyé dans `meta.title` et
+          `meta.message` et le statut reste `stopped` (jamais un échec muet). Réponse `200`.
+        - `copy` : crée un nouveau brouillon à partir de la campagne (même visuel, ou à renouveler). Compte comme une nouvelle campagne
+          à sa publication. Réponse `201`.
       requestBody:
         required: true
-        content: { application/json: { schema: { type: object, required: [ visual_mode ], properties: { visual_mode: { type: string, enum: [ same, similar, change ] } } } } }
+        content: { application/json: { schema: { $ref: '#/components/schemas/RelaunchRequest' } } }
       responses:
-        '201': { description: Nouveau brouillon, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
+        '200': { description: Campagne arrêtée relancée (mode recover), content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
+        '201': { description: Nouveau brouillon (mode copy), content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '424': { $ref: '#/components/responses/FailedDependency' }
+        '502': { $ref: '#/components/responses/BadGateway' }
   /workspaces/{workspaceId}/campaigns/{campaignId}/stats:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -1722,7 +1776,50 @@ components:
         chosen_proposal_version: { type: [ integer, 'null' ] }
         status_message: { type: string, description: "Texte affiché (ex. « Meta vérifie ta pub, en général sous 24 heures »)" }
         published_at: { type: [ string, 'null' ], format: date-time }
+        paused_at: { type: [ string, 'null' ], format: date-time, description: "Mise en pause par le client (« Mise en pause par toi le JJ/MM »)" }
+        publication_error: { oneOf: [ { $ref: '#/components/schemas/PublicationError' }, { type: 'null' } ] }
         version: { type: integer, minimum: 1, description: Augmente à chaque modification ; à renvoyer dans PATCH (SECURITY_NOTES EC-TEAM-08) }
+    PublishRequest:
+      type: object
+      additionalProperties: false
+      required: [ accept_liability ]
+      properties:
+        accept_liability: { type: boolean, description: "Obligatoire à true pour la première publication de l'espace (clause de responsabilité, enregistrée avec la date et l'utilisateur) ; ignoré ensuite." }
+        confirmed_total:
+          type: object
+          additionalProperties: false
+          required: [ amount_minor, currency ]
+          description: |
+            Coût total affiché à l'écran, en monnaie locale. Le serveur le recalcule avec le taux du jour : si l'écart dépasse 2 %,
+            `409 conflict` (`meta.reason: fx_changed`, `meta.new_total`) et l'écran redemande la confirmation (EC-CAMP-05).
+          properties:
+            amount_minor: { type: integer, minimum: 0 }
+            currency: { type: string, pattern: '^[A-Z]{3}$' }
+    RelaunchRequest:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [ mode, version ]
+          properties:
+            mode: { type: string, const: recover }
+            version: { type: integer, minimum: 1, description: Version de la campagne lue par le client (verrou optimiste) }
+        - type: object
+          additionalProperties: false
+          required: [ mode, visual_mode ]
+          properties:
+            mode: { type: string, const: copy }
+            visual_mode: { type: string, enum: [ same, similar, change ] }
+    PublicationError:
+      type: object
+      description: Pourquoi la dernière publication a échoué (affiché sur la campagne en erreur ou revenue en brouillon).
+      required: [ code, at ]
+      properties:
+        code: { $ref: '#/components/schemas/ErrorCode' }
+        title: { type: string, description: "Titre de l'erreur de Meta, traduit" }
+        message: { type: string, description: "Message de Meta, traduit en langage simple" }
+        fix: { type: [ string, 'null' ], enum: [ destination, retry, reconnect, billing, null ] }
+        uncertain: { type: boolean, description: "Vrai si le résultat chez Meta était incertain : la tâche a cherché la campagne chez Meta avant de conclure" }
+        at: { type: string, format: date-time }
     CampaignGeo:
       type: object
       additionalProperties: false
