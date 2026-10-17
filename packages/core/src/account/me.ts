@@ -2,6 +2,7 @@
 // soumis à la RLS, filtrées par l'identifiant de l'utilisateur (SECURITY_NOTES §2).
 import { AppError } from '@pubeka/contracts';
 import { one, type TablesUpdate } from '@pubeka/db';
+import { AFRICAN_CURRENCIES } from '@pubeka/shared';
 import type { Ctx, Locale } from '../context';
 
 export type Greeting = 'bonjour' | 'bonsoir' | 'hello' | 'good_evening';
@@ -16,7 +17,8 @@ export interface Me {
   country_code: string | null;
   city: string | null;
   timezone: string;
-  currency_display: 'XAF' | 'XOF';
+  /** Code ISO 4217 d'une des monnaies d'Afrique prises en charge (XAF par défaut). */
+  currency_display: string;
   theme: 'light' | 'dark' | 'system';
   greeting: Greeting;
 }
@@ -29,7 +31,7 @@ export interface MeUpdate {
   ui_language?: Locale | undefined;
   country_code?: string | undefined;
   city?: string | undefined;
-  currency_display?: 'XAF' | 'XOF' | undefined;
+  currency_display?: string | undefined;
   theme?: 'light' | 'dark' | 'system' | undefined;
 }
 
@@ -78,7 +80,9 @@ interface ProfileRow {
 
 function toMe(row: ProfileRow, now: Date): Me {
   const ui_language = row.ui_language === 'en' ? 'en' : 'fr';
-  const currency_display = row.currency_display === 'XOF' ? 'XOF' : 'XAF';
+  const currency_display = AFRICAN_CURRENCIES.includes(row.currency_display)
+    ? row.currency_display
+    : 'XAF';
   const theme = row.theme === 'dark' || row.theme === 'system' ? row.theme : 'light';
   return {
     id: row.id,

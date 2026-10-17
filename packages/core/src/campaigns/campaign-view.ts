@@ -16,7 +16,7 @@ import { loadCostContext, type CostContext } from './cost-context';
 export type CampaignView = components['schemas']['Campaign'];
 
 export const CAMPAIGN_COLUMNS =
-  'id, workspace_id, page_id, ad_account_id, analysis_id, name, platform, objective, destination, optimization_goal, geo, targeting, daily_budget_usd_cents, vat_rate, fx_rate_xaf, start_date, end_date, copy, tracking, visual_brief, ab_test, status, published_at, editable, chosen_proposal_version, version';
+  'id, workspace_id, page_id, ad_account_id, analysis_id, name, platform, objective, destination, optimization_goal, geo, targeting, daily_budget_usd_cents, fx_rate_xaf, start_date, end_date, copy, tracking, visual_brief, ab_test, status, published_at, editable, chosen_proposal_version, version';
 
 export interface CampaignRow {
   id: string;

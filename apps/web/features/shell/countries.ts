@@ -1,12 +1,13 @@
 import 'server-only';
-// Pays actifs de la zone franc CFA (lecture ouverte aux connectés), triés dans la langue.
+// Pays actifs (les 54 pays d'Afrique, chacun avec sa monnaie ; lecture ouverte aux connectés), triés dans la langue.
 import type { Locale } from '@pubeka/i18n';
 import { createRequestAuthClient } from '../../server/auth/supabase';
 
 export interface CountryOption {
   code: string;
   name: string;
-  currency: 'XAF' | 'XOF';
+  /** Code ISO 4217 de la monnaie du pays. */
+  currency: string;
 }
 
 export async function loadCountries(locale: Locale): Promise<CountryOption[]> {
@@ -19,7 +20,7 @@ export async function loadCountries(locale: Locale): Promise<CountryOption[]> {
     .map((row) => ({
       code: row.code,
       name: locale === 'en' ? row.name_en : row.name_fr,
-      currency: row.currency === 'XOF' ? ('XOF' as const) : ('XAF' as const),
+      currency: row.currency,
     }))
     .sort((a, b) => a.name.localeCompare(b.name, locale));
 }

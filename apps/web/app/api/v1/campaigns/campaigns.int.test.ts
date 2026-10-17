@@ -231,7 +231,8 @@ describeRoute('updateCampaign', {
       days: 7,
       budget_usd_cents: 3500,
     });
-    expect(updated.cost.total?.xaf).toBe(Math.round((3500 * (fx ?? 0)) / 100));
+    expect(updated.cost.total?.local_minor).toBe(Math.round((3500 * (fx ?? 0)) / 100));
+    expect(updated.cost.total?.currency).toBe('XAF');
     expect(updated.cost).not.toHaveProperty('vat_rate');
     expect(updated).not.toHaveProperty('vat_rate');
     // Une seconde modification repart de la version rendue.
@@ -444,6 +445,41 @@ describeRoute('updateCampaign', {
       });
       expect(good.status).toBe(200);
       expect((await asBody(good)).tracking).toEqual({ pixel_id: '123456789012' });
+    },
+    'S15b : propriétaire au Nigeria — coût en naira, en kobo (2 décimales), avec le taux de la base (valeur d’essai)': async () => {
+      await ensureTestFx('NGN', 1500);
+      const ng = await seedWorkspace();
+      await setOwnerCountry(ng, 'NG');
+      const draft = await newDraft(ng);
+      const res = await patch(ng, ng.owner, draft.id, {
+        version: 1,
+        daily_budget_usd_cents: 500,
+        start_date: inDays(2),
+        end_date: inDays(8),
+      });
+      expect(res.status).toBe(200);
+      const body = await asBody(res);
+      const rate = (
+        await testServiceClient()
+          .from('exchange_rates')
+          .select('rate')
+          .eq('quote', 'NGN')
+          .order('fetched_at', { ascending: false })
+          .limit(1)
+          .single()
+      ).data?.rate;
+      expect(body.cost.status).toBe('ok');
+      expect(body.cost.total?.currency).toBe('NGN');
+      // 3 500 centimes = 35 $ ; en kobo : 35 × taux × 100.
+      expect(body.cost.total?.local_minor).toBe(Math.round((3500 * (rate ?? 0) * 100) / 100));
+      expect(body.cost).not.toHaveProperty('xaf');
+      const row = await testServiceClient()
+        .from('campaigns')
+        .select('fx_currency, fx_rate_xaf')
+        .eq('id', draft.id)
+        .single();
+      expect(row.data?.fx_currency).toBe('NGN');
+      expect(row.data?.fx_rate_xaf).toBe(rate);
     },
     'pays du propriétaire inconnu : taux de change indisponible, le coût reste en dollars, rien n’est inventé':
       async () => {

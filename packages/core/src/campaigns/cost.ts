@@ -10,22 +10,26 @@
 //  - arrondi explicite : conversion à l'unité la plus proche (0,5 monte, LLD §6.9) ;
 //  - AUCUN taux de change par défaut : une donnée absente donne un statut explicite et des totaux vides, jamais une
 //    valeur plausible.
-import { applyRate, usdCents, xaf } from '@pubeka/shared';
+import { convertUsdCents, minorUnits } from '@pubeka/shared';
 
 export type CostStatus = 'ok' | 'incomplete' | 'fx_not_available';
-export type FcfaCurrency = 'XAF' | 'XOF';
+/** Code ISO 4217 d'une monnaie prise en charge (voir `minorUnits` dans @pubeka/shared). */
+export type CurrencyCode = string;
 
 export interface CostMoney {
-  xaf: number;
+  /** Montant en unités mineures de `currency` (ISO 4217 : 0 décimale pour le FCFA, 2 pour le naira, 3 pour le dinar…). */
+  local_minor: number;
   usd_cents: number;
-  currency: FcfaCurrency;
+  currency: CurrencyCode;
 }
+
+export type CostFxSource = 'saspay' | 'fallback' | 'manual' | 'exchangerate-api';
 
 export interface CostFx {
   base: 'USD';
-  quote: FcfaCurrency;
+  quote: CurrencyCode;
   rate: number;
-  source: 'saspay' | 'fallback' | 'manual';
+  source: CostFxSource;
   fetched_at: string;
 }
 
@@ -43,8 +47,8 @@ export interface CampaignCostView {
 export interface CostFxInput {
   /** Unités de monnaie locale pour 1 dollar. */
   rate: number;
-  quote: FcfaCurrency;
-  source: 'saspay' | 'fallback' | 'manual';
+  quote: CurrencyCode;
+  source: CostFxSource;
   fetchedAt: string;
 }
 
@@ -90,10 +94,8 @@ export function daysInclusive(start: string, end: string): number | null {
   return Math.round((b - a) / 86_400_000) + 1;
 }
 
-function money(cents: number, scaledFx: number, currency: FcfaCurrency): CostMoney {
-  // centimes × (monnaie par dollar × 10 000) ÷ (100 centimes × 10 000)
-  const converted = applyRate(usdCents(cents), scaledFx, SCALE * 100, 'half_up');
-  return { xaf: xaf(converted.amountMinor).amountMinor, usd_cents: cents, currency };
+function money(cents: number, rate: number, currency: CurrencyCode): CostMoney {
+  return { local_minor: convertUsdCents(cents, rate, currency), usd_cents: cents, currency };
 }
 
 const EMPTY: Omit<CampaignCostView, 'status'> = {
@@ -123,8 +125,10 @@ export function campaignCost(input: CostInput): CampaignCostView {
           source: input.fx.source,
           fetched_at: input.fx.fetchedAt,
         };
-  const currency: FcfaCurrency = input.fx?.quote ?? 'XAF';
-  const dailyMoney = daily !== null && fxScaled !== null ? money(daily, fxScaled, currency) : null;
+  // Une monnaie hors de la table des unités mineures lève une erreur (jamais « 2 décimales » par défaut).
+  if (input.fx !== null) minorUnits(input.fx.quote);
+  const dailyMoney =
+    daily !== null && input.fx !== null ? money(daily, input.fx.rate, input.fx.quote) : null;
 
   // Même règle que la validation : fin > début, donc deux jours au moins (début et fin compris).
   const days =
@@ -141,7 +145,7 @@ export function campaignCost(input: CostInput): CampaignCostView {
     status: fxScaled === null ? 'fx_not_available' : 'ok',
     days,
     budget_usd_cents: budget,
-    total: fxScaled === null ? null : money(budget, fxScaled, currency),
+    total: input.fx === null ? null : money(budget, input.fx.rate, input.fx.quote),
     daily: dailyMoney,
     fx: fxView,
   };

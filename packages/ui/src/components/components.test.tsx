@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Amount, formatUsdApprox, formatXaf } from './amount';
+import { Amount, formatLocalMoney, formatUsdApprox, formatXaf } from './amount';
 import { Field } from './field';
 import { ModelCard } from './model-card';
 import { CAMPAIGN_STATUSES, StatusBadge, statusTone } from './status-badge';
@@ -24,10 +24,57 @@ describe('Montant (DS §3)', () => {
   });
 
   it('affiche les dollars seulement s’ils sont fournis', () => {
-    const { container, rerender } = render(<Amount amountXaf={5000} locale="fr" />);
+    const props = { amountMinor: 5000, currency: 'XAF', minorDigits: 0, locale: 'fr' } as const;
+    const { container, rerender } = render(<Amount {...props} />);
     expect(container.textContent).not.toContain('≈');
-    rerender(<Amount amountXaf={5000} usdCents={825} locale="fr" size="lg" />);
+    rerender(<Amount {...props} usdCents={825} size="lg" />);
     expect(container.textContent).toContain('≈');
+  });
+});
+
+describe('Montant en monnaie locale : unités mineures de chaque monnaie (S15b)', () => {
+  const nbsp = ' ';
+  it('FCFA (XAF et XOF, 0 décimale) : « 21 000 FCFA »', () => {
+    expect(formatLocalMoney(21000, 'XAF', 0, 'fr')).toBe(`21${nbsp}000 FCFA`);
+    expect(formatLocalMoney(21000, 'XOF', 0, 'en')).toBe('21,000 FCFA');
+  });
+  it('naira (2 décimales) : 5 250 000 kobo = 52 500,00 NGN', () => {
+    expect(formatLocalMoney(5_250_000, 'NGN', 2, 'fr')).toBe(`52${nbsp}500,00 NGN`);
+    expect(formatLocalMoney(5_250_000, 'NGN', 2, 'en')).toBe('NGN 52,500.00');
+  });
+  it('dinar tunisien (3 décimales) : 108 500 millimes = 108,500 TND', () => {
+    expect(formatLocalMoney(108_500, 'TND', 3, 'fr')).toBe('108,500 TND');
+    expect(formatLocalMoney(108_500, 'TND', 3, 'en')).toBe('TND 108.500');
+  });
+  it('shilling ougandais (0 décimale) : 129 518 UGX', () => {
+    expect(formatLocalMoney(129_518, 'UGX', 0, 'en')).toBe('UGX 129,518');
+  });
+  it('un montant en dessous de l’unité garde ses zéros : 5 kobo = 0,05 NGN', () => {
+    expect(formatLocalMoney(5, 'NGN', 2, 'en')).toBe('NGN 0.05');
+  });
+  it('exact au-delà de 2^53 : aucune perte via un flottant (texte décimal)', () => {
+    expect(formatLocalMoney(9_007_199_254_740_991, 'NGN', 2, 'en')).toBe(
+      'NGN 90,071,992,547,409.91',
+    );
+  });
+  it('refuse un montant non entier, un exposant invalide ou un code mal formé', () => {
+    expect(() => formatLocalMoney(10.5, 'NGN', 2, 'fr')).toThrow(RangeError);
+    expect(() => formatLocalMoney(10, 'NGN', 5, 'fr')).toThrow(RangeError);
+    expect(() => formatLocalMoney(10, 'ngn', 2, 'fr')).toThrow(RangeError);
+  });
+  it('Amount : montant local en grand, dollars dessous', () => {
+    const { container } = render(
+      <Amount
+        amountMinor={5_250_000}
+        currency="NGN"
+        minorDigits={2}
+        usdCents={3500}
+        locale="en"
+        size="lg"
+      />,
+    );
+    expect(container.textContent).toContain('52,500.00');
+    expect(container.textContent).toContain('$35.00');
   });
 });
 

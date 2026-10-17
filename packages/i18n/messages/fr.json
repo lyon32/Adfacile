@@ -793,7 +793,7 @@
           "destination": "Destination",
           "budget": "Budget par jour",
           "budget_unit": "$",
-          "budget_hint": "Minimum 1 $ par jour. {fcfa} environ.",
+          "budget_hint": "Minimum 1 $ par jour. {amount} environ.",
           "start_date": "Début",
           "end_date": "Fin",
           "primary_text": "Texte principal",

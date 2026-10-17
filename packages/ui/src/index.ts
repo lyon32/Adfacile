@@ -16,6 +16,7 @@ export {
 } from './components/dialog';
 export {
   Amount,
+  formatLocalMoney,
   formatXaf,
   formatUsdApprox,
   type AmountProps,

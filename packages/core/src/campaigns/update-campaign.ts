@@ -141,6 +141,7 @@ export async function updateCampaign(
   const costContext = await loadCostContext(ctx);
   const values: TablesUpdate<'campaigns'> = {
     fx_rate_xaf: costContext.fx?.rate ?? null,
+    fx_currency: costContext.fx?.quote ?? null,
   };
   if (patch.name !== undefined) values.name = patch.name;
   if (patch.objective !== undefined) values.objective = patch.objective;

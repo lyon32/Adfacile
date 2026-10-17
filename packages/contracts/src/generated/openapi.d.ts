@@ -45,7 +45,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Taux de change USD → XAF / XOF en vigueur */
+        /** Taux de change USD → monnaie locale en vigueur */
         get: operations["getFxRates"];
         put?: never;
         post?: never;
@@ -1634,20 +1634,23 @@ export interface components {
         FxRate: {
             /** @constant */
             base: "USD";
-            /** @enum {string} */
-            quote: "XAF" | "XOF";
+            /** @description Code ISO 4217 de la monnaie locale (une des monnaies des 54 pays d'Afrique) */
+            quote: string;
+            /** @description Unités de la monnaie locale pour 1 dollar */
             rate: number;
             /** @enum {string} */
-            source?: "saspay" | "fallback" | "manual";
+            source?: "saspay" | "fallback" | "manual" | "exchangerate-api";
             /** Format: date-time */
             fetched_at: string;
         };
-        /** @description Montant affiché en FCFA avec l'équivalent en dollars. */
+        /**
+         * @description Montant en monnaie locale avec l'équivalent en dollars. `local_minor` est exprimé dans l'unité mineure de `currency`
+         *     (exposant ISO 4217 : 0 décimale pour le FCFA, 2 pour le naira, 3 pour le dinar tunisien) : 5250000 NGN = 52 500,00 NGN.
+         */
         Money: {
-            xaf: number;
+            local_minor: number;
             usd_cents: number;
-            /** @enum {string} */
-            currency?: "XAF" | "XOF";
+            currency: string;
         };
         Me: {
             /** Format: uuid */
@@ -1662,8 +1665,8 @@ export interface components {
             country_code?: string | null;
             city?: string | null;
             timezone: string;
-            /** @enum {string} */
-            currency_display: "XAF" | "XOF";
+            /** @description Code ISO 4217 de la monnaie d'affichage (celle du pays, ou XAF / XOF pour la zone franc CFA) */
+            currency_display: string;
             /** @enum {string} */
             theme?: "light" | "dark" | "system";
             /**
@@ -1680,8 +1683,8 @@ export interface components {
             ui_language?: "fr" | "en";
             country_code?: string;
             city?: string;
-            /** @enum {string} */
-            currency_display?: "XAF" | "XOF";
+            /** @description Code ISO 4217 de la monnaie d'affichage (celle du pays, ou XAF / XOF pour la zone franc CFA) */
+            currency_display?: string;
             /** @enum {string} */
             theme?: "light" | "dark" | "system";
         };

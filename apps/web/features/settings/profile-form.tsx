@@ -4,14 +4,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Field } from '@pubeka/ui';
 import { useMutation } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { LOCALE_COOKIE, THEME_COOKIE } from '@pubeka/i18n';
 import { apiFetch } from '../../lib/api';
 import type { CountryOption } from '../shell/countries';
+import { currencyOptions } from '../shell/currencies';
 import { writeCookie } from '../shell/use-update-me';
 import { SelectField } from './select-field';
 
@@ -26,7 +27,8 @@ export const ProfileFormSchema = z.object({
     .refine((value) => value === '' || PHONE.test(value), 'phone_invalid'),
   country_code: z.string().regex(/^[A-Z]{2}$/),
   city: z.string().trim().max(120),
-  currency_display: z.enum(['XAF', 'XOF']),
+  // Code ISO 4217 (XAF, XOF, NGN…) ; le serveur vérifie qu'il fait partie des monnaies d'Afrique prises en charge.
+  currency_display: z.string().regex(/^[A-Z]{3}$/),
   ui_language: z.enum(['fr', 'en']),
   theme: z.enum(['light', 'dark', 'system']),
 });
@@ -62,6 +64,10 @@ export function ProfileForm({
     defaultValues: initial,
   });
   const { errors } = form.formState;
+  const locale = useLocale() === 'en' ? 'en' : 'fr';
+  const selectedCountry = useWatch({ control: form.control, name: 'country_code' });
+  const countryCurrency =
+    countries.find((c) => c.code === selectedCountry)?.currency ?? initial.currency_display;
 
   const save = useMutation({
     mutationFn: (values: ProfileFormValues) =>
@@ -143,10 +149,7 @@ export function ProfileForm({
       <div className="grid gap-5 sm:grid-cols-3">
         <SelectField
           label={p('currency')}
-          options={[
-            { value: 'XAF', label: 'FCFA (XAF)' },
-            { value: 'XOF', label: 'FCFA (XOF)' },
-          ]}
+          options={currencyOptions(countryCurrency, locale)}
           defaultValue={initial.currency_display}
           {...form.register('currency_display')}
         />

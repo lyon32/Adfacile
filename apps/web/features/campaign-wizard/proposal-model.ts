@@ -1,6 +1,7 @@
 // Règles pures de l'étape « Proposition » (aucun React, aucun réseau) : aperçu progressif, saisie du budget en dollars sans
 // flottant, validation du formulaire de modification (mêmes limites que le serveur, qui revalide tout : SECURITY_NOTES §3.2),
 // construction du PATCH. Les montants sont des ENTIERS (centimes de dollar).
+import { convertUsdCents } from '@pubeka/shared';
 import type { Campaign, CampaignPatchBody, CTAS, Destination, Objective } from './proposal-api';
 import { OBJECTIVE_DESTINATIONS } from './proposal-api';
 
@@ -50,14 +51,19 @@ export function parseUsdInput(text: string): number | null {
 }
 
 /**
- * Estimation en FCFA d'un budget en centimes : calcul en entiers (taux au dix-millième, arrondi à la demi-unité vers le
- * haut), comme le serveur. C'est une AIDE de saisie : le montant qui fait foi est celui du serveur. Taux inconnu → null.
+ * Estimation, en unités mineures de la monnaie du pays, d'un budget en centimes de dollar : calcul en entiers (taux au
+ * dix-millième, arrondi à la demi-unité vers le haut, exposant ISO 4217 de la monnaie), comme le serveur. C'est une AIDE de
+ * saisie : le montant qui fait foi est celui du serveur. Taux ou monnaie invalides : `null`, jamais un nombre inventé.
  */
-export function estimateXaf(cents: number, xafPerUsd: number): number | null {
-  if (!Number.isFinite(xafPerUsd) || xafPerUsd <= 0 || !Number.isSafeInteger(cents) || cents < 0)
+export function estimateLocalMinor(
+  cents: number,
+  fx: { rate: number; quote: string },
+): number | null {
+  try {
+    return convertUsdCents(cents, fx.rate, fx.quote);
+  } catch {
     return null;
-  const scaled = BigInt(Math.round(xafPerUsd * 10_000));
-  return Number((BigInt(cents) * scaled + 500_000n) / 1_000_000n);
+  }
 }
 
 export function usdInputFromCents(cents: number): string {

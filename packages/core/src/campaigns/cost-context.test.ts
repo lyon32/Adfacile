@@ -72,6 +72,35 @@ describe('loadCostContext', () => {
     expect(client.calls.some((c) => c.target === 'exchange_rates')).toBe(false);
   });
 
+  it('pays non CFA (Nigeria) : la monnaie du pays et son taux, source exchangerate-api', async () => {
+    const client = new FakeClient().reply(
+      ok({ owner_id: 'o1' }),
+      ok({ country_code: 'NG' }),
+      ok({ currency: 'NGN' }),
+      ok([{ rate: 1500.1234, source: 'exchangerate-api', fetched_at: '2026-10-12T08:00:00Z' }]),
+    );
+    const result = await loadCostContext(ctxWith(client));
+    expect(result.fx).toEqual({
+      rate: 1500.1234,
+      quote: 'NGN',
+      source: 'exchangerate-api',
+      fetchedAt: '2026-10-12T08:00:00.000Z',
+    });
+    const fxCall = client.calls.find((c) => c.target === 'exchange_rates');
+    expect(fxCall?.ops).toContainEqual(['eq', 'quote', 'NGN']);
+  });
+
+  it('monnaie du pays absente de la table des unités mineures : pas de change, rien n’est supposé', async () => {
+    const client = new FakeClient().reply(
+      ok({ owner_id: 'o1' }),
+      ok({ country_code: 'ZZ' }),
+      ok({ currency: 'EUR' }),
+    );
+    const result = await loadCostContext(ctxWith(client));
+    expect(result.fx).toBeNull();
+    expect(client.calls.some((c) => c.target === 'exchange_rates')).toBe(false);
+  });
+
   it('pays introuvable : fx null', async () => {
     const client = new FakeClient().reply(ok({ owner_id: 'o1' }), ok({ country_code: null }));
     const result = await loadCostContext(ctxWith(client));

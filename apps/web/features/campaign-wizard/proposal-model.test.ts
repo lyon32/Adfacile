@@ -4,7 +4,7 @@ import { fromPreview } from './proposal-display';
 import type { Campaign } from './proposal-api';
 import {
   applyField,
-  estimateXaf,
+  estimateLocalMinor,
   buildPatch,
   formFromCampaign,
   parseUsdInput,
@@ -231,25 +231,33 @@ describe('buildPatch', () => {
   });
 });
 
-describe('estimateXaf : FCFA estimés en entiers (arrondi à la demi-unité vers le haut), jamais de flottant', () => {
-  it('400 centimes à 600 FCFA le dollar = 2 400', () => {
-    expect(estimateXaf(400, 600)).toBe(2400);
+describe('estimateLocalMinor : estimation en unités mineures de la monnaie du pays, en entiers, jamais de flottant', () => {
+  const xaf = (rate: number) => ({ rate, quote: 'XAF' });
+  it('FCFA : 400 centimes à 600 = 2 400', () => {
+    expect(estimateLocalMinor(400, xaf(600))).toBe(2400);
   });
-  it('demi-unité arrondie vers le haut : 1 centime à 50 FCFA = 0,5 → 1', () => {
-    expect(estimateXaf(1, 50)).toBe(1);
-    expect(estimateXaf(1, 49.9)).toBe(0);
+  it('demi-unité arrondie vers le haut : 1 centime à 50 = 0,5 → 1', () => {
+    expect(estimateLocalMinor(1, xaf(50))).toBe(1);
+    expect(estimateLocalMinor(1, xaf(49.9))).toBe(0);
   });
   it('taux décimal conservé au dix-millième : 100 centimes à 655,957 = 656', () => {
-    expect(estimateXaf(100, 655.957)).toBe(656);
-    expect(estimateXaf(1000, 655.957)).toBe(6560);
+    expect(estimateLocalMinor(100, xaf(655.957))).toBe(656);
+    expect(estimateLocalMinor(1000, xaf(655.957))).toBe(6560);
   });
-  it('taux invalide ou nul : aucune estimation', () => {
-    expect(estimateXaf(400, 0)).toBeNull();
-    expect(estimateXaf(400, -1)).toBeNull();
-    expect(estimateXaf(400, Number.NaN)).toBeNull();
+  it('naira (2 décimales) : 500 centimes à 1 500 = 7 500,00 NGN = 750 000 kobo', () => {
+    expect(estimateLocalMinor(500, { rate: 1500, quote: 'NGN' })).toBe(750_000);
+  });
+  it('dinar tunisien (3 décimales) : 500 centimes à 3,1 = 15,500 TND = 15 500 millimes', () => {
+    expect(estimateLocalMinor(500, { rate: 3.1, quote: 'TND' })).toBe(15_500);
+  });
+  it('taux invalide, nul ou monnaie inconnue : aucune estimation, jamais un nombre inventé', () => {
+    expect(estimateLocalMinor(400, xaf(0))).toBeNull();
+    expect(estimateLocalMinor(400, xaf(-1))).toBeNull();
+    expect(estimateLocalMinor(400, xaf(Number.NaN))).toBeNull();
+    expect(estimateLocalMinor(400, { rate: 1, quote: 'EUR' })).toBeNull();
   });
   it('toujours un entier, même pour un grand budget', () => {
-    const value = estimateXaf(99_999_900, 655.957);
+    const value = estimateLocalMinor(99_999_900, xaf(655.957));
     expect(Number.isInteger(value)).toBe(true);
     expect(value).toBe(655_956_344);
   });

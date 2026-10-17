@@ -624,6 +624,7 @@ export async function chooseProposal(
       visual_brief: p.visual_brief === '' ? null : p.visual_brief,
       chosen_proposal_version: version,
       fx_rate_xaf: costContext.fx?.rate ?? null,
+      fx_currency: costContext.fx?.quote ?? null,
     })
     .eq('workspace_id', ctx.workspace.id)
     .eq('id', campaignId)

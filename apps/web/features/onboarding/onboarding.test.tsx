@@ -14,6 +14,8 @@ vi.mock('next/navigation', () => ({ useRouter: () => router }));
 const COUNTRIES: CountryOption[] = [
   { code: 'CM', name: 'Cameroun', currency: 'XAF' },
   { code: 'SN', name: 'Sénégal', currency: 'XOF' },
+  { code: 'NG', name: 'Nigeria', currency: 'NGN' },
+  { code: 'TN', name: 'Tunisie', currency: 'TND' },
 ];
 
 function renderStep(step: (typeof STEPS)[number], locale: Locale = 'fr') {
@@ -102,6 +104,46 @@ describe('écran de la première configuration', () => {
       city: 'Dakar',
       currency_display: 'XOF',
     });
+  });
+
+  it('S15b : un pays hors zone franc CFA (Nigeria) propose SA monnaie, et c’est elle qui est enregistrée', async () => {
+    let sent: unknown = null;
+    vi.stubGlobal('fetch', (_url: string, init: unknown) => {
+      sent = init;
+      return Promise.resolve(
+        new Response(JSON.stringify({ id: 'u', ui_language: 'fr', theme: 'light' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      );
+    });
+    renderStep('pays');
+    fireEvent.change(screen.getByLabelText('Pays'), { target: { value: 'NG' } });
+    const select = screen.getByLabelText<HTMLSelectElement>('Monnaie d’affichage');
+    expect(select.value).toBe('NGN');
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(['NGN']);
+    expect(select.options[0]?.textContent).toBe('naira nigérian (NGN)');
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }));
+    await waitFor(() => {
+      expect(router.push).toHaveBeenCalledWith('/bienvenue/langue');
+    });
+    expect(JSON.parse((sent as { body: string } | null)?.body ?? '{}')).toMatchObject({
+      country_code: 'NG',
+      currency_display: 'NGN',
+    });
+  });
+
+  it('S15b : un pays à trois décimales (Tunisie) propose le dinar tunisien', () => {
+    renderStep('pays');
+    fireEvent.change(screen.getByLabelText('Pays'), { target: { value: 'TN' } });
+    expect(screen.getByLabelText<HTMLSelectElement>('Monnaie d’affichage').value).toBe('TND');
+  });
+
+  it('S15b : un pays de la zone CFA garde le choix entre les deux FCFA', () => {
+    renderStep('pays');
+    fireEvent.change(screen.getByLabelText('Pays'), { target: { value: 'CM' } });
+    const select = screen.getByLabelText<HTMLSelectElement>('Monnaie d’affichage');
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(['XAF', 'XOF']);
   });
 
   it('une erreur d’enregistrement est annoncée et on reste sur l’étape', async () => {

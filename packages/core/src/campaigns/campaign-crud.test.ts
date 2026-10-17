@@ -103,7 +103,7 @@ describe('getCampaign', () => {
     const view = await getCampaign(ctx, id);
     // 7 jours × 500 centimes = 3 500 centimes ; au taux d'essai 600 : 21 000 FCFA, sans TVA.
     expect(view.cost).toMatchObject({ status: 'ok', budget_usd_cents: 3500 });
-    expect(view.cost.total).toEqual({ xaf: 21000, usd_cents: 3500, currency: 'XAF' });
+    expect(view.cost.total).toEqual({ local_minor: 21000, usd_cents: 3500, currency: 'XAF' });
     expect(view).not.toHaveProperty('vat_rate');
     const stranger = world();
     stranger.db.rows('campaigns').push({ ...db.rows('campaigns')[0]!, workspace_id: OTHER_W });
@@ -161,6 +161,7 @@ describe('updateCampaign', () => {
     });
     expect(db.rows('campaigns')[0]).toMatchObject({
       fx_rate_xaf: 600,
+      fx_currency: 'XAF',
       version: 2,
     });
   });
@@ -170,7 +171,7 @@ describe('updateCampaign', () => {
     const id = addDraft(db);
     const view = await updateCampaign(ctx, id, { version: 1, name: 'x' });
     expect(view.cost.status).toBe('incomplete');
-    expect(db.rows('campaigns')[0]).toMatchObject({ fx_rate_xaf: null });
+    expect(db.rows('campaigns')[0]).toMatchObject({ fx_rate_xaf: null, fx_currency: null });
   });
   it('refus : viewer, lecture seule, campagne introuvable ou d’un autre espace', async () => {
     const id = addDraft(world().db);

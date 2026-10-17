@@ -2,7 +2,8 @@
 // Modification d'une proposition retenue (APPFLOW §8.3 : objectif avec description courte, zone, budget avec conversion en direct,
 // dates, textes avec compteur, bouton). Les mêmes limites que le serveur, qui revalide tout. Le formulaire est un brouillon de
 // saisie (état local) : la campagne, elle, reste dans TanStack Query.
-import { Button, Field, cn, formatXaf, type UiLocale } from '@pubeka/ui';
+import { minorUnits } from '@pubeka/shared';
+import { Button, Field, cn, formatLocalMoney, type UiLocale } from '@pubeka/ui';
 import { Check, Plus, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState, type ReactNode } from 'react';
@@ -10,7 +11,7 @@ import { CTAS, OBJECTIVES, OBJECTIVE_DESTINATIONS } from './proposal-api';
 import {
   LIMITS,
   codePointLength,
-  estimateXaf,
+  estimateLocalMinor,
   parseUsdInput,
   validateForm,
   withObjective,
@@ -23,8 +24,8 @@ export interface ProposalFormProps {
   initial: EditForm;
   /** Date du jour (AAAA-MM-JJ) dans le fuseau de la personne. */
   today: string;
-  /** FCFA pour 1 $ (le serveur fait foi) : sert seulement à l'indication en direct. */
-  xafPerUsd: number | null;
+  /** Taux et monnaie du pays pour 1 $ (le serveur fait foi) : sert seulement à l'indication en direct. */
+  fx: { rate: number; quote: string } | null;
   pending: boolean;
   serverError: string | null;
   onSubmit: (form: EditForm) => void;
@@ -65,7 +66,7 @@ function Choice({
 export function ProposalForm({
   initial,
   today,
-  xafPerUsd,
+  fx,
   pending,
   serverError,
   onSubmit,
@@ -87,8 +88,11 @@ export function ProposalForm({
   };
 
   const cents = parseUsdInput(form.budget);
-  const estimated = cents !== null && xafPerUsd !== null ? estimateXaf(cents, xafPerUsd) : null;
-  const fcfa = estimated === null ? null : formatXaf(estimated, ui);
+  const estimated = cents !== null && fx !== null ? estimateLocalMinor(cents, fx) : null;
+  const approx =
+    estimated === null || fx === null
+      ? null
+      : formatLocalMoney(estimated, fx.quote, minorUnits(fx.quote), ui);
 
   function submit(): void {
     setShowErrors(true);
@@ -220,7 +224,7 @@ export function ProposalForm({
         inputMode="decimal"
         maxLength={10}
         error={shown('budget')}
-        hint={t('form.budget_hint', { fcfa: fcfa ?? '—' })}
+        hint={t('form.budget_hint', { amount: approx ?? '—' })}
         onChange={(event) => {
           set('budget', event.target.value);
         }}
