@@ -19,7 +19,7 @@ describe('getPublicationReadiness', () => {
       },
       meta: {
         connection: 'ok',
-        ad_account: { name: 'Compte de test', currency: 'USD' },
+        ad_account: { name: 'Compte de test', currency: 'USD', currency_supported: true },
         payment_method: 'present',
       },
       page: { id: PAGE, name: 'Ma Boutique', active: true },
@@ -102,6 +102,24 @@ describe('getPublicationReadiness', () => {
     expect(
       (await getPublicationReadiness(missing.ctx, missing.campaignId)).meta.payment_method,
     ).toBe('unknown');
+  });
+
+  it('monnaie du compte : acceptée par Meta (liste officielle), refusée (franc CFA), inconnue', async () => {
+    const w = publishWorld();
+    const account = w.db.rows('ad_accounts')[0];
+    const supported = async () =>
+      (await getPublicationReadiness(w.ctx, w.campaignId)).meta.ad_account?.currency_supported;
+    expect(await supported()).toBe(true);
+    for (const ok of ['KES', 'NGN', 'EGP', 'ZAR', 'DZD']) {
+      if (account !== undefined) account.currency = ok;
+      expect(await supported()).toBe(true);
+    }
+    for (const refused of ['XAF', 'XOF', 'GHS', 'MAD']) {
+      if (account !== undefined) account.currency = refused;
+      expect(await supported()).toBe(false);
+    }
+    if (account !== undefined) account.currency = null;
+    expect(await supported()).toBeNull();
   });
 
   it('Page hors formule ou absente', async () => {

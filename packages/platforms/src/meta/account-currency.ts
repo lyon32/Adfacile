@@ -83,6 +83,11 @@ export const META_CURRENCY_OFFSET: Readonly<Record<string, 1 | 100>> = {
 /** Budget minimum imposé par Pubeka : 1 $ par jour (TR-PLA-10). */
 export const PUBEKA_MIN_DAILY_USD_CENTS = 100;
 
+/** Meta accepte-t-elle cette monnaie pour un compte publicitaire ? (liste officielle ci-dessus ; jamais deviné). */
+export function isMetaSupportedCurrency(code: string): boolean {
+  return Object.hasOwn(META_CURRENCY_OFFSET, code);
+}
+
 export function metaCurrencyOffset(code: string): 1 | 100 {
   if (!Object.hasOwn(META_CURRENCY_OFFSET, code)) {
     throw new MetaValidationError(

@@ -390,7 +390,9 @@ describe('Étape Publier — vérification finale', () => {
     dom(screen.getByText('Ma Boutique')).toBeVisible();
     dom(screen.getByText('Compte de test')).toBeVisible();
     dom(screen.getByText('Présent')).toBeVisible();
-    dom(screen.getByText(/Alimente tes fonds Meta Ads/)).toBeVisible();
+    // Aucune affirmation non vérifiée : plus de « sans prélever ta carte », les fonds disponibles sont une CONDITION.
+    dom(screen.getByText(/Si ton compte utilise des fonds disponibles/)).toBeVisible();
+    expect(screen.queryByText(/sans prélever/)).toBeNull();
     dom(screen.getByRole('link', { name: /Exchange Rate API/i })).toBeVisible();
     expect(screen.queryByText(/TVA/i)).toBeNull();
     dom(screen.getByRole('button', { name: 'Publier la campagne' })).toBeEnabled();
@@ -415,9 +417,51 @@ describe('Étape Publier — vérification finale', () => {
     dom(screen.getByRole('button', { name: 'Publier la campagne' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Voir le guide' }));
     const guide = await screen.findByRole('dialog');
-    dom(within(guide).getByText(/uniquement avec une carte bancaire/)).toBeVisible();
+    // Rédigé avec CONDITION, sans affirmation non vérifiée (cartes = facturation automatique ; fonds disponibles = certains pays).
+    dom(within(guide).getByText(/Si ton compte propose des fonds disponibles/)).toBeVisible();
+    expect(within(guide).getAllByText(/facturation automatique/).length).toBeGreaterThan(0);
     dom(within(guide).getByText(/Keecash/)).toBeVisible();
-    dom(within(guide).getByText(/Alimente tes fonds Meta Ads/)).toBeVisible();
+    expect(within(guide).queryByText(/uniquement avec une carte/)).toBeNull();
+    expect(within(guide).queryByText(/sans prélever/)).toBeNull();
+    // Les sources officielles sont citées (liens du Centre d'aide Meta).
+    const links = within(guide)
+      .getAllByRole('link')
+      .map((a) => a.getAttribute('href'));
+    expect(links).toContain('https://www.facebook.com/business/help/1730009227245741');
+    expect(links).toContain('https://www.facebook.com/business/help/311330675698510');
+  });
+
+  it('monnaie REFUSÉE par Meta (franc CFA) : le compte est « à régler », le bouton est inactif, le guide explique comment obtenir une monnaie acceptée', async () => {
+    stubApi(
+      ROUTES({
+        'GET /c/readiness': json(
+          readiness({
+            meta: {
+              connection: 'ok',
+              ad_account: { name: 'Compte CFA', currency: 'XAF', currency_supported: false },
+              payment_method: 'present',
+            },
+          }),
+        ),
+      }),
+    );
+    mount(<PublishStep {...publishProps()} />);
+    dom(
+      await screen.findByText(
+        'La monnaie XAF n’est pas acceptée par Meta pour un compte publicitaire.',
+      ),
+    ).toBeVisible();
+    dom(screen.getByRole('button', { name: 'Publier la campagne' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Voir le guide' }));
+    const guide = await screen.findByRole('dialog');
+    dom(within(guide).getByText('Utiliser une monnaie acceptée par Meta')).toBeVisible();
+    dom(within(guide).getByText(/franc CFA \(XAF, XOF\)/)).toBeVisible();
+    dom(within(guide).getByText(/dollar américain \(USD\)/)).toBeVisible();
+    const links = within(guide)
+      .getAllByRole('link')
+      .map((a) => a.getAttribute('href'));
+    expect(links).toContain('https://developers.facebook.com/docs/marketing-api/currencies');
+    expect(links).toContain('https://www.facebook.com/business/help/291404291014138');
   });
 
   it.each([
@@ -711,6 +755,76 @@ describe('Étape Publier — chaque erreur (APPFLOW §8.6)', () => {
     await failWith(problem('conflict', 409, { reason: 'fx_changed', new_total: null }));
     dom(await screen.findByText(/Le taux de change n’est plus disponible/)).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Confirmer et publier' })).toBeNull();
+  });
+
+  it('monnaie refusée par Meta (réponse 400 du serveur) : la monnaie est nommée, brouillon, quota intact, bouton vers le guide', async () => {
+    await failWith(
+      problem(
+        'validation_failed',
+        400,
+        {
+          reason: 'ad_account_currency_unsupported',
+          currency: 'XOF',
+          guide: 'ad-account-currency',
+        },
+        [
+          {
+            field: 'ad_account.currency',
+            code: 'unsupported_by_meta',
+            message: 'Meta n’accepte pas…',
+          },
+        ],
+      ),
+    );
+    const alert = await screen.findByRole('alert');
+    dom(
+      within(alert).getByText('Meta n’accepte pas la monnaie de ton compte publicitaire (XOF).'),
+    ).toBeVisible();
+    dom(within(alert).getByText(/relevée le 18 octobre 2026/)).toBeVisible();
+    dom(
+      within(alert).getByText(/reste en brouillon et ton quota n’est pas décompté/),
+    ).toBeVisible();
+    fireEvent.click(within(alert).getByRole('button', { name: 'Voir le guide' }));
+    dom(
+      within(await screen.findByRole('dialog')).getByText('Utiliser une monnaie acceptée par Meta'),
+    ).toBeVisible();
+  });
+
+  it('échec enregistré « plus de 24 h sans issue » : message lisible (jamais indéfini), consigne de vérifier chez Meta, lien vers le support', async () => {
+    stubApi(
+      ROUTES({
+        'GET /c': json(
+          campaign({
+            status: 'error',
+            publication_error: {
+              code: 'meta_error',
+              uncertain: true,
+              reason: 'reconcile_timeout',
+              at: '2026-10-12T09:00:00Z',
+            },
+          }),
+        ),
+        'GET /c/readiness': json(readiness({ liability_required: false })),
+      }),
+    );
+    mount(<PublishStep {...publishProps()} />);
+    dom(await screen.findByText('Pubeka n’a pas pu vérifier ta campagne chez Meta.')).toBeVisible();
+    dom(screen.getByText(/Regarde dans ton gestionnaire de publicités Meta/)).toBeVisible();
+    dom(screen.getByRole('link', { name: 'Écrire au support' })).toHaveAttribute(
+      'href',
+      '/support',
+    );
+  });
+
+  it('« On vérifie » annonce une issue : au plus tard dans 24 heures', async () => {
+    stubApi(ROUTES({ 'GET /c': json(campaign({ status: 'publishing' })) }));
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mount(<PublishStep {...publishProps()} />);
+    await screen.findByText('Publication en cours…');
+    await vi.advanceTimersByTimeAsync(46_000);
+    await waitFor(() => {
+      expect(screen.queryByText(/au plus tard dans 24 heures/)).not.toBeNull();
+    });
   });
 
   it('erreur connue de Meta : sa traduction simple, quota non décompté', async () => {

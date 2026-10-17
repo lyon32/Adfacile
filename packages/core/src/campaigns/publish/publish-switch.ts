@@ -5,7 +5,7 @@
 // La pause ARRÊTE la dépense : elle n'est jamais bloquée. La lecture reste libre.
 import { AppError } from '@pubeka/contracts';
 import type { Env } from '@pubeka/shared';
-import { usesFakeMeta } from '../../meta/connector-factory';
+import { usesFakeMeta } from '../../meta/fake-providers';
 
 export const PUBLISH_SWITCH_ENABLED = 'enabled';
 

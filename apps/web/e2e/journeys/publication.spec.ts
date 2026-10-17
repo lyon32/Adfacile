@@ -39,7 +39,7 @@ async function checkScreen(
 async function reachPreview(
   page: Page,
   theme: 'light' | 'dark',
-  options: { payment?: boolean } = {},
+  options: { payment?: boolean; currency?: string } = {},
 ) {
   await ensureTestRate();
   const user = await createConfirmedUser('Awa');
@@ -108,7 +108,7 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(
       page.getByRole('heading', { level: 1, name: 'Publier ta campagne' }),
     ).toBeVisible();
-    await expect(page.getByText(/fonds Meta Ads/).first()).toBeVisible();
+    await expect(page.getByText(/fonds disponibles/).first()).toBeVisible();
     await checkScreen(page, 'publier-verification', info, theme);
     await page.getByRole('button', { name: 'Publier la campagne' }).click();
     await expect(page.getByText('Avant ta première publication')).toBeVisible();
@@ -126,7 +126,7 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(page.getByText('Ta campagne est envoyée à Meta')).toBeVisible();
   });
 
-  test(`sans moyen de paiement : le guide des fonds Meta Ads (carte bancaire, Keecash), brouillon gardé (${theme})`, async ({
+  test(`sans moyen de paiement : le guide du moyen de paiement (fonds disponibles, carte, Keecash), brouillon gardé (${theme})`, async ({
     page,
   }, info) => {
     await reachPreview(page, theme, { payment: false });
@@ -139,6 +139,27 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(guide.getByText(/carte bancaire/).first()).toBeVisible();
     await expect(guide.getByText(/Keecash/).first()).toBeVisible();
     await checkScreen(page, 'publier-guide-fonds-meta', info, theme);
+  });
+}
+
+for (const theme of ['light', 'dark'] as const) {
+  test(`monnaie du compte refusée par Meta (franc CFA) : compte « à régler », bouton inactif, guide avec les sources officielles (${theme})`, async ({
+    page,
+  }, info) => {
+    await reachPreview(page, theme, { currency: 'XAF' });
+    await page.getByRole('button', { name: 'Continuer vers la publication' }).click();
+    await expect(
+      page.getByText('La monnaie XAF n’est pas acceptée par Meta pour un compte publicitaire.'),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Publier la campagne' })).toBeDisabled();
+    await checkScreen(page, 'publier-monnaie-refusee', info, theme);
+    await page.getByRole('button', { name: 'Voir le guide' }).first().click();
+    const guide = page.getByRole('dialog');
+    await expect(guide.getByText('Utiliser une monnaie acceptée par Meta')).toBeVisible();
+    await expect(
+      guide.getByRole('link', { name: /liste officielle des monnaies/ }),
+    ).toHaveAttribute('href', 'https://developers.facebook.com/docs/marketing-api/currencies');
+    await checkScreen(page, 'publier-guide-monnaie', info, theme);
   });
 }
 

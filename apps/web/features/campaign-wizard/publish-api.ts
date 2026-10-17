@@ -20,7 +20,12 @@ export const ReadinessSchema = z.object({
   meta: z.object({
     connection: z.enum(['ok', 'expiring', 'expired', 'revoked', 'none']),
     ad_account: z
-      .object({ name: z.string().nullable(), currency: z.string().nullable() })
+      .object({
+        name: z.string().nullable(),
+        currency: z.string().nullable(),
+        // La monnaie est-elle dans la liste officielle de Meta ? `null` : pas encore lue.
+        currency_supported: z.boolean().nullish(),
+      })
       .nullable(),
     payment_method: z.enum(['present', 'missing', 'unknown']),
   }),

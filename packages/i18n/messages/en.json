@@ -439,12 +439,14 @@
       },
       "payment-method": {
         "title": "Add a payment method",
-        "intro": "Meta charges your ads to your ad account. Without a payment method, they do not run. Meta funds can only be topped up with a bank card, whatever your country.",
-        "step_1": "In Meta’s Ads Manager, open “Payment settings”.",
-        "step_2": "Add a bank card (Visa or Mastercard). It is the only way to top up your Meta Ads funds.",
-        "step_3": "No bank card? Pubeka suggests Keecash, a virtual card. You can also use your own virtual card.",
-        "step_4": "Top up your Meta Ads funds by the amount of your campaign: when they run out, Meta stops delivery without charging your card. Then come back here.",
-        "note": "Ads are paid at Meta, never at Pubeka. The Pubeka subscription is paid separately, by Mobile Money."
+        "intro": "Meta charges your ads to your ad account. Without a valid payment method, they are not delivered.",
+        "step_1": "In Meta Ads Manager, open “Payment settings”.",
+        "step_2": "Add the payment method Meta offers for your account’s country and currency. A bank card or PayPal is used for automatic billing: Meta charges you when you reach your payment threshold.",
+        "step_3": "If your account offers available funds (prepayment), you top them up yourself before delivery: plan enough to cover your campaign, because delivery can stop when the funds run out. According to Meta, they are only offered in some countries, with local methods (for example M-Pesa in Kenya).",
+        "step_4": "No bank card? You can use a virtual card, for example Keecash, or your own virtual card; check that Meta accepts it before using it. Then come back here.",
+        "note": "Ads are paid to Meta, never to Pubeka. The Pubeka subscription is paid separately, by Mobile Money. Available payment methods depend on your account’s country and currency: check in the Meta Help Center (links below).",
+        "source_1": "Meta Help Center: available funds and automatic billing",
+        "source_2": "Meta Help Center: accepted payment methods for available funds"
       },
       "facebook-page": {
         "title": "Create a Facebook Page",
@@ -490,6 +492,17 @@
         "step_3": "If a permission is still missing, remove Pubeka in Facebook’s settings, then reconnect.",
         "step_4": "Come back here and press “Check again”.",
         "note": "Pubeka only asks for what is needed to create and track your campaigns."
+      },
+      "ad-account-currency": {
+        "title": "Use a currency Meta accepts",
+        "intro": "Meta only accepts a list of currencies for ad accounts (official list checked on 18 October 2026). Among African currencies, it includes the Algerian dinar (DZD), the Egyptian pound (EGP), the Kenyan shilling (KES), the naira (NGN) and the rand (ZAR). The CFA franc (XAF, XOF) and most other African currencies are not on it.",
+        "step_1": "In Meta Ads Manager, open “Payment settings”, then “Business info” and “Edit”.",
+        "step_2": "Choose an accepted currency, for example US dollars (USD), then save. Meta then creates a new ad account: the old one is closed and its ads stop.",
+        "step_3": "According to Meta, you can only change currency once every 60 days if you have no current balance, and not at all with monthly invoicing. The payment methods offered depend on the currency you choose.",
+        "step_4": "Come back here, press “Check again” in the Meta settings, then publish.",
+        "note": "This step happens at Meta: Pubeka neither creates nor changes your ad account.",
+        "source_1": "Meta for Developers: official list of ad account currencies",
+        "source_2": "Meta Help Center: change your ad account currency"
       }
     },
     "pages": {
@@ -912,9 +925,10 @@
           "payment_ok": "Present",
           "payment_ko": "Missing: Meta will not run your ad.",
           "photo_ok": "Ready",
-          "photo_ko": "Unavailable"
+          "photo_ko": "Unavailable",
+          "account_currency_ko": "Meta does not accept the currency {currency} for an ad account."
         },
-        "pay_note": "Ads are paid at Meta. Top up your Meta Ads funds: when they run out, Meta stops delivery without charging your card.",
+        "pay_note": "Ads are paid to Meta, with the payment method of your ad account. If your account uses available funds (prepayment), top them up: delivery can stop when they run out.",
         "guide": "See the guide",
         "actions": {
           "publish": "Publish the campaign",
@@ -933,7 +947,7 @@
           "title": "Publishing…",
           "body": "Pubeka is sending your campaign to Meta. Keep this page open.",
           "verifying_title": "We are checking",
-          "verifying_body": "Meta is slow to answer. Pubeka is checking what was created at Meta before concluding: do not publish again."
+          "verifying_body": "Meta is slow to answer. Pubeka is checking what was created at Meta before concluding: do not publish again. If Meta still does not answer, Pubeka will conclude within 24 hours at the latest and tell you what happened."
         },
         "success": {
           "title": "Your campaign has been sent to Meta",
@@ -1037,6 +1051,16 @@
           "publish_disabled": {
             "title": "Real publishing is not enabled on this environment.",
             "body": "Your campaign stays a draft and your quota is not used. Nothing was sent to Meta."
+          },
+          "currency_unsupported": {
+            "title": "Meta does not accept your ad account’s currency ({currency}).",
+            "body": "According to Meta’s official list (checked on 18 October 2026), this currency is not accepted for an ad account. You need an account in an accepted currency, for example US dollars. Your campaign stays a draft and your quota is not used.",
+            "action": "See the guide"
+          },
+          "unverified": {
+            "title": "Pubeka could not verify your campaign at Meta.",
+            "body": "For 24 hours, Meta did not give a usable answer. Your quota is not used. Check in your Meta Ads Manager whether the campaign exists before publishing again, so it is not published twice.",
+            "action": "Contact support"
           }
         }
       }
