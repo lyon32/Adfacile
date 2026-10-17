@@ -15,9 +15,11 @@ import { afterAll, beforeAll, beforeEach, expect } from 'vitest';
 import { resetRateLimits } from './int-support';
 import {
   campaignRow,
+  estimate,
   forceStatus,
   json,
   pause,
+  publishableCampaign,
   publishedCampaign,
   relaunch,
   resume,
@@ -417,6 +419,84 @@ describeRoute('relaunchCampaign', {
       ).toBeNull();
       const res = await relaunch(ro, ro.owner, campaign.id, { mode: 'copy', visual_mode: 'same' });
       expect(res.status).toBe(403);
+    },
+  },
+});
+
+describeRoute('getReachEstimate', {
+  success: async () => {
+    const { campaign } = await publishableCampaign(s, { connected: true });
+    const { fake, deps } = await fakeKnowing(campaign.id);
+    overrideControlDeps(deps);
+    fake.simulateEstimate({ lowerBound: 120000, upperBound: 150000 });
+    const created = fake.createAttempts;
+    const res = await estimate(s, s.owner, campaign.id);
+    expect(res.status).toBe(200);
+    expect(await json(res)).toMatchObject({
+      status: 'ok',
+      reason: null,
+      audience: { lower: 120000, upper: 150000 },
+      source: 'meta_delivery_estimate',
+    });
+    // Lecture seule : rien n'est créé, la campagne ne bouge pas.
+    expect((await campaignRow(campaign.id))?.status).toBe('draft');
+    expect(fake.createAttempts).toBe(created);
+  },
+  unauthenticated: async () => {
+    const { campaign } = await publishableCampaign(s, { connected: true });
+    expect((await estimate(s, { ...s.owner, headers: {} }, campaign.id)).status).toBe(401);
+  },
+  otherWorkspace: async () => {
+    const { campaign } = await publishableCampaign(s, { connected: true });
+    const stranger = await seedWorkspace();
+    expect((await estimate(stranger, stranger.owner, campaign.id)).status).toBe(404);
+  },
+  forbiddenRole: na(
+    'la lecture est permise à tout membre, y compris « viewer » (estimation en lecture seule)',
+  ),
+  invalidBody: na('GET sans corps ; l’identifiant mal formé est testé ci-dessous'),
+  extra: {
+    'identifiant mal formé : 400 ; inconnu : 404': async () => {
+      expect((await estimate(s, s.owner, 'pas-un-uuid')).status).toBe(400);
+      expect((await estimate(s, s.owner, randomUUID())).status).toBe(404);
+    },
+    'Meta ne donne pas d’estimation : 200 « unavailable » et AUCUNE audience (pas de chiffre inventé)':
+      async () => {
+        const { campaign } = await publishableCampaign(s, { connected: true });
+        const { fake, deps } = await fakeKnowing(campaign.id);
+        overrideControlDeps(deps);
+        fake.simulateEstimate(null);
+        const body = await json(await estimate(s, s.owner, campaign.id));
+        expect(body).toMatchObject({ status: 'unavailable', reason: 'not_ready', audience: null });
+      },
+    'Meta ne répond pas : 200 « unavailable » (jamais une erreur à l’écran)': async () => {
+      const { campaign } = await publishableCampaign(s, { connected: true });
+      const { fake, deps } = await fakeKnowing(campaign.id);
+      overrideControlDeps(deps);
+      fake.simulateTransientError(5);
+      const res = await estimate(s, s.owner, campaign.id);
+      expect(res.status).toBe(200);
+      expect(await json(res)).toMatchObject({
+        status: 'unavailable',
+        reason: 'meta_unavailable',
+        audience: null,
+      });
+    },
+    'un lecteur voit l’estimation, même en lecture seule de l’espace': async () => {
+      const ro = await seedWorkspace();
+      const { campaign } = await publishableCampaign(ro, { connected: true });
+      const { fake, deps } = await fakeKnowing(campaign.id);
+      overrideControlDeps(deps);
+      fake.simulateEstimate({ lowerBound: 5, upperBound: 9 });
+      expect(
+        (
+          await testServiceClient()
+            .from('workspaces')
+            .update({ status: 'read_only' })
+            .eq('id', ro.workspace.id)
+        ).error,
+      ).toBeNull();
+      expect((await estimate(ro, ro.viewer, campaign.id)).status).toBe(200);
     },
   },
 });

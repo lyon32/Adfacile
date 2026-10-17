@@ -8,6 +8,7 @@ import { MetaValidationError, toAppError } from '../meta/errors';
 import { nameHasReference } from '../meta/reference-match';
 import type {
   CampaignLookup,
+  DeliveryEstimate,
   DailyStats,
   DateRange,
   HealthCheckItem,
@@ -58,6 +59,7 @@ export class FakeMetaConnector implements PlatformConnector {
   private createRefusal: AppError | undefined;
   private resumeRefusal: AppError | undefined;
   private pauseRefusal: AppError | undefined;
+  private estimate: DeliveryEstimate | null = null;
   private lookupFailures = 0;
   private lookupTruncated = false;
   private paymentMissing = false;
@@ -112,6 +114,14 @@ export class FakeMetaConnector implements PlatformConnector {
 
   /** Nombre de créations REÇUES par la fausse Meta (aboutissent ou non) : prouve qu'on ne recrée jamais d'office. */
   createAttempts = 0;
+
+  /** Estimation que renverra `estimateDelivery` (valeurs d'ESSAI ; `null` = pas d'estimation, comme Meta qui ne répond pas). */
+  simulateEstimate(estimate: DeliveryEstimate | null): void {
+    this.estimate = estimate;
+  }
+
+  /** Dernière demande d'estimation reçue : prouve ce que `core` a transmis à Meta. */
+  lastEstimateSpec: PublishSpec | null = null;
 
   /** Nombre de mises en pause REÇUES (aboutissent ou non). */
   pauseAttempts = 0;
@@ -208,6 +218,13 @@ export class FakeMetaConnector implements PlatformConnector {
   private readonly locations: LocationMatch[] = [];
   seedLocation(match: LocationMatch): void {
     this.locations.push(match);
+  }
+
+  estimateDelivery(token: PlatformToken, spec: PublishSpec): Promise<DeliveryEstimate | null> {
+    return this.respond(token, () => {
+      this.lastEstimateSpec = spec;
+      return this.estimate;
+    });
   }
 
   searchLocations(token: PlatformToken, query: LocationQuery): Promise<LocationMatch[]> {

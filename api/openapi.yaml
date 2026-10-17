@@ -772,6 +772,26 @@ paths:
         '409': { $ref: '#/components/responses/Conflict' }
         '424': { $ref: '#/components/responses/FailedDependency' }
         '502': { $ref: '#/components/responses/BadGateway' }
+  /workspaces/{workspaceId}/campaigns/{campaignId}/estimate:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/CampaignId' }
+    get:
+      tags: [ Campagnes ]
+      operationId: getReachEstimate
+      summary: Estimation de portée (estimation de diffusion de Meta)
+      description: |
+        PRD F6. L'estimation vient de Meta (`delivery_estimate`) : Pubeka ne calcule et n'invente JAMAIS un chiffre. Quand Meta ne
+        répond pas ou ne donne rien d'exploitable, la réponse est `200` avec `status: unavailable`, `audience: null` et la raison, et
+        l'écran n'affiche aucune estimation. Lecture seule : tout membre peut la demander, même en lecture seule de l'espace ; rien
+        n'est créé chez Meta, aucun quota. Ce que Meta estime : le nombre de personnes actives le mois dernier sur les plateformes
+        choisies qui correspondent au ciblage (bornes basse et haute) ; ce n'est pas le nombre de personnes qui verront la pub avec ce budget.
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ReachEstimate' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
   /workspaces/{workspaceId}/campaigns/{campaignId}/stats:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -1780,6 +1800,24 @@ components:
         paused_at: { type: [ string, 'null' ], format: date-time, description: "Mise en pause par le client (« Mise en pause par toi le JJ/MM »)" }
         publication_error: { oneOf: [ { $ref: '#/components/schemas/PublicationError' }, { type: 'null' } ] }
         version: { type: integer, minimum: 1, description: Augmente à chaque modification ; à renvoyer dans PATCH (SECURITY_NOTES EC-TEAM-08) }
+    ReachEstimate:
+      type: object
+      required: [ status, reason, audience, source, fetched_at ]
+      properties:
+        status: { type: string, enum: [ ok, unavailable ] }
+        reason:
+          type: [ string, 'null' ]
+          enum: [ not_connected, token_expired, incomplete_campaign, meta_unavailable, not_ready, null ]
+          description: Pourquoi il n'y a pas d'estimation (null quand status vaut ok)
+        audience:
+          oneOf:
+            - type: object
+              required: [ lower, upper ]
+              properties: { lower: { type: integer, minimum: 0 }, upper: { type: integer, minimum: 0 } }
+            - type: 'null'
+          description: Bornes données par Meta ; null sans estimation
+        source: { type: string, const: meta_delivery_estimate }
+        fetched_at: { type: string, format: date-time }
     PublishRequest:
       type: object
       additionalProperties: false

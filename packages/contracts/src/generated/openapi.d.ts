@@ -762,6 +762,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workspaces/{workspaceId}/campaigns/{campaignId}/estimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: components["parameters"]["WorkspaceId"];
+                campaignId: components["parameters"]["CampaignId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Estimation de portée (estimation de diffusion de Meta)
+         * @description PRD F6. L'estimation vient de Meta (`delivery_estimate`) : Pubeka ne calcule et n'invente JAMAIS un chiffre. Quand Meta ne
+         *     répond pas ou ne donne rien d'exploitable, la réponse est `200` avec `status: unavailable`, `audience: null` et la raison, et
+         *     l'écran n'affiche aucune estimation. Lecture seule : tout membre peut la demander, même en lecture seule de l'espace ; rien
+         *     n'est créé chez Meta, aucun quota. Ce que Meta estime : le nombre de personnes actives le mois dernier sur les plateformes
+         *     choisies qui correspondent au ciblage (bornes basse et haute) ; ce n'est pas le nombre de personnes qui verront la pub avec ce budget.
+         */
+        get: operations["getReachEstimate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspaces/{workspaceId}/campaigns/{campaignId}/stats": {
         parameters: {
             query?: never;
@@ -1950,6 +1977,24 @@ export interface components {
             publication_error?: components["schemas"]["PublicationError"] | null;
             /** @description Augmente à chaque modification ; à renvoyer dans PATCH (SECURITY_NOTES EC-TEAM-08) */
             version: number;
+        };
+        ReachEstimate: {
+            /** @enum {string} */
+            status: "ok" | "unavailable";
+            /**
+             * @description Pourquoi il n'y a pas d'estimation (null quand status vaut ok)
+             * @enum {string|null}
+             */
+            reason: "not_connected" | "token_expired" | "incomplete_campaign" | "meta_unavailable" | "not_ready" | null;
+            /** @description Bornes données par Meta ; null sans estimation */
+            audience: {
+                lower: number;
+                upper: number;
+            } | null;
+            /** @constant */
+            source: "meta_delivery_estimate";
+            /** Format: date-time */
+            fetched_at: string;
         };
         PublishRequest: {
             /** @description Obligatoire à true pour la première publication de l'espace (clause de responsabilité, enregistrée avec la date et l'utilisateur) ; ignoré ensuite. */
@@ -3883,6 +3928,33 @@ export interface operations {
             409: components["responses"]["Conflict"];
             424: components["responses"]["FailedDependency"];
             502: components["responses"]["BadGateway"];
+        };
+    };
+    getReachEstimate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: components["parameters"]["WorkspaceId"];
+                campaignId: components["parameters"]["CampaignId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReachEstimate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getCampaignStats: {

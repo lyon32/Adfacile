@@ -49,7 +49,11 @@ import type { PublishRow } from './publish-types';
 import { applyTransition, recordStatusEvent } from './transitions';
 import type { RunPublicationDeps } from './run-publication';
 
-export type ControlConnector = Pick<PlatformConnector, 'pause' | 'resume' | 'getStatus'>;
+/** Ce que la pause, la reprise, la relance et l'estimation de portée demandent au connecteur : jamais plus. */
+export type ControlConnector = Pick<
+  PlatformConnector,
+  'pause' | 'resume' | 'getStatus' | 'estimateDelivery' | 'searchLocations'
+>;
 
 export interface CampaignControlDeps {
   connector: ControlConnector;
