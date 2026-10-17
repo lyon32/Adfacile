@@ -20,7 +20,7 @@ Lu au début de **chaque** session. Court par principe : le détail est dans `do
 
 ### Preuve réelle en attente (S14, S15) — règle de la personne, 17/10/2026
 
-**S14 et S15 n’ont jamais été testées avec un vrai modèle.** Ne les coche jamais dans `docs/ROADMAP.md` §2 et n’écris jamais « ✅ » pour elles dans `docs/JOURNAL.md` (leurs entrées restent « ⏳ code fusionné, test réel en attente ») tant que l’analyse réelle d’un site (S14) et la proposition réelle (S15) ne sont pas prouvées avec des crédits OpenRouter ; elles se testent **ensemble**. **Avant de lancer toute nouvelle session, demande à la personne si les crédits sont disponibles.** Décisions du même jour : **tous les pays d’Afrique** sont pris en charge, **1 $ = 590 FCFA** pour tous, **TVA retirée pour le moment** (aucun calcul ni affichage).
+**S14 et S15 n’ont jamais été testées avec un vrai modèle.** Ne les coche jamais dans `docs/ROADMAP.md` §2 et n’écris jamais « ✅ » pour elles dans `docs/JOURNAL.md` (leurs entrées restent « ⏳ code fusionné, test réel en attente ») tant que l’analyse réelle d’un site (S14) et la proposition réelle (S15) ne sont pas prouvées avec des crédits OpenRouter ; elles se testent **ensemble**. **Avant de lancer toute nouvelle session, demande à la personne si les crédits sont disponibles.** Décisions du même jour : **tous les pays d’Afrique** sont pris en charge, **chacun avec sa monnaie et son taux de change réel du marché** (aucun taux unique codé en dur), **TVA retirée pour le moment** (aucun calcul ni affichage).
 
 ## 2. Toujours
 
