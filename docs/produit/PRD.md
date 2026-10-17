@@ -59,7 +59,7 @@ Contrainte commune : beaucoup utilisent **uniquement un téléphone**. L'applica
 1. **L'IA remplit, l'utilisateur valide.** Aucun long formulaire. Tout champ est pré-rempli et reste modifiable.
 2. **Chaque génération doit être parfaite.** Chaque visuel ou campagne générée consomme du quota. Un résultat raté est un échec produit, pas un « essai ».
 3. **Un agent = un rôle.** Aucun agent ne fait le travail d'un autre (voir §6).
-4. **Transparence de l'argent.** Montants en dollars et en monnaie locale, en temps réel (TVA retirée pour le moment (décision du 17/10/2026), à réactiver sur décision).
+4. **Transparence de l'argent.** Montants en dollars et en monnaie locale, en temps réel. TVA retirée pour le moment (décision du 17/10/2026), à réactiver sur décision.
 5. **Pas d'incohérence affichée.** Un utilisateur qui n'a rien lancé ne voit aucun chiffre fictif.
 6. **Guider plutôt que bloquer.** Toute configuration manquante est détectée et expliquée pas à pas.
 7. **Le client reste propriétaire.** Les campagnes sont créées dans **son** Business Manager et **son** compte publicitaire, et payées par **son** moyen de paiement Meta. Pubeka n'avance jamais d'argent à Meta.
@@ -70,7 +70,7 @@ Contrainte commune : beaucoup utilisent **uniquement un téléphone**. L'applica
 
 ### 4.1 Inscription et intégration
 1. Inscription ou connexion via **Google, Apple ou e-mail** (pas de connexion Facebook pour le compte Pubeka).
-2. Choix du **pays** (qui fixe la devise par défaut), de la **devise d'affichage** (XOF ou XAF) et de la **langue de l'interface** (FR ou EN).
+2. Choix du **pays** parmi les **54 pays d'Afrique** (décision du 17/10/2026 : chaque pays a SA monnaie ISO 4217 et son fuseau par défaut), de la **devise d'affichage** (la monnaie du pays ; XOF ou XAF au choix dans la zone franc CFA) et de la **langue de l'interface** (FR ou EN).
 3. Démarrage de l'**essai gratuit** : 1 campagne, 3 visuels, 7 jours, sans moyen de paiement.
 4. **Connexion du compte Meta** (Facebook Login for Business, permissions publicitaires).
 5. **Bilan de santé du compte** (F1) : une liste de contrôle verte ou rouge avec un bouton « Comment faire » pour chaque élément.

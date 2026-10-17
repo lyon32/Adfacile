@@ -287,8 +287,11 @@ Détail chiffré : [plans-et-credits.md](../produit/plans-et-credits.md).
 - **Parrainage** : parrain et filleul récompensés **quand le filleul paie** (Q74).
 
 ### 9.3 Monnaie et TVA (retirée)
-- **Taux de change en temps réel** : SasPay (`/exchange-rates/`) en principal, source gratuite en secours ; mis en cache (Q66).
-- Montants affichés **en FCFA, dollars en petit dessous**.
+- **Tous les pays d'Afrique** (décision du 17/10/2026) : la table `countries` porte les 54 pays (migration 0012), chacun avec sa monnaie ISO 4217, son fuseau IANA par défaut (celui de la capitale) et ses noms FR et EN (CLDR). Sources : ISO 3166-1, ISO 4217 (SIX), CLDR, IANA `zone.tab`.
+- **Unités mineures par monnaie** : `packages/shared/src/currency.ts` porte l'exposant ISO 4217 de chaque monnaie (0 : FCFA, franc guinéen, ougandais, rwandais… ; 2 : naira, rand… ; 3 : dinar tunisien et libyen). Aucun « /100 » ni « 2 décimales » codé en dur pour une monnaie locale ; une monnaie absente de la table lève une erreur. Le formatage passe par `Intl.NumberFormat` (FR/EN), le FCFA s'écrit « FCFA ».
+- **Montants** : `local_minor` (entier, unité mineure de `currency`) et `usd_cents`. Conversion en entiers (taux au dix-millième, arrondi à la demi-unité vers le haut).
+- **Taux de change** : voir ci-dessous (source et fraîcheur).
+- Montants affichés **en monnaie locale, dollars en petit dessous**.
 - **TVA** : TVA retirée pour le moment (décision du 17/10/2026), à réactiver sur décision. Le coût est `budget par jour × jours` ; la table `vat_rates` (modifiable depuis l'administration) et `ad_accounts.vat_country` restent en base, dormantes (aucune migration destructive).
 
 ---
