@@ -21,7 +21,10 @@ vi.mock('@pubeka/core', async (importOriginal) => ({
 vi.mock('@pubeka/db', () => ({ createServiceClient }));
 vi.mock('@pubeka/shared', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  getEnv: () => ({ SUPABASE_URL: 'http://127.0.0.1:54321', SUPABASE_SECRET_KEY: 'sb_secret_test' }),
+  parseFxRefreshEnv: () => ({
+    SUPABASE_URL: 'http://127.0.0.1:54321',
+    SUPABASE_SECRET_KEY: 'sb_secret_test',
+  }),
 }));
 
 const NOW = new Date('2026-10-17T06:00:00.000Z');

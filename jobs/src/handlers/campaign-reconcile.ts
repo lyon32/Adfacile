@@ -4,7 +4,7 @@ import {
   type ReconcileReport,
 } from '@pubeka/core';
 import { createServiceClient } from '@pubeka/db';
-import { createRequestId, getEnv } from '@pubeka/shared';
+import { createRequestId, parseCampaignReconcileEnv } from '@pubeka/shared';
 import { z } from 'zod';
 import type { JobHandlerDefinition } from '../dispatcher';
 
@@ -25,7 +25,8 @@ export const campaignReconcileHandler: JobHandlerDefinition<
   id: CAMPAIGN_RECONCILE_TASK,
   payloadSchema: campaignReconcilePayloadSchema,
   run: async (_payload, ctx) => {
-    const env = getEnv();
+    // Sous-ensemble minimal (shared/job-env.ts) : Supabase, chiffrement des jetons, Meta et interrupteur de publication.
+    const env = parseCampaignReconcileEnv();
     const svc = createServiceClient({
       url: env.SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL,
       secretKey: env.SUPABASE_SECRET_KEY,
