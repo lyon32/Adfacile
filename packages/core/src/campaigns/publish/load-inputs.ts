@@ -19,6 +19,7 @@ export interface PageInfo {
 
 export interface AdAccountInfo {
   id: string;
+  name: string | null;
   metaAdAccountId: string;
   currency: string | null;
   hasPaymentMethod: boolean | null;
@@ -99,7 +100,7 @@ async function loadAdAccount(
   if (adAccountId === null) return null;
   const found = await reader
     .from('ad_accounts')
-    .select('id, meta_ad_account_id, currency, has_payment_method, meta_connection_id')
+    .select('id, name, meta_ad_account_id, currency, has_payment_method, meta_connection_id')
     .eq('workspace_id', workspaceId)
     .eq('id', adAccountId)
     .maybeSingle();
@@ -108,6 +109,7 @@ async function loadAdAccount(
   if (row === null) return null;
   return {
     id: row.id,
+    name: row.name,
     metaAdAccountId: row.meta_ad_account_id,
     currency: str(row.currency),
     hasPaymentMethod: row.has_payment_method,
