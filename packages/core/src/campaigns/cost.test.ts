@@ -3,7 +3,13 @@
 // ATTENTION : les taux de change écrits ici sont des VALEURS DE TEST (le calcul doit marcher pour n'importe quel taux) ;
 // ce ne sont pas des données du produit. Les vrais taux viennent de `exchange_rates`.
 import { describe, expect, it } from 'vitest';
-import { campaignCost, daysInclusive, toScaledRate } from './cost';
+import {
+  campaignCost,
+  daysInclusive,
+  META_FEES_MARGIN_PERCENT,
+  reserveUsdCents,
+  toScaledRate,
+} from './cost';
 
 const fx = (rate: number, quote = 'XAF') => ({
   rate,
@@ -58,7 +64,7 @@ describe('campaignCost', () => {
   it('aucun champ de TVA dans la sortie', () => {
     const cost = campaignCost({ ...base, fx: fx(600) });
     expect(Object.keys(cost).sort()).toEqual(
-      ['budget_usd_cents', 'daily', 'days', 'fx', 'status', 'total'].sort(),
+      ['budget_usd_cents', 'daily', 'days', 'fx', 'reserve', 'status', 'total'].sort(),
     );
   });
 
@@ -196,6 +202,74 @@ describe('campaignCost', () => {
     it('un taux de change nul ou négatif lève une erreur', () => {
       expect(() => campaignCost({ ...base, fx: fx(0) })).toThrow(RangeError);
       expect(() => campaignCost({ ...base, fx: fx(-600) })).toThrow(RangeError);
+    });
+  });
+});
+
+describe('montant à prévoir sur la carte ou les fonds Meta (décision de la personne du 18/10/2026)', () => {
+  it('la marge par défaut est de 20 % (constante nommée, indicative, réglable plus tard par l’administration S31)', () => {
+    expect(META_FEES_MARGIN_PERCENT).toBe(20);
+  });
+
+  it.each([
+    [1000, 1200], // 10 $ → 12 $ (règle de la personne)
+    [2800, 3400], // 28 $ → 33,60 $ → 34 $
+    [100, 200], // 1 $ → 1,20 $ → 2 $ (arrondi au dollar supérieur)
+    [1001, 1300], // 10,01 $ → 12,012 $ → 13 $
+    [1200, 1500], // 12 $ → 14,40 $ → 15 $
+    [500, 600], // 5 $ → 6 $ (exact : pas d'arrondi vers le haut inutile)
+  ])(
+    'budget %i centimes → à prévoir %i centimes, arrondi au dollar supérieur',
+    (budget, expected) => {
+      expect(reserveUsdCents(budget)).toBe(expected);
+    },
+  );
+
+  it('jamais moins que le budget, jamais d’arrondi flottant sur de grands montants', () => {
+    for (const budget of [1, 99, 100, 101, 999, 123_457, 99_999_900]) {
+      const reserve = reserveUsdCents(budget);
+      expect(reserve).toBeGreaterThanOrEqual(budget);
+      expect(reserve % 100).toBe(0);
+      expect(Number.isSafeInteger(reserve)).toBe(true);
+    }
+    expect(reserveUsdCents(99_999_900)).toBe(119_999_900);
+  });
+
+  it('une marge personnalisée est acceptée (réglage futur) ; refuse une marge négative ou non entière, un budget invalide', () => {
+    expect(reserveUsdCents(1000, 30)).toBe(1300);
+    expect(reserveUsdCents(1000, 0)).toBe(1000);
+    expect(() => reserveUsdCents(1000, -1)).toThrow(RangeError);
+    expect(() => reserveUsdCents(1000, 12.5)).toThrow(RangeError);
+    expect(() => reserveUsdCents(0)).toThrow(RangeError);
+    expect(() => reserveUsdCents(10.5)).toThrow(RangeError);
+  });
+
+  it('campagne de 10 $ au total (2 jours × 5 $), taux d’essai 600 : 12 $ et 7 200 FCFA, marge 20 %, indicatif', () => {
+    const cost = campaignCost({ ...base, endDate: '2026-10-12', fx: fx(600) });
+    expect(cost.budget_usd_cents).toBe(1000);
+    expect(cost.reserve).toEqual({
+      margin_percent: 20,
+      usd_cents: 1200,
+      local: { local_minor: 7200, usd_cents: 1200, currency: 'XAF' },
+    });
+  });
+
+  it('sans taux de change valide : le dollar seul, aucune monnaie locale inventée', () => {
+    const cost = campaignCost({ ...base, endDate: '2026-10-12', fx: null });
+    expect(cost.reserve).toEqual({ margin_percent: 20, usd_cents: 1200, local: null });
+  });
+
+  it('budget ou dates manquants : aucun montant à prévoir', () => {
+    expect(campaignCost({ ...base, startDate: null, fx: fx(600) }).reserve).toBeNull();
+    expect(campaignCost({ ...base, dailyBudgetUsdCents: null, fx: fx(600) }).reserve).toBeNull();
+  });
+
+  it('en nairas (2 décimales) : 12 $ à 1 500 NGN = 18 000,00 NGN = 1 800 000 unités mineures', () => {
+    const cost = campaignCost({ ...base, endDate: '2026-10-12', fx: fx(1500, 'NGN') });
+    expect(cost.reserve?.local).toEqual({
+      local_minor: 1_800_000,
+      usd_cents: 1200,
+      currency: 'NGN',
     });
   });
 });

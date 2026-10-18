@@ -439,11 +439,11 @@
       },
       "payment-method": {
         "title": "Ajouter un moyen de paiement",
-        "intro": "Meta débite tes pubs sur ton compte publicitaire. Sans moyen de paiement valide, elles ne sont pas diffusées.",
+        "intro": "Meta débite tes pubs sur ton compte publicitaire. Sans moyen de paiement valide, elles ne sont pas diffusées. Dans les deux méthodes, prévois ton budget plus une marge : Meta peut ajouter des taxes et des frais, qui varient selon les résultats de ta pub (pour 10 $ de budget, mets 12 à 13 $).",
         "step_1": "Dans le gestionnaire de publicités de Meta, ouvre « Paramètres de paiement ».",
-        "step_2": "Ajoute le moyen de paiement que Meta te propose pour le pays et la monnaie de ton compte. Une carte bancaire ou PayPal sert à la facturation automatique : Meta te débite quand tu atteins ton seuil de paiement.",
-        "step_3": "Si ton compte propose des fonds disponibles (paiement d’avance), tu les alimentes toi-même avant la diffusion : prévois de quoi couvrir ta campagne, car la diffusion peut s’arrêter quand les fonds sont épuisés. D’après Meta, ils ne sont proposés que dans certains pays, avec des moyens locaux (par exemple M-Pesa au Kenya).",
-        "step_4": "Pas de carte bancaire ? Tu peux utiliser une carte virtuelle, par exemple Keecash, ou ta propre carte virtuelle ; vérifie que Meta l’accepte avant de t’en servir. Puis reviens ici.",
+        "step_2": "Méthode 1, une carte : relie une carte bancaire au compte Meta Ads (facturation automatique : Meta te débite quand tu atteins ton seuil de paiement). Garde sur la carte ton budget plus la marge.",
+        "step_3": "Méthode 2, des fonds à alimenter (plus simple), seulement si ton compte propose des fonds : d’après Meta, ils sont proposés dans certains pays seulement, avec des moyens locaux (à ce jour, par exemple : Égypte, Kenya, Tanzanie, Nigeria). Alimente-les de ton budget plus la marge ; la diffusion peut s’arrêter quand ils sont épuisés.",
+        "step_4": "Pas de carte bancaire, ou pas de fonds dans ton pays ? Crée une carte virtuelle (par exemple Keecash, ou la tienne) approvisionnée du montant voulu, pour ne pas exposer ton argent personnel, puis relie-la au compte ; vérifie que Meta l’accepte. Reviens ici ensuite.",
         "note": "Les pubs se paient chez Meta, jamais chez Pubeka. L’abonnement Pubeka se règle à part, par Mobile Money. Les moyens de paiement disponibles dépendent du pays et de la monnaie de ton compte : vérifie dans le Centre d’aide Meta (liens ci-dessous).",
         "source_1": "Centre d’aide Meta : fonds disponibles et facturation automatique",
         "source_2": "Centre d’aide Meta : moyens de paiement acceptés avec les fonds disponibles"
@@ -1062,6 +1062,13 @@
             "body": "Pendant 24 heures, Meta n’a pas répondu de façon exploitable. Ton quota n’est pas décompté. Regarde dans ton gestionnaire de publicités Meta si la campagne existe avant de republier, pour ne pas la publier deux fois.",
             "action": "Écrire au support"
           }
+        },
+        "reserve": {
+          "title": "À prévoir sur ta carte ou tes fonds Meta",
+          "indicative": "Indicatif",
+          "line": "environ {amount} (ton budget + une marge pour les taxes et frais de Meta)",
+          "explain": "Meta peut ajouter des taxes et des frais, qui varient selon les résultats de ta pub. Prévois un supplément : pour une campagne de 10 $, mets 12 à 13 $.",
+          "attribution": "Taux fournis par Exchange Rate API"
         }
       }
     }

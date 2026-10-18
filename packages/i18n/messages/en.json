@@ -439,11 +439,11 @@
       },
       "payment-method": {
         "title": "Add a payment method",
-        "intro": "Meta charges your ads to your ad account. Without a valid payment method, they are not delivered.",
+        "intro": "Meta charges your ads to your ad account. Without a valid payment method, they are not delivered. With both methods, plan your budget plus a margin: Meta may add taxes and fees, which vary with your ad’s results (for a $10 budget, put in $12 to $13).",
         "step_1": "In Meta Ads Manager, open “Payment settings”.",
-        "step_2": "Add the payment method Meta offers for your account’s country and currency. A bank card or PayPal is used for automatic billing: Meta charges you when you reach your payment threshold.",
-        "step_3": "If your account offers available funds (prepayment), you top them up yourself before delivery: plan enough to cover your campaign, because delivery can stop when the funds run out. According to Meta, they are only offered in some countries, with local methods (for example M-Pesa in Kenya).",
-        "step_4": "No bank card? You can use a virtual card, for example Keecash, or your own virtual card; check that Meta accepts it before using it. Then come back here.",
+        "step_2": "Method 1, a card: link a bank card to the Meta Ads account (automatic billing: Meta charges you when you reach your payment threshold). Keep your budget plus the margin on the card.",
+        "step_3": "Method 2, funds to top up (simpler), only if your account offers funds: according to Meta, they are only offered in some countries, with local methods (so far, for example: Egypt, Kenya, Tanzania, Nigeria). Top them up with your budget plus the margin; delivery can stop when they run out.",
+        "step_4": "No bank card, or no funds in your country? Create a virtual card (for example Keecash, or your own) loaded with the amount you want, so you do not expose your personal money, then link it to the account; check that Meta accepts it. Then come back here.",
         "note": "Ads are paid to Meta, never to Pubeka. The Pubeka subscription is paid separately, by Mobile Money. Available payment methods depend on your account’s country and currency: check in the Meta Help Center (links below).",
         "source_1": "Meta Help Center: available funds and automatic billing",
         "source_2": "Meta Help Center: accepted payment methods for available funds"
@@ -1062,6 +1062,13 @@
             "body": "For 24 hours, Meta did not give a usable answer. Your quota is not used. Check in your Meta Ads Manager whether the campaign exists before publishing again, so it is not published twice.",
             "action": "Contact support"
           }
+        },
+        "reserve": {
+          "title": "To set aside on your card or Meta funds",
+          "indicative": "Indicative",
+          "line": "about {amount} (your budget + a margin for Meta’s taxes and fees)",
+          "explain": "Meta may add taxes and fees, which vary with your ad’s results. Set aside a little extra: for a $10 campaign, put in $12 to $13.",
+          "attribution": "Rates provided by Exchange Rate API"
         }
       }
     }

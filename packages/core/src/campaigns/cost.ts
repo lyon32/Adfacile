@@ -33,6 +33,41 @@ export interface CostFx {
   fetched_at: string;
 }
 
+/**
+ * Marge indicative à prévoir en plus du budget sur la carte ou les fonds Meta, en pourcents.
+ *
+ * DÉCISION DE LA PERSONNE du 18/10/2026 : Meta ajoute des taxes et des frais variables (selon les clics, les conversions et le pays),
+ * donc le client ne doit JAMAIS mettre exactement son budget : pour une campagne de 10 $, mettre AU MOINS 12 $ (12 à 13 $ selon ses
+ * moyens). Valeur INDICATIVE, réglable plus tard par l'administration (S31) : ce n'est PAS un pourcentage de frais de Meta, que
+ * Pubeka ne connaît pas et ne promet jamais.
+ */
+export const META_FEES_MARGIN_PERCENT = 20;
+
+/** Montant à prévoir sur la carte ou les fonds Meta. `local` : même montant dans la monnaie du client (`null` sans taux valide). */
+export interface CostReserve {
+  margin_percent: number;
+  usd_cents: number;
+  local: CostMoney | null;
+}
+
+/**
+ * Budget total + marge, arrondi au DOLLAR SUPÉRIEUR (centimes, entiers, aucun flottant) : 1 000 centimes (10 $) → 1 200 (12 $).
+ * Le calcul est fait en deux arrondis au-dessus : d'abord au centime, puis au dollar.
+ */
+export function reserveUsdCents(
+  budgetUsdCents: number,
+  marginPercent: number = META_FEES_MARGIN_PERCENT,
+): number {
+  if (!Number.isSafeInteger(budgetUsdCents) || budgetUsdCents <= 0) {
+    throw new RangeError('Le budget doit être un entier positif de centimes');
+  }
+  if (!Number.isSafeInteger(marginPercent) || marginPercent < 0) {
+    throw new RangeError('La marge doit être un entier de pourcents, positif ou nul');
+  }
+  const withMargin = Math.ceil((budgetUsdCents * (100 + marginPercent)) / 100);
+  return Math.ceil(withMargin / 100) * 100;
+}
+
 /** Forme de `CampaignCost` d'openapi.yaml. */
 export interface CampaignCostView {
   status: CostStatus;
@@ -42,6 +77,8 @@ export interface CampaignCostView {
   total: CostMoney | null;
   daily: CostMoney | null;
   fx: CostFx | null;
+  /** À prévoir sur la carte ou les fonds Meta : budget + marge, INDICATIF. `null` sans budget ou sans dates. */
+  reserve: CostReserve | null;
 }
 
 export interface CostFxInput {
@@ -104,6 +141,7 @@ const EMPTY: Omit<CampaignCostView, 'status'> = {
   total: null,
   daily: null,
   fx: null,
+  reserve: null,
 };
 
 export function campaignCost(input: CostInput): CampaignCostView {
@@ -148,5 +186,15 @@ export function campaignCost(input: CostInput): CampaignCostView {
     total: input.fx === null ? null : money(budget, input.fx.rate, input.fx.quote),
     daily: dailyMoney,
     fx: fxView,
+    reserve: reserveOf(budget, input.fx),
+  };
+}
+
+function reserveOf(budget: number, fx: CostFxInput | null): CostReserve {
+  const usd = reserveUsdCents(budget);
+  return {
+    margin_percent: META_FEES_MARGIN_PERCENT,
+    usd_cents: usd,
+    local: fx === null ? null : money(usd, fx.rate, fx.quote),
   };
 }
