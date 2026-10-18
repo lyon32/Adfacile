@@ -100,6 +100,13 @@ export interface CampaignLookup {
   exhaustive: boolean;
 }
 
+/** Audience estimée par Meta pour un ciblage (estimation de diffusion). Jamais calculée par Pubeka. */
+export interface DeliveryEstimate {
+  /** Bornes du nombre de personnes actives sur les plateformes choisies, le mois dernier, qui correspondent au ciblage. */
+  lowerBound: number;
+  upperBound: number;
+}
+
 /** Résultat de la recherche d'un lieu (Targeting Search, `type=adgeolocation`). */
 export interface LocationMatch {
   key: string;
@@ -249,6 +256,11 @@ export interface PlatformConnector {
   exchangeCode(code: string, redirectUri: string): Promise<PlatformToken>;
   listAdAccounts(token: PlatformToken): Promise<PlatformAdAccount[]>;
   listPages(token: PlatformToken): Promise<PlatformPage[]>;
+  /**
+   * Estimation de diffusion de Meta pour le ciblage de cette campagne (lecture seule, rien n'est créé). `null` quand Meta ne
+   * donne pas d'estimation exploitable : l'appelant n'affiche alors AUCUN chiffre.
+   */
+  estimateDelivery(token: PlatformToken, spec: PublishSpec): Promise<DeliveryEstimate | null>;
   /** Cherche un lieu (ville, région, pays) pour en obtenir la clé de ciblage. Lecture seule. */
   searchLocations(token: PlatformToken, query: LocationQuery): Promise<LocationMatch[]>;
   healthCheck(

@@ -11,6 +11,7 @@ import type {
   DailyStats,
   DateRange,
   CampaignLookup,
+  DeliveryEstimate,
   HealthCheckItem,
   LocationMatch,
   LocationQuery,
@@ -36,7 +37,9 @@ import {
   listAdAccountsWithPixels,
 } from './accounts';
 import { deleteCampaignOnMeta, patchCampaign, updateCampaignStatus } from './campaign-actions';
-import { createFullCampaign } from './create-campaign';
+import { createFullCampaign, normalizeObjective } from './create-campaign';
+import { buildPromotedObject, resolveDestination } from './destination';
+import { buildTargeting } from './targeting';
 import { assertMediaHostsConfigured } from './ssrf';
 import { MetaValidationError, toAppError } from './errors';
 import { MIN_REFERENCE_LENGTH, nameHasReference } from './reference-match';
@@ -144,6 +147,35 @@ const insightsSchema = z.looseObject({
     )
     .optional(),
 });
+
+const estimateSchema = z.looseObject({
+  data: z
+    .array(
+      z.looseObject({
+        estimate_mau_lower_bound: z.union([z.number(), z.string()]).optional(),
+        estimate_mau_upper_bound: z.union([z.number(), z.string()]).optional(),
+        estimate_ready: z.boolean().optional(),
+      }),
+    )
+    .optional(),
+});
+
+function wholeNumber(value: number | string | undefined): number | null {
+  if (value === undefined) return null;
+  const n = typeof value === 'number' ? value : Number(value.trim() === '' ? Number.NaN : value);
+  return Number.isSafeInteger(n) && n >= 0 ? n : null;
+}
+
+/** Bornes valides et ordonnées, estimation prête, audience non nulle : sinon `null` (jamais un chiffre approximatif). */
+function readEstimate(raw: unknown): DeliveryEstimate | null {
+  const row = estimateSchema.parse(raw).data?.[0];
+  if (row === undefined || row.estimate_ready === false) return null;
+  const lowerBound = wholeNumber(row.estimate_mau_lower_bound);
+  const upperBound = wholeNumber(row.estimate_mau_upper_bound);
+  if (lowerBound === null || upperBound === null || lowerBound > upperBound || upperBound === 0)
+    return null;
+  return { lowerBound, upperBound };
+}
 
 const campaignListSchema = z.looseObject({
   data: z
@@ -306,6 +338,38 @@ export class MetaConnector implements PlatformConnector {
         category,
       })),
     );
+  }
+
+  /**
+   * Estimation de diffusion : `GET act_X/delivery_estimate` avec `optimization_goal` et `targeting_spec` (obligatoires) et
+   * `promoted_object` (https://developers.facebook.com/docs/marketing-api/reference/ad-account/delivery_estimate/). LECTURE SEULE.
+   * Les champs lus (`estimate_mau_lower_bound`, `estimate_mau_upper_bound`, `estimate_ready`) sont documentés sur le nœud frère
+   * AdCampaignDeliveryEstimate ; la page du compte ne détaille pas son nœud : toute réponse qui ne les porte pas valablement
+   * donne `null` (aucun chiffre n'est jamais inventé).
+   */
+  estimateDelivery(token: PlatformToken, spec: PublishSpec): Promise<DeliveryEstimate | null> {
+    return this.run(async () => {
+      const page = spec.page;
+      const destination = resolveDestination(
+        { ...spec, objective: normalizeObjective(spec.objective) },
+        page,
+      );
+      const conversion = destination.isMessaging ? null : destination.conversion;
+      const promoted = buildPromotedObject(
+        destination.destination_type,
+        page,
+        destination.isMessaging ? destination.whatsapp_phone_number : null,
+        destination.isMessaging ? destination.whatsapp_phone_number_id : null,
+        conversion,
+      );
+      const raw = await this.graph.get(`${actId(spec.adAccountId)}/delivery_estimate`, {
+        optimization_goal: destination.optimization_goal,
+        targeting_spec: JSON.stringify(buildTargeting(spec.targeting)),
+        ...(promoted === undefined ? {} : { promoted_object: JSON.stringify(promoted) }),
+        access_token: token.accessToken,
+      });
+      return readEstimate(raw);
+    });
   }
 
   /**
