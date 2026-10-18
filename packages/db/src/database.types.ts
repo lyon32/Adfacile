@@ -651,8 +651,16 @@ export type Database = {
           objective: string | null;
           optimization_goal: string | null;
           page_id: string | null;
+          paused_at: string | null;
           platform: Database['public']['Enums']['platform'];
+          publish_attempt: number;
+          publish_error: Json | null;
+          publish_idempotency_key: string | null;
+          publish_phase: string;
+          publish_ref: string | null;
+          publish_started_at: string | null;
           published_at: string | null;
+          quota_state: string;
           start_date: string | null;
           status: Database['public']['Enums']['campaign_status'];
           targeting: NonNullable<Json>;
@@ -685,8 +693,16 @@ export type Database = {
           objective?: string | null;
           optimization_goal?: string | null;
           page_id?: string | null;
+          paused_at?: string | null;
           platform?: Database['public']['Enums']['platform'];
+          publish_attempt?: number;
+          publish_error?: Json | null;
+          publish_idempotency_key?: string | null;
+          publish_phase?: string;
+          publish_ref?: string | null;
+          publish_started_at?: string | null;
           published_at?: string | null;
+          quota_state?: string;
           start_date?: string | null;
           status?: Database['public']['Enums']['campaign_status'];
           targeting?: NonNullable<Json>;
@@ -719,8 +735,16 @@ export type Database = {
           objective?: string | null;
           optimization_goal?: string | null;
           page_id?: string | null;
+          paused_at?: string | null;
           platform?: Database['public']['Enums']['platform'];
+          publish_attempt?: number;
+          publish_error?: Json | null;
+          publish_idempotency_key?: string | null;
+          publish_phase?: string;
+          publish_ref?: string | null;
+          publish_started_at?: string | null;
           published_at?: string | null;
+          quota_state?: string;
           start_date?: string | null;
           status?: Database['public']['Enums']['campaign_status'];
           targeting?: NonNullable<Json>;
@@ -1730,6 +1754,42 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'media_providers';
             referencedColumns: ['code'];
+          },
+        ];
+      };
+      publish_liability_acceptances: {
+        Row: {
+          accepted_at: string;
+          accepted_by: string | null;
+          clause_version: string;
+          workspace_id: string;
+        };
+        Insert: {
+          accepted_at?: string;
+          accepted_by?: string | null;
+          clause_version?: string;
+          workspace_id: string;
+        };
+        Update: {
+          accepted_at?: string;
+          accepted_by?: string | null;
+          clause_version?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'publish_liability_acceptances_accepted_by_fkey';
+            columns: ['accepted_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'publish_liability_acceptances_workspace_id_fkey';
+            columns: ['workspace_id'];
+            isOneToOne: true;
+            referencedRelation: 'workspaces';
+            referencedColumns: ['id'];
           },
         ];
       };

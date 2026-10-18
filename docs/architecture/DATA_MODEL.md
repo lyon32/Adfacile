@@ -215,7 +215,7 @@ Puis remplacer la section 6 par le contenu de `/tmp/schema.md`.
 | ticket_status | open · waiting_user · closed |
 | workspace_status | active · read_only · suspended |
 
-### Tables (59)
+### Tables (60)
 
 #### `audit.admin_log`
 
@@ -499,6 +499,10 @@ RLS : activée · 1 politique(s)
 | n | `NOT NULL id` |
 | n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
+
+| Index | Définition |
+|---|---|
+| ads_campaign_meta_ad_uniq | `UNIQUE public.ads USING btree (campaign_id, meta_ad_id) WHERE (meta_ad_id IS NOT NULL)` |
 
 RLS : activée · 1 politique(s)
 
@@ -869,6 +873,14 @@ RLS : activée · 1 politique(s)
 | visual_brief | text | oui |  |
 | chosen_proposal_version | integer | oui |  |
 | fx_currency | character(3) | oui |  |
+| publish_ref | text | oui |  |
+| publish_attempt | integer | non | 0 |
+| publish_idempotency_key | uuid | oui |  |
+| publish_phase | text | non | 'none'::text |
+| publish_started_at | timestamp with time zone | oui |  |
+| publish_error | jsonb | oui |  |
+| quota_state | text | non | 'none'::text |
+| paused_at | timestamp with time zone | oui |  |
 
 | Contrainte | Définition |
 |---|---|
@@ -885,6 +897,10 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK (((char_length(name) >= 1) AND (char_length(name) <= 200)))` |
 | Contrôle | `CHECK ((objective = ANY (ARRAY['OUTCOME_ENGAGEMENT'::text, 'OUTCOME_TRAFFIC'::text, 'OUTCOME_AWARENESS'::text, 'OUTCOME_SALES'::text])))` |
 | Contrôle | `CHECK ((optimization_goal = ANY (ARRAY['CONVERSATIONS'::text, 'LINK_CLICKS'::text, 'LANDING_PAGE_VIEWS'::text, 'POST_ENGAGEMENT'::text, 'REACH'::text, 'OFFSITE_CONVERSIONS'::text])))` |
+| Contrôle | `CHECK ((publish_attempt >= 0))` |
+| Contrôle | `CHECK ((publish_phase = ANY (ARRAY['none'::text, 'creating'::text, 'created'::text, 'activating'::text, 'done'::text])))` |
+| Contrôle | `CHECK ((publish_ref ~ '^pk-[0-9a-f]{8}-[0-9]{1,4}$'::text))` |
+| Contrôle | `CHECK ((quota_state = ANY (ARRAY['none'::text, 'held'::text, 'counted'::text, 'released'::text])))` |
 | Contrôle | `CHECK (((vat_rate >= (0)::numeric) AND (vat_rate <= 0.5)))` |
 | Contrôle | `CHECK ((version >= 1))` |
 | Contrôle | `CHECK ((char_length(visual_brief) <= 1000))` |
@@ -901,6 +917,9 @@ RLS : activée · 1 politique(s)
 | n | `NOT NULL id` |
 | n | `NOT NULL name` |
 | n | `NOT NULL platform` |
+| n | `NOT NULL publish_attempt` |
+| n | `NOT NULL publish_phase` |
+| n | `NOT NULL quota_state` |
 | n | `NOT NULL status` |
 | n | `NOT NULL targeting` |
 | n | `NOT NULL updated_at` |
@@ -912,6 +931,8 @@ RLS : activée · 1 politique(s)
 |---|---|
 | campaigns_analysis_id_idx | `public.campaigns USING btree (analysis_id)` |
 | campaigns_meta_campaign_id_idx | `public.campaigns USING btree (meta_campaign_id)` |
+| campaigns_publish_key_idx | `public.campaigns USING btree (workspace_id, publish_idempotency_key) WHERE (publish_idempotency_key IS NOT NULL)` |
+| campaigns_publish_ref_uniq | `UNIQUE public.campaigns USING btree (publish_ref) WHERE (publish_ref IS NOT NULL)` |
 | campaigns_workspace_id_status_idx | `public.campaigns USING btree (workspace_id, status)` |
 
 RLS : activée · 3 politique(s)
@@ -1596,6 +1617,27 @@ RLS : activée · 2 politique(s)
 | n | `NOT NULL requests` |
 | n | `NOT NULL spent_usd` |
 | Clé primaire | `PRIMARY KEY (provider_code, month)` |
+
+RLS : activée · 1 politique(s)
+
+#### `public.publish_liability_acceptances`
+
+| Colonne | Type | Null | Défaut |
+|---|---|---|---|
+| workspace_id | uuid | non |  |
+| accepted_by | uuid | oui |  |
+| accepted_at | timestamp with time zone | non | now() |
+| clause_version | text | non | 'v1'::text |
+
+| Contrainte | Définition |
+|---|---|
+| Contrôle | `CHECK (((char_length(clause_version) >= 1) AND (char_length(clause_version) <= 20)))` |
+| Clé étrangère | `FOREIGN KEY (accepted_by) REFERENCES profiles(id) ON DELETE SET NULL` |
+| Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
+| n | `NOT NULL accepted_at` |
+| n | `NOT NULL clause_version` |
+| n | `NOT NULL workspace_id` |
+| Clé primaire | `PRIMARY KEY (workspace_id)` |
 
 RLS : activée · 1 politique(s)
 

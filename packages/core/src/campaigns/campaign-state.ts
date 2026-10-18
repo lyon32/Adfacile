@@ -7,7 +7,8 @@
 //
 // Décisions de la personne (16/10/2026), qui font foi sur les documents :
 //  - `stopped → active` par `recover` : quand Meta arrête une campagne pour un paiement, le client alimente ses fonds
-//    publicitaires chez Meta puis la campagne repart (APPFLOW §11.2). S17 déclenchera `recover` quand Meta l'indique.
+//    publicitaires chez Meta puis la RELANCE LUI-MÊME depuis Pubeka (route `relaunch`, mode `recover`, S16 ; APPFLOW §11.2).
+//    Aucune détection automatique : S17 se borne à afficher l'état « arrêtée ».
 //  - `rejected → publishing` (LLD) : une campagne refusée repart vers « Publication », puis `sent`.
 export const CAMPAIGN_STATUSES = [
   'draft',
