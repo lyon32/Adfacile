@@ -42,11 +42,58 @@ const GUIDE_SLUGS = [
   'whatsapp-business',
   'pixel',
   'permissions',
+  'ad-account-currency',
 ] as const;
 export type GuideSlug = (typeof GUIDE_SLUGS)[number];
 
 function guideSlug(value: string | undefined): GuideSlug | null {
   return GUIDE_SLUGS.find((slug) => slug === value) ?? null;
+}
+
+/** Sources officielles citées sous un guide (pages publiques de Meta, relevées le 18/10/2026) : jamais une affirmation sans source. */
+function Sources({ slug }: { slug: GuideSlug }): ReactNode {
+  const t = useTranslations('meta.guides');
+  const sources: { label: string; href: string }[] =
+    slug === 'payment-method'
+      ? [
+          {
+            label: t('payment-method.source_1'),
+            href: 'https://www.facebook.com/business/help/1730009227245741',
+          },
+          {
+            label: t('payment-method.source_2'),
+            href: 'https://www.facebook.com/business/help/311330675698510',
+          },
+        ]
+      : slug === 'ad-account-currency'
+        ? [
+            {
+              label: t('ad-account-currency.source_1'),
+              href: 'https://developers.facebook.com/docs/marketing-api/currencies',
+            },
+            {
+              label: t('ad-account-currency.source_2'),
+              href: 'https://www.facebook.com/business/help/291404291014138',
+            },
+          ]
+        : [];
+  if (sources.length === 0) return null;
+  return (
+    <ul className="text-meta flex flex-col gap-1">
+      {sources.map((source) => (
+        <li key={source.href}>
+          <a
+            href={source.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2"
+          >
+            {source.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 /** Panneau « Comment faire » d'un élément du bilan de santé ; réutilisé par l'écran Publier (moyen de paiement manquant). */
@@ -87,6 +134,7 @@ export function Guide({
           ))}
         </ol>
         <p className="text-meta text-muted">{t(`${slug}.note`)}</p>
+        <Sources slug={slug} />
         <DialogClose asChild>
           <Button variant="quiet" className="mt-auto w-full sm:w-auto sm:self-start">
             {common('close')}

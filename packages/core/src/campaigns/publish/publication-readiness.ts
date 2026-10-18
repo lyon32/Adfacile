@@ -2,7 +2,7 @@
 // 15 minutes, API_SPEC §13), la clause de responsabilité à accepter ou non, l'état de Meta, la Page, et le rayon réellement
 // envoyé à Meta pour chaque ville. LECTURE SEULE : tout membre, même en lecture seule de l'espace ; rien n'est modifié.
 import { AppError } from '@pubeka/contracts';
-import { cityRadiusKm } from '@pubeka/platforms';
+import { cityRadiusKm, isMetaSupportedCurrency } from '@pubeka/platforms';
 import type { MemberCtx } from '../../context';
 import { geoSchema, readJson } from '../campaign-schemas';
 import { loadPublishInputs } from './load-inputs';
@@ -17,7 +17,12 @@ export interface PublicationReadiness {
   };
   meta: {
     connection: 'ok' | 'expiring' | 'expired' | 'revoked' | 'none';
-    ad_account: { name: string | null; currency: string | null } | null;
+    ad_account: {
+      name: string | null;
+      currency: string | null;
+      /** La monnaie est dans la liste officielle de Meta ; `null` : monnaie pas encore lue. */
+      currency_supported: boolean | null;
+    } | null;
     payment_method: 'present' | 'missing' | 'unknown';
   };
   page: { id: string; name: string | null; active: boolean } | null;
@@ -71,7 +76,14 @@ export async function getPublicationReadiness(
       ad_account:
         inputs.adAccount === null
           ? null
-          : { name: inputs.adAccount.name, currency: inputs.adAccount.currency },
+          : {
+              name: inputs.adAccount.name,
+              currency: inputs.adAccount.currency,
+              currency_supported:
+                inputs.adAccount.currency === null
+                  ? null
+                  : isMetaSupportedCurrency(inputs.adAccount.currency),
+            },
       payment_method:
         inputs.adAccount?.hasPaymentMethod === true
           ? 'present'

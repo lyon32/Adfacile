@@ -11,13 +11,10 @@ import {
 import type { Env } from '@pubeka/shared';
 import type { MetaAccountConnector, MetaDeps } from './deps';
 import type { StateCodec } from './oauth-state';
+import { usesFakeMeta } from './fake-providers';
+import { PUBLISH_SWITCH_ENABLED } from '../campaigns/publish/publish-switch';
+import { guardPublishWrites } from './publish-gate';
 import { metaRedirectUri, validateMetaRedirectUri } from './redirect-uri';
-
-export function usesFakeMeta(env: Pick<Env, 'PUBEKA_FAKE_PROVIDERS'>): boolean {
-  const list = env.PUBEKA_FAKE_PROVIDERS;
-  if (list === undefined) return false;
-  return list === 'all' || list.split(',').some((p) => p.trim() === 'meta');
-}
 
 let sharedFake: FakeMetaConnector | undefined;
 
@@ -32,7 +29,7 @@ export function createFullMetaConnector(env: Env, now: () => Date): PlatformConn
       cause: new Error('META_APP_ID ou META_APP_SECRET absent'),
     });
   }
-  return new MetaConnector({
+  const real = new MetaConnector({
     appId: env.META_APP_ID,
     appSecret: env.META_APP_SECRET,
     loginConfigId: env.META_LOGIN_CONFIG_ID,
@@ -42,6 +39,8 @@ export function createFullMetaConnector(env: Env, now: () => Date): PlatformConn
     allowedMediaHosts: [new URL(env.SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL).hostname],
     // Aucun taux ici : chaque demande de publication porte la monnaie du compte et son taux enregistré (S16).
   });
+  // Défense en profondeur : le connecteur RÉEL ne crée ni n'active rien sans `PUBEKA_META_PUBLISH=enabled`.
+  return guardPublishWrites(real, () => env.PUBEKA_META_PUBLISH === PUBLISH_SWITCH_ENABLED);
 }
 
 export function createMetaConnector(env: Env, now: () => Date): MetaAccountConnector {

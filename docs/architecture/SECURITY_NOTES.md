@@ -261,6 +261,10 @@ Risque : avec Meta RÉEL (préproduction, production), un clic sur « Publier »
 - `resume` et `relaunch` en mode `recover` (activent chez Meta) refusent de même ; `relaunch` en mode `copy` ne touche pas à Meta ;
 - `pause` n'est jamais bloquée (elle arrête la dépense), la lecture reste libre, ainsi que l'estimation de portée (lecture seule).
 
+Défense en profondeur : le connecteur Meta RÉEL est lui-même enveloppé (`core/meta/publish-gate.ts`) : `createCampaign`, `resume` et `updateCampaign` refusent (503, `publish_disabled`) sans `PUBEKA_META_PUBLISH=enabled`, même si un chemin de code oubliait la vérification ; `pause`, les lectures, l'estimation et la suppression d'orphelins en pause restent permises.
+
+Reprise d'une publication restée « en publication » (EC-META-05, tâche planifiée `campaign.reconcile`, toutes les 10 minutes, un seul essai) : seules les campagnes en phase `creating`, `created` ou `activating` depuis plus de 5 minutes sont reprises, 20 au plus par passage. Règle : trouvée chez Meta et déjà en diffusion = `in_review` ; trouvée en pause = activée SEULEMENT si l'interrupteur est activé ; introuvable après lecture COMPLÈTE de la liste = échec net, quota rendu ; lecture en erreur ou incomplète = rien ne change ; plus de 24 h sans issue = `error` (`reason: reconcile_timeout`), quota rendu, Meta n'est pas modifié. Reste à S35 : audit des campagnes qui existeraient encore chez Meta après un abandon, et rattrapage d'un quota resté `held` (`afterAccepted` en échec, S24).
+
 Avec la fausse Meta (`PUBEKA_FAKE_PROVIDERS` contenant `meta`, ou `all`) l'interrupteur n'est pas exigé : rien n'est dépensé. Preuves : `publish-switch.test.ts`, `publish-deps.test.ts`, tests de `publishCampaign`, `runPublication`, `campaign-control` et leurs tests d'intégration (compteur de la fausse Meta à 0).
 
 ### 5.4 Campagnes
@@ -276,7 +280,7 @@ Avec la fausse Meta (`PUBEKA_FAKE_PROVIDERS` contenant `meta`, ou `all`) l'inter
 | EC-CAMP-05 | Le taux de change a bougé entre l'aperçu et la publication | Montant recalculé ; si l'écart dépasse 2 % 🔶, l'écran redemande la confirmation | `409 conflict` (`meta.new_total`) |
 | EC-CAMP-06 | Publication avec un visuel dont les fichiers ont expiré (7 jours) | Refus, propositions : « Générer un visuel similaire » ou en choisir un autre | `410 gone` |
 | EC-CAMP-07 | Republication après refus | **Aucun** quota décompté (✅ TR-PLA-09) | `202` |
-| EC-CAMP-08 | Première publication du compte sans avoir accepté la clause de responsabilité | Refus ; l'écran affiche la clause (✅ Q54) | `422` |
+| EC-CAMP-08 | Première publication de l'espace de travail sans avoir accepté la clause de responsabilité (une seule fois par espace de travail) | Refus ; l'écran affiche la clause (✅ Q54) | `400 validation_failed` (champ `accept_liability`, `meta.reason: liability_required`) : la liste fermée d'API_SPEC §4 n'a pas de `422` générique, `openapi.yaml` fait foi |
 | EC-CAMP-09 | Formule inférieure : campagne d'une Page devenue hors formule | Elle continue chez Meta, modification refusée, **pause permise** (✅ Q29) | `402 page_limit_reached` |
 
 ### 5.5 Crédits et générations

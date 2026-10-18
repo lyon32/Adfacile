@@ -150,7 +150,7 @@ export async function ensureTestRate(): Promise<void> {
 export async function connectFakeMeta(
   page: Page,
   user: TestUser,
-  options: { payment?: boolean } = {},
+  options: { payment?: boolean; currency?: string } = {},
 ): Promise<string> {
   const workspaceId = await workspaceIdOf(user);
   // Depuis le navigateur (qui résout `app.localhost` et porte la session), comme `patchMe`.
@@ -185,7 +185,7 @@ export async function connectFakeMeta(
     method: 'PATCH',
     body: JSON.stringify({
       has_payment_method: options.payment ?? true,
-      currency: 'USD',
+      currency: options.currency ?? 'USD',
       is_active: true,
     }),
   });

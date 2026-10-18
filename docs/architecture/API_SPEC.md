@@ -351,7 +351,7 @@ Les fichiers ne passent **jamais** par l'API :
 3. Le client transmet ensuite le `file_path` reçu (dans une analyse, un ticket, une preuve de paiement…).
 4. Le serveur vérifie que le `file_path` appartient bien à l'espace, puis vérifie le **vrai type du fichier** (octets de début), pas seulement l'extension.
 
-Types acceptés : PNG, JPEG, WebP, PDF, DOCX. Taille maximale : **10 Mo pour une image**, **20 Mo pour un PDF ou un DOCX** (ARCHITECTURE §8.7). Au plus **10 images de référence** par génération (moins si le modèle en accepte moins). Les visuels sont lus par des **URL signées valables 15 minutes** ; les fichiers générés sont supprimés après **7 jours** (`410 gone` ensuite).
+Types acceptés : PNG, JPEG, WebP, PDF, DOCX. Taille maximale : **10 Mo pour une image**, **20 Mo pour un PDF ou un DOCX** (ARCHITECTURE §8.7). Au plus **10 images de référence** par génération (moins si le modèle en accepte moins). Les visuels sont lus par des **URL signées valables 15 minutes** (900 s, aussi l'adresse de la photo de l'écran Aperçu, `GET …/readiness`) ; **exception** : l'adresse donnée à **Meta** pour qu'il télécharge la photo pendant la création de la campagne vaut **3 600 s** (1 heure, tâche `campaign.publish`) ; les fichiers générés sont supprimés après **7 jours** (`410 gone` ensuite).
 
 ---
 

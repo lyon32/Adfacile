@@ -633,30 +633,102 @@ describe('runPublication — interrupteur de publication réelle (PUBEKA_META_PU
     expect(t.w.hooks.count('afterAccepted')).toBe(0);
   });
 
-  it.each(['creating', 'created', 'activating'] as const)(
-    'DÉSACTIVÉ, phase « %s » (des éléments existent peut-être chez Meta) : en attente, AUCUN appel, rien n’est modifié',
-    async (phase) => {
-      const t = await published();
-      Object.assign(rowOf(t.w.db, t.w.campaignId), { publish_phase: phase });
-      const before = JSON.stringify(t.w.db.rows('campaigns'));
-      const { proxy, calls } = counting(t.fake);
-      const outcome = await t.run({ connector: proxy, metaPublishEnabled: () => false });
-      expect(outcome).toEqual({ outcome: 'pending', reason: 'publish_disabled' });
-      expect(calls).toEqual([]);
-      expect(JSON.stringify(t.w.db.rows('campaigns'))).toBe(before);
-      expect(t.w.hooks.count('release')).toBe(0);
-    },
-  );
+  /** Écritures qui créent ou ACTIVENT : jamais appelées interrupteur désactivé. Les lectures et la suppression d'orphelins PAUSED restent permises. */
+  const WRITES = ['createCampaign', 'resume'];
 
-  it('réactivé : la même tâche rejouée aboutit (rien n’a été perdu)', async () => {
+  it('DÉSACTIVÉ, phase « creating », campagne retrouvée chez Meta EN PAUSE : adoptée, mais JAMAIS activée (aucune écriture de création ni d’activation), en attente', async () => {
     const t = await published();
-    Object.assign(rowOf(t.w.db, t.w.campaignId), { publish_phase: 'creating' });
-    expect(await t.run({ metaPublishEnabled: () => false })).toEqual({
+    t.fake.simulateCreateTimeout({ created: true });
+    t.fake.simulateLookupFailure();
+    expect(await t.run()).toEqual({ outcome: 'pending', reason: 'lookup_failed' });
+    const { proxy, calls } = counting(t.fake);
+    expect(await t.run({ connector: proxy, metaPublishEnabled: () => false })).toEqual({
       outcome: 'pending',
       reason: 'publish_disabled',
     });
-    const again = await t.run({ metaPublishEnabled: () => true });
-    expect(again.outcome).not.toBe('pending');
+    expect(calls.filter((c) => WRITES.includes(c))).toEqual([]);
+    expect(t.fake.createAttempts).toBe(1);
+    expect(t.fake.resumeAttempts).toBe(0);
+    expect(rowOf(t.w.db, t.w.campaignId)).toMatchObject({
+      status: 'publishing',
+      publish_phase: 'created',
+      quota_state: 'held',
+    });
+    // Interrupteur activé : la reprise active ce qui avait été adopté (phase « created »), sans rien recréer.
+    expect(await t.run({ metaPublishEnabled: () => true })).toMatchObject({ outcome: 'accepted' });
+    expect(t.fake.createAttempts).toBe(1);
+    expect(t.fake.resumeAttempts).toBe(1);
+  });
+
+  it('DÉSACTIVÉ, campagne retrouvée DÉJÀ ACTIVE chez Meta : l’état de Pubeka la reflète (in_review, quota décompté) sans appeler resume', async () => {
+    const t = await published();
+    t.fake.simulateCreateTimeout({ created: true });
+    t.fake.simulateLookupFailure();
+    await t.run();
+    const remote = [...t.fake.campaigns.values()][0];
+    if (remote === undefined) throw new Error('campagne chez Meta attendue');
+    remote.status = 'active';
+    const { proxy, calls } = counting(t.fake);
+    expect(await t.run({ connector: proxy, metaPublishEnabled: () => false })).toEqual({
+      outcome: 'accepted',
+      adopted: true,
+    });
+    expect(calls.filter((c) => WRITES.includes(c))).toEqual([]);
+    expect(rowOf(t.w.db, t.w.campaignId)).toMatchObject({
+      status: 'in_review',
+      publish_phase: 'done',
+      quota_state: 'counted',
+    });
+  });
+
+  it('DÉSACTIVÉ, phase « activating » : la lecture de l’état chez Meta conclut (active → in_review) sans aucune écriture', async () => {
+    const t = await published();
+    t.fake.simulateCreateTimeout({ created: true });
+    t.fake.simulateLookupFailure();
+    await t.run();
+    await t.run({ metaPublishEnabled: () => false });
+    const remote = [...t.fake.campaigns.values()][0];
+    if (remote === undefined) throw new Error('campagne chez Meta attendue');
+    Object.assign(rowOf(t.w.db, t.w.campaignId), { publish_phase: 'activating' });
+    remote.status = 'active';
+    const { proxy, calls } = counting(t.fake);
+    expect(await t.run({ connector: proxy, metaPublishEnabled: () => false })).toEqual({
+      outcome: 'accepted',
+      adopted: false,
+    });
+    expect(calls.filter((c) => WRITES.includes(c))).toEqual([]);
+  });
+
+  it('DÉSACTIVÉ, phase « creating », RIEN chez Meta (liste lue en entier) : échec net, quota rendu — aucune écriture', async () => {
+    const t = await published();
+    t.fake.simulateCreateTimeout({ created: false });
+    t.fake.simulateLookupFailure();
+    await t.run();
+    const { proxy, calls } = counting(t.fake);
+    expect(await t.run({ connector: proxy, metaPublishEnabled: () => false })).toEqual({
+      outcome: 'failed',
+      code: 'meta_error',
+      uncertain: true,
+    });
+    expect(calls.filter((c) => WRITES.includes(c))).toEqual([]);
+    expect(rowOf(t.w.db, t.w.campaignId)).toMatchObject({
+      status: 'error',
+      quota_state: 'released',
+    });
+  });
+
+  it('DÉSACTIVÉ, lecture en panne : rien ne change, nouvelle tentative au passage suivant', async () => {
+    const t = await published();
+    t.fake.simulateCreateTimeout({ created: true });
+    t.fake.simulateLookupFailure();
+    await t.run();
+    t.fake.simulateLookupFailure();
+    const before = JSON.stringify(t.w.db.rows('campaigns'));
+    expect(await t.run({ metaPublishEnabled: () => false })).toEqual({
+      outcome: 'pending',
+      reason: 'lookup_failed',
+    });
+    expect(JSON.stringify(t.w.db.rows('campaigns'))).toBe(before);
   });
 
   it('une campagne déjà terminée ou absente reste ignorée sans erreur, interrupteur désactivé ou non', async () => {

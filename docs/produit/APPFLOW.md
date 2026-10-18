@@ -329,7 +329,7 @@ Option **[Tester 2 visuels (test A/B)]** : sélection de 2 visuels ; compte pour
 - Récapitulatif final (objectif, zone, budget, dates, coût total, sans TVA).
 
 ### 8.6 Étape « Publier »
-- **Première publication du compte** : fenêtre de responsabilité à accepter une fois — « La plateforme vérifie chaque pub. Pubeka n'est pas responsable si ton compte publicitaire est restreint à cause du contenu publié. **[J'ai compris]** ».
+- **Première publication de l'espace de travail** : fenêtre de responsabilité, à accepter **une seule fois par espace de travail** (la date et l'utilisateur sont enregistrés) — « La plateforme vérifie chaque pub. Pubeka n'est pas responsable si ton compte publicitaire est restreint à cause du contenu publié. **[J'ai compris]** ».
 - **[Publier la campagne]** ⟶ « Publication en cours… » ⟶ quota de campagnes décompté ⟶ écran de succès :
   « Ta campagne est envoyée à Meta. Meta la vérifie, en général sous 24 heures. On te prévient dès qu'elle est en diffusion. » **[Voir ma campagne]** · **[Créer une autre pub]**.
 

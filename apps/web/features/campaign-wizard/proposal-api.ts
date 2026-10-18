@@ -106,6 +106,7 @@ export const CampaignSchema = z.object({
       message: z.string().optional(),
       fix: z.string().nullable().optional(),
       uncertain: z.boolean().optional(),
+      reason: z.string().optional(),
       at: z.string(),
     })
     .nullable()

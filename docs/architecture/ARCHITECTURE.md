@@ -317,6 +317,7 @@ Détail chiffré : [plans-et-credits.md](../produit/plans-et-credits.md).
 | Attribution et expiration des crédits mensuels (date anniversaire) | Chaque jour |
 | Suppression des fichiers de plus de 7 jours (sauf campagnes) | Chaque jour |
 | Taux de change (`fx.refresh`; appelle le fournisseur une fois par jour au plus) | Toutes les 6 heures |
+| Reprise des publications restées « en publication » (`campaign.reconcile`, S16) : rapprochement en lecture seule chez Meta, 20 campagnes au plus par passage | Toutes les 10 minutes |
 | Résumé du lundi (e-mail) | Chaque lundi |
 | Séquence de bienvenue (J1 connecter Meta, J3 première pub, J6 fin d'essai) | Chaque heure |
 | Soldes et budgets fournisseurs (alerte solde bas, budget 15 $) | Toutes les heures |

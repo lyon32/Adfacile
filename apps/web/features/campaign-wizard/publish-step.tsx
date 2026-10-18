@@ -19,7 +19,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ApiError } from '../../lib/api';
-import { Guide } from '../meta-connection/health-list';
+import { Guide, type GuideSlug } from '../meta-connection/health-list';
 import { CostPanel } from './cost-panel';
 import { useCampaign } from './proposal-api';
 import { FailurePanel } from './publish-failure-panel';
@@ -42,7 +42,11 @@ type Check = 'ok' | 'ko' | 'unknown';
 function checksOf(ready: Readiness): { page: Check; account: Check; payment: Check; photo: Check } {
   return {
     page: ready.page?.active === true ? 'ok' : 'ko',
-    account: ready.meta.connection === 'ok' || ready.meta.connection === 'expiring' ? 'ok' : 'ko',
+    account:
+      (ready.meta.connection === 'ok' || ready.meta.connection === 'expiring') &&
+      ready.meta.ad_account?.currency_supported !== false
+        ? 'ok'
+        : 'ko',
     payment:
       ready.meta.payment_method === 'present'
         ? 'ok'
@@ -98,7 +102,7 @@ export function PublishStep(props: PublishStepProps): ReactNode {
   const publish = usePublish(workspaceId, campaignId);
   const [failure, setFailure] = useState<PublishFailure | null>(null);
   const [asking, setAsking] = useState(false);
-  const [guideOpen, setGuideOpen] = useState(false);
+  const [guide, setGuide] = useState<GuideSlug | null>(null);
   const [slowVersion, setSlowVersion] = useState<number | null>(null);
   const key = useRef<string | null>(null);
 
@@ -240,8 +244,8 @@ export function PublishStep(props: PublishStepProps): ReactNode {
           failure={shown}
           campaignId={campaignId}
           busy={publish.isPending}
-          onGuide={() => {
-            setGuideOpen(true);
+          onGuide={(slug) => {
+            setGuide(slug);
           }}
           onRetry={() => {
             submit(false);
@@ -277,11 +281,15 @@ export function PublishStep(props: PublishStepProps): ReactNode {
             detail={
               ready.meta.ad_account === null
                 ? checksT('account_ko')
-                : checks.account === 'ko'
-                  ? checksT('account_expired')
-                  : checksT('account_ok', {
-                      name: ready.meta.ad_account.name ?? ready.meta.ad_account.currency ?? '',
+                : ready.meta.ad_account.currency_supported === false
+                  ? checksT('account_currency_ko', {
+                      currency: ready.meta.ad_account.currency ?? '',
                     })
+                  : checks.account === 'ko'
+                    ? checksT('account_expired')
+                    : checksT('account_ok', {
+                        name: ready.meta.ad_account.name ?? ready.meta.ad_account.currency ?? '',
+                      })
             }
           />
           <CheckRow
@@ -308,7 +316,11 @@ export function PublishStep(props: PublishStepProps): ReactNode {
           size="sm"
           className="self-start"
           onClick={() => {
-            setGuideOpen(true);
+            setGuide(
+              ready.meta.ad_account?.currency_supported === false
+                ? 'ad-account-currency'
+                : 'payment-method',
+            );
           }}
         >
           {t('guide')}
@@ -363,14 +375,14 @@ export function PublishStep(props: PublishStepProps): ReactNode {
           </DialogContent>
         </Dialog>
       ) : null}
-      {guideOpen ? (
+      {guide === null ? null : (
         <Guide
-          slug="payment-method"
+          slug={guide}
           onClose={(open) => {
-            if (!open) setGuideOpen(false);
+            if (!open) setGuide(null);
           }}
         />
-      ) : null}
+      )}
     </section>
   );
 }
