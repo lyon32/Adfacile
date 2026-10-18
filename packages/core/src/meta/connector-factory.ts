@@ -19,7 +19,20 @@ import { metaRedirectUri, validateMetaRedirectUri } from './redirect-uri';
 let sharedFake: FakeMetaConnector | undefined;
 
 /** Connecteur complet (réel ou faux) : la connexion n'en utilise qu'une partie (`MetaAccountConnector`), la publication le reste. */
-export function createFullMetaConnector(env: Env, now: () => Date): PlatformConnector {
+/** Ce que le connecteur Meta lit dans l'environnement : un sous-ensemble suffit (tâches de fond, `shared/job-env.ts`). */
+export type MetaConnectorEnv = Pick<
+  Env,
+  | 'PUBEKA_FAKE_PROVIDERS'
+  | 'PUBEKA_META_PUBLISH'
+  | 'META_APP_ID'
+  | 'META_APP_SECRET'
+  | 'META_LOGIN_CONFIG_ID'
+  | 'META_GRAPH_API_VERSION'
+  | 'SUPABASE_URL'
+  | 'NEXT_PUBLIC_SUPABASE_URL'
+>;
+
+export function createFullMetaConnector(env: MetaConnectorEnv, now: () => Date): PlatformConnector {
   if (usesFakeMeta(env)) {
     sharedFake ??= new FakeMetaConnector();
     return sharedFake;

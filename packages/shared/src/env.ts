@@ -66,101 +66,102 @@ const encryptionKeys = z.string().refine(
   { message: 'objet JSON { identifiant: clé de 32 octets en base64 }' },
 );
 
-const EnvSchema = z
-  .object({
-    // 1.1 Application et domaines
-    NEXT_PUBLIC_APP_ENV: z.enum(APP_ENVS),
-    NEXT_PUBLIC_SITE_URL: url,
-    NEXT_PUBLIC_APP_URL: url,
-    SITE_HOSTS: text,
-    ADMIN_PATH: z.string().regex(/^[A-Za-z0-9]{32}$/, '32 lettres ou chiffres'),
-    APP_SIGNING_SECRET: z
-      .base64()
-      .refine((v) => Buffer.from(v, 'base64').length >= 32, '32 octets en base64'),
-    NEXT_PUBLIC_CAPTCHA_SITE_KEY: optionalText,
-    PUBLIC_WEBHOOK_BASE_URL: url.optional(),
-    PUBEKA_JOB_DISPATCH: z.enum(['trigger', 'inline']).default('trigger'),
-    PUBEKA_FAKE_PROVIDERS: fakeProviders.optional(),
-    // Interrupteur de la publication RÉELLE chez Meta : seule la valeur exacte `enabled` l'autorise. Non forcé ici, y compris en
-    // production : il reste désactivé tant que le chef de projet ne le règle pas (ENV_SETUP §1.1).
-    PUBEKA_META_PUBLISH: z.string().optional(),
-    // 1.2 Supabase
-    NEXT_PUBLIC_SUPABASE_URL: url,
-    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().startsWith('sb_publishable_'),
-    SUPABASE_URL: url.optional(),
-    SUPABASE_SECRET_KEY: z.string().startsWith('sb_secret_'),
-    // 1.3 Chiffrement des jetons
-    TOKEN_ENCRYPTION_KEYS: encryptionKeys,
-    TOKEN_ENCRYPTION_ACTIVE_KEY_ID: text,
-    // 1.4 Meta
-    META_APP_ID: z.string().regex(/^\d+$/).optional(),
-    META_APP_SECRET: z
-      .string()
-      .regex(/^[0-9a-f]{32}$/i)
-      .optional(),
-    META_LOGIN_CONFIG_ID: z.string().regex(/^\d+$/).optional(),
-    META_GRAPH_API_VERSION: z
-      .string()
-      .regex(/^v\d+\.\d+$/)
-      .optional(),
-    META_WEBHOOK_VERIFY_TOKEN: optionalText,
-    // 1.5 SasPay
-    SASPAY_API_URL: url.optional(),
-    SASPAY_SECRET_KEY: z
-      .string()
-      .regex(/^sk_(test|live)_.+$/)
-      .optional(),
-    SASPAY_WEBHOOK_SECRET: optionalText,
-    // 1.6 IA texte (passerelle OpenRouter, décision D-2 du 15/10/2026) et lecture des sources
-    OPENROUTER_API_KEY: optionalText,
-    OPENROUTER_DATA_COLLECTION: z.enum(['allow', 'deny']).optional(),
-    AGENT_MODELS: jsonObject.optional(),
-    JINA_API_KEY: optionalText,
-    // 1.7 Images et vidéos
-    FAL_KEY: optionalText,
-    HF_KEY: optionalText,
-    HIGGSFIELD_WEBHOOK_SECRET: optionalText,
-    ARK_API_KEY: optionalText,
-    BYTEPLUS_WEBHOOK_SECRET: optionalText,
-    // 1.8 E-mails
-    RESEND_API_KEY: z.string().startsWith('re_').optional(),
-    RESEND_WEBHOOK_SECRET: z.string().startsWith('whsec_').optional(),
-    EMAIL_FROM_NOTIFICATIONS: optionalText,
-    EMAIL_FROM_SUPPORT: optionalText,
-    // 1.9 Trigger.dev
-    TRIGGER_SECRET_KEY: z.string().startsWith('tr_').optional(),
-    TRIGGER_PROJECT_REF: z.string().startsWith('proj_').optional(),
-    // 1.10 Suivi
-    NEXT_PUBLIC_SENTRY_DSN: url.optional(),
-    SENTRY_DSN: url.optional(),
-    NEXT_PUBLIC_POSTHOG_KEY: optionalText,
-    NEXT_PUBLIC_POSTHOG_HOST: url.optional(),
-  })
-  .superRefine((env, ctx) => {
-    const isProduction = env.NEXT_PUBLIC_APP_ENV === 'production';
-    const fail = (name: string, message: string): void => {
-      ctx.addIssue({ code: 'custom', path: [name], message });
-    };
-    if (!env.TOKEN_ENCRYPTION_KEYS.includes(`"${env.TOKEN_ENCRYPTION_ACTIVE_KEY_ID}"`)) {
-      fail('TOKEN_ENCRYPTION_ACTIVE_KEY_ID', 'absente de TOKEN_ENCRYPTION_KEYS');
-    }
-    if (env.PUBEKA_JOB_DISPATCH === 'trigger' && env.TRIGGER_SECRET_KEY === undefined) {
-      fail('TRIGGER_SECRET_KEY', 'obligatoire quand PUBEKA_JOB_DISPATCH=trigger');
-    }
-    if (isProduction && env.PUBEKA_FAKE_PROVIDERS !== undefined) {
-      fail('PUBEKA_FAKE_PROVIDERS', 'interdite en production');
-    }
-    if (isProduction && env.PUBEKA_JOB_DISPATCH === 'inline') {
-      fail('PUBEKA_JOB_DISPATCH', 'inline interdit en production');
-    }
-    const saspayKey = env.SASPAY_SECRET_KEY;
-    if (isProduction && saspayKey?.startsWith('sk_test_') === true) {
-      fail('SASPAY_SECRET_KEY', 'clé de test interdite en production');
-    }
-    if (!isProduction && saspayKey?.startsWith('sk_live_') === true) {
-      fail('SASPAY_SECRET_KEY', 'clé de production interdite hors production');
-    }
-  });
+/** Champs de l'environnement : repris tels quels par les sous-ensembles des tâches de fond (`job-env.ts`). */
+export const ENV_FIELDS = {
+  // 1.1 Application et domaines
+  NEXT_PUBLIC_APP_ENV: z.enum(APP_ENVS),
+  NEXT_PUBLIC_SITE_URL: url,
+  NEXT_PUBLIC_APP_URL: url,
+  SITE_HOSTS: text,
+  ADMIN_PATH: z.string().regex(/^[A-Za-z0-9]{32}$/, '32 lettres ou chiffres'),
+  APP_SIGNING_SECRET: z
+    .base64()
+    .refine((v) => Buffer.from(v, 'base64').length >= 32, '32 octets en base64'),
+  NEXT_PUBLIC_CAPTCHA_SITE_KEY: optionalText,
+  PUBLIC_WEBHOOK_BASE_URL: url.optional(),
+  PUBEKA_JOB_DISPATCH: z.enum(['trigger', 'inline']).default('trigger'),
+  PUBEKA_FAKE_PROVIDERS: fakeProviders.optional(),
+  // Interrupteur de la publication RÉELLE chez Meta : seule la valeur exacte `enabled` l'autorise. Non forcé ici, y compris en
+  // production : il reste désactivé tant que le chef de projet ne le règle pas (ENV_SETUP §1.1).
+  PUBEKA_META_PUBLISH: z.string().optional(),
+  // 1.2 Supabase
+  NEXT_PUBLIC_SUPABASE_URL: url,
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().startsWith('sb_publishable_'),
+  SUPABASE_URL: url.optional(),
+  SUPABASE_SECRET_KEY: z.string().startsWith('sb_secret_'),
+  // 1.3 Chiffrement des jetons
+  TOKEN_ENCRYPTION_KEYS: encryptionKeys,
+  TOKEN_ENCRYPTION_ACTIVE_KEY_ID: text,
+  // 1.4 Meta
+  META_APP_ID: z.string().regex(/^\d+$/).optional(),
+  META_APP_SECRET: z
+    .string()
+    .regex(/^[0-9a-f]{32}$/i)
+    .optional(),
+  META_LOGIN_CONFIG_ID: z.string().regex(/^\d+$/).optional(),
+  META_GRAPH_API_VERSION: z
+    .string()
+    .regex(/^v\d+\.\d+$/)
+    .optional(),
+  META_WEBHOOK_VERIFY_TOKEN: optionalText,
+  // 1.5 SasPay
+  SASPAY_API_URL: url.optional(),
+  SASPAY_SECRET_KEY: z
+    .string()
+    .regex(/^sk_(test|live)_.+$/)
+    .optional(),
+  SASPAY_WEBHOOK_SECRET: optionalText,
+  // 1.6 IA texte (passerelle OpenRouter, décision D-2 du 15/10/2026) et lecture des sources
+  OPENROUTER_API_KEY: optionalText,
+  OPENROUTER_DATA_COLLECTION: z.enum(['allow', 'deny']).optional(),
+  AGENT_MODELS: jsonObject.optional(),
+  JINA_API_KEY: optionalText,
+  // 1.7 Images et vidéos
+  FAL_KEY: optionalText,
+  HF_KEY: optionalText,
+  HIGGSFIELD_WEBHOOK_SECRET: optionalText,
+  ARK_API_KEY: optionalText,
+  BYTEPLUS_WEBHOOK_SECRET: optionalText,
+  // 1.8 E-mails
+  RESEND_API_KEY: z.string().startsWith('re_').optional(),
+  RESEND_WEBHOOK_SECRET: z.string().startsWith('whsec_').optional(),
+  EMAIL_FROM_NOTIFICATIONS: optionalText,
+  EMAIL_FROM_SUPPORT: optionalText,
+  // 1.9 Trigger.dev
+  TRIGGER_SECRET_KEY: z.string().startsWith('tr_').optional(),
+  TRIGGER_PROJECT_REF: z.string().startsWith('proj_').optional(),
+  // 1.10 Suivi
+  NEXT_PUBLIC_SENTRY_DSN: url.optional(),
+  SENTRY_DSN: url.optional(),
+  NEXT_PUBLIC_POSTHOG_KEY: optionalText,
+  NEXT_PUBLIC_POSTHOG_HOST: url.optional(),
+};
+
+const EnvSchema = z.object(ENV_FIELDS).superRefine((env, ctx) => {
+  const isProduction = env.NEXT_PUBLIC_APP_ENV === 'production';
+  const fail = (name: string, message: string): void => {
+    ctx.addIssue({ code: 'custom', path: [name], message });
+  };
+  if (!env.TOKEN_ENCRYPTION_KEYS.includes(`"${env.TOKEN_ENCRYPTION_ACTIVE_KEY_ID}"`)) {
+    fail('TOKEN_ENCRYPTION_ACTIVE_KEY_ID', 'absente de TOKEN_ENCRYPTION_KEYS');
+  }
+  if (env.PUBEKA_JOB_DISPATCH === 'trigger' && env.TRIGGER_SECRET_KEY === undefined) {
+    fail('TRIGGER_SECRET_KEY', 'obligatoire quand PUBEKA_JOB_DISPATCH=trigger');
+  }
+  if (isProduction && env.PUBEKA_FAKE_PROVIDERS !== undefined) {
+    fail('PUBEKA_FAKE_PROVIDERS', 'interdite en production');
+  }
+  if (isProduction && env.PUBEKA_JOB_DISPATCH === 'inline') {
+    fail('PUBEKA_JOB_DISPATCH', 'inline interdit en production');
+  }
+  const saspayKey = env.SASPAY_SECRET_KEY;
+  if (isProduction && saspayKey?.startsWith('sk_test_') === true) {
+    fail('SASPAY_SECRET_KEY', 'clé de test interdite en production');
+  }
+  if (!isProduction && saspayKey?.startsWith('sk_live_') === true) {
+    fail('SASPAY_SECRET_KEY', 'clé de production interdite hors production');
+  }
+});
 
 export type Env = z.infer<typeof EnvSchema>;
 
@@ -178,12 +179,29 @@ export class EnvError extends Error {
 
 export type EnvSource = Record<string, string | undefined>;
 
-export function parseEnv(source: EnvSource): Env {
-  // Une valeur vide vaut une variable absente (fichiers .env.example recopiés).
+/** Une valeur vide vaut une variable absente (fichiers .env.example recopiés). */
+export function cleanEnvSource(source: EnvSource): EnvSource {
   const cleaned: EnvSource = {};
   for (const [name, value] of Object.entries(source)) {
     if (value !== undefined && value !== '') cleaned[name] = value;
   }
+  return cleaned;
+}
+
+/** Problèmes de validation d'une variable : son nom et la raison, jamais la valeur reçue. */
+export function envProblemsOf(
+  issues: readonly z.core.$ZodIssue[],
+  cleaned: EnvSource,
+): { name: string; reason: string }[] {
+  return issues.map((issue) => {
+    const name = String(issue.path[0] ?? '(racine)');
+    const isMissing = issue.code === 'invalid_type' && cleaned[name] === undefined;
+    return { name, reason: isMissing ? 'obligatoire' : formatReason(issue) };
+  });
+}
+
+export function parseEnv(source: EnvSource): Env {
+  const cleaned = cleanEnvSource(source);
 
   const problems: { name: string; reason: string }[] = [];
   const allowedPublic: readonly string[] = PUBLIC_ENV_NAMES;
@@ -194,14 +212,7 @@ export function parseEnv(source: EnvSource): Env {
   }
 
   const result = EnvSchema.safeParse(cleaned);
-  if (!result.success) {
-    for (const issue of result.error.issues) {
-      const name = String(issue.path[0] ?? '(racine)');
-      const isMissing = issue.code === 'invalid_type' && cleaned[name] === undefined;
-      // Message de Zod ou du schéma, jamais la valeur reçue.
-      problems.push({ name, reason: isMissing ? 'obligatoire' : formatReason(issue) });
-    }
-  }
+  if (!result.success) problems.push(...envProblemsOf(result.error.issues, cleaned));
   if (problems.length > 0 || !result.success) throw new EnvError(problems);
   return result.data;
 }

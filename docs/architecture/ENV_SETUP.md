@@ -150,6 +150,20 @@ En local, les e-mails de **connexion** (lien magique, confirmation) ne passent p
 
 Hors application. Déjà en place et ignoré par Git : `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `MISTRAL_API_KEY`, `MOONSHOT_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `CEREBRAS_API_KEY`, `GITHUB_MODELS_TOKEN`. Pour les tests d'images et de vidéos : `FAL_KEY`, `HF_KEY`, `ARK_API_KEY`.
 
+### 1.13 Variables des tâches planifiées sur Trigger.dev
+
+Une tâche qui tourne sur Trigger.dev n'hérite d'AUCUNE variable de Vercel : « any environment variables you use in your tasks need to [be] accessible to us » (documentation officielle, https://trigger.dev/docs/deploy-environment-variables). Elles se règlent dans le tableau de bord (projet → **Environment Variables**, choisir l'environnement visé ; marquer chaque secret **Secret**), ou à chaque déploiement avec l'extension `syncEnvVars` / `syncVercelEnvVars` de `trigger.config.ts` (https://trigger.dev/docs/config/extensions/syncEnvVars ; non utilisée ici : quelques variables, à régler à la main). Sans effet en `dev` local (fichier `jobs/.env`).
+
+Depuis S16b, chaque tâche ne valide que le sous-ensemble qu'elle lit (`packages/shared/src/job-env.ts`) : l'erreur nomme la variable manquante, jamais sa valeur.
+
+| Tâche | Variables à régler sur Trigger.dev (même valeur que sur Vercel) |
+|---|---|
+| `fx.refresh` (toutes les 6 heures) | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY` (et `SUPABASE_URL` si elle est réglée sur Vercel). Rien d'autre (aucune clé de taux : ExchangeRate-API en accès ouvert). |
+| `campaign.reconcile` (toutes les 10 minutes) et `campaign.publish` (quand `PUBEKA_JOB_DISPATCH=trigger`) | `NEXT_PUBLIC_APP_ENV`, `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `TOKEN_ENCRYPTION_KEYS` (IDENTIQUE à Vercel : sinon les jetons Meta ne se déchiffrent pas), `TOKEN_ENCRYPTION_ACTIVE_KEY_ID`, `META_APP_ID`, `META_APP_SECRET` ; facultatives : `META_LOGIN_CONFIG_ID`, `META_GRAPH_API_VERSION`, `PUBEKA_FAKE_PROVIDERS` (préproduction), `PUBEKA_META_PUBLISH` (voir ci-dessous). |
+| `analysis.run` | Inchangée : lit toute l'application (`getEnv()`) ; en préproduction elle s'exécute dans le serveur Vercel (`PUBEKA_JOB_DISPATCH=inline`). |
+
+`PUBEKA_META_PUBLISH` : la tâche lit SA copie. Absente sur Trigger.dev, la reprise `campaign.reconcile` ne peut jamais ACTIVER une campagne chez Meta (elle ne fait que lire et conclure) ; ne la régler à `enabled` que le jour où la publication réelle est décidée, comme sur Vercel.
+
 ### 1.12 Validation au démarrage
 
 Toutes les variables sont lues **uniquement** par `packages/shared/src/env.ts` (CONVENTIONS §6.10). Ce fichier, avec Zod :

@@ -19,7 +19,11 @@ const calls = vi.hoisted(() => {
 
 vi.mock('@pubeka/shared', async (importOriginal) => {
   const original = await importOriginal<typeof SharedModule>();
-  return { ...original, getEnv: () => calls.env, createRequestId: () => 'req_TEST' };
+  return {
+    ...original,
+    parseCampaignReconcileEnv: () => calls.env,
+    createRequestId: () => 'req_TEST',
+  };
 });
 vi.mock('@pubeka/db', async (importOriginal) => {
   const original = await importOriginal<typeof DbModule>();

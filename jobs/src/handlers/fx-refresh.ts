@@ -1,6 +1,6 @@
 import { ExchangeRateApiSource, refreshExchangeRates, type RefreshReport } from '@pubeka/core';
 import { createServiceClient } from '@pubeka/db';
-import { getEnv } from '@pubeka/shared';
+import { parseFxRefreshEnv } from '@pubeka/shared';
 import { z } from 'zod';
 import type { JobHandlerDefinition } from '../dispatcher';
 
@@ -17,7 +17,8 @@ export const fxRefreshHandler: JobHandlerDefinition<FxRefreshPayload, RefreshRep
   id: FX_REFRESH_TASK,
   payloadSchema: fxRefreshPayloadSchema,
   run: async (_payload, ctx) => {
-    const env = getEnv();
+    // Sous-ensemble minimal (shared/job-env.ts) : seulement l'adresse et la clé secrète de Supabase.
+    const env = parseFxRefreshEnv();
     const svc = createServiceClient({
       url: env.SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL,
       secretKey: env.SUPABASE_SECRET_KEY,

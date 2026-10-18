@@ -7,7 +7,7 @@ import {
   type PublishPayload,
 } from '@pubeka/core';
 import { createServiceClient } from '@pubeka/db';
-import { createRequestId, getEnv } from '@pubeka/shared';
+import { createRequestId, parseCampaignReconcileEnv } from '@pubeka/shared';
 import type { JobHandlerDefinition } from '../dispatcher';
 
 // Tâche `campaign.publish` (S16) : crée la campagne chez Meta, l'active, la passe en `in_review`. Elle reçoit seulement des
@@ -26,7 +26,8 @@ export const campaignPublishHandler: JobHandlerDefinition<
   id: PUBLISH_TASK,
   payloadSchema: campaignPublishPayloadSchema,
   run: async (payload, ctx) => {
-    const env = getEnv();
+    // Sous-ensemble minimal (shared/job-env.ts) : Supabase, chiffrement des jetons, Meta et interrupteur de publication.
+    const env = parseCampaignReconcileEnv();
     const svc = createServiceClient({
       url: env.SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL,
       secretKey: env.SUPABASE_SECRET_KEY,
