@@ -47,10 +47,6 @@ export function createMetaConnector(env: Env, now: () => Date): MetaAccountConne
   return createFullMetaConnector(env, now);
 }
 
-export function createMetaConnector(env: Env, now: () => Date): MetaAccountConnector {
-  return createFullMetaConnector(env, now);
-}
-
 export function createMetaDeps(args: {
   env: Env;
   now: () => Date;
