@@ -41,6 +41,61 @@ const snapshot = (rates: Record<string, number>, over = {}) =>
   fakeSnapshot(rates, { providerUpdatedAt: PUBLISHED, nextUpdateAt: NEXT, ...over });
 const stored = (db: MemoryDb) => db.rows('exchange_rates');
 
+describe('refreshExchangeRates : l’euro (comptes publicitaires en euros, décision du 18/10/2026)', () => {
+  it('écrit aussi le taux de l’EUR (au dix-millième), même si aucun pays actif n’utilise l’euro', async () => {
+    const { db, run } = world();
+    const report = await run(
+      new FakeFxRateSource(
+        snapshot({ XAF: 583.5, XOF: 583.5, NGN: 1332.4, TND: 2.99, EUR: 0.889614 }),
+      ),
+    );
+    expect(report.status).toBe('refreshed');
+    expect(report.written.sort()).toEqual(['EUR', 'NGN', 'TND', 'XAF', 'XOF']);
+    expect(stored(db).find((r) => r.quote === 'EUR')).toMatchObject({
+      base: 'USD',
+      rate: 0.8896,
+      source: 'exchangerate-api',
+    });
+  });
+
+  it('euro absent de la réponse du fournisseur : signalé, aucun taux inventé', async () => {
+    const { db, run } = world();
+    const report = await run(
+      new FakeFxRateSource(snapshot({ XAF: 583.5, XOF: 583.5, NGN: 1332.4, TND: 2.99 })),
+    );
+    expect(report.missing).toEqual(['EUR']);
+    expect(stored(db).some((r) => r.quote === 'EUR')).toBe(false);
+  });
+
+  it('aucun pays actif : rien à faire, l’euro seul ne déclenche pas d’appel au fournisseur', async () => {
+    const { run } = world({ countries: [['CM', 'XAF', false]] });
+    const source = new FakeFxRateSource(snapshot({ EUR: 0.9 }));
+    expect((await run(source)).status).toBe('nothing_to_do');
+    expect(source.calls).toBe(0);
+  });
+
+  it('une variation de plus de 50 % de l’euro est rejetée comme celle des autres monnaies', async () => {
+    const { run } = world();
+    await run(
+      new FakeFxRateSource(snapshot({ XAF: 583.5, XOF: 583.5, NGN: 1332.4, TND: 2.99, EUR: 0.9 })),
+    );
+    const later = new Date(NEXT.getTime() + 60_000);
+    const report = await run(
+      new FakeFxRateSource(
+        snapshot(
+          { XAF: 583.5, XOF: 583.5, NGN: 1332.4, TND: 2.99, EUR: 2 },
+          {
+            providerUpdatedAt: new Date(PUBLISHED.getTime() + 86_400_000),
+            nextUpdateAt: new Date(NEXT.getTime() + 86_400_000),
+          },
+        ),
+      ),
+      later,
+    );
+    expect(report.rejected).toEqual([{ currency: 'EUR', reason: 'variation_too_large' }]);
+  });
+});
+
 describe('refreshExchangeRates : première exécution', () => {
   it('écrit un taux par monnaie des pays actifs (FCFA une seule fois), avec source, publication et prochaine mise à jour', async () => {
     const { db, run } = world();
@@ -81,10 +136,11 @@ describe('refreshExchangeRates : première exécution', () => {
       countries: [
         ['NG', 'NGN'],
         ['GH', 'GHS', false],
-        ['XX', 'EUR'],
+        // Livre sterling : monnaie non prise en charge (l'euro l'est depuis le 18/10/2026, voir le bloc « euro »).
+        ['XX', 'GBP'],
       ],
     });
-    const report = await run(new FakeFxRateSource(snapshot({ NGN: 1500, GHS: 11, EUR: 0.9 })));
+    const report = await run(new FakeFxRateSource(snapshot({ NGN: 1500, GHS: 11, GBP: 0.8 })));
     expect(report.written).toEqual(['NGN']);
     expect(stored(db)).toHaveLength(1);
   });
@@ -264,7 +320,8 @@ describe('refreshExchangeRates : taux aberrants rejetés et journalisés', () =>
   it('monnaie absente de la réponse du fournisseur : signalée, aucun taux inventé', async () => {
     const { db, run, logs } = world();
     const report = await run(new FakeFxRateSource(snapshot({ XAF: 600, XOF: 600, NGN: 1500 })));
-    expect(report.missing).toEqual(['TND']);
+    // L'euro est toujours demandé (comptes publicitaires en euros) : absent de ce jeu d'essai, il est signalé lui aussi.
+    expect(report.missing).toEqual(['EUR', 'TND']);
     expect(stored(db).some((r) => r.quote === 'TND')).toBe(false);
     expect(logs.some((l) => l.level === 'warn' && JSON.stringify(l.fields).includes('TND'))).toBe(
       true,

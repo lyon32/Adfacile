@@ -254,7 +254,7 @@ describe('estimateLocalMinor : estimation en unités mineures de la monnaie du p
     expect(estimateLocalMinor(400, xaf(0))).toBeNull();
     expect(estimateLocalMinor(400, xaf(-1))).toBeNull();
     expect(estimateLocalMinor(400, xaf(Number.NaN))).toBeNull();
-    expect(estimateLocalMinor(400, { rate: 1, quote: 'EUR' })).toBeNull();
+    expect(estimateLocalMinor(400, { rate: 1, quote: 'GBP' })).toBeNull();
   });
   it('toujours un entier, même pour un grand budget', () => {
     const value = estimateLocalMinor(99_999_900, xaf(655.957));

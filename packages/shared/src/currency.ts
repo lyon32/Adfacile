@@ -6,7 +6,10 @@
 // ni « /100 » codé en dur pour une monnaie locale : une monnaie absente de la table lève une erreur.
 import { applyRate, usdCents } from './money';
 
-/** Exposant ISO 4217 des monnaies prises en charge : celles des 54 pays d'Afrique, plus le dollar américain. */
+/**
+ * Exposant ISO 4217 des monnaies prises en charge : celles des 54 pays d'Afrique, le dollar américain et l'euro (monnaies de compte
+ * publicitaire fréquentes, décision du 18/10/2026 ; EUR : code 978, unité mineure 2 d'après la liste 1 de SIX).
+ */
 const MINOR_UNITS = {
   DZD: 2,
   AOA: 2,
@@ -51,13 +54,20 @@ const MINOR_UNITS = {
   ZMW: 2,
   ZWG: 2,
   USD: 2,
+  EUR: 2,
 } as const satisfies Record<string, 0 | 1 | 2 | 3>;
 
 export type KnownCurrency = keyof typeof MINOR_UNITS;
 
-/** Les 42 monnaies des pays d'Afrique prises en charge (sans le dollar américain). */
+/**
+ * Monnaies hors Afrique que Pubeka sait convertir parce que des comptes publicitaires Meta y sont ouverts (décision du
+ * 18/10/2026 : « la plupart en dollars, certains en euros »). Leur taux est rafraîchi avec ceux des pays actifs.
+ */
+export const AD_ACCOUNT_FX_EXTRAS = ['EUR'] as const;
+
+/** Les 42 monnaies des pays d'Afrique prises en charge (sans le dollar américain ni l'euro). */
 export const AFRICAN_CURRENCIES: readonly string[] = Object.keys(MINOR_UNITS).filter(
-  (code) => code !== 'USD',
+  (code) => code !== 'USD' && code !== 'EUR',
 );
 
 export function isKnownCurrency(code: string): code is KnownCurrency {

@@ -87,6 +87,26 @@ describe('budget en centimes de dollar → unité mineure de la monnaie du compt
   });
 });
 
+describe('compte en euros (décalage 100 dans la table de Meta, relevée le 18/10/2026)', () => {
+  it('EUR figure dans la liste officielle avec le décalage 100', () => {
+    expect(metaCurrencyOffset('EUR')).toBe(100);
+  });
+
+  it('10 $ à 0,9 EUR pour 1 $ (taux d’essai) = 9,00 EUR = 900 unités mineures ; 5 $ = 4,50 EUR = 450', () => {
+    expect(usdCentsToAccountMinor(1000, { code: 'EUR', perUsd: 0.9 })).toBe(900);
+    expect(usdCentsToAccountMinor(500, { code: 'EUR', perUsd: 0.9 })).toBe(450);
+  });
+
+  it('le minimum de 1 $ par jour vaut 0,90 EUR = 90 unités mineures, arrondi au-dessus (jamais sous 1 $)', () => {
+    expect(accountMinPerDayMinor({ code: 'EUR', perUsd: 0.9 })).toBe(90);
+    expect(accountMinPerDayMinor({ code: 'EUR', perUsd: 0.9051 })).toBe(91);
+  });
+
+  it('sans taux, un compte en euros est refusé (aucun taux inventé)', () => {
+    expect(() => usdCentsToAccountMinor(500, { code: 'EUR' })).toThrow();
+  });
+});
+
 describe('minimum imposé par Pubeka (TR-PLA-10 : 1 $ par jour) dans la monnaie du compte', () => {
   it('vaut 100 unités mineures sur un compte en dollars', () => {
     expect(accountMinPerDayMinor({ code: 'USD' })).toBe(100);

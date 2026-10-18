@@ -68,3 +68,4 @@ export * from './fx/exchange-rate-api-source';
 export * from './fx/fake-fx-source';
 export * from './fx/freshness';
 export * from './fx/refresh-exchange-rates';
+export * from './fx/convert-between';

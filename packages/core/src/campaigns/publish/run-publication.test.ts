@@ -151,6 +151,21 @@ describe('runPublication — succès', () => {
     expect([...t.fake.campaigns.values()][0]?.spec.account).toEqual({ code: 'NGN', perUsd: 1500 });
   });
 
+  it('compte en EUROS : la création chez Meta reçoit la monnaie EUR et son taux enregistré (budget en centimes d’euro)', async () => {
+    const t = await published();
+    const account = t.w.db.rows('ad_accounts')[0];
+    if (account !== undefined) account.currency = 'EUR';
+    t.w.db.rows('exchange_rates').push({
+      base: 'USD',
+      quote: 'EUR',
+      rate: 0.9,
+      source: 'manual',
+      fetched_at: '2026-10-12T08:00:00Z',
+    });
+    expect((await t.run()).outcome).toBe('accepted');
+    expect([...t.fake.campaigns.values()][0]?.spec.account).toEqual({ code: 'EUR', perUsd: 0.9 });
+  });
+
   it('le jeton ne sort jamais : ni dans la ligne de la campagne, ni dans l’historique', async () => {
     const t = await published();
     await t.run();
