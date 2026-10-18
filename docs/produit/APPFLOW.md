@@ -243,6 +243,8 @@ Liste verte / rouge, chaque ligne rouge a **[Comment faire]** qui ouvre le guide
 5. Carte **Optimiseur** (Pro, Business) : une suggestion à la fois, **[Appliquer]** / **[Ignorer]**.
 6. Tableau des campagnes (nom, état, résultats, dépensé, coût par résultat) → clic = détail.
 
+**Monnaie des montants.** **Règle d'affichage des montants (décision du 18/10/2026)** : la plupart des clients africains ouvrent leur compte publicitaire Meta en dollars, certains en euros ; un compte en naira, shilling kényan, livre égyptienne, rand ou dinar algérien (monnaies acceptées par Meta ET disponibles dans leur pays) est direct. Si la monnaie du compte publicitaire est la MÊME que la monnaie choisie dans Pubeka (celle du pays du client), les montants sont montrés tels quels ; sinon ils sont CONVERTIS avec les taux réels stockés (par le dollar, en entiers, arrondi au plus proche : `displayInClientCurrency`, `core/fx/convert-between.ts`) pour que le client comprenne ce qu'il dépense, avec le lien d'attribution du taux. L'euro est pris en charge (exposant ISO 4217 : 2) et son taux est rafraîchi avec ceux des pays actifs.
+
 ### 7.2 États
 | État | Affichage |
 |---|---|

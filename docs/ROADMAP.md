@@ -190,6 +190,7 @@
 - **Lire** : APPFLOW §7, §11 · PRD §10 · ARCHITECTURE §6, §10 · LLD §7.3.
 - **Livrables** : synchronisation des statuts (webhook + toutes les 15 min) ; statistiques toutes les heures + « Actualiser » ; Realtime vers le cache ; tableau de bord `/` et bandeau ; page de campagne (Résultats, Pubs, Réglages, Historique) ; résultat traduit en argent (F7).
 - **Fait quand** : TR-PLA-05, TR-PLA-06 ; EC-META-08 à 10 ; mise à jour à l'écran sans rechargement (capture avant / après).
+- **Règle d'affichage de la monnaie** : **Règle d'affichage des montants (décision du 18/10/2026)** : la plupart des clients africains ouvrent leur compte publicitaire Meta en dollars, certains en euros ; un compte en naira, shilling kényan, livre égyptienne, rand ou dinar algérien (monnaies acceptées par Meta ET disponibles dans leur pays) est direct. Si la monnaie du compte publicitaire est la MÊME que la monnaie choisie dans Pubeka (celle du pays du client), les montants sont montrés tels quels ; sinon ils sont CONVERTIS avec les taux réels stockés (par le dollar, en entiers, arrondi au plus proche : `displayInClientCurrency`, `core/fx/convert-between.ts`) pour que le client comprenne ce qu'il dépense, avec le lien d'attribution du taux. L'euro est pris en charge (exposant ISO 4217 : 2) et son taux est rafraîchi avec ceux des pays actifs.
 - **Hors périmètre** : Optimiseur (S29).
 
 #### S18 · Refus et Modérateur · M · après : S17

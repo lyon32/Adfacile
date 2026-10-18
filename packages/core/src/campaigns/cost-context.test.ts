@@ -89,12 +89,13 @@ describe('loadCostContext', () => {
     const fxCall = client.calls.find((c) => c.target === 'exchange_rates');
     expect(fxCall?.ops).toContainEqual(['eq', 'quote', 'NGN']);
   });
+  // GBP : monnaie non prise en charge (l'euro l'est depuis le 18/10/2026, comptes publicitaires en euros).
 
   it('monnaie du pays absente de la table des unités mineures : pas de change, rien n’est supposé', async () => {
     const client = new FakeClient().reply(
       ok({ owner_id: 'o1' }),
       ok({ country_code: 'ZZ' }),
-      ok({ currency: 'EUR' }),
+      ok({ currency: 'GBP' }),
     );
     const result = await loadCostContext(ctxWith(client));
     expect(result.fx).toBeNull();

@@ -2,12 +2,36 @@
 // Les taux écrits ici sont des VALEURS D'ESSAI (le calcul doit marcher pour n'importe quel taux), pas des données du produit.
 import { describe, expect, it } from 'vitest';
 import {
+  AD_ACCOUNT_FX_EXTRAS,
   AFRICAN_CURRENCIES,
   convertUsdCents,
   formatMinorUnits,
   isKnownCurrency,
   minorUnits,
 } from './currency';
+
+describe('euro : monnaie de compte publicitaire hors Afrique (décision du 18/10/2026)', () => {
+  it('EUR a 2 décimales (ISO 4217, liste 1 de SIX : code 978, unité mineure 2), est connue, mais n’est PAS une monnaie africaine', () => {
+    expect(minorUnits('EUR')).toBe(2);
+    expect(isKnownCurrency('EUR')).toBe(true);
+    expect(AFRICAN_CURRENCIES).not.toContain('EUR');
+    expect(AFRICAN_CURRENCIES).not.toContain('USD');
+    expect(AD_ACCOUNT_FX_EXTRAS).toEqual(['EUR']);
+  });
+
+  it('recoupe CLDR (Intl) : 2 décimales', () => {
+    expect(
+      new Intl.NumberFormat('en', { style: 'currency', currency: 'EUR' }).resolvedOptions()
+        .maximumFractionDigits,
+    ).toBe(2);
+  });
+
+  it('10 $ à 0,9 EUR pour 1 $ (taux d’essai) = 9,00 EUR = 900 unités mineures ; 1 $ minimum = 0,90 EUR = 90', () => {
+    expect(convertUsdCents(1000, 0.9, 'EUR')).toBe(900);
+    expect(convertUsdCents(100, 0.9, 'EUR')).toBe(90);
+    expect(formatMinorUnits(900, 'EUR')).toBe('9.00');
+  });
+});
 
 describe('minorUnits : exposant ISO 4217 (SIX, liste 1)', () => {
   it.each([
@@ -35,7 +59,8 @@ describe('minorUnits : exposant ISO 4217 (SIX, liste 1)', () => {
     expect(() => minorUnits('xaf')).toThrow(RangeError);
     expect(() => minorUnits('')).toThrow(RangeError);
     expect(isKnownCurrency('NGN')).toBe(true);
-    expect(isKnownCurrency('EUR')).toBe(false);
+    // L'euro est pris en charge depuis le 18/10/2026 (comptes publicitaires en euros) ; le livre sterling reste inconnue.
+    expect(isKnownCurrency('GBP')).toBe(false);
   });
 
   it('chaque monnaie africaine a un exposant entier entre 0 et 3', () => {

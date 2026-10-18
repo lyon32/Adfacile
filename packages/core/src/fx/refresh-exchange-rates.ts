@@ -11,7 +11,7 @@
 //  - idempotente : un taux n'est écrit qu'une fois par publication du fournisseur (index unique, concurrence sûre) ;
 //  - les taux ne sont JAMAIS exposés tels quels (les conditions du fournisseur interdisent de les redistribuer).
 import { AppError } from '@pubeka/contracts';
-import { createLogger, isKnownCurrency } from '@pubeka/shared';
+import { AD_ACCOUNT_FX_EXTRAS, createLogger, isKnownCurrency } from '@pubeka/shared';
 import type { ServiceCtx } from '../context';
 import { FxSourceError, type FxRateSource } from './fx-source';
 import { isFxFresh } from './freshness';
@@ -94,15 +94,18 @@ export async function refreshExchangeRates(deps: RefreshDeps): Promise<RefreshRe
   // 1. Monnaies à couvrir : celles des pays actifs, prises en charge, sauf le dollar (la base).
   const countries = await svc.from('countries').select('currency').eq('active', true);
   if (countries.error !== null) throw fail(countries.error);
-  const currencies = [
+  const countryCurrencies = [
     ...new Set(
       countries.data.map((row) => row.currency).filter((c) => c !== 'USD' && isKnownCurrency(c)),
     ),
   ].sort();
-  if (currencies.length === 0) {
+  if (countryCurrencies.length === 0) {
     logger.warn('Aucun pays actif : rien à rafraîchir');
     return { ...report, status: 'nothing_to_do' };
   }
+  // Les comptes publicitaires peuvent être en euros (décision du 18/10/2026) : sans taux de l'EUR, publier échouerait en
+  // `fx_not_available`. L'euro est donc rafraîchi avec les monnaies des pays actifs.
+  const currencies = [...new Set([...countryCurrencies, ...AD_ACCOUNT_FX_EXTRAS])].sort();
 
   // 2. Dernier taux connu de chaque monnaie, et la prochaine mise à jour annoncée.
   const history = await svc

@@ -138,7 +138,7 @@ describe('campaignCost', () => {
       expect(cost.total?.local_minor).toBe(129_518);
     });
     it('une monnaie hors de la table lève une erreur au lieu de supposer 2 décimales', () => {
-      expect(() => campaignCost({ ...base, fx: fx(1, 'EUR') })).toThrow(RangeError);
+      expect(() => campaignCost({ ...base, fx: fx(1, 'GBP') })).toThrow(RangeError);
     });
     it('aucune monnaie supposée sans taux : fx_not_available, aucun champ de monnaie locale', () => {
       const cost = campaignCost({ ...base, fx: null });

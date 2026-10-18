@@ -646,6 +646,50 @@ describe('Meta : connexion, moyen de paiement, monnaie', () => {
     ).resolves.toBeDefined();
   });
 
+  it('EC-META-11 : un compte en EUROS avec un taux frais est accepté (budget converti en centimes d’euro)', async () => {
+    const w = publishWorld();
+    const account = w.db.rows('ad_accounts')[0];
+    if (account !== undefined) account.currency = 'EUR';
+    w.db.rows('exchange_rates').push({
+      base: 'USD',
+      quote: 'EUR',
+      rate: 0.9,
+      source: 'manual',
+      fetched_at: '2026-10-12T08:00:00Z',
+    });
+    await expect(
+      publishCampaign(w.ctx, w.campaignId, { idempotencyKey: KEY_A, ...accept }, w.deps),
+    ).resolves.toBeDefined();
+  });
+
+  it('EC-META-11 : un compte en euros sans taux frais est refusé avec un message clair (fx_not_available), rien n’est retenu', async () => {
+    const w = publishWorld();
+    const account = w.db.rows('ad_accounts')[0];
+    if (account !== undefined) account.currency = 'EUR';
+    const error = await failure(
+      publishCampaign(w.ctx, w.campaignId, { idempotencyKey: KEY_A, ...accept }, w.deps),
+    );
+    expect(error.opts.meta).toMatchObject({ reason: 'fx_not_available', currency: 'EUR' });
+    expect(w.hooks.events).toEqual([]);
+  });
+
+  it('EC-META-11 : un taux de l’euro de plus de 48 h est refusé (même règle que les autres monnaies)', async () => {
+    const w = publishWorld();
+    const account = w.db.rows('ad_accounts')[0];
+    if (account !== undefined) account.currency = 'EUR';
+    w.db.rows('exchange_rates').push({
+      base: 'USD',
+      quote: 'EUR',
+      rate: 0.9,
+      source: 'manual',
+      fetched_at: '2026-10-08T00:00:00Z',
+    });
+    const error = await failure(
+      publishCampaign(w.ctx, w.campaignId, { idempotencyKey: KEY_A, ...accept }, w.deps),
+    );
+    expect(error.opts.meta).toMatchObject({ reason: 'fx_not_available', currency: 'EUR' });
+  });
+
   it('EC-META-11 : un compte hors dollar sans taux frais est refusé (aucun taux inventé), sans rien retenir', async () => {
     const w = publishWorld();
     const account = w.db.rows('ad_accounts')[0];
