@@ -53,6 +53,12 @@ const COST = {
   total: { local_minor: 16800, usd_cents: 2800, currency: 'XAF' },
   daily: { local_minor: 2400, usd_cents: 400, currency: 'XAF' },
   fx: { rate: 600, quote: 'XAF', source: 'exchangerate-api' },
+  // 28 $ de budget : 28 $ + 20 % = 33,60 $, arrondi au dollar supérieur = 34 $ (valeurs d'essai, taux 600).
+  reserve: {
+    margin_percent: 20,
+    usd_cents: 3400,
+    local: { local_minor: 20400, usd_cents: 3400, currency: 'XAF' },
+  },
 };
 const campaign = (over: Record<string, unknown> = {}) => ({
   id: CAMPAIGN,
@@ -393,9 +399,82 @@ describe('Étape Publier — vérification finale', () => {
     // Aucune affirmation non vérifiée : plus de « sans prélever ta carte », les fonds disponibles sont une CONDITION.
     dom(screen.getByText(/Si ton compte utilise des fonds disponibles/)).toBeVisible();
     expect(screen.queryByText(/sans prélever/)).toBeNull();
-    dom(screen.getByRole('link', { name: /Exchange Rate API/i })).toBeVisible();
+    // Le coût ET le montant à prévoir sont des montants convertis : le lien d'attribution des taux est répété sous chacun.
+    expect(screen.getAllByRole('link', { name: /Exchange Rate API/i })).toHaveLength(2);
     expect(screen.queryByText(/TVA/i)).toBeNull();
     dom(screen.getByRole('button', { name: 'Publier la campagne' })).toBeEnabled();
+  });
+
+  it('MONTANT À PRÉVOIR : « environ 20 400 FCFA · 34 $ », budget + marge, marqué indicatif, sans promesse de frais', async () => {
+    stubApi(ROUTES());
+    mount(<PublishStep {...publishProps()} />);
+    await screen.findByRole('heading', { level: 1, name: 'Publier ta campagne' });
+    const block = screen.getByRole('region', { name: 'À prévoir sur ta carte ou tes fonds Meta' });
+    expect(block.textContent).toMatch(/environ/);
+    expect(block.textContent).toMatch(/20\s?400/);
+    expect(block.textContent).toMatch(/34,00/);
+    expect(block.textContent).toMatch(/ton budget \+ une marge pour les taxes et frais de Meta/);
+    dom(within(block).getByText('Indicatif')).toBeVisible();
+    dom(
+      within(block).getByText(
+        'Meta peut ajouter des taxes et des frais, qui varient selon les résultats de ta pub. Prévois un supplément : pour une campagne de 10 $, mets 12 à 13 $.',
+      ),
+    ).toBeVisible();
+    // Aucun pourcentage de frais de Meta n'est annoncé.
+    expect(block.textContent).not.toMatch(/\d\s?%/);
+    dom(within(block).getByRole('link', { name: /Exchange Rate API/i })).toBeVisible();
+  });
+
+  it('MONTANT À PRÉVOIR sans taux de change : le dollar seul, aucun montant local inventé, pas de lien d’attribution', async () => {
+    stubApi(
+      ROUTES({
+        'GET /c': json(
+          campaign({
+            cost: {
+              ...COST,
+              status: 'fx_not_available',
+              total: null,
+              daily: null,
+              fx: null,
+              reserve: { margin_percent: 20, usd_cents: 3400, local: null },
+            },
+          }),
+        ),
+      }),
+    );
+    mount(<PublishStep {...publishProps()} />);
+    await screen.findByRole('heading', { level: 1, name: 'Publier ta campagne' });
+    const block = screen.getByRole('region', { name: 'À prévoir sur ta carte ou tes fonds Meta' });
+    expect(block.textContent).toMatch(/34,00/);
+    expect(block.textContent).not.toMatch(/FCFA/);
+    expect(within(block).queryByRole('link')).toBeNull();
+  });
+
+  it('MONTANT À PRÉVOIR absent quand le budget ou les dates manquent', async () => {
+    stubApi(
+      ROUTES({
+        'GET /c': json(campaign({ cost: { status: 'incomplete', reserve: null } })),
+      }),
+    );
+    mount(<PublishStep {...publishProps()} />);
+    await screen.findByRole('heading', { level: 1, name: 'Publier ta campagne' });
+    expect(
+      screen.queryByRole('region', { name: 'À prévoir sur ta carte ou tes fonds Meta' }),
+    ).toBeNull();
+  });
+
+  it('MONTANT À PRÉVOIR en anglais', async () => {
+    stubApi(ROUTES());
+    mount(<PublishStep {...publishProps()} />, 'en');
+    await screen.findByRole('heading', { level: 1, name: 'Publish your campaign' });
+    const block = screen.getByRole('region', { name: 'To set aside on your card or Meta funds' });
+    expect(block.textContent).toMatch(/about/);
+    dom(within(block).getByText('Indicative')).toBeVisible();
+    dom(
+      within(block).getByText(
+        'Meta may add taxes and fees, which vary with your ad’s results. Set aside a little extra: for a $10 campaign, put in $12 to $13.',
+      ),
+    ).toBeVisible();
   });
 
   it('moyen de paiement absent : bouton inactif et guide « fonds Meta Ads, carte bancaire, Keecash »', async () => {
@@ -417,10 +496,21 @@ describe('Étape Publier — vérification finale', () => {
     dom(screen.getByRole('button', { name: 'Publier la campagne' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Voir le guide' }));
     const guide = await screen.findByRole('dialog');
-    // Rédigé avec CONDITION, sans affirmation non vérifiée (cartes = facturation automatique ; fonds disponibles = certains pays).
-    dom(within(guide).getByText(/Si ton compte propose des fonds disponibles/)).toBeVisible();
-    expect(within(guide).getAllByText(/facturation automatique/).length).toBeGreaterThan(0);
+    // DEUX méthodes, rédigées avec CONDITION, sans affirmation non vérifiée ; budget + marge dans les deux.
+    dom(within(guide).getByText(/Méthode 1, une carte/)).toBeVisible();
+    dom(within(guide).getByText(/Méthode 2, des fonds à alimenter/)).toBeVisible();
+    dom(within(guide).getByText(/seulement si ton compte propose des fonds/)).toBeVisible();
+    // Pays cités comme exemples d'après les pages d'aide de Meta (à ce jour), jamais comme une liste définitive.
+    const text = guide.textContent;
+    for (const country of ['Égypte', 'Kenya', 'Tanzanie', 'Nigeria'])
+      expect(text).toContain(country);
+    expect(text).toMatch(/à ce jour, par exemple/);
+    // Sans carte, ou sans fonds dans le pays : une carte virtuelle approvisionnée, pour ne pas exposer son argent personnel.
     dom(within(guide).getByText(/Keecash/)).toBeVisible();
+    expect(text).toMatch(/carte virtuelle/);
+    expect(text).toMatch(/argent personnel/);
+    expect(text).toMatch(/ton budget plus la marge/);
+    expect(text).toMatch(/pour 10 \$ de budget, mets 12 à 13 \$/);
     expect(within(guide).queryByText(/uniquement avec une carte/)).toBeNull();
     expect(within(guide).queryByText(/sans prélever/)).toBeNull();
     // Les sources officielles sont citées (liens du Centre d'aide Meta).

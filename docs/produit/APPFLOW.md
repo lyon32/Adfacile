@@ -329,6 +329,7 @@ Option **[Tester 2 visuels (test A/B)]** : sélection de 2 visuels ; compte pour
 - Récapitulatif final (objectif, zone, budget, dates, coût total, sans TVA).
 
 ### 8.6 Étape « Publier »
+- **Montant à prévoir** (décision de la personne du 18/10/2026) : sous le coût, « À prévoir sur ta carte ou tes fonds Meta : environ X (ton budget + une marge pour les taxes et frais de Meta) », marqué **Indicatif**, en monnaie du client ET en dollars (lien d'attribution du taux sous le montant converti) : budget + marge de **20 %** (constante `META_FEES_MARGIN_PERCENT`, réglable plus tard par l'administration S31), arrondi au dollar supérieur (10 $ → 12 $). Texte : « Meta peut ajouter des taxes et des frais, qui varient selon les résultats de ta pub. Prévois un supplément : pour une campagne de 10 $, mets 12 à 13 $. » Aucun pourcentage de frais de Meta n'est annoncé.
 - **Première publication de l'espace de travail** : fenêtre de responsabilité, à accepter **une seule fois par espace de travail** (la date et l'utilisateur sont enregistrés) — « La plateforme vérifie chaque pub. Pubeka n'est pas responsable si ton compte publicitaire est restreint à cause du contenu publié. **[J'ai compris]** ».
 - **[Publier la campagne]** ⟶ « Publication en cours… » ⟶ quota de campagnes décompté ⟶ écran de succès :
   « Ta campagne est envoyée à Meta. Meta la vérifie, en général sous 24 heures. On te prévient dès qu'elle est en diffusion. » **[Voir ma campagne]** · **[Créer une autre pub]**.

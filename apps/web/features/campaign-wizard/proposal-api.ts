@@ -67,6 +67,15 @@ export const CostSchema = z.object({
     .object({ rate: z.number(), quote: z.string(), source: z.string().optional() })
     .nullable()
     .optional(),
+  // À prévoir sur la carte ou les fonds Meta : budget + marge, INDICATIF (décision du 18/10/2026).
+  reserve: z
+    .object({
+      margin_percent: z.number(),
+      usd_cents: z.number(),
+      local: MoneySchema.nullable(),
+    })
+    .nullable()
+    .optional(),
 });
 export type Cost = z.infer<typeof CostSchema>;
 

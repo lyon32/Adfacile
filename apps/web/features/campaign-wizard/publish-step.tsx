@@ -23,6 +23,7 @@ import { Guide, type GuideSlug } from '../meta-connection/health-list';
 import { CostPanel } from './cost-panel';
 import { useCampaign } from './proposal-api';
 import { FailurePanel } from './publish-failure-panel';
+import { ReservePanel } from './reserve-panel';
 import { failureFrom, failureFromRecord, type PublishFailure } from './publish-errors';
 import { usePublish, usePublishedCampaign, useReadiness, type Readiness } from './publish-api';
 
@@ -330,6 +331,8 @@ export function PublishStep(props: PublishStepProps): ReactNode {
       <Card>
         <CostPanel cost={campaign.cost} />
       </Card>
+
+      <ReservePanel cost={campaign.cost} />
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <Button type="button" className="w-full sm:w-auto" disabled={blocked} onClick={onPublish}>

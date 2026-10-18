@@ -2144,6 +2144,19 @@ export interface components {
             /** @description Budget par jour en monnaie locale et en dollars */
             daily?: components["schemas"]["Money"] | null;
             fx?: components["schemas"]["FxRate"] | null;
+            /**
+             * @description INDICATIF : montant à prévoir sur la carte ou les fonds Meta = budget total + une marge, arrondi au dollar supérieur
+             *     (décision de la personne du 18/10/2026 : Meta ajoute des taxes et des frais variables, donc ne jamais mettre exactement
+             *     son budget ; pour 10 $, mettre au moins 12 $). `margin_percent` vaut 20 par défaut (réglable plus tard par
+             *     l'administration, S31) ; ce n'est PAS un pourcentage de frais de Meta. `null` sans budget ni dates ; `local` est `null`
+             *     sans taux de change valide (le dollar seul).
+             */
+            reserve?: {
+                margin_percent: number;
+                /** @description Centimes de dollar, multiple de 100 (dollar supérieur) */
+                usd_cents: number;
+                local: components["schemas"]["Money"] | null;
+            } | null;
         };
         CampaignUpdate: {
             name?: string;
