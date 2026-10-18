@@ -36,3 +36,14 @@ export const updateCampaignSchema = z.strictObject({
 export const chooseProposalSchema = z.strictObject({
   version: z.number().int().min(1),
 });
+
+/** Publier : la clause de responsabilité et, facultatif, le total affiché à l'écran (EC-CAMP-05). Champ inconnu → 400. */
+export const publishSchema = z.strictObject({
+  accept_liability: z.boolean(),
+  confirmed_total: z
+    .strictObject({
+      amount_minor: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+      currency: z.string().regex(/^[A-Z]{3}$/),
+    })
+    .optional(),
+});

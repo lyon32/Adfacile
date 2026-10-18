@@ -9,6 +9,7 @@ export * from './meta/ad-account-time';
 export * from './meta/campaign-objectives';
 export * from './meta/messaging-destinations';
 export * from './meta/campaign-validation';
+export * from './meta/account-currency';
 export * from './meta/currency';
 export * from './meta/media-specs';
 export * from './meta/accounts';

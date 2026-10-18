@@ -679,8 +679,9 @@ paths:
         (quota rendu) en cas d'échec ; un résultat incertain n'est JAMAIS relancé automatiquement : la tâche cherche d'abord chez
         Meta la campagne portant la référence de publication (SECURITY_NOTES EC-META-05).
 
-        Erreurs : `422 validation_failed` (EC-CAMP-08 : clause non acceptée, champ `accept_liability` ; EC-CAMP-04 : la fin devient
-        antérieure au début), `422 budget_too_low`, `402 campaign_quota_reached` (EC-CAMP-02), `402 page_limit_reached` (EC-CAMP-03,
+        Erreurs : `400 validation_failed` (liste fermée d'API_SPEC §4 : aucun code 422 générique ; SECURITY_NOTES écrit 422) pour EC-CAMP-08
+        (clause non acceptée, champ `accept_liability`, `meta.reason: liability_required`) et EC-CAMP-04 (la fin devient antérieure au début,
+        `meta.suggested_start_date` et `meta.suggested_end_date`), `422 budget_too_low`, `402 campaign_quota_reached` (EC-CAMP-02), `402 page_limit_reached` (EC-CAMP-03,
         `meta.available_from` ; EC-CAMP-09), `410 gone` (EC-CAMP-06 : visuel expiré), `409 conflict` (`meta.reason` : `fx_changed` avec
         `meta.new_total` — EC-CAMP-05 ; `publication_in_progress` ; `invalid_transition`), `409 already_published`,
         `424 meta_not_connected`, `424 meta_token_expired`, `424 meta_payment_method_missing`. Une campagne refusée par Meta qui est republiée

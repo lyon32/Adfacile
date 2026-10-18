@@ -33,6 +33,7 @@ import {
   type CampaignView,
 } from './campaign-view';
 import { loadCostContext } from './cost-context';
+import { assertPageInPlan } from './publish/page-guard';
 
 export interface CampaignPatch {
   name?: string | undefined;
@@ -91,7 +92,19 @@ export async function updateCampaign(
   assertWritable(ctx);
   const row = await loadCampaignRow(ctx, campaignId);
 
-  // S15 ne modifie que les brouillons ; une campagne publiée est renvoyée à Meta par S16.
+  // EC-CAMP-09 : une campagne publiée dont la Page n'est plus dans la formule continue chez Meta, mais ne se modifie plus ici
+  // (402 `page_limit_reached`). La pause reste permise (route `pause`).
+  if (row.status !== 'draft' && row.page_id !== null) {
+    const page = await ctx.db
+      .from('pages')
+      .select('active')
+      .eq('workspace_id', ctx.workspace.id)
+      .eq('id', row.page_id)
+      .maybeSingle();
+    if (page.error !== null) throw new AppError('internal_error', { cause: page.error });
+    if (page.data?.active === false) await assertPageInPlan(ctx, page.data, row.page_id);
+  }
+  // Seuls les brouillons se modifient ici ; une modification de campagne publiée (renvoyée à Meta) n'est pas livrée par S16.
   if (row.status !== 'draft' || !row.editable) {
     throw conflict(row.version, 'campaign_not_editable');
   }
