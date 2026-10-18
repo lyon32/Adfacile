@@ -79,6 +79,19 @@ describe('parseEnv (ENV_SETUP §1.12)', () => {
     );
   });
 
+  it('PUBEKA_META_PUBLISH : facultative, jamais forcée, acceptée telle quelle (même en production)', () => {
+    expect(parseEnv(validEnv()).PUBEKA_META_PUBLISH).toBeUndefined();
+    expect(parseEnv(validEnv({ PUBEKA_META_PUBLISH: 'enabled' })).PUBEKA_META_PUBLISH).toBe(
+      'enabled',
+    );
+    expect(parseEnv(validEnv({ PUBEKA_META_PUBLISH: 'autre' })).PUBEKA_META_PUBLISH).toBe('autre');
+    expect(
+      problemsOf(
+        validEnv({ PUBEKA_META_PUBLISH: 'enabled', NEXT_PUBLIC_APP_ENV: 'production' }),
+      ).map((p) => p.name),
+    ).not.toContain('PUBEKA_META_PUBLISH');
+  });
+
   it('refuse un fournisseur inconnu dans PUBEKA_FAKE_PROVIDERS', () => {
     const problems = problemsOf(validEnv({ PUBEKA_FAKE_PROVIDERS: 'meta,paypal' }));
     expect(problems.map((p) => p.name)).toEqual(['PUBEKA_FAKE_PROVIDERS']);

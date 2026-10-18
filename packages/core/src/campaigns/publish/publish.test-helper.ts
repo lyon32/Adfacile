@@ -156,6 +156,7 @@ export function publishWorld(
     hooks,
     deps: {
       jobs,
+      metaPublishEnabled: () => true,
       beforeSpend: hooks.beforeSpend,
       afterAccepted: hooks.afterAccepted,
       release: hooks.release,

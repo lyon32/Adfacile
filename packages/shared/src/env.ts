@@ -81,6 +81,9 @@ const EnvSchema = z
     PUBLIC_WEBHOOK_BASE_URL: url.optional(),
     PUBEKA_JOB_DISPATCH: z.enum(['trigger', 'inline']).default('trigger'),
     PUBEKA_FAKE_PROVIDERS: fakeProviders.optional(),
+    // Interrupteur de la publication RÉELLE chez Meta : seule la valeur exacte `enabled` l'autorise. Non forcé ici, y compris en
+    // production : il reste désactivé tant que le chef de projet ne le règle pas (ENV_SETUP §1.1).
+    PUBEKA_META_PUBLISH: z.string().optional(),
     // 1.2 Supabase
     NEXT_PUBLIC_SUPABASE_URL: url,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().startsWith('sb_publishable_'),

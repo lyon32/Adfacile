@@ -1033,6 +1033,10 @@
           "uncertain": {
             "title": "Meta did not confirm the creation.",
             "body": "Pubeka checked at Meta: nothing was created. Your quota is not used. You can publish again."
+          },
+          "publish_disabled": {
+            "title": "Real publishing is not enabled on this environment.",
+            "body": "Your campaign stays a draft and your quota is not used. Nothing was sent to Meta."
           }
         }
       }

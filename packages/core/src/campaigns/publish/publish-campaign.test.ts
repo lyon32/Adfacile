@@ -754,3 +754,86 @@ describe('Pannes pendant la publication', () => {
     expect(w.jobs.jobs).toEqual([]);
   });
 });
+
+describe('publishCampaign — interrupteur de publication réelle (PUBEKA_META_PUBLISH)', () => {
+  const tables = ['campaigns', 'campaign_status_events', 'publish_liability_acceptances'] as const;
+  const snapshot = (w: ReturnType<typeof publishWorld>): string =>
+    JSON.stringify(tables.map((t) => w.db.rows(t)));
+
+  it('DÉSACTIVÉ : 503 provider_unavailable, meta.reason = publish_disabled, AUCUNE écriture, AUCUN quota, AUCUNE tâche', async () => {
+    const w = publishWorld();
+    const before = snapshot(w);
+    const error = await failure(
+      publishCampaign(
+        w.ctx,
+        w.campaignId,
+        { idempotencyKey: KEY_A, ...accept },
+        { ...w.deps, metaPublishEnabled: () => false },
+      ),
+    );
+    expect(error.code).toBe('provider_unavailable');
+    expect(error.status).toBe(503);
+    expect(error.opts.meta).toMatchObject({ reason: 'publish_disabled' });
+    expect(snapshot(w)).toBe(before);
+    expect(rowOf(w.db, w.campaignId).status).toBe('draft');
+    expect(w.hooks.events).toEqual([]);
+    expect(w.jobs.jobs).toEqual([]);
+  });
+
+  it('DÉSACTIVÉ : la clause de responsabilité n’est PAS enregistrée non plus', async () => {
+    const w = publishWorld();
+    await outcome(
+      publishCampaign(
+        w.ctx,
+        w.campaignId,
+        { idempotencyKey: KEY_A, ...accept },
+        { ...w.deps, metaPublishEnabled: () => false },
+      ),
+    );
+    expect(w.db.rows('publish_liability_acceptances')).toEqual([]);
+  });
+
+  it('DÉSACTIVÉ : un rôle insuffisant reste refusé en 403 (le contrôle des droits passe avant)', async () => {
+    const w = publishWorld({ role: 'viewer' });
+    expect(
+      await outcome(
+        publishCampaign(
+          w.ctx,
+          w.campaignId,
+          { idempotencyKey: KEY_A, ...accept },
+          { ...w.deps, metaPublishEnabled: () => false },
+        ),
+      ),
+    ).toBe('role_insufficient');
+  });
+
+  it('ACTIVÉ : comportement inchangé (202, quota retenu, tâche lancée)', async () => {
+    const w = publishWorld();
+    const view = await publishCampaign(
+      w.ctx,
+      w.campaignId,
+      { idempotencyKey: KEY_A, ...accept },
+      { ...w.deps, metaPublishEnabled: () => true },
+    );
+    expect(view.status).toBe('publishing');
+    expect(w.hooks.count('beforeSpend')).toBe(1);
+    expect(w.jobs.jobs).toHaveLength(1);
+  });
+
+  it('la valeur est relue à CHAQUE appel : désactivé puis activé', async () => {
+    const w = publishWorld();
+    let enabled = false;
+    const deps = { ...w.deps, metaPublishEnabled: () => enabled };
+    expect(
+      await outcome(
+        publishCampaign(w.ctx, w.campaignId, { idempotencyKey: KEY_A, ...accept }, deps),
+      ),
+    ).toBe('provider_unavailable');
+    enabled = true;
+    expect(
+      await outcome(
+        publishCampaign(w.ctx, w.campaignId, { idempotencyKey: KEY_A, ...accept }, deps),
+      ),
+    ).toBe('ok');
+  });
+});

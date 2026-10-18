@@ -165,7 +165,7 @@ Liste fermée : tout nouveau code doit être ajouté à l'énumération `ErrorCo
 | `internal_error` | 500 | Erreur inattendue | Affiche `request_id` |
 | `meta_error` | 502 | Erreur renvoyée par Meta | Message traduit + `request_id` |
 | `payment_provider_error` | 502 | Erreur SasPay | Propose de réessayer ou d'envoyer une preuve |
-| `provider_unavailable` | 503 | Fournisseur médias ou IA indisponible, aucun secours. Pour l'Analyste, aussi quand le modèle réglé ne voit pas les images : l'analyse échoue avec `error_code: provider_unavailable` et le signalement `MODEL_WITHOUT_VISION` (aucun nouveau code) | Propose un autre modèle |
+| `provider_unavailable` | 503 | **Aussi** (S16) : publication réelle chez Meta non activée sur l'environnement, `meta.reason: publish_disabled` (routes `publish`, `resume`, `relaunch` en mode `recover`, tâche `campaign.publish` ; jamais `pause`) — voir ENV_SETUP `PUBEKA_META_PUBLISH`. Sinon : Fournisseur médias ou IA indisponible, aucun secours. Pour l'Analyste, aussi quand le modèle réglé ne voit pas les images : l'analyse échoue avec `error_code: provider_unavailable` et le signalement `MODEL_WITHOUT_VISION` (aucun nouveau code) | Propose un autre modèle |
 | `maintenance` | 503 | Mode maintenance actif (sauf `/public/maintenance`, `/admin/*` et les webhooks, toujours traités : SECURITY_NOTES EC-ADM-02) | Page de maintenance |
 
 ---

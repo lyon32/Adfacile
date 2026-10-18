@@ -11,6 +11,7 @@
 //   → clause enregistrée → historique → tâche.
 // Tout montant, budget et date est relu depuis la base : rien ne vient du navigateur (SECURITY_NOTES §3.2).
 import { AppError, type FieldError } from '@pubeka/contracts';
+import { assertMetaPublishEnabled } from './publish-switch';
 import { calendarDateIn } from '@pubeka/shared';
 import type { MemberCtx } from '../../context';
 import { assertRole, assertWritable } from '../../workspaces/guards';
@@ -249,6 +250,8 @@ export async function publishCampaign(
 ): Promise<CampaignView> {
   assertRole(ctx, ['owner', 'editor']);
   assertWritable(ctx);
+  // Interrupteur de sécurité : Meta réel et publication non activée = refus AVANT toute lecture, écriture ou décompte de quota.
+  assertMetaPublishEnabled(deps);
   const workspaceId = ctx.workspace.id;
   const row = await loadPublishRow(ctx.db, workspaceId, campaignId);
 

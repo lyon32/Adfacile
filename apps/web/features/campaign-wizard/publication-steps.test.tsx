@@ -738,6 +738,42 @@ describe('Étape Publier — chaque erreur (APPFLOW §8.6)', () => {
     );
   });
 
+  it('INTERRUPTEUR : publication réelle non activée : message sobre, brouillon, quota non décompté, AUCUN bouton de nouvel essai', async () => {
+    const { calls } = await failWith(
+      problem('provider_unavailable', 503, { reason: 'publish_disabled' }),
+    );
+    const alert = await screen.findByRole('alert');
+    expect(
+      within(alert).getByText('La publication réelle n’est pas activée sur cet environnement.'),
+    ).toBeTruthy();
+    expect(
+      within(alert).getByText(/reste en brouillon et ton quota n’est pas décompté/),
+    ).toBeTruthy();
+    expect(within(alert).queryByRole('button')).toBeNull();
+    expect(within(alert).queryByText(/Réessaie dans quelques minutes/)).toBeNull();
+    expect(calls.filter((c) => c.method === 'POST')).toHaveLength(1);
+  });
+
+  it('INTERRUPTEUR : le même message en anglais', async () => {
+    stubApi(
+      ROUTES({
+        'GET /c/readiness': json(readiness({ liability_required: false })),
+        'POST /c/publish': problem('provider_unavailable', 503, { reason: 'publish_disabled' }),
+      }),
+    );
+    mount(<PublishStep {...publishProps()} />, 'en');
+    fireEvent.click(await screen.findByRole('button', { name: 'Publish the campaign' }));
+    expect(
+      await screen.findByText('Real publishing is not enabled on this environment.'),
+    ).toBeTruthy();
+  });
+
+  it('provider_unavailable SANS la raison de l’interrupteur : message général (pas de faux diagnostic)', async () => {
+    await failWith(problem('provider_unavailable', 503));
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByText('La publication a échoué.')).toBeTruthy();
+  });
+
   it('lecture seule : message dédié avec le lien vers l’abonnement', async () => {
     await failWith(problem('workspace_read_only', 403));
     dom(
