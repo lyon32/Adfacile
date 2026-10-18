@@ -8,6 +8,7 @@ import {
   type JobDispatcher,
 } from './dispatcher';
 import { analysisRunHandler } from './handlers/analysis-run';
+import { campaignPublishHandler } from './handlers/campaign-publish';
 import { fxRefreshHandler } from './handlers/fx-refresh';
 import { systemPingHandler } from './handlers/system-ping';
 
@@ -16,6 +17,7 @@ export const inlineHandlers = [
   registerHandler(systemPingHandler),
   registerHandler(analysisRunHandler),
   registerHandler(fxRefreshHandler),
+  registerHandler(campaignPublishHandler),
 ];
 
 export type DispatcherEnv = Pick<

@@ -6,6 +6,7 @@ import {
   FakeMetaConnector,
   MetaConnector,
   parseEncryptionKeys,
+  type PlatformConnector,
 } from '@pubeka/platforms';
 import type { Env } from '@pubeka/shared';
 import type { MetaAccountConnector, MetaDeps } from './deps';
@@ -20,7 +21,8 @@ function usesFakeMeta(env: Pick<Env, 'PUBEKA_FAKE_PROVIDERS'>): boolean {
 
 let sharedFake: FakeMetaConnector | undefined;
 
-export function createMetaConnector(env: Env, now: () => Date): MetaAccountConnector {
+/** Connecteur complet (réel ou faux) : la connexion n'en utilise qu'une partie (`MetaAccountConnector`), la publication le reste. */
+export function createFullMetaConnector(env: Env, now: () => Date): PlatformConnector {
   if (usesFakeMeta(env)) {
     sharedFake ??= new FakeMetaConnector();
     return sharedFake;
@@ -38,8 +40,12 @@ export function createMetaConnector(env: Env, now: () => Date): MetaAccountConne
     now,
     // Seul le stockage de Pubeka peut être lu comme média (anti-SSRF).
     allowedMediaHosts: [new URL(env.SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL).hostname],
-    // Aucun taux ici : ce connecteur ne sert qu'à la connexion (S11); la publication (S16) lira le taux enregistré.
+    // Aucun taux ici : chaque demande de publication porte la monnaie du compte et son taux enregistré (S16).
   });
+}
+
+export function createMetaConnector(env: Env, now: () => Date): MetaAccountConnector {
+  return createFullMetaConnector(env, now);
 }
 
 export function createMetaDeps(args: {

@@ -75,7 +75,7 @@ async function liabilityAccepted(ctx: MemberCtx): Promise<boolean> {
   return found.data !== null;
 }
 
-function assertMetaReady(inputs: PublishInputs): void {
+export function assertMetaReady(inputs: PublishInputs): void {
   if (inputs.adAccount === null || inputs.connection === null)
     throw new AppError('meta_not_connected');
   if (inputs.connection.status === 'expired' || inputs.connection.status === 'revoked') {
@@ -280,7 +280,7 @@ export async function publishCampaign(
   }
 
   const inputs = await loadPublishInputs(ctx.db, workspaceId, row, ctx.now());
-  await assertPageInPlan(ctx, inputs.page, row.page_id);
+  await assertPageInPlan({ svc: ctx.svc, workspaceId }, inputs.page, row.page_id);
   assertMetaReady(inputs);
 
   const fields: Fields = { copy: readCopy(row), geo: readGeo(row), targeting: readTargeting(row) };
