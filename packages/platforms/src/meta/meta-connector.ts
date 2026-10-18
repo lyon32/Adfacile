@@ -11,6 +11,8 @@ import type {
   DailyStats,
   DateRange,
   HealthCheckItem,
+  LocationMatch,
+  LocationQuery,
   PlatformAdAccount,
   PlatformCampaignRefs,
   PlatformConnector,
@@ -33,7 +35,6 @@ import {
 } from './accounts';
 import { deleteCampaignOnMeta, patchCampaign, updateCampaignStatus } from './campaign-actions';
 import { createFullCampaign } from './create-campaign';
-import { minDailyBudgetFcfa } from './currency';
 import { assertMediaHostsConfigured } from './ssrf';
 import { toAppError } from './errors';
 import { GraphClient, type FetchLike } from './graph';
@@ -73,12 +74,6 @@ export interface MetaConnectorConfig {
   allowedMediaHosts: readonly string[];
   /** Attente des vidéos (tests). */
   upload?: Omit<UploadOptions, 'allowedMediaHosts'> | undefined;
-  /**
-   * Taux FCFA pour 1 $, fourni par `core` (table des taux de change). Aucun défaut silencieux, contrairement à
-   * `XAF_PER_USD` d'AdFacile qui retombait sur 610. Absent, le connecteur sert à la CONNEXION seule (comptes, Pages, bilan
-   * de santé : aucun montant converti); créer ou modifier une campagne lève alors une erreur plutôt que d'inventer un taux.
-   */
-  xafPerUsd?: number | undefined;
   onStep?: ((name: string, detail?: { current: number; total: number }) => void) | undefined;
 }
 
@@ -147,6 +142,19 @@ const insightsSchema = z.looseObject({
     .optional(),
 });
 
+const locationSearchSchema = z.looseObject({
+  data: z
+    .array(
+      z.looseObject({
+        key: z.string().optional(),
+        name: z.string().optional(),
+        type: z.string().optional(),
+        country_code: z.string().optional(),
+        region: z.string().optional(),
+      }),
+    )
+    .optional(),
+});
 const effectiveStatusSchema = z.looseObject({ effective_status: z.string().optional() });
 const reviewSchema = z.looseObject({
   effective_status: z.string().optional(),
@@ -194,7 +202,6 @@ export class MetaConnector implements PlatformConnector {
       });
     }
     assertMediaHostsConfigured(config.allowedMediaHosts);
-    if (config.xafPerUsd !== undefined) minDailyBudgetFcfa(config.xafPerUsd);
     this.graph = new GraphClient({
       ...(config.fetch ? { fetch: config.fetch } : {}),
       ...(config.graphVersion ? { version: config.graphVersion } : {}),
@@ -269,6 +276,37 @@ export class MetaConnector implements PlatformConnector {
         category,
       })),
     );
+  }
+
+  /**
+   * Cherche un lieu pour en obtenir la clé de ciblage. LECTURE SEULE.
+   * Documentation : https://developers.facebook.com/docs/marketing-api/audiences/reference/targeting-search (« Geo Locations »)
+   * GET /search?type=adgeolocation&q=…&location_types=["city"]&country_code=XX&limit=…
+   */
+  searchLocations(token: PlatformToken, query: LocationQuery): Promise<LocationMatch[]> {
+    return this.run(async () => {
+      const raw = await this.graph.get('search', {
+        type: 'adgeolocation',
+        q: query.name,
+        location_types: JSON.stringify([query.type]),
+        limit: 10,
+        access_token: token.accessToken,
+        ...(query.countryCode === undefined ? {} : { country_code: query.countryCode }),
+      });
+      return (locationSearchSchema.parse(raw).data ?? []).flatMap((item) =>
+        item.key === undefined || item.name === undefined
+          ? []
+          : [
+              {
+                key: item.key,
+                name: item.name,
+                type: item.type ?? query.type,
+                countryCode: item.country_code ?? null,
+                region: item.region ?? null,
+              },
+            ],
+      );
+    });
   }
 
   /** Bilan de santé (F1) : Pubeka détecte et guide, ne crée rien à la place du client. */
@@ -353,17 +391,6 @@ export class MetaConnector implements PlatformConnector {
     });
   }
 
-  /** Taux de change nécessaire pour exprimer les budgets : jamais inventé. */
-  private requireRate(): number {
-    const rate = this.config.xafPerUsd;
-    if (rate === undefined) {
-      throw new AppError('internal_error', {
-        cause: new Error('taux de change absent : la publication lit le taux enregistré (S16)'),
-      });
-    }
-    return rate;
-  }
-
   createCampaign(token: PlatformToken, spec: PublishSpec): Promise<PlatformCampaignRefs> {
     return this.run(() =>
       createFullCampaign(
@@ -372,7 +399,6 @@ export class MetaConnector implements PlatformConnector {
           now: this.config.now,
           upload: { ...this.config.upload, allowedMediaHosts: this.config.allowedMediaHosts },
           ...(this.config.onStep ? { onStep: this.config.onStep } : {}),
-          xafPerUsd: this.requireRate(),
         },
         token.accessToken,
         spec,
@@ -385,9 +411,7 @@ export class MetaConnector implements PlatformConnector {
     refs: PlatformCampaignRefs,
     patch: PublishPatch,
   ): Promise<void> {
-    return this.run(() =>
-      patchCampaign(this.graph, token.accessToken, refs, patch, this.requireRate()),
-    );
+    return this.run(() => patchCampaign(this.graph, token.accessToken, refs, patch));
   }
 
   pause(token: PlatformToken, refs: PlatformCampaignRefs): Promise<void> {

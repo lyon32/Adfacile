@@ -64,6 +64,36 @@ export interface TargetingLocation {
   /** country, city, region, geo_market ; toute autre valeur est traitée comme une ville. */
   type: string;
   countryCode?: string;
+  /**
+   * Rayon voulu autour d'une ville, en kilomètres. Meta impose 17 à 80 km pour une ville
+   * (https://developers.facebook.com/docs/marketing-api/audiences/reference/basic-targeting) : une valeur plus petite est
+   * relevée à 17 km, une plus grande ramenée à 80 km. Absent : 25 km (comportement d'AdFacile).
+   */
+  radiusKm?: number;
+}
+
+/** Monnaie du compte publicitaire et taux de conversion depuis le dollar (jamais de taux par défaut). */
+export interface AccountCurrency {
+  /** Code ISO 4217 de la monnaie du compte (lu chez Meta, `ad_accounts.currency`). */
+  code: string;
+  /** Unités de `code` pour 1 $ (table des taux). Obligatoire hors dollar ; ignoré pour le dollar. */
+  perUsd?: number | undefined;
+}
+
+/** Résultat de la recherche d'un lieu (Targeting Search, `type=adgeolocation`). */
+export interface LocationMatch {
+  key: string;
+  name: string;
+  type: string;
+  countryCode: string | null;
+  region: string | null;
+}
+
+export interface LocationQuery {
+  name: string;
+  /** Limite la recherche à un pays (code ISO à deux lettres). */
+  countryCode?: string;
+  type: 'city' | 'region' | 'country';
 }
 
 export interface TargetingItem {
@@ -116,6 +146,11 @@ export interface PublishSpec {
   objective: string;
   /** `act_123…` ou le numéro seul. */
   adAccountId: string;
+  /**
+   * Monnaie du compte publicitaire : les budgets (centimes de dollar ci-dessous) sont convertis dans SON unité mineure.
+   * On ne suppose jamais que le compte est en dollars.
+   */
+  account: AccountCurrency;
   page: MetaPageContext;
   destinationType?: string;
   optimizationGoal?: string;
@@ -144,6 +179,8 @@ export interface PublishSpec {
 export interface PublishPatch {
   name?: string;
   dailyBudgetUsdCents?: number;
+  /** Obligatoire avec `dailyBudgetUsdCents` : monnaie du compte et taux. */
+  account?: AccountCurrency;
   /** AAAA-MM-JJ, interprété dans le fuseau du compte publicitaire. */
   endDate?: string;
 }
@@ -192,6 +229,8 @@ export interface PlatformConnector {
   exchangeCode(code: string, redirectUri: string): Promise<PlatformToken>;
   listAdAccounts(token: PlatformToken): Promise<PlatformAdAccount[]>;
   listPages(token: PlatformToken): Promise<PlatformPage[]>;
+  /** Cherche un lieu (ville, région, pays) pour en obtenir la clé de ciblage. Lecture seule. */
+  searchLocations(token: PlatformToken, query: LocationQuery): Promise<LocationMatch[]>;
   healthCheck(
     token: PlatformToken,
     adAccountId: string,

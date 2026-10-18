@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { MetaPageContext, PublishSpec } from '../types';
 import { deleteCampaignOnMeta, patchCampaign, updateCampaignStatus } from './campaign-actions';
 import { createFullCampaign, getAdAccountTimezone, normalizeObjective } from './create-campaign';
-import { MetaGraphError, toAppError } from './errors';
+import { MetaGraphError, MetaValidationError, toAppError } from './errors';
 import {
   failure,
   FakeGraph,
@@ -25,8 +25,8 @@ const PAGE: MetaPageContext = {
 };
 
 const NOW = () => new Date('2026-10-01T00:00:00Z');
-// Taux et hôtes de médias sont obligatoires : valeurs d'AdFacile (610 FCFA pour 1 $, médias sur cdn.test).
-const DEPS = { now: NOW, xafPerUsd: 610, upload: { allowedMediaHosts: ['cdn.test'] } };
+// Les hôtes de médias sont obligatoires (médias sur cdn.test) ; la monnaie du compte est portée par chaque demande.
+const DEPS = { now: NOW, upload: { allowedMediaHosts: ['cdn.test'] } };
 
 interface Setup {
   graph: FakeGraph;
@@ -66,10 +66,11 @@ function donnees({
     campaignName: 'PROD-TEST',
     objective: 'OUTCOME_TRAFFIC',
     adAccountId: '123',
+    account: { code: 'USD' },
     page: PAGE,
     ...(omit.includes('destinationType') ? {} : { destinationType: 'WEBSITE' }),
     ...(omit.includes('optimizationGoal') ? {} : { optimizationGoal: 'LINK_CLICKS' }),
-    dailyBudgetUsdCents: 164, // 1 000 FCFA au taux par défaut
+    dailyBudgetUsdCents: 164, // 1,64 $
     startDate: '2026-10-10',
     targeting: { locations: [{ key: 'CM', type: 'country' }] },
     websiteUrl: 'https://exemple.cm',
@@ -83,7 +84,7 @@ const patcher = (
   token: string,
   refs: Parameters<typeof patchCampaign>[2],
   patch: Parameters<typeof patchCampaign>[3],
-) => patchCampaign(graph, token, refs, patch, 610);
+) => patchCampaign(graph, token, refs, { account: { code: 'USD' }, ...patch });
 
 const lancer = (setup: Setup, spec: PublishSpec) =>
   createFullCampaign({ graph: setup.graph.client(), ...DEPS }, 'TOKEN', spec);
@@ -158,7 +159,7 @@ describe('createFullCampaign — configuration obligatoire', () => {
     for (const allowedMediaHosts of [[], ['']]) {
       await expect(
         createFullCampaign(
-          { graph: s.graph.client(), now: NOW, xafPerUsd: 610, upload: { allowedMediaHosts } },
+          { graph: s.graph.client(), now: NOW, upload: { allowedMediaHosts } },
           'T',
           donnees(),
         ),
@@ -167,28 +168,34 @@ describe('createFullCampaign — configuration obligatoire', () => {
     expect(s.graph.calls).toHaveLength(0);
   });
 
-  it('refuse un taux de change absent ou invalide : aucun taux par défaut silencieux', async () => {
+  it('EC-META-11 : un compte hors dollar sans taux valide est refusé avant tout appel, sans taux par défaut', async () => {
     const s = preparer();
-    for (const xafPerUsd of [0, -1, Number.NaN]) {
-      await expect(
-        createFullCampaign(
-          { graph: s.graph.client(), now: NOW, xafPerUsd, upload: DEPS.upload },
-          'T',
-          donnees(),
-        ),
-      ).rejects.toMatchObject({ code: 'internal_error' });
+    for (const perUsd of [undefined, 0, -1, Number.NaN]) {
+      const account = perUsd === undefined ? { code: 'NGN' } : { code: 'NGN', perUsd };
+      await expect(lancer(s, donnees({ account }))).rejects.toThrow(MetaValidationError);
     }
     expect(s.graph.calls).toHaveLength(0);
   });
 
-  it('exprime le minimum de budget en FCFA au taux fourni', async () => {
+  it('EC-META-11 : une monnaie que Meta ne connaît pas (franc CFA) est refusée avant tout appel', async () => {
     const s = preparer();
-    const erreur = await createFullCampaign(
-      { ...DEPS, graph: s.graph.client(), xafPerUsd: 600 },
-      'T',
-      donnees({ dailyBudgetUsdCents: 10 }),
+    await expect(lancer(s, donnees({ account: { code: 'XAF', perUsd: 600 } }))).rejects.toThrow(
+      /prise en charge/,
+    );
+    expect(s.graph.calls).toHaveLength(0);
+  });
+
+  it('EC-META-11 : redonne le minimum dans la monnaie du compte quand le budget est trop bas', async () => {
+    const s = preparer();
+    const erreur = await lancer(
+      s,
+      donnees({ dailyBudgetUsdCents: 10, account: { code: 'NGN', perUsd: 1500 } }),
     ).catch((e: unknown) => e);
-    expect(erreur).toMatchObject({ code: 'budget_too_low', opts: { meta: { minXaf: 600 } } });
+    expect(erreur).toMatchObject({
+      code: 'budget_too_low',
+      opts: { meta: { minUsdCents: 100, currency: 'NGN', minAccountMinor: 150_000 } },
+    });
+    expect(s.graph.calls).toHaveLength(0);
   });
 
   it('un média hors des hôtes autorisés est refusé et la campagne déjà créée est annulée', async () => {
@@ -881,10 +888,9 @@ describe('patchCampaign', () => {
         graph.client(),
         'j',
         { campaignId: 'C1', adsetId: 'A1', adId: null, creativeId: null },
-        { dailyBudgetUsdCents: 5 },
-        0,
+        { dailyBudgetUsdCents: 500 },
       ),
-    ).rejects.toMatchObject({ code: 'internal_error' });
+    ).rejects.toThrow(/monnaie du compte/);
   });
 
   const REFS = {

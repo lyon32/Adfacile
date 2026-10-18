@@ -105,3 +105,50 @@ describe('FakeMetaConnector — pannes simulables', () => {
     });
   });
 });
+
+describe('FakeMetaConnector — recherche de lieux (S16)', () => {
+  it('ne trouve que les lieux semés, au bon type et dans le bon pays, sans casse', async () => {
+    const fake = new FakeMetaConnector();
+    fake.seedLocation({
+      key: '111',
+      name: 'Douala',
+      type: 'city',
+      countryCode: 'CM',
+      region: 'Littoral',
+    });
+    fake.seedLocation({
+      key: '222',
+      name: 'Douala',
+      type: 'city',
+      countryCode: 'XX',
+      region: null,
+    });
+    const found = await fake.searchLocations(TOKEN, {
+      name: ' douala ',
+      countryCode: 'CM',
+      type: 'city',
+    });
+    expect(found.map((l) => l.key)).toEqual(['111']);
+    expect(await fake.searchLocations(TOKEN, { name: 'Douala', type: 'region' })).toEqual([]);
+    expect(
+      (await fake.searchLocations(TOKEN, { name: 'Douala', type: 'city' })).map((l) => l.key),
+    ).toEqual(['111', '222']);
+  });
+
+  it('refuse de modifier le budget sans la monnaie du compte (validation_failed)', async () => {
+    const fake = new FakeMetaConnector();
+    const refs = await fake.createCampaign(TOKEN, CONTRACT_SPEC);
+    await expect(
+      fake.updateCampaign(TOKEN, refs, { dailyBudgetUsdCents: 500 }),
+    ).rejects.toMatchObject({
+      code: 'validation_failed',
+    });
+  });
+
+  it('refuse de créer pour un compte hors dollar sans taux, comme le vrai connecteur', async () => {
+    const fake = new FakeMetaConnector();
+    await expect(
+      fake.createCampaign(TOKEN, { ...CONTRACT_SPEC, account: { code: 'NGN' } }),
+    ).rejects.toMatchObject({ code: 'validation_failed' });
+  });
+});
