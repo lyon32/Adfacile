@@ -23,14 +23,16 @@ export interface PreviewStepProps {
 }
 
 function Tabs({
+  id,
   value,
   onChange,
 }: {
+  /** Préfixe partagé avec le panneau : `aria-controls` doit viser un élément qui existe. */
+  id: string;
   value: Placement;
   onChange: (placement: Placement) => void;
 }): ReactNode {
   const t = useTranslations('campaign.wizard.preview');
-  const id = useId();
   const refs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   function onKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number): void {
@@ -212,11 +214,11 @@ export function PreviewStep({
       )}
 
       <div className="flex flex-col gap-4">
-        <Tabs value={placement} onChange={setPlacement} />
+        <Tabs id={panelId} value={placement} onChange={setPlacement} />
         <div
           id={`${panelId}-panel`}
           role="tabpanel"
-          aria-label={t(`tabs.${placement}`)}
+          aria-labelledby={`${panelId}-${placement}`}
           className="bg-panel flex flex-col gap-3 rounded-lg p-4"
         >
           <AdPreview
