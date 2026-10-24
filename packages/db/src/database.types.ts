@@ -662,7 +662,11 @@ export type Database = {
           published_at: string | null;
           quota_state: string;
           start_date: string | null;
+          stats_refresh_requested_at: string | null;
+          stats_sync_error: string | null;
+          stats_synced_at: string | null;
           status: Database['public']['Enums']['campaign_status'];
+          status_synced_at: string | null;
           targeting: NonNullable<Json>;
           tracking: Json | null;
           updated_at: string;
@@ -704,7 +708,11 @@ export type Database = {
           published_at?: string | null;
           quota_state?: string;
           start_date?: string | null;
+          stats_refresh_requested_at?: string | null;
+          stats_sync_error?: string | null;
+          stats_synced_at?: string | null;
           status?: Database['public']['Enums']['campaign_status'];
+          status_synced_at?: string | null;
           targeting?: NonNullable<Json>;
           tracking?: Json | null;
           updated_at?: string;
@@ -746,7 +754,11 @@ export type Database = {
           published_at?: string | null;
           quota_state?: string;
           start_date?: string | null;
+          stats_refresh_requested_at?: string | null;
+          stats_sync_error?: string | null;
+          stats_synced_at?: string | null;
           status?: Database['public']['Enums']['campaign_status'];
+          status_synced_at?: string | null;
           targeting?: NonNullable<Json>;
           tracking?: Json | null;
           updated_at?: string;
@@ -2652,6 +2664,10 @@ export type Database = {
       record_meta_webhook: { Args: { p_event_id: string; p_events: Json }; Returns: number };
       record_webhook_event: { Args: { p_event_id: string; p_provider: string }; Returns: boolean };
       release_credits: { Args: { amount?: number; job: string }; Returns: number };
+      request_stats_refresh: {
+        Args: { p_campaign: string; p_now: string; p_workspace: string };
+        Returns: boolean;
+      };
       reserve_credits: { Args: { job: string; needed: number; ws: string }; Returns: boolean };
       set_active_ad_account: { Args: { p_id: string; ws: string }; Returns: undefined };
       set_page_active: {
