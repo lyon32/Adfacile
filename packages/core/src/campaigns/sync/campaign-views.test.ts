@@ -6,10 +6,40 @@ import type { MemberCtx } from '../../context';
 import { OTHER_W } from '../campaigns.test-helper';
 import { RecordingJobs } from '../publish/publish.test-helper';
 import { getCampaignStats, resolveRange } from './campaign-stats';
-import { listCampaignAds, listCampaignEvents, listCampaigns } from './campaign-lists';
+import {
+  listCampaignAds,
+  listCampaignEvents,
+  listCampaigns,
+  type ListCursorCodec,
+} from './campaign-lists';
 import { getOverview, parseOverviewRange } from './overview';
 import { requestStatsRefresh, REFRESH_WINDOW_S, SYNC_STATS_TASK } from './refresh-stats';
 import { MIN, NOW, rowOf, syncWorld, W, type SyncWorld } from './sync.test-helper';
+
+/** Double du codec signé (le vrai est dans apps/web, HMAC avec APP_SIGNING_SECRET) : n'ouvre que ce qu'il a lui-même scellé. */
+const codec: ListCursorCodec = {
+  seal: (key) => `ok.${Buffer.from(JSON.stringify(key)).toString('base64url')}`,
+  open: (token) => {
+    if (!token.startsWith('ok.')) return null;
+    try {
+      const parsed: unknown = JSON.parse(Buffer.from(token.slice(3), 'base64url').toString('utf8'));
+      if (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        'created_at' in parsed &&
+        'id' in parsed
+      ) {
+        const { created_at: createdAt, id } = parsed;
+        return typeof createdAt === 'string' && typeof id === 'string'
+          ? { created_at: createdAt, id }
+          : null;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  },
+};
 
 const CONV = 'onsite_conversion.messaging_conversation_started_7d';
 
@@ -318,32 +348,36 @@ describe('Liste, historique et publicités', () => {
       });
     }
     rowOf(s.w.db, s.id).created_at = '2026-10-09T10:00:00Z';
-    const first = await listCampaigns(s.w.ctx, { limit: 2 });
+    const first = await listCampaigns(s.w.ctx, { limit: 2 }, codec);
     expect(first.data).toHaveLength(2);
     expect(first.next_cursor).not.toBeNull();
-    const second = await listCampaigns(s.w.ctx, { limit: 2, cursor: first.next_cursor ?? '' });
+    const second = await listCampaigns(
+      s.w.ctx,
+      { limit: 2, cursor: first.next_cursor ?? '' },
+      codec,
+    );
     expect(second.data).toHaveLength(2);
     expect(second.next_cursor).toBeNull();
-    const paused = await listCampaigns(s.w.ctx, { status: 'paused' });
+    const paused = await listCampaigns(s.w.ctx, { status: 'paused' }, codec);
     expect(paused.data.map((c) => c.name)).toEqual(['C', 'B', 'A']);
   });
 
   it('liste : paramètres invalides refusés (400), jamais d’autre espace', async () => {
     const s = await syncWorld();
-    await expect(listCampaigns(s.w.ctx, { limit: 0 })).rejects.toMatchObject({
+    await expect(listCampaigns(s.w.ctx, { limit: 0 }, codec)).rejects.toMatchObject({
       code: 'validation_failed',
     });
-    await expect(listCampaigns(s.w.ctx, { limit: 101 })).rejects.toMatchObject({
+    await expect(listCampaigns(s.w.ctx, { limit: 101 }, codec)).rejects.toMatchObject({
       code: 'validation_failed',
     });
-    await expect(listCampaigns(s.w.ctx, { status: 'inconnu' })).rejects.toMatchObject({
+    await expect(listCampaigns(s.w.ctx, { status: 'inconnu' }, codec)).rejects.toMatchObject({
       code: 'validation_failed',
     });
-    await expect(listCampaigns(s.w.ctx, { cursor: '%%%' })).rejects.toMatchObject({
+    await expect(listCampaigns(s.w.ctx, { cursor: '%%%' }, codec)).rejects.toMatchObject({
       code: 'validation_failed',
     });
     const other: MemberCtx = { ...s.w.ctx, workspace: { ...s.w.ctx.workspace, id: OTHER_W } };
-    expect((await listCampaigns(other)).data).toEqual([]);
+    expect((await listCampaigns(other, {}, codec)).data).toEqual([]);
   });
 
   it('historique : du plus récent au plus ancien, champs en liste blanche seulement, 404 pour un autre espace', async () => {
@@ -467,5 +501,73 @@ describe('Tableau de bord : exact au-delà de 100 campagnes et de 1 000 lignes',
     ]);
     const view = await getOverview(s.w.ctx, 'week');
     expect(view.campaigns[0]).toMatchObject({ results: 22, spend: { usd_cents: 3000 } });
+  });
+});
+
+describe('Liste : curseur signé sur la clé (created_at, id) — API_SPEC §8', () => {
+  async function same(count: number): Promise<{ s: SyncWorld; ids: string[] }> {
+    const s = await syncWorld();
+    const original = rowOf(s.w.db, s.id);
+    const ids = [s.id];
+    original.created_at = '2026-10-05T10:00:00.000Z';
+    for (let i = 1; i < count; i += 1) {
+      const id = `00000000-0000-4000-8000-00000000f${String(i).padStart(3, '0')}`;
+      ids.push(id);
+      s.w.db.rows('campaigns').push({ ...original, id, created_at: '2026-10-05T10:00:00.000Z' });
+    }
+    return { s, ids };
+  }
+
+  it('trois campagnes créées à la MÊME milliseconde : aucune n’est sautée d’une page à l’autre, aucune n’est vue deux fois', async () => {
+    const { s, ids } = await same(3);
+    const seen: string[] = [];
+    let cursor: string | undefined;
+    for (let page = 0; page < 5; page += 1) {
+      const result = await listCampaigns(s.w.ctx, { limit: 1, cursor }, codec);
+      seen.push(...result.data.map((c) => c.id));
+      if (result.next_cursor === null) break;
+      cursor = result.next_cursor;
+    }
+    expect([...seen].sort()).toEqual([...ids].sort());
+    expect(new Set(seen).size).toBe(3);
+  });
+
+  it('un curseur fabriqué à la main (même bien formé, non signé) est refusé : 400 validation_failed sur « cursor »', async () => {
+    const { s } = await same(2);
+    const forged = Buffer.from(
+      JSON.stringify({ created_at: '2026-10-01T00:00:00.000Z', id: s.id }),
+    ).toString('base64url');
+    const error = await listCampaigns(s.w.ctx, { cursor: forged }, codec).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(AppError);
+    expect(error).toMatchObject({
+      code: 'validation_failed',
+      status: 400,
+      opts: { errors: [{ field: 'cursor' }] },
+    });
+  });
+
+  it('un curseur légitime dont on modifie un caractère est refusé', async () => {
+    const { s } = await same(3);
+    const page = await listCampaigns(s.w.ctx, { limit: 1 }, codec);
+    const token = page.next_cursor ?? '';
+    expect(token).not.toBe('');
+    const tampered = `${token.slice(0, -2)}${token.endsWith('AA') ? 'BB' : 'AA'}`;
+    await expect(listCampaigns(s.w.ctx, { cursor: tampered }, codec)).rejects.toMatchObject({
+      code: 'validation_failed',
+    });
+  });
+
+  it('un curseur illisible ou d’une autre forme est refusé sans exception inattendue', async () => {
+    const { s } = await same(1);
+    for (const cursor of [
+      '%%%',
+      'ok.',
+      'ok.e30',
+      `ok.${Buffer.from('[1]').toString('base64url')}`,
+    ]) {
+      await expect(listCampaigns(s.w.ctx, { cursor }, codec)).rejects.toMatchObject({
+        code: 'validation_failed',
+      });
+    }
   });
 });

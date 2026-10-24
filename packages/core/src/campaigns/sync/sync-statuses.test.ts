@@ -163,6 +163,25 @@ describe('EC-META-08 — Meta fait foi pour le statut', () => {
     );
   });
 
+  it('EC-META-08 : pub supprimée chez Meta PENDANT LA VÉRIFICATION : in_review → stopped, historique conservé, plus relue ensuite', async () => {
+    const s = await syncWorld();
+    expect(rowOf(s.w.db, s.id).status).toBe('in_review');
+    s.fake.simulateRemoteStatus(s.refs, { status: 'stopped', rawStatus: 'DELETED' });
+    const first = await syncCampaignStatuses(s.ctxAt(15), s.deps());
+    expect(first).toMatchObject({ changed: 1, journaled: 0 });
+    expect(rowOf(s.w.db, s.id).status).toBe('stopped');
+    expect(events(s).map((e) => e.status)).toEqual(
+      expect.arrayContaining(['in_review', 'stopped']),
+    );
+    expect(events(s, 'poll')).toMatchObject([
+      { status: 'stopped', payload: { event: 'stop', from: 'in_review', raw_status: 'DELETED' } },
+    ]);
+    // Arrêtée : la passe suivante ne la relit plus (aucun appel inutile à Meta).
+    const { connector, calls } = counting(s);
+    await syncCampaignStatuses(s.ctxAt(30), s.deps({ connector }));
+    expect(calls).toEqual([]);
+  });
+
   it('paiement refusé chez Meta (PENDING_BILLING_INFO) : → stopped ; la relance reste une action du client', async () => {
     const s = await syncWorld();
     rowOf(s.w.db, s.id).status = 'active';

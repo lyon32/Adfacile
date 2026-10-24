@@ -187,7 +187,7 @@ class Query implements PromiseLike<Result> {
   private ranged = false;
   private wantsCount = false;
   private headOnly = false;
-  private sort: { column: string; ascending: boolean; nullsFirst: boolean } | undefined;
+  private sorts: { column: string; ascending: boolean; nullsFirst: boolean }[] = [];
 
   constructor(
     private readonly db: MemoryDb,
@@ -259,7 +259,7 @@ class Query implements PromiseLike<Result> {
   order(column?: string, options?: { ascending?: boolean; nullsFirst?: boolean }): this {
     if (column !== undefined) {
       const ascending = options?.ascending !== false;
-      this.sort = { column, ascending, nullsFirst: options?.nullsFirst ?? !ascending };
+      this.sorts.push({ column, ascending, nullsFirst: options?.nullsFirst ?? !ascending });
     }
     return this;
   }
@@ -326,8 +326,13 @@ class Query implements PromiseLike<Result> {
       } else if (this.op === 'delete') {
         for (const row of matching) rows.splice(rows.indexOf(row), 1);
       }
-      const ordered =
-        this.sort === undefined ? matching : [...matching].sort((a, b) => compare(a, b, this.sort));
+      const ordered = [...matching].sort((a, b) => {
+        for (const sort of this.sorts) {
+          const result = compare(a, b, sort);
+          if (result !== 0) return result;
+        }
+        return 0;
+      });
       const cap = this.ranged ? this.max : Math.min(this.max, this.db.maxRows ?? Infinity);
       total = ordered.length;
       affected = ordered.slice(this.from, this.from + cap);

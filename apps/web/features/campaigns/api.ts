@@ -164,16 +164,32 @@ export const REFRESH_WAIT_MAX_MS = 120_000;
  */
 export function isRefreshPending(
   requestedAt: string | null,
-  stats: { synced_at: string | null; sync_error: string | null } | undefined,
+  stats: RefreshStats | undefined,
   nowMs: number,
 ): boolean {
   if (requestedAt === null) return false;
   const requested = Date.parse(requestedAt);
   if (Number.isNaN(requested)) return false;
   if (nowMs - requested >= REFRESH_WAIT_MAX_MS) return false;
-  if (stats?.sync_error !== null && stats?.sync_error !== undefined) return false;
-  const synced = stats?.synced_at == null ? Number.NEGATIVE_INFINITY : Date.parse(stats.synced_at);
-  return !(synced >= requested);
+  return isAwaitingCopy(requestedAt, stats);
+}
+
+export interface RefreshStats {
+  synced_at: string | null;
+  sync_error: string | null;
+}
+
+/** Sans horloge : la copie demandée n'est ni arrivée ni en échec. Le délai maximum est géré à part (minuterie de l'écran). */
+export function isAwaitingCopy(
+  requestedAt: string | null,
+  stats: RefreshStats | undefined,
+): boolean {
+  if (requestedAt === null) return false;
+  const requested = Date.parse(requestedAt);
+  if (Number.isNaN(requested)) return false;
+  if (stats !== undefined && stats.sync_error !== null) return false;
+  const synced = stats?.synced_at ?? null;
+  return synced === null || Date.parse(synced) < requested;
 }
 
 export const qk = {

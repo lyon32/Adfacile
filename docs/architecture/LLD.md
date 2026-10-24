@@ -508,7 +508,7 @@ export async function onPlatformStatus(svc: ServiceCtx, evt: PlatformStatusEvent
 const CAMPAIGN_TRANSITIONS = {
   draft:      ['publishing'],
   publishing: ['in_review', 'error'],
-  in_review:  ['active', 'rejected', 'paused'],
+  in_review:  ['active', 'rejected', 'paused', 'stopped'],   // `stopped` : supprimée chez Meta ou paiement refusé pendant la vérification (S17, EC-META-08)
   active:     ['paused', 'ended', 'stopped', 'in_review'],   // une modification peut relancer la vérification
   paused:     ['active', 'ended', 'stopped'],
   rejected:   ['publishing', 'stopped'],                     // republication après correction
@@ -518,7 +518,7 @@ const CAMPAIGN_TRANSITIONS = {
 } as const satisfies Record<CampaignStatus, readonly CampaignStatus[]>;
 ```
 
-Table finale : **18 transitions** sur 9 états × 12 événements (108 paires, 90 interdites), répétées dans le déclencheur SQL `private.guard_campaign_status`. Décisions du 16/10/2026 : `stopped → active` existe (événement `recover`), déclenché par la **relance du client** (route `relaunch`, S16) après qu'il a réglé sa facture ou alimenté ses fonds chez Meta ; ce n'est pas une détection automatique, S17 se borne à afficher l'état arrêté et à guider le client. `rejected → publishing` : une campagne refusée repart vers « Publication ».
+Table finale : **19 transitions** sur 9 états × 12 événements (108 paires, 89 interdites), répétées dans le déclencheur SQL `private.guard_campaign_status` (migration 0010, remplacée par la migration 0016 qui ajoute `in_review → stopped`, décision de S17 : une pub supprimée chez Meta pendant la vérification passe à `stopped`, historique conservé). Décisions du 16/10/2026 : `stopped → active` existe (événement `recover`), déclenché par la **relance du client** (route `relaunch`, S16) après qu'il a réglé sa facture ou alimenté ses fonds chez Meta ; ce n'est pas une détection automatique, S17 se borne à afficher l'état arrêté et à guider le client. `rejected → publishing` : une campagne refusée repart vers « Publication ».
 
 `publishCampaign`, dans l'ordre :
 1. Contrôles : rôle, espace modifiable, Page active dans la formule, connexion Meta valide, responsabilité acceptée (première fois).

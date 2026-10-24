@@ -4,6 +4,7 @@
 import { createDraft, listCampaigns } from '@pubeka/core';
 import { api } from '../../../../../../server/http/routes';
 import { createCampaignSchema, listCampaignsQuery } from '../../../campaigns/schemas';
+import { cursorCodec } from '../../../campaigns/services';
 
 export const POST = api(
   {
@@ -27,11 +28,10 @@ export const GET = api(
   { auth: 'member', rateLimit: 'read', query: listCampaignsQuery },
   async (ctx, { query }) => ({
     status: 200,
-    body: await listCampaigns(ctx, {
-      status: query.status,
-      pageId: query.page_id,
-      limit: query.limit,
-      cursor: query.cursor,
-    }),
+    body: await listCampaigns(
+      ctx,
+      { status: query.status, pageId: query.page_id, limit: query.limit, cursor: query.cursor },
+      cursorCodec(),
+    ),
   }),
 );

@@ -529,7 +529,13 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Liste des campagnes */
+        /**
+         * Liste des campagnes
+         * @description Tout tri du plus récent au plus ancien, sur la clé (`created_at`, `id`) : deux campagnes créées au même instant ne sont jamais
+         *     sautées d'une page à l'autre. `next_cursor` est un curseur OPAQUE ET SIGNÉ (HMAC-SHA256 avec `APP_SIGNING_SECRET`) : un curseur
+         *     falsifié, modifié ou illisible est refusé par `400 validation_failed` (champ `cursor`, code `invalid_cursor`) ; le client ne
+         *     le construit jamais.
+         */
         get: operations["listCampaigns"];
         put?: never;
         /**
@@ -3869,6 +3875,7 @@ export interface operations {
                     "application/json": components["schemas"]["CampaignList"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
         };
     };

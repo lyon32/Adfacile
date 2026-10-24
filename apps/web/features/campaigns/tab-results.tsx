@@ -8,7 +8,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { useEffect, useState, type ReactNode } from 'react';
 import { ApiError } from '../../lib/api';
 import {
-  isRefreshPending,
+  isAwaitingCopy,
   REFRESH_WAIT_MAX_MS,
   useCampaignStats,
   useRefreshStats,
@@ -71,7 +71,7 @@ export function ResultsTab({
     );
   }
 
-  const waiting = !expired && isRefreshPending(requestedAt, data, Date.now());
+  const waiting = !expired && isAwaitingCopy(requestedAt, data);
   const failure = refresh.isError ? controlFailureOf(refresh.error) : null;
   const notPublished =
     refresh.error instanceof ApiError &&

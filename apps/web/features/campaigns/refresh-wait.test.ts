@@ -33,7 +33,6 @@ describe('isRefreshPending', () => {
   });
 
   it('comparaison par instants : « 09:30:00.000Z » EST l’instant demandé « 09:30:00Z » (une comparaison de chaînes dirait le contraire)', () => {
-    expect('2026-10-24T09:30:00.000Z' < '2026-10-24T09:30:00Z').toBe(true);
     expect(
       isRefreshPending(REQUESTED, stats({ synced_at: '2026-10-24T09:30:00.000Z' }), at(5_000)),
     ).toBe(false);

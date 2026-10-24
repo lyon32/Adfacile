@@ -57,7 +57,7 @@ export function SettingsTab({ campaign }: { campaign: Campaign }): ReactNode {
           </div>
         ))}
       </dl>
-      {daily?.local_minor == null ? null : <FxAttributionLink />}
+      {(daily?.local_minor ?? null) === null ? null : <FxAttributionLink />}
       <p className="text-meta text-muted">{t('how_to_change')}</p>
     </Card>
   );

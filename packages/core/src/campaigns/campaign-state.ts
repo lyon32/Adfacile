@@ -46,7 +46,9 @@ type TransitionTable = Readonly<
 export const CAMPAIGN_TRANSITIONS = {
   draft: { publish: 'publishing' },
   publishing: { sent: 'in_review', send_failed: 'error' },
-  in_review: { approve: 'active', refuse: 'rejected', pause: 'paused' },
+  // `stop` pendant la vérification (décision S17, EC-META-08) : la pub est supprimée chez Meta, ou son paiement est refusé, avant
+  // même d'être validée.
+  in_review: { approve: 'active', refuse: 'rejected', pause: 'paused', stop: 'stopped' },
   active: { pause: 'paused', modify: 'in_review', finish: 'ended', stop: 'stopped' },
   paused: { resume: 'active', finish: 'ended', stop: 'stopped' },
   rejected: { publish: 'publishing', stop: 'stopped' },
