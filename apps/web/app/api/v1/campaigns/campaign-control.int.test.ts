@@ -521,7 +521,10 @@ describe('interrupteur de publication réelle (PUBEKA_META_PUBLISH), vraie base 
 
     overrideControlDeps({ ...b.deps, metaPublishEnabled: () => false });
     const version = (await campaignRow(stopped.campaign.id))?.version ?? 0;
-    const relaunched = await relaunch(s, s.owner, stopped.campaign.id, { mode: 'recover', version });
+    const relaunched = await relaunch(s, s.owner, stopped.campaign.id, {
+      mode: 'recover',
+      version,
+    });
     expect(relaunched.status).toBe(503);
     expect((await problemOf(relaunched)).meta).toMatchObject({ reason: 'publish_disabled' });
     expect(b.fake.resumeAttempts).toBe(0);

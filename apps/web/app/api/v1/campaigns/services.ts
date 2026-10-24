@@ -33,7 +33,21 @@ function createJobEnqueuer(): JobEnqueuer {
 
 /** Lanceur de tâches des routes de lecture (« Actualiser », signal d'un webhook) : celui de `publishDeps`, remplaçable par les tests. */
 export function syncJobs(): JobEnqueuer {
-  return publishDeps().jobs;
+  return syncJobsOverride ?? publishDeps().jobs;
+}
+
+let syncJobsOverride: JobEnqueuer | undefined;
+
+/**
+ * Tests d'intégration seulement : remplace UNIQUEMENT le lanceur de « Actualiser » et du webhook. La publication, elle, garde ses
+ * dépendances normales (la tâche tourne en mode `inline` avec la fausse Meta) : un test qui a besoin d'une campagne déjà envoyée à
+ * Meta ne doit pas remplacer le lanceur de la publication. Refusé en production.
+ */
+export function overrideSyncJobs(jobs: JobEnqueuer | undefined): void {
+  if (getEnv().NEXT_PUBLIC_APP_ENV === 'production') {
+    throw new Error('overrideSyncJobs est réservé aux tests');
+  }
+  syncJobsOverride = jobs;
 }
 
 let publishOverride: PublishCampaignDeps | undefined;
