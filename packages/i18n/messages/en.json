@@ -56,7 +56,10 @@
     "banner": {
       "empty_title": "Your first campaign is waiting",
       "empty_body": "Paste the link to your website or Page: Pubeka prepares the ad.",
-      "empty_cta": "Create a campaign"
+      "empty_cta": "Create a campaign",
+      "stats_title": "Your figures",
+      "active_campaigns": "Active campaigns",
+      "spent_month": "Spent this month"
     },
     "account": {
       "open": "Open the account menu",
@@ -1064,6 +1067,218 @@
           }
         }
       }
+    }
+  },
+  "campaigns": {
+    "status": {
+      "draft": "Draft",
+      "publishing": "Sending to Meta",
+      "in_review": "In review",
+      "active": "Running",
+      "paused": "Paused",
+      "rejected": "Rejected",
+      "ended": "Ended",
+      "stopped": "Stopped",
+      "error": "Error"
+    },
+    "status_message": {
+      "draft": "Not published yet.",
+      "publishing": "Pubeka is sending your ad to Meta.",
+      "in_review": "Meta is reviewing your ad, usually within 24 hours.",
+      "active": "Your ad is live.",
+      "paused": "Paused by you on {date}.",
+      "paused_plain": "Your ad is paused.",
+      "rejected": "Meta rejected your ad.",
+      "ended": "Ended on {date}.",
+      "ended_plain": "Your campaign has ended.",
+      "stopped": "The Meta payment failed. Pay your bill or top up your funds on Meta, then come back here.",
+      "error": "Publishing did not go through."
+    },
+    "fx": {
+      "attribution": "Rates By Exchange Rate API",
+      "unavailable": "Exchange rate unavailable: amounts are shown in dollars."
+    },
+    "result": {
+      "none": "No result yet",
+      "whatsapp_conversation": "{count, plural, one {# WhatsApp message} other {# WhatsApp messages}}",
+      "messenger_conversation": "{count, plural, one {# Messenger message} other {# Messenger messages}}",
+      "instagram_conversation": "{count, plural, one {# Instagram message} other {# Instagram messages}}",
+      "conversation": "{count, plural, one {# conversation} other {# conversations}}",
+      "purchase": "{count, plural, one {# purchase} other {# purchases}}",
+      "lead": "{count, plural, one {# lead} other {# leads}}",
+      "link_click": "{count, plural, one {# click} other {# clicks}}",
+      "post_engagement": "{count, plural, one {# interaction} other {# interactions}}"
+    },
+    "result_each": {
+      "whatsapp_conversation": "that is {amount} per potential customer",
+      "messenger_conversation": "that is {amount} per potential customer",
+      "instagram_conversation": "that is {amount} per potential customer",
+      "conversation": "that is {amount} per potential customer",
+      "purchase": "that is {amount} per purchase",
+      "lead": "that is {amount} per lead",
+      "link_click": "that is {amount} per click",
+      "post_engagement": "that is {amount} per interaction"
+    },
+    "chart": {
+      "empty": "No results in this period.",
+      "date": "Date"
+    },
+    "sync": {
+      "updated": "Updated at {time}.",
+      "rate_limited": "Meta is limiting requests for now: the last figures received stay on screen."
+    },
+    "dashboard": {
+      "summary": {
+        "active": "{count, plural, one {# campaign running} other {# campaigns running}}",
+        "in_review": "{count, plural, one {# in review at Meta} other {# in review at Meta}}",
+        "paused": "{count, plural, one {# paused} other {# paused}}",
+        "stopped": "{count, plural, one {# stopped, to relaunch} other {# stopped, to relaunch}}",
+        "none": "No campaign running for now."
+      },
+      "load_failed": "Could not load your campaigns. Nothing is lost.",
+      "retry": "Try again",
+      "loading": "Loading your campaigns…",
+      "new_campaign": "New campaign",
+      "chart_title": "Results",
+      "chart_value": "Results",
+      "range_label": "Chart period",
+      "range_week": "Week",
+      "range_month": "Month",
+      "table_title": "Your campaigns",
+      "drafts_only": "Your campaigns are drafts: publish one to see its results here.",
+      "col_results": "Result",
+      "col_spent": "Spent",
+      "col_cost": "Cost per result",
+      "none": "—"
+    },
+    "list": {
+      "title": "Campaigns",
+      "new_campaign": "New campaign",
+      "load_failed": "Could not load your campaigns.",
+      "retry": "Try again",
+      "loading": "Loading your campaigns…",
+      "empty_title": "No campaign yet",
+      "empty_body": "Paste your website link to create your first ad."
+    },
+    "page": {
+      "not_found": "This campaign does not exist in this workspace.",
+      "load_failed": "Could not load this campaign.",
+      "back": "All campaigns",
+      "loading": "Loading the campaign…",
+      "platform_meta": "Meta",
+      "pause": "Pause",
+      "resume": "Resume",
+      "relaunch": "Relaunch",
+      "duplicate": "Duplicate",
+      "stopped_title": "Meta stopped your ad: the payment failed.",
+      "stopped_body": "Settle your bill in Meta Ads Manager (bank card, or funds if your account offers them), then relaunch your campaign here.",
+      "read_only": "Your workspace is read-only: you can still pause, but not resume or duplicate.",
+      "tabs_label": "Campaign sections",
+      "tab_results": "Results",
+      "tab_ads": "Ads",
+      "tab_settings": "Settings",
+      "tab_history": "History"
+    },
+    "errors": {
+      "publish_disabled": "Live publishing is turned off for now.",
+      "meta_unreachable": "Meta did not respond.",
+      "meta_known": "Meta refused the request.",
+      "token_expired": "Your Meta connection has expired. Reconnect your account in settings.",
+      "billing_still_failing": "Meta still reports a payment problem.",
+      "payment_method": "There is a problem with your ad account’s payment method.",
+      "stale": "The campaign changed in the meantime. Reload the page and try again.",
+      "invalid_state": "This action is not possible in the campaign’s current state.",
+      "read_only": "Your workspace is read-only.",
+      "page_limit": "This Page is no longer in your plan.",
+      "rate_limited": "Too many requests. Try again in a few minutes.",
+      "unknown": "Something went wrong.",
+      "nothing_changed": "Nothing changed on your campaign."
+    },
+    "confirm": {
+      "resume_title": "Resume delivery?",
+      "resume_body": "Your ad goes live again and Meta starts spending your budget again.",
+      "resume_confirm": "Resume",
+      "recover_title": "Relaunch this campaign?",
+      "recover_body": "Check that your bill is settled at Meta. The campaign goes live again and Meta starts spending your budget again.",
+      "recover_confirm": "Relaunch",
+      "cancel": "Cancel"
+    },
+    "results": {
+      "load_failed": "Could not load the results.",
+      "retry": "Try again",
+      "loading": "Loading the results…",
+      "main_title": "Main result",
+      "spent": "Spent: {amount}",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing…",
+      "never_synced": "No figures from Meta yet.",
+      "updated": "Updated {time}.",
+      "sync_error": {
+        "rate_limited": "Meta is limiting requests: these are the last figures received.",
+        "fx_not_available": "Exchange rate unavailable: the figures are not up to date.",
+        "meta_error": "Meta did not respond: these are the last figures received.",
+        "token_expired": "Your Meta connection has expired: these figures are no longer updated."
+      },
+      "refresh_limited": "You refreshed a moment ago. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
+      "not_published": "This campaign is not at Meta yet.",
+      "chart_label": "Results per day",
+      "chart_value": "Results",
+      "details": "Detailed statistics",
+      "metric_reach": "Reach (sum of days)",
+      "metric_impressions": "Impressions",
+      "metric_clicks": "Clicks",
+      "metric_ctr": "Click-through rate",
+      "metric_cpm": "Cost per 1,000 impressions",
+      "metric_frequency": "Frequency",
+      "reach_note": "Reach adds up the days: a person seen on two days counts twice."
+    },
+    "ads": {
+      "load_failed": "Could not load the ads.",
+      "loading": "Loading the ads…",
+      "empty": "No ads for this campaign.",
+      "ab_note": "A/B test: the winning ad will be shown once per-ad statistics are available.",
+      "no_photo": "No photo",
+      "photo_alt": "Visual of ad {number}",
+      "ad": "Ad",
+      "ad_number": "Ad {number}",
+      "variant": "Variant {variant}",
+      "format": "Format"
+    },
+    "history": {
+      "load_failed": "Could not load the history.",
+      "loading": "Loading the history…",
+      "empty": "Nothing to report yet.",
+      "status": {
+        "publishing": "Publishing started",
+        "in_review": "Sent to Meta, in review",
+        "active": "Running",
+        "paused": "Paused",
+        "rejected": "Rejected by Meta",
+        "ended": "Ended",
+        "stopped": "Stopped",
+        "error": "Publishing failed",
+        "in_process": "Meta is processing the ad",
+        "with_issues": "Meta reports a problem",
+        "meta_status": "Meta reports a status to watch",
+        "other": "Status change"
+      },
+      "source": {
+        "webhook": "Signal from Meta",
+        "poll": "Check at Meta",
+        "user": "You or Pubeka"
+      },
+      "meta_said": "Status at Meta: {status}"
+    },
+    "settings": {
+      "budget": "Budget",
+      "per_day": "{amount} per day",
+      "dates": "Dates",
+      "from_to": "From {from} to {to}",
+      "zone": "Area",
+      "headline": "Headline",
+      "primary_text": "Text",
+      "unknown": "Not set",
+      "how_to_change": "To change a setting of a published campaign, duplicate it: the copy starts again from the preview."
     }
   }
 }
