@@ -100,7 +100,11 @@ export const POST = api(
     if (outcome.recorded > 0) {
       const eventId = webhookEventId(rawBody);
       try {
-        await syncJobs().enqueue('campaign.sync-status', { scope: 'webhook' }, `campaign.sync-status:${eventId}`);
+        await syncJobs().enqueue(
+          'campaign.sync-status',
+          { scope: 'webhook' },
+          `campaign.sync-status:${eventId}`,
+        );
       } catch (error) {
         logger.warn('Webhook Meta : relecture non lancée, la vérification planifiée rattrape', {
           requestId: ctx.requestId,

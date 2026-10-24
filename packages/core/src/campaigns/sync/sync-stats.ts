@@ -48,8 +48,6 @@ export interface StatsSyncReport {
   rateLimited: boolean;
 }
 
-const WATCHED: readonly CampaignStatus[] = ['in_review', 'active', 'paused', 'ended', 'stopped'];
-
 interface Candidate {
   id: string;
   workspace_id: string;
@@ -66,33 +64,46 @@ function addDaysTo(date: string, days: number): string {
   return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 }
 
-/** Une campagne terminée ou arrêtée n'est relue que tant que ses derniers jours peuvent encore bouger. */
-function needsStats(row: Candidate, now: Date): boolean {
-  if (row.status !== 'ended' && row.status !== 'stopped') return true;
-  if (row.stats_synced_at === null) return true;
-  const last = row.end_date ?? row.stats_synced_at.slice(0, 10);
-  return now.toISOString().slice(0, 10) <= addDaysTo(last, SETTLE_DAYS);
-}
-
 async function selectCandidates(ctx: ServiceCtx, limit: number): Promise<Candidate[]> {
-  const rows = unwrap<Candidate[]>(
-    await ctx.svc
+  // Tri et limite DANS la base (jamais copiées d'abord, puis les plus anciennes) : un lot lu puis trié en mémoire laisserait de côté
+  // celles qui attendent le plus. Trois requêtes simples, fusionnées (les `limit` premières de la réunion sont parmi les `limit`
+  // premières de chaque requête) :
+  //  - celles qui diffusent ou attendent la relecture : toujours ;
+  //  - les terminées ou arrêtées jamais copiées : une fois ;
+  //  - les terminées ou arrêtées dont la date de fin est dans les 2 derniers jours : leurs derniers jours peuvent encore bouger.
+  // Une terminée ou arrêtée sans date de fin n'est copiée qu'une fois (pas de fenêtre qui glisse à chaque copie).
+  const today = ctx.now().toISOString().slice(0, 10);
+  const settleCutoff = addDaysTo(today, -SETTLE_DAYS);
+  const ordered = (statuses: readonly CampaignStatus[]) =>
+    ctx.svc
       .from('campaigns')
       .select(
         'id, workspace_id, status, end_date, stats_synced_at, meta_campaign_id, ad_account_id',
       )
-      .in('status', [...WATCHED])
-      .limit(1000),
-  )
-    .map((row) => ({ ...row, stats_synced_at: row.stats_synced_at ?? null }))
-    .filter((row) => row.meta_campaign_id !== null && needsStats(row, ctx.now()));
-  rows.sort((a, b) => {
+      .in('status', [...statuses])
+      .not('meta_campaign_id', 'is', null)
+      .order('stats_synced_at', { ascending: true, nullsFirst: true });
+  const [live, neverCopied, settling] = await Promise.all([
+    ordered(['in_review', 'active', 'paused']).limit(limit),
+    ordered(['ended', 'stopped']).is('stats_synced_at', null).limit(limit),
+    ordered(['ended', 'stopped']).gte('end_date', settleCutoff).limit(limit),
+  ]);
+  const seen = new Set<string>();
+  const merged: Candidate[] = [];
+  for (const result of [live, neverCopied, settling]) {
+    for (const row of unwrap<Candidate[]>(result)) {
+      if (seen.has(row.id)) continue;
+      seen.add(row.id);
+      merged.push({ ...row, stats_synced_at: row.stats_synced_at ?? null });
+    }
+  }
+  merged.sort((a, b) => {
     if (a.stats_synced_at === b.stats_synced_at) return 0;
     if (a.stats_synced_at === null) return -1;
     if (b.stats_synced_at === null) return 1;
-    return a.stats_synced_at < b.stats_synced_at ? -1 : 1;
+    return Date.parse(a.stats_synced_at) - Date.parse(b.stats_synced_at);
   });
-  return rows.slice(0, limit);
+  return merged.slice(0, limit);
 }
 
 /** Taux frais (moins de 48 h) de la monnaie du compte, ou `null` : jamais un taux périmé ou par défaut. */

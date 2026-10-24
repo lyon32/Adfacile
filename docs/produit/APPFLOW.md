@@ -413,6 +413,7 @@ stateDiagram-v2
   Publication --> Erreur : échec d'envoi
   Vérification --> EnDiffusion : validée
   Vérification --> Refusée : refusée par Meta
+  Vérification --> Arrêtée : supprimée chez Meta ou paiement refusé pendant la vérification
   Refusée --> Publication : corrigée et republiée (sans quota), puis Vérification
   EnDiffusion --> EnPause : Mettre en pause
   EnPause --> EnDiffusion : Reprendre

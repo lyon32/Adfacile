@@ -163,6 +163,25 @@ describe('EC-META-08 — Meta fait foi pour le statut', () => {
     );
   });
 
+  it('EC-META-08 : pub supprimée chez Meta PENDANT LA VÉRIFICATION : in_review → stopped, historique conservé, plus relue ensuite', async () => {
+    const s = await syncWorld();
+    expect(rowOf(s.w.db, s.id).status).toBe('in_review');
+    s.fake.simulateRemoteStatus(s.refs, { status: 'stopped', rawStatus: 'DELETED' });
+    const first = await syncCampaignStatuses(s.ctxAt(15), s.deps());
+    expect(first).toMatchObject({ changed: 1, journaled: 0 });
+    expect(rowOf(s.w.db, s.id).status).toBe('stopped');
+    expect(events(s).map((e) => e.status)).toEqual(
+      expect.arrayContaining(['in_review', 'stopped']),
+    );
+    expect(events(s, 'poll')).toMatchObject([
+      { status: 'stopped', payload: { event: 'stop', from: 'in_review', raw_status: 'DELETED' } },
+    ]);
+    // Arrêtée : la passe suivante ne la relit plus (aucun appel inutile à Meta).
+    const { connector, calls } = counting(s);
+    await syncCampaignStatuses(s.ctxAt(30), s.deps({ connector }));
+    expect(calls).toEqual([]);
+  });
+
   it('paiement refusé chez Meta (PENDING_BILLING_INFO) : → stopped ; la relance reste une action du client', async () => {
     const s = await syncWorld();
     rowOf(s.w.db, s.id).status = 'active';
@@ -305,5 +324,54 @@ describe('Lot borné', () => {
     const report = await syncCampaignStatuses(s.ctxAt(15), s.deps(), { limit: 1 });
     expect(report.scanned).toBe(1);
     expect(MIN).toBe(60_000);
+  });
+});
+
+describe('Candidats : le tri et la limite se font DANS la base (jamais en mémoire sur un lot déjà tronqué)', () => {
+  const RECENT = '2026-10-12T08:30:00.000Z';
+
+  /** `count` copies de la campagne publiée, toutes déjà synchronisées récemment ; la dernière ligne est la cible, jamais synchronisée. */
+  async function crowded(
+    count: number,
+  ): Promise<{ s: SyncWorld; target: string; fillers: string[] }> {
+    const s = await syncWorld();
+    const original = rowOf(s.w.db, s.id);
+    original.status_synced_at = RECENT;
+    const fillers: string[] = [];
+    for (let i = 0; i < count; i += 1) {
+      const id = s.w.db.nextId();
+      fillers.push(id);
+      s.w.db.rows('campaigns').push({ ...original, id, status_synced_at: RECENT });
+    }
+    const target = s.w.db.nextId();
+    s.w.db.rows('campaigns').push({ ...original, id: target, status_synced_at: null });
+    return { s, target, fillers };
+  }
+
+  it('au-delà de 1 000 campagnes, la jamais synchronisée passe en premier même si elle est la dernière ligne', async () => {
+    const { s, target } = await crowded(1005);
+    const report = await syncCampaignStatuses(s.ctxAt(15), s.deps(), { limit: 1 });
+    expect(report.scanned).toBe(1);
+    expect(rowOf(s.w.db, target).status_synced_at).toBe(s.ctxAt(15).now().toISOString());
+  });
+
+  it('ordre : jamais synchronisées d’abord, puis les plus anciennes', async () => {
+    const s = await syncWorld();
+    const original = rowOf(s.w.db, s.id);
+    const ids = [
+      '2026-10-12T08:00:00.000Z',
+      '2026-10-12T06:00:00.000Z',
+      '2026-10-12T07:00:00.000Z',
+    ].map((at) => {
+      const id = s.w.db.nextId();
+      s.w.db.rows('campaigns').push({ ...original, id, status_synced_at: at });
+      return id;
+    });
+    original.status_synced_at = '2026-10-12T09:00:00.000Z';
+    await syncCampaignStatuses(s.ctxAt(15), s.deps(), { limit: 2 });
+    const synced = ids.filter(
+      (id) => rowOf(s.w.db, id).status_synced_at === s.ctxAt(15).now().toISOString(),
+    );
+    expect(synced).toEqual([ids[1], ids[2]]);
   });
 });

@@ -11,6 +11,8 @@ import {
   type PublishCampaignDeps,
 } from '@pubeka/core';
 import { getEnv } from '@pubeka/shared';
+import type { ListCursorCodec } from '@pubeka/core';
+import { createCursorCodec } from '../../../../server/http/cursor-codec';
 import { createJobDispatcher, type JobDispatcher } from '@pubeka/jobs';
 
 let deps: ProposalDeps | undefined;
@@ -29,6 +31,11 @@ function createJobEnqueuer(): JobEnqueuer {
       await dispatcher.dispatch(taskId, payload, { idempotencyKey });
     },
   };
+}
+
+/** Codec des curseurs de liste : signé avec `APP_SIGNING_SECRET` (le même secret que le `state` de connexion Meta, ENV_SETUP). */
+export function cursorCodec(): ListCursorCodec {
+  return createCursorCodec(getEnv().APP_SIGNING_SECRET);
 }
 
 /** Lanceur de tâches des routes de lecture (« Actualiser », signal d'un webhook) : celui de `publishDeps`, remplaçable par les tests. */

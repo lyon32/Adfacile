@@ -40,6 +40,18 @@ describe('decideStatusEvent — TR-PLA-05 : Meta fait foi', () => {
     ['active', remote('in_review', 'IN_PROCESS'), 'modify', 'Meta relit une modification'],
     ['in_review', remote('rejected', 'DISAPPROVED'), 'refuse', 'refusée par Meta'],
     ['active', remote('stopped', 'DELETED'), 'stop', 'EC-META-08 : supprimée chez Meta → arrêtée'],
+    [
+      'in_review',
+      remote('stopped', 'DELETED'),
+      'stop',
+      'EC-META-08 : supprimée chez Meta PENDANT la vérification → arrêtée',
+    ],
+    [
+      'in_review',
+      remote('error', 'PENDING_BILLING_INFO'),
+      'stop',
+      'paiement refusé pendant la vérification',
+    ],
     ['paused', remote('stopped', 'ARCHIVED'), 'stop', 'archivée chez Meta → arrêtée'],
     ['rejected', remote('stopped', 'DELETED'), 'stop', 'refusée puis supprimée'],
     [
@@ -90,12 +102,8 @@ describe('decideStatusEvent — TR-PLA-05 : Meta fait foi', () => {
   });
 
   it('une transition que la machine interdit n’est jamais proposée (« not_allowed »)', () => {
-    // active ne peut pas devenir « rejected » ; in_review ne peut pas devenir « stopped ».
+    // active ne peut pas devenir « rejected » ; in_review ne peut pas devenir « ended ».
     expect(decide('active', remote('rejected', 'DISAPPROVED'))).toEqual({
-      event: null,
-      reason: 'not_allowed',
-    });
-    expect(decide('in_review', remote('stopped', 'DELETED'))).toEqual({
       event: null,
       reason: 'not_allowed',
     });

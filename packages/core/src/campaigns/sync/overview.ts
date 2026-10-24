@@ -6,6 +6,7 @@ import { AppError } from '@pubeka/contracts';
 import { unwrap } from '@pubeka/db';
 import { calendarDateIn } from '@pubeka/shared';
 import type { MemberCtx } from '../../context';
+import type { CampaignStatus } from '../campaign-state';
 import { loadCostContext } from '../cost-context';
 import { resultKindOf, type ResultKind } from './result-kind';
 import {
@@ -64,6 +65,67 @@ function addDays(date: string, days: number): string {
   return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 }
 
+/** Taille d'une page de lecture : au plus le plafond de lignes d'une réponse de la base (PostgREST `max-rows`, 1 000 par défaut). */
+const PAGE = 1000;
+
+/**
+ * Lignes de statistiques de TOUT l'espace entre deux dates, lues PAR PAGES : une lecture sans pagination serait coupée en silence au
+ * plafond de lignes de la base et fausserait le dépensé du mois. Ordre stable (date, campagne) pour que les pages ne se chevauchent pas.
+ */
+async function readWindowRows(
+  ctx: MemberCtx,
+  from: string,
+  to: string,
+): Promise<WorkspaceStatsRow[]> {
+  const all: WorkspaceStatsRow[] = [];
+  for (let start = 0; ; start += PAGE) {
+    const page = unwrap<WorkspaceStatsRow[]>(
+      await ctx.db
+        .from('stats_daily')
+        .select(
+          'campaign_id, date, spend_usd_cents, impressions, reach, clicks, results, result_type',
+        )
+        .eq('workspace_id', ctx.workspace.id)
+        .is('ad_id', null)
+        .gte('date', from)
+        .lte('date', to)
+        .order('date', { ascending: true })
+        .order('campaign_id', { ascending: true })
+        .range(start, start + PAGE - 1),
+    );
+    all.push(...page);
+    if (page.length < PAGE) return all;
+  }
+}
+
+/** Compte les campagnes par statut AVEC `COUNT` dans la base : exact quel que soit le nombre de campagnes (le tableau n'en montre que 100). */
+async function countByStatus(ctx: MemberCtx): Promise<OverviewView['counts']> {
+  const count = async (statuses?: readonly CampaignStatus[]): Promise<number> => {
+    let query = ctx.db
+      .from('campaigns')
+      .select('id', { count: 'exact', head: true })
+      .eq('workspace_id', ctx.workspace.id);
+    if (statuses !== undefined) query = query.in('status', [...statuses]);
+    const result = await query;
+    if (result.error !== null) throw new AppError('internal_error', { cause: result.error });
+    return result.count ?? 0;
+  };
+  const [total, active, inReview, paused, stopped] = await Promise.all([
+    count(),
+    count(['active']),
+    count(['in_review', 'publishing']),
+    count(['paused']),
+    count(['stopped']),
+  ]);
+  return {
+    active,
+    in_review: inReview,
+    paused,
+    stopped,
+    other: Math.max(0, total - active - inReview - paused - stopped),
+  };
+}
+
 export async function getOverview(ctx: MemberCtx, range: OverviewRange): Promise<OverviewView> {
   const today = calendarDateIn(ctx.now(), ctx.user.timezone);
   const monthStart = `${today.slice(0, 8)}01`;
@@ -75,23 +137,15 @@ export async function getOverview(ctx: MemberCtx, range: OverviewRange): Promise
       .order('updated_at', { ascending: false })
       .limit(MAX_CAMPAIGNS),
   );
-  const ids = campaigns.map((c) => c.id);
-  const rows: WorkspaceStatsRow[] =
-    ids.length === 0
-      ? []
-      : unwrap<WorkspaceStatsRow[]>(
-          await ctx.db
-            .from('stats_daily')
-            .select(
-              'campaign_id, date, spend_usd_cents, impressions, reach, clicks, results, result_type',
-            )
-            .eq('workspace_id', ctx.workspace.id)
-            .in('campaign_id', ids)
-            .is('ad_id', null)
-            .limit(20_000),
-        );
+  const chartFrom = range === 'week' ? addDays(today, -6) : monthStart;
+  // On ne lit que la période affichée : le plus ancien du début du mois (dépensé du mois) et du début du graphique.
+  const windowStart = chartFrom < monthStart ? chartFrom : monthStart;
+  const rows = await readWindowRows(ctx, windowStart, today);
   const { fx } = await loadCostContext(ctx);
+  const counts = await countByStatus(ctx);
 
+  // Les totaux du tableau ne portent que sur les campagnes affichées ; le dépensé du mois et le graphique, sur TOUT l'espace.
+  const shown = new Set(campaigns.map((c) => c.id));
   const byCampaign = new Map<string, WorkspaceStatsRow[]>();
   for (const row of rows) {
     const list = byCampaign.get(row.campaign_id) ?? [];
@@ -99,21 +153,10 @@ export async function getOverview(ctx: MemberCtx, range: OverviewRange): Promise
     byCampaign.set(row.campaign_id, list);
   }
 
-  const counts = { active: 0, in_review: 0, paused: 0, stopped: 0, other: 0 };
-  for (const campaign of campaigns) {
-    if (campaign.status === 'active') counts.active += 1;
-    else if (campaign.status === 'in_review' || campaign.status === 'publishing')
-      counts.in_review += 1;
-    else if (campaign.status === 'paused') counts.paused += 1;
-    else if (campaign.status === 'stopped') counts.stopped += 1;
-    else counts.other += 1;
-  }
-
   const spentMonth = rows
     .filter((row) => row.date >= monthStart && row.date <= today)
     .reduce((sum, row) => sum + row.spend_usd_cents, 0);
 
-  const chartFrom = range === 'week' ? addDays(today, -6) : monthStart;
   const perDay = new Map<string, { results: number; spend: number }>();
   for (let day = chartFrom; day <= today; day = addDays(day, 1))
     perDay.set(day, { results: 0, spend: 0 });
@@ -143,7 +186,7 @@ export async function getOverview(ctx: MemberCtx, range: OverviewRange): Promise
       spend_usd_cents: v.spend,
     })),
     campaigns: campaigns.map((campaign) => {
-      const totals = summarize(byCampaign.get(campaign.id) ?? []);
+      const totals = summarize(shown.has(campaign.id) ? (byCampaign.get(campaign.id) ?? []) : []);
       return {
         id: campaign.id,
         name: campaign.name,

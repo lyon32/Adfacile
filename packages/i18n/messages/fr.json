@@ -56,7 +56,10 @@
     "banner": {
       "empty_title": "Ta première campagne t’attend",
       "empty_body": "Colle le lien de ton site ou de ta Page : Pubeka prépare la pub.",
-      "empty_cta": "Créer une campagne"
+      "empty_cta": "Créer une campagne",
+      "stats_title": "Tes chiffres",
+      "active_campaigns": "Campagnes actives",
+      "spent_month": "Dépensé ce mois"
     },
     "account": {
       "open": "Ouvrir le menu du compte",
@@ -1064,6 +1067,218 @@
           }
         }
       }
+    }
+  },
+  "campaigns": {
+    "status": {
+      "draft": "Brouillon",
+      "publishing": "Envoi à Meta",
+      "in_review": "En vérification",
+      "active": "En diffusion",
+      "paused": "En pause",
+      "rejected": "Refusée",
+      "ended": "Terminée",
+      "stopped": "Arrêtée",
+      "error": "Erreur"
+    },
+    "status_message": {
+      "draft": "Pas encore publiée.",
+      "publishing": "Pubeka envoie ta pub à Meta.",
+      "in_review": "Meta vérifie ta pub, en général sous 24 heures.",
+      "active": "Ta pub est visible.",
+      "paused": "Mise en pause par toi le {date}.",
+      "paused_plain": "Ta pub est en pause.",
+      "rejected": "Meta a refusé ta pub.",
+      "ended": "Terminée le {date}.",
+      "ended_plain": "Ta campagne est terminée.",
+      "stopped": "Le paiement Meta a échoué. Paie ta facture ou alimente tes fonds sur Meta, puis reviens ici.",
+      "error": "La publication n’a pas abouti."
+    },
+    "fx": {
+      "attribution": "Taux fournis par Exchange Rate API",
+      "unavailable": "Taux de change indisponible : les montants sont affichés en dollars."
+    },
+    "result": {
+      "none": "Pas encore de résultat",
+      "whatsapp_conversation": "{count, plural, one {# message WhatsApp} other {# messages WhatsApp}}",
+      "messenger_conversation": "{count, plural, one {# message Messenger} other {# messages Messenger}}",
+      "instagram_conversation": "{count, plural, one {# message Instagram} other {# messages Instagram}}",
+      "conversation": "{count, plural, one {# conversation} other {# conversations}}",
+      "purchase": "{count, plural, one {# achat} other {# achats}}",
+      "lead": "{count, plural, one {# contact} other {# contacts}}",
+      "link_click": "{count, plural, one {# clic} other {# clics}}",
+      "post_engagement": "{count, plural, one {# interaction} other {# interactions}}"
+    },
+    "result_each": {
+      "whatsapp_conversation": "soit {amount} par client potentiel",
+      "messenger_conversation": "soit {amount} par client potentiel",
+      "instagram_conversation": "soit {amount} par client potentiel",
+      "conversation": "soit {amount} par client potentiel",
+      "purchase": "soit {amount} par achat",
+      "lead": "soit {amount} par contact",
+      "link_click": "soit {amount} par clic",
+      "post_engagement": "soit {amount} par interaction"
+    },
+    "chart": {
+      "empty": "Aucun résultat sur cette période.",
+      "date": "Date"
+    },
+    "sync": {
+      "updated": "Mis à jour à {time}.",
+      "rate_limited": "Meta limite les requêtes pour le moment : les derniers chiffres reçus restent affichés."
+    },
+    "dashboard": {
+      "summary": {
+        "active": "{count, plural, one {# campagne en diffusion} other {# campagnes en diffusion}}",
+        "in_review": "{count, plural, one {# en vérification chez Meta} other {# en vérification chez Meta}}",
+        "paused": "{count, plural, one {# en pause} other {# en pause}}",
+        "stopped": "{count, plural, one {# arrêtée à relancer} other {# arrêtées à relancer}}",
+        "none": "Aucune campagne en diffusion pour l’instant."
+      },
+      "load_failed": "Impossible de charger tes campagnes. Rien n’est perdu.",
+      "retry": "Réessayer",
+      "loading": "Chargement de tes campagnes…",
+      "new_campaign": "Nouvelle campagne",
+      "chart_title": "Résultats",
+      "chart_value": "Résultats",
+      "range_label": "Période du graphique",
+      "range_week": "Semaine",
+      "range_month": "Mois",
+      "table_title": "Tes campagnes",
+      "drafts_only": "Tes campagnes sont des brouillons : publie-en une pour voir ses résultats ici.",
+      "col_results": "Résultat",
+      "col_spent": "Dépensé",
+      "col_cost": "Coût par résultat",
+      "none": "—"
+    },
+    "list": {
+      "title": "Campagnes",
+      "new_campaign": "Nouvelle campagne",
+      "load_failed": "Impossible de charger tes campagnes.",
+      "retry": "Réessayer",
+      "loading": "Chargement de tes campagnes…",
+      "empty_title": "Aucune campagne pour l’instant",
+      "empty_body": "Colle le lien de ton site pour créer ta première pub."
+    },
+    "page": {
+      "not_found": "Cette campagne n’existe pas dans cet espace.",
+      "load_failed": "Impossible de charger cette campagne.",
+      "back": "Toutes les campagnes",
+      "loading": "Chargement de la campagne…",
+      "platform_meta": "Meta",
+      "pause": "Mettre en pause",
+      "resume": "Reprendre",
+      "relaunch": "Relancer",
+      "duplicate": "Dupliquer",
+      "stopped_title": "Meta a arrêté ta pub : le paiement a échoué.",
+      "stopped_body": "Règle ta facture dans le Gestionnaire de publicités de Meta (carte bancaire, ou fonds si ton compte en propose), puis relance ta campagne ici.",
+      "read_only": "Ton espace est en lecture seule : tu peux encore mettre en pause, mais pas reprendre ni dupliquer.",
+      "tabs_label": "Sections de la campagne",
+      "tab_results": "Résultats",
+      "tab_ads": "Pubs",
+      "tab_settings": "Réglages",
+      "tab_history": "Historique"
+    },
+    "errors": {
+      "publish_disabled": "La publication réelle est désactivée pour le moment.",
+      "meta_unreachable": "Meta n’a pas répondu.",
+      "meta_known": "Meta a refusé la demande.",
+      "token_expired": "Ta connexion à Meta a expiré. Reconnecte ton compte dans les réglages.",
+      "billing_still_failing": "Meta signale encore un problème de paiement.",
+      "payment_method": "Le moyen de paiement de ton compte publicitaire pose problème.",
+      "stale": "La campagne a changé entre-temps. Recharge la page puis réessaie.",
+      "invalid_state": "Cette action n’est pas possible dans l’état actuel de la campagne.",
+      "read_only": "Ton espace est en lecture seule.",
+      "page_limit": "Cette Page n’est plus dans ta formule.",
+      "rate_limited": "Trop de demandes. Réessaie dans quelques minutes.",
+      "unknown": "Une erreur est survenue.",
+      "nothing_changed": "Rien n’a changé sur ta campagne."
+    },
+    "confirm": {
+      "resume_title": "Reprendre la diffusion ?",
+      "resume_body": "Ta pub redevient visible et Meta recommence à dépenser ton budget.",
+      "resume_confirm": "Reprendre",
+      "recover_title": "Relancer cette campagne ?",
+      "recover_body": "Vérifie que ta facture est réglée chez Meta. La campagne redevient visible et Meta recommence à dépenser ton budget.",
+      "recover_confirm": "Relancer",
+      "cancel": "Annuler"
+    },
+    "results": {
+      "load_failed": "Impossible de charger les résultats.",
+      "retry": "Réessayer",
+      "loading": "Chargement des résultats…",
+      "main_title": "Résultat principal",
+      "spent": "Dépensé : {amount}",
+      "refresh": "Actualiser",
+      "refreshing": "Actualisation…",
+      "never_synced": "Pas encore de chiffres de Meta.",
+      "updated": "Mis à jour le {time}.",
+      "sync_error": {
+        "rate_limited": "Meta limite les requêtes : ces chiffres sont les derniers reçus.",
+        "fx_not_available": "Taux de change indisponible : les chiffres ne sont pas à jour.",
+        "meta_error": "Meta n’a pas répondu : ces chiffres sont les derniers reçus.",
+        "token_expired": "Ta connexion à Meta a expiré : ces chiffres ne sont plus mis à jour."
+      },
+      "refresh_limited": "Tu as déjà actualisé il y a peu. Réessaie dans {minutes, plural, one {# minute} other {# minutes}}.",
+      "not_published": "Cette campagne n’est pas encore chez Meta.",
+      "chart_label": "Résultats par jour",
+      "chart_value": "Résultats",
+      "details": "Statistiques détaillées",
+      "metric_reach": "Portée (somme des jours)",
+      "metric_impressions": "Impressions",
+      "metric_clicks": "Clics",
+      "metric_ctr": "Taux de clic",
+      "metric_cpm": "Coût pour 1 000 impressions",
+      "metric_frequency": "Fréquence",
+      "reach_note": "La portée additionne les jours : une personne vue deux jours compte deux fois."
+    },
+    "ads": {
+      "load_failed": "Impossible de charger les pubs.",
+      "loading": "Chargement des pubs…",
+      "empty": "Aucune pub pour cette campagne.",
+      "ab_note": "Test A/B : la pub gagnante sera indiquée quand les statistiques par pub seront disponibles.",
+      "no_photo": "Pas de photo",
+      "photo_alt": "Visuel de la pub {number}",
+      "ad": "Pub",
+      "ad_number": "Pub {number}",
+      "variant": "Variante {variant}",
+      "format": "Format"
+    },
+    "history": {
+      "load_failed": "Impossible de charger l’historique.",
+      "loading": "Chargement de l’historique…",
+      "empty": "Rien à signaler pour l’instant.",
+      "status": {
+        "publishing": "Publication lancée",
+        "in_review": "Envoyée à Meta, en vérification",
+        "active": "En diffusion",
+        "paused": "Mise en pause",
+        "rejected": "Refusée par Meta",
+        "ended": "Terminée",
+        "stopped": "Arrêtée",
+        "error": "La publication a échoué",
+        "in_process": "Meta traite la pub",
+        "with_issues": "Meta signale un problème",
+        "meta_status": "Meta signale un état à surveiller",
+        "other": "Changement d’état"
+      },
+      "source": {
+        "webhook": "Signal de Meta",
+        "poll": "Vérification chez Meta",
+        "user": "Toi ou Pubeka"
+      },
+      "meta_said": "Statut chez Meta : {status}"
+    },
+    "settings": {
+      "budget": "Budget",
+      "per_day": "{amount} par jour",
+      "dates": "Dates",
+      "from_to": "Du {from} au {to}",
+      "zone": "Zone",
+      "headline": "Titre",
+      "primary_text": "Texte",
+      "unknown": "Non renseigné",
+      "how_to_change": "Pour changer un réglage d’une campagne publiée, duplique-la : la copie repart de l’aperçu."
     }
   }
 }

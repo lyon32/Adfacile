@@ -294,3 +294,57 @@ describe('À la demande (bouton « Actualiser »)', () => {
     expect(NOW.getTime()).toBeGreaterThan(0);
   });
 });
+
+describe('Candidats : le tri et la limite se font DANS la base (jamais en mémoire sur un lot déjà tronqué)', () => {
+  const RECENT = '2026-10-12T08:30:00.000Z';
+
+  it('au-delà de 1 000 campagnes, la jamais copiée passe en premier même si elle est la dernière ligne', async () => {
+    const s = await syncWorld();
+    const original = rowOf(s.w.db, s.id);
+    original.stats_synced_at = RECENT;
+    for (let i = 0; i < 1005; i += 1) {
+      s.w.db.rows('campaigns').push({ ...original, id: s.w.db.nextId(), stats_synced_at: RECENT });
+    }
+    const target = s.w.db.nextId();
+    s.w.db.rows('campaigns').push({ ...original, id: target, stats_synced_at: null });
+    s.fake.seedStats(s.refs, [day('2026-10-12')]);
+    const report = await syncCampaignStats(s.ctxAt(60), s.deps(), { limit: 1 });
+    expect(report.scanned).toBe(1);
+    expect(rowOf(s.w.db, target).stats_synced_at).toBe(s.ctxAt(60).now().toISOString());
+  });
+
+  it('1 005 campagnes terminées depuis longtemps n’affament pas celles qui diffusent', async () => {
+    const s = await syncWorld();
+    const original = rowOf(s.w.db, s.id);
+    original.status = 'active';
+    original.stats_synced_at = RECENT;
+    for (let i = 0; i < 1005; i += 1) {
+      s.w.db.rows('campaigns').push({
+        ...original,
+        id: s.w.db.nextId(),
+        status: 'ended',
+        end_date: '2026-09-01',
+        stats_synced_at: '2026-09-03T00:00:00.000Z',
+      });
+    }
+    // La campagne qui diffuse est la DERNIÈRE ligne : un lot tronqué en mémoire ne la verrait jamais.
+    const rows = s.w.db.rows('campaigns');
+    rows.push(rows.splice(rows.indexOf(original), 1)[0] ?? original);
+    s.fake.seedStats(s.refs, [day('2026-10-12')]);
+    const report = await syncCampaignStats(s.ctxAt(60), s.deps(), { limit: 5 });
+    expect(report.scanned).toBe(1);
+    expect(rowOf(s.w.db, s.id).stats_synced_at).toBe(s.ctxAt(60).now().toISOString());
+  });
+
+  it('une campagne arrêtée sans date de fin n’est copiée qu’une fois, pas indéfiniment', async () => {
+    const s = await syncWorld();
+    Object.assign(rowOf(s.w.db, s.id), {
+      status: 'stopped',
+      end_date: null,
+      stats_synced_at: RECENT,
+    });
+    expect((await syncCampaignStats(s.ctxAt(60), s.deps())).scanned).toBe(0);
+    rowOf(s.w.db, s.id).stats_synced_at = null;
+    expect((await syncCampaignStats(s.ctxAt(60), s.deps())).scanned).toBe(1);
+  });
+});

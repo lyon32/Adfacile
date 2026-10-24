@@ -86,37 +86,46 @@ async function pendingSignals(ctx: ServiceCtx): Promise<Map<string, string>> {
   return latest;
 }
 
+/** Au plus ce nombre de campagnes « signalées » sont cherchées par identifiant (adresse de requête bornée). */
+const PENDING_IDS_MAX = 100;
+
 async function selectCandidates(
   ctx: ServiceCtx,
   scope: StatusSyncScope,
   limit: number,
 ): Promise<Candidate[]> {
-  const rows = unwrap<Candidate[]>(
-    await ctx.svc
+  // Le TRI et la LIMITE se font dans la base : jamais synchronisées d'abord, puis les plus anciennes (`status_synced_at` croissant,
+  // nulles en premier). Lire un lot puis trier en mémoire laisserait de côté, au-delà de la limite de lignes, exactement celles qui
+  // attendent depuis le plus longtemps. Les campagnes qui ont reçu un signal de Meta passent avant (requête à part, par identifiants).
+  const signals = await pendingSignals(ctx);
+  const ordered = () =>
+    ctx.svc
       .from('campaigns')
       .select('id, workspace_id, status_synced_at, meta_campaign_id, ad_account_id')
       .in('status', [...WATCHED])
-      .limit(1000),
-  )
-    .filter((row) => row.meta_campaign_id !== null)
-    .map((row) => ({ ...row, status_synced_at: row.status_synced_at ?? null }));
-  const signals = await pendingSignals(ctx);
+      .not('meta_campaign_id', 'is', null)
+      .order('status_synced_at', { ascending: true, nullsFirst: true });
+  const clean = (rows: Candidate[]): Candidate[] =>
+    rows.map((row) => ({ ...row, status_synced_at: row.status_synced_at ?? null }));
   const isPending = (row: Candidate): boolean => {
     const signal = signals.get(row.id);
     return signal !== undefined && (row.status_synced_at === null || signal > row.status_synced_at);
   };
-  const chosen = scope === 'webhook' ? rows.filter(isPending) : rows;
-  // D'abord celles qui ont reçu un signal, puis celles jamais synchronisées, puis les plus anciennes.
-  chosen.sort((a, b) => {
-    const pa = isPending(a) ? 0 : 1;
-    const pb = isPending(b) ? 0 : 1;
-    if (pa !== pb) return pa - pb;
-    if (a.status_synced_at === b.status_synced_at) return 0;
-    if (a.status_synced_at === null) return -1;
-    if (b.status_synced_at === null) return 1;
-    return a.status_synced_at < b.status_synced_at ? -1 : 1;
-  });
-  return chosen.slice(0, limit);
+
+  const signalled = [...signals.keys()].slice(0, PENDING_IDS_MAX);
+  const pending =
+    signalled.length === 0
+      ? []
+      : clean(unwrap<Candidate[]>(await ordered().in('id', signalled).limit(limit))).filter(
+          isPending,
+        );
+  if (scope === 'webhook') return pending;
+
+  const seen = new Set(pending.map((row) => row.id));
+  const rest = clean(unwrap<Candidate[]>(await ordered().limit(limit + pending.length))).filter(
+    (row) => !seen.has(row.id),
+  );
+  return [...pending, ...rest].slice(0, limit);
 }
 
 /** Écrit l'heure de dernière synchronisation (sans changer la version : migration 0015). */

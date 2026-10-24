@@ -191,6 +191,7 @@
 - **Livrables** : synchronisation des statuts (webhook + toutes les 15 min) ; statistiques toutes les heures + « Actualiser » ; Realtime vers le cache ; tableau de bord `/` et bandeau ; page de campagne (Résultats, Pubs, Réglages, Historique) ; résultat traduit en argent (F7).
 - **Fait quand** : TR-PLA-05, TR-PLA-06 ; EC-META-08 à 10 ; mise à jour à l'écran sans rechargement (capture avant / après).
 - **Hors périmètre** : Optimiseur (S29).
+- **État (S17)** : Realtime non livré (cookies HttpOnly) ; interrogation à la place (30 s, 3 s après « Actualiser »), secours d'API_SPEC §9. Le livrable « Realtime vers le cache » n'est donc PAS coché ; la migration 0015 publie déjà les tables. Décision de la personne : on garde l'interrogation.
 
 #### S18 · Refus et Modérateur · M · après : S17
 - **But** : un refus expliqué et corrigé en un clic (F4).

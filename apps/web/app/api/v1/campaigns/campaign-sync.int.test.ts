@@ -151,6 +151,50 @@ describeRoute('listCampaigns', {
     expect((await list(s, s.owner, '?cursor=%25%25')).status).toBe(400);
     expect((await list(s, s.owner, '?inconnu=1')).status).toBe(400);
   },
+  extra: {
+    'curseur signé : deux campagnes créées au même instant ne sont pas sautées d’une page à l’autre':
+      async () => {
+        const mine = await seedWorkspace();
+        const at = '2026-10-05T10:00:00.000Z';
+        const inserted = await testServiceClient()
+          .from('campaigns')
+          .insert(
+            [1, 2, 3].map((n) => ({
+              workspace_id: mine.workspace.id,
+              name: `Même instant ${String(n)}`,
+              created_at: at,
+            })),
+          )
+          .select('id');
+        expect(inserted.error).toBeNull();
+        const wanted = (inserted.data ?? []).map((row) => row.id).sort();
+        const seen: string[] = [];
+        let cursor = '';
+        for (let page = 0; page < 5; page += 1) {
+          const res = await list(mine, mine.owner, `?limit=1${cursor}`);
+          expect(res.status).toBe(200);
+          const body = (await json(res)) as { data: { id: string }[]; next_cursor: string | null };
+          seen.push(...body.data.map((c) => c.id));
+          if (body.next_cursor === null) break;
+          cursor = `&cursor=${encodeURIComponent(body.next_cursor)}`;
+        }
+        expect([...seen].sort()).toEqual(wanted);
+      },
+    'curseur falsifié : 400 problem+json validation_failed sur « cursor », aucune ligne renvoyée':
+      async () => {
+        const forged = Buffer.from(
+          JSON.stringify({ created_at: '2020-01-01T00:00:00.000Z', id: randomUUID() }),
+        ).toString('base64url');
+        for (const cursor of [forged, `${forged}.AAAA`, 'a.b.c']) {
+          const res = await list(s, s.owner, `?cursor=${encodeURIComponent(cursor)}`);
+          expect(res.status).toBe(400);
+          expect(res.headers.get('content-type')).toContain('application/problem+json');
+          const problem = (await json(res)) as { code: string; errors?: { field: string }[] };
+          expect(problem.code).toBe('validation_failed');
+          expect(problem.errors?.[0]?.field).toBe('cursor');
+        }
+      },
+  },
 });
 
 describeRoute('getCampaignStats', {

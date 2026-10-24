@@ -34,32 +34,36 @@ function badRequest(field: string, code: string, message: string): AppError {
   return new AppError('validation_failed', { errors: [{ field, code, message }] });
 }
 
-/** Curseur opaque : l'horodatage de création de la dernière ligne. Il ne donne accès à rien (la requête filtre par espace). */
-function encodeCursor(createdAt: string): string {
-  return Buffer.from(JSON.stringify({ c: createdAt }), 'utf8').toString('base64url');
+/** Clé de reprise d'une liste : la dernière ligne lue, sur (created_at, id) pour ne sauter aucune ligne créée au même instant. */
+export interface ListCursorKey {
+  created_at: string;
+  id: string;
 }
 
-function decodeCursor(cursor: string): string {
-  try {
-    const parsed: unknown = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
-    if (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      'c' in parsed &&
-      typeof parsed.c === 'string' &&
-      !Number.isNaN(Date.parse(parsed.c))
-    ) {
-      return parsed.c;
-    }
-  } catch {
-    // Illisible : refusé ci-dessous.
+/**
+ * Scelle et ouvre les curseurs. Le vrai codec (apps/web) signe avec `APP_SIGNING_SECRET` (HMAC-SHA256, comparaison en temps constant,
+ * API_SPEC §8) : `open` renvoie `null` pour tout curseur qui n'a pas été scellé par le serveur (falsifié, modifié, d'une autre sorte).
+ */
+export interface ListCursorCodec {
+  seal(key: ListCursorKey): string;
+  open(token: string): ListCursorKey | null;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Curseur falsifié ou illisible : 400 `validation_failed` sur le champ `cursor` (code de la liste fermée d'API_SPEC §4). */
+function decodeCursor(cursor: string, codec: ListCursorCodec): ListCursorKey {
+  const key = codec.open(cursor);
+  if (key === null || Number.isNaN(Date.parse(key.created_at)) || !UUID.test(key.id)) {
+    throw badRequest('cursor', 'invalid_cursor', 'Curseur invalide');
   }
-  throw badRequest('cursor', 'invalid_format', 'Curseur invalide');
+  return key;
 }
 
 export async function listCampaigns(
   ctx: MemberCtx,
-  input: ListCampaignsInput = {},
+  input: ListCampaignsInput,
+  codec: ListCursorCodec,
 ): Promise<CampaignListView> {
   const limit = input.limit ?? LIST_DEFAULT_LIMIT;
   if (!Number.isInteger(limit) || limit < 1 || limit > LIST_MAX_LIMIT) {
@@ -68,20 +72,43 @@ export async function listCampaigns(
   if (input.status !== undefined && !isCampaignStatus(input.status)) {
     throw badRequest('status', 'invalid_value', 'Statut inconnu');
   }
-  let query = ctx.db
-    .from('campaigns')
-    .select(`${CAMPAIGN_COLUMNS}, created_at`)
-    .eq('workspace_id', ctx.workspace.id);
-  if (input.status !== undefined) query = query.eq('status', input.status);
-  if (input.pageId !== undefined) query = query.eq('page_id', input.pageId);
-  if (input.cursor !== undefined) query = query.lt('created_at', decodeCursor(input.cursor));
-  const rows = unwrap(await query.order('created_at', { ascending: false }).limit(limit + 1));
+  const status = input.status;
+  const pageId = input.pageId;
+  const key = input.cursor === undefined ? null : decodeCursor(input.cursor, codec);
+  const base = () => {
+    let query = ctx.db
+      .from('campaigns')
+      .select(`${CAMPAIGN_COLUMNS}, created_at`)
+      .eq('workspace_id', ctx.workspace.id);
+    if (status !== undefined) query = query.eq('status', status);
+    if (pageId !== undefined) query = query.eq('page_id', pageId);
+    return query;
+  };
+  const newest = (query: ReturnType<typeof base>, count: number) =>
+    query.order('created_at', { ascending: false }).order('id', { ascending: false }).limit(count);
+
+  // Reprise par la clé (created_at, id) : d'abord les lignes du MÊME instant avec un identifiant plus petit, puis les plus anciennes.
+  let rows = unwrap(
+    await newest(
+      key === null ? base() : base().eq('created_at', key.created_at).lt('id', key.id),
+      limit + 1,
+    ),
+  );
+  if (key !== null && rows.length < limit + 1) {
+    const older = unwrap(
+      await newest(base().lt('created_at', key.created_at), limit + 1 - rows.length),
+    );
+    rows = [...rows, ...older];
+  }
   const page = rows.slice(0, limit);
   const costContext = await loadCostContext(ctx);
   const last = page[page.length - 1];
   return {
     data: page.map((row) => toCampaignView(row, costContext)),
-    next_cursor: rows.length > limit && last !== undefined ? encodeCursor(last.created_at) : null,
+    next_cursor:
+      rows.length > limit && last !== undefined
+        ? codec.seal({ created_at: last.created_at, id: last.id })
+        : null,
   };
 }
 

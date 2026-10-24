@@ -23,6 +23,7 @@ const EXPECTED: readonly Row[] = [
   ['in_review', 'approve', 'active'],
   ['in_review', 'refuse', 'rejected'],
   ['in_review', 'pause', 'paused'], // LLD : une pause pendant la vérification
+  ['in_review', 'stop', 'stopped'], // décision S17 : supprimée chez Meta (ou paiement refusé) pendant la vérification, EC-META-08
   ['active', 'pause', 'paused'],
   ['active', 'modify', 'in_review'], // LLD : une modification relance la vérification
   ['active', 'finish', 'ended'],
@@ -86,12 +87,12 @@ describe('machine d’état des campagnes', () => {
     for (const s of CAMPAIGN_STATUSES) expect(canTransition(s, s)).toBe(false);
   });
 
-  it('108 paires (9 états × 12 événements) : 18 autorisées, 90 interdites', () => {
+  it('108 paires (9 états × 12 événements) : 19 autorisées, 89 interdites', () => {
     let allowed = 0;
     for (const from of CAMPAIGN_STATUSES)
       for (const event of CAMPAIGN_EVENTS) if (nextCampaignStatus(from, event).ok) allowed += 1;
     expect([allowed, CAMPAIGN_STATUSES.length * CAMPAIGN_EVENTS.length - allowed]).toEqual([
-      18, 90,
+      19, 89,
     ]);
   });
 
