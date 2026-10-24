@@ -18,6 +18,7 @@ await db.exec(`
   create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
   grant execute on function auth.uid(), auth.jwt() to anon, authenticated, service_role;
   grant usage on schema public to anon, authenticated, service_role;
+  create publication supabase_realtime;
 `);
 const migDir = join(here, '..', 'migrations');
 for (const f of readdirSync(migDir).filter((f) => f.endsWith('.sql') && !f.includes('storage')).sort()) {
@@ -155,6 +156,14 @@ await check('l’historique d’une campagne n’est lisible que par les membres
 await check('index créés : tableau de bord et historique', async () => {
   const names = (await q(`select indexname from pg_indexes where schemaname='public'`)).map((r) => r.indexname);
   return ['stats_daily_workspace_date_idx', 'campaign_status_events_campaign_idx', 'campaign_status_events_webhook_idx'].every((n) => names.includes(n));
+});
+
+// Défaut trouvé en vérification sur la vraie pile : publier une table sans clé primaire fait échouer tout UPDATE.
+await check('stats_daily publiée en Realtime : une ligne reste modifiable (identité de réplication)', async () => {
+  const id = await newCampaign();
+  await db.query(`insert into public.stats_daily (workspace_id,campaign_id,date,results) values ($1,$2,'2026-10-20',1)`, [WS1, id]);
+  await db.query(`update public.stats_daily set results = 5 where campaign_id=$1`, [id]);
+  return (await q(`select results from public.stats_daily where campaign_id=$1`, [id]))[0].results === 5;
 });
 
 for (const r of results) console.log(r);
