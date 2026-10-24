@@ -233,7 +233,7 @@ describe('Tableau de bord (APPFLOW §7) et bandeau (PRD §10.1)', () => {
     expect(view.campaigns[0]).toMatchObject({
       id: s.id,
       status: 'active',
-      results: 141,
+      results: 42,
       result_kind: 'whatsapp_conversation',
     });
     // Mois sélectionné : du 1er à aujourd'hui (fuseau de la personne).
@@ -401,5 +401,71 @@ describe('Liste, historique et publicités', () => {
     expect(ads.ab_test).toBe(false);
     const other: MemberCtx = { ...s.w.ctx, workspace: { ...s.w.ctx.workspace, id: OTHER_W } };
     await expect(listCampaignAds(other, s.id)).rejects.toMatchObject({ code: 'not_found' });
+  });
+});
+
+describe('Tableau de bord : exact au-delà de 100 campagnes et de 1 000 lignes', () => {
+  it('les compteurs de statut viennent d’un COUNT en base : 105 campagnes en diffusion = 105, pas 100', async () => {
+    const s = await syncWorld();
+    const original = rowOf(s.w.db, s.id);
+    original.status = 'active';
+    for (let i = 0; i < 104; i += 1) {
+      s.w.db.rows('campaigns').push({ ...original, id: s.w.db.nextId(), updated_at: '2026-10-11' });
+    }
+    const view = await getOverview(s.w.ctx, 'week');
+    expect(view.counts).toEqual({ active: 105, in_review: 0, paused: 0, stopped: 0, other: 0 });
+    expect(view.campaigns).toHaveLength(100);
+  });
+
+  it('dépensé du mois exact même au-delà du plafond de lignes de la base (1 240 lignes, plafond 1 000) : lecture par pages', async () => {
+    const s = await syncWorld();
+    s.w.db.maxRows = 1000;
+    for (let c = 0; c < 40; c += 1) {
+      for (let d = 1; d <= 31; d += 1) {
+        if (d > 12) continue;
+        s.w.db.rows('stats_daily').push({
+          workspace_id: W,
+          campaign_id: `camp-${String(c)}`,
+          ad_id: null,
+          date: `2026-10-${String(d).padStart(2, '0')}`,
+          spend_usd_cents: 100,
+          impressions: 1,
+          reach: 1,
+          clicks: 1,
+          results: 1,
+          result_type: CONV,
+        });
+      }
+    }
+    // 40 campagnes × 12 jours = 480 lignes : on en ajoute pour dépasser 1 000.
+    for (let c = 40; c < 90; c += 1) {
+      for (let d = 1; d <= 12; d += 1) {
+        s.w.db.rows('stats_daily').push({
+          workspace_id: W,
+          campaign_id: `camp-${String(c)}`,
+          ad_id: null,
+          date: `2026-10-${String(d).padStart(2, '0')}`,
+          spend_usd_cents: 100,
+          impressions: 1,
+          reach: 1,
+          clicks: 1,
+          results: 1,
+          result_type: CONV,
+        });
+      }
+    }
+    expect(s.w.db.rows('stats_daily').length).toBe(1080);
+    const view = await getOverview(s.w.ctx, 'month');
+    expect(view.spent_month.usd_cents).toBe(108_000);
+  });
+
+  it('les lignes plus anciennes que le mois et le graphique ne sont pas lues (tableau = période affichée)', async () => {
+    const s = await syncWorld();
+    seed(s, [
+      { date: '2025-01-15', spend: 777_000, results: 500 },
+      { date: '2026-10-11', spend: 3000, results: 22 },
+    ]);
+    const view = await getOverview(s.w.ctx, 'week');
+    expect(view.campaigns[0]).toMatchObject({ results: 22, spend: { usd_cents: 3000 } });
   });
 });

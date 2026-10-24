@@ -7,6 +7,8 @@ export type Row = Record<string, unknown>;
 export interface Result {
   data: unknown;
   error: { code?: string; message: string } | null;
+  /** Rempli par `select(…, { count: 'exact' })` : nombre de lignes qui correspondent, avant `limit` et `range`. */
+  count?: number;
 }
 
 const DEFAULTS: Record<string, () => Row> = {
@@ -79,6 +81,8 @@ export class MemoryDb {
   /** Appelé juste avant chaque mise à jour : permet de simuler une modification concurrente. */
   beforeUpdate: ((table: string, db: MemoryDb) => void) | undefined;
   readonly tables: Record<string, Row[]> = {};
+  /** Comme le plafond de lignes de PostgREST (`max-rows`) : une lecture sans `range` est coupée SILENCIEUSEMENT à ce nombre. */
+  maxRows: number | undefined;
   readonly objects = new Map<string, { bytes: Uint8Array; createdAt: string }>();
   readonly storageCalls: string[] = [];
   /** Fait échouer la prochaine requête sur cette table (`table:op`). */
@@ -179,16 +183,22 @@ class Query implements PromiseLike<Result> {
   private returning = false;
   private mode: 'many' | 'maybe' | 'single' = 'many';
   private max = Infinity;
-  private sort: { column: string; ascending: boolean } | undefined;
+  private from = 0;
+  private ranged = false;
+  private wantsCount = false;
+  private headOnly = false;
+  private sort: { column: string; ascending: boolean; nullsFirst: boolean } | undefined;
 
   constructor(
     private readonly db: MemoryDb,
     private readonly table: string,
   ) {}
 
-  /** Les colonnes demandées ne changent rien en mémoire : toute la ligne est rendue. */
-  select(): this {
+  /** Les colonnes demandées ne changent rien en mémoire : toute la ligne est rendue. `count` et `head` sont pris en compte. */
+  select(_columns?: string, options?: { count?: 'exact'; head?: boolean }): this {
     if (this.op !== 'select') this.returning = true;
+    if (options?.count !== undefined) this.wantsCount = true;
+    if (options?.head === true) this.headOnly = true;
     return this;
   }
   insert(rows: Row | Row[]): this {
@@ -218,11 +228,15 @@ class Query implements PromiseLike<Result> {
     return this;
   }
   gte(column: string, value: unknown): this {
-    this.filters.push((row) => String(row[column]) >= String(value));
+    this.filters.push(
+      (row) => (row[column] ?? null) !== null && String(row[column]) >= String(value),
+    );
     return this;
   }
   lt(column: string, value: unknown): this {
-    this.filters.push((row) => String(row[column]) < String(value));
+    this.filters.push(
+      (row) => (row[column] ?? null) !== null && String(row[column]) < String(value),
+    );
     return this;
   }
   in(column: string, values: unknown[]): this {
@@ -230,11 +244,29 @@ class Query implements PromiseLike<Result> {
     return this;
   }
   lte(column: string, value: unknown): this {
-    this.filters.push((row) => String(row[column]) <= String(value));
+    this.filters.push(
+      (row) => (row[column] ?? null) !== null && String(row[column]) <= String(value),
+    );
     return this;
   }
-  order(column?: string, options?: { ascending?: boolean }): this {
-    if (column !== undefined) this.sort = { column, ascending: options?.ascending !== false };
+  /** Seul `.not(colonne, 'is', null)` (« n'est pas nul ») est pris en charge. */
+  not(column: string, operator: string, value: unknown): this {
+    if (operator !== 'is' || value !== null) throw new Error('not() : seul « is null » est simulé');
+    this.filters.push((row) => (row[column] ?? null) !== null);
+    return this;
+  }
+  /** Comme PostgreSQL : en ordre croissant les valeurs nulles viennent EN DERNIER, sauf `nullsFirst`. */
+  order(column?: string, options?: { ascending?: boolean; nullsFirst?: boolean }): this {
+    if (column !== undefined) {
+      const ascending = options?.ascending !== false;
+      this.sort = { column, ascending, nullsFirst: options?.nullsFirst ?? !ascending };
+    }
+    return this;
+  }
+  range(fromIndex: number, toIndex: number): this {
+    this.from = fromIndex;
+    this.max = toIndex - fromIndex + 1;
+    this.ranged = true;
     return this;
   }
   limit(n: number): this {
@@ -257,6 +289,7 @@ class Query implements PromiseLike<Result> {
     }
     const rows = this.db.rows(this.table);
     let affected: Row[];
+    let total: number | undefined;
     if (this.op === 'insert') {
       this.db.beforeInsert?.(this.table, this.db);
       const list = Array.isArray(this.payload) ? this.payload : [this.payload];
@@ -295,10 +328,18 @@ class Query implements PromiseLike<Result> {
       }
       const ordered =
         this.sort === undefined ? matching : [...matching].sort((a, b) => compare(a, b, this.sort));
-      affected = ordered.slice(0, this.max);
+      const cap = this.ranged ? this.max : Math.min(this.max, this.db.maxRows ?? Infinity);
+      total = ordered.length;
+      affected = ordered.slice(this.from, this.from + cap);
     }
     if ((this.op === 'insert' || this.op === 'update' || this.op === 'delete') && !this.returning) {
       return { data: null, error: null };
+    }
+    if (this.wantsCount && this.op === 'select') {
+      const count = total ?? affected.length;
+      if (this.headOnly) return { data: null, error: null, count };
+      const rowsOut = affected.map((row) => ({ ...row }));
+      return { data: rowsOut, error: null, count };
     }
     const copy = affected.map((row) => ({ ...row }));
     if (this.mode === 'many') return { data: copy, error: null };
@@ -318,8 +359,18 @@ class Query implements PromiseLike<Result> {
   }
 }
 
-function compare(a: Row, b: Row, sort: { column: string; ascending: boolean } | undefined): number {
+function compare(
+  a: Row,
+  b: Row,
+  sort: { column: string; ascending: boolean; nullsFirst: boolean } | undefined,
+): number {
   if (sort === undefined) return 0;
+  const nullA = (a[sort.column] ?? null) === null;
+  const nullB = (b[sort.column] ?? null) === null;
+  if (nullA || nullB) {
+    if (nullA && nullB) return 0;
+    return nullA === sort.nullsFirst ? -1 : 1;
+  }
   const x = a[sort.column] as number | string;
   const y = b[sort.column] as number | string;
   const order = x < y ? -1 : x > y ? 1 : 0;

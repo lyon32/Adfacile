@@ -5,9 +5,15 @@
 import { Button, Card } from '@pubeka/ui';
 import { RefreshCw } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ApiError } from '../../lib/api';
-import { useCampaignStats, useRefreshStats, type CampaignStatus } from './api';
+import {
+  isRefreshPending,
+  REFRESH_WAIT_MAX_MS,
+  useCampaignStats,
+  useRefreshStats,
+  type CampaignStatus,
+} from './api';
 import { controlFailureOf } from './control-errors';
 import { FxAttribution, moneyText, useUiLocale } from './money';
 import { ResultsChart } from './results-chart';
@@ -28,6 +34,17 @@ export function ResultsTab({
   const format = useFormatter();
   const locale = useUiLocale();
   const [requestedAt, setRequestedAt] = useState<string | null>(null);
+  // Délai maximum d'attente : passé ce délai l'écran reprend la main, même sans réponse (se synchronise avec une minuterie extérieure).
+  const [expired, setExpired] = useState(false);
+  useEffect(() => {
+    if (requestedAt === null) return undefined;
+    const timer = setTimeout(() => {
+      setExpired(true);
+    }, REFRESH_WAIT_MAX_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [requestedAt]);
   const stats = useCampaignStats(workspaceId, campaignId, requestedAt);
   const refresh = useRefreshStats(workspaceId, campaignId);
   const data = stats.data;
@@ -54,7 +71,7 @@ export function ResultsTab({
     );
   }
 
-  const waiting = requestedAt !== null && (data.synced_at ?? '') < requestedAt;
+  const waiting = !expired && isRefreshPending(requestedAt, data, Date.now());
   const failure = refresh.isError ? controlFailureOf(refresh.error) : null;
   const notPublished =
     refresh.error instanceof ApiError &&
@@ -90,6 +107,7 @@ export function ResultsTab({
                 onClick={() => {
                   refresh.mutate(undefined, {
                     onSuccess: (done) => {
+                      setExpired(false);
                       setRequestedAt(done.requested_at);
                     },
                   });

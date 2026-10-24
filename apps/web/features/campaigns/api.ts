@@ -154,6 +154,28 @@ export const POLL_IDLE_MS = 30_000;
 export const POLL_WAITING_FAST_MS = 3_000;
 export const POLL_WAITING_SLOW_MS = 10_000;
 
+/** Délai maximum d'attente d'une actualisation demandée : au-delà, l'écran reprend la main (la copie a pu échouer sans le dire). */
+export const REFRESH_WAIT_MAX_MS = 120_000;
+
+/**
+ * Attend-on encore la copie demandée par « Actualiser » ? Non quand elle est arrivée (`synced_at` à l'instant demandé ou après), quand
+ * elle a échoué (`sync_error` : `synced_at` n'avance alors jamais), ou après `REFRESH_WAIT_MAX_MS`. Les dates sont comparées comme des
+ * INSTANTS (`Date.parse`), pas comme du texte.
+ */
+export function isRefreshPending(
+  requestedAt: string | null,
+  stats: { synced_at: string | null; sync_error: string | null } | undefined,
+  nowMs: number,
+): boolean {
+  if (requestedAt === null) return false;
+  const requested = Date.parse(requestedAt);
+  if (Number.isNaN(requested)) return false;
+  if (nowMs - requested >= REFRESH_WAIT_MAX_MS) return false;
+  if (stats?.sync_error !== null && stats?.sync_error !== undefined) return false;
+  const synced = stats?.synced_at == null ? Number.NEGATIVE_INFINITY : Date.parse(stats.synced_at);
+  return !(synced >= requested);
+}
+
 export const qk = {
   overview: (ws: string, range: string) => ['ws', ws, 'overview', range] as const,
   overviewAll: (ws: string) => ['ws', ws, 'overview'] as const,
@@ -195,10 +217,10 @@ export function useCampaignStats(ws: string, id: string, requestedAt: string | n
     staleTime: 10_000,
     refetchOnWindowFocus: true,
     // Une actualisation vient d'être demandée et la copie n'est pas encore arrivée : on regarde de près (3 s) ; sinon un rythme calme.
-    refetchInterval: (query) => {
-      const synced = query.state.data?.synced_at ?? '';
-      return requestedAt !== null && synced < requestedAt ? POLL_WAITING_FAST_MS : POLL_IDLE_MS;
-    },
+    refetchInterval: (query) =>
+      isRefreshPending(requestedAt, query.state.data, Date.now())
+        ? POLL_WAITING_FAST_MS
+        : POLL_IDLE_MS,
   });
 }
 

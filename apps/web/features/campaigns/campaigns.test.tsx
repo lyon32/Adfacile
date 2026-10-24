@@ -616,16 +616,14 @@ describe('Page de campagne — onglet Résultats (F7, TR-PLA-06)', () => {
   it('« Actualiser » lance la copie ; le bouton se bloque tant qu’elle n’est pas arrivée, puis l’écran se met à jour tout seul', async () => {
     const calls = stubApi(
       ROUTES({
-        'POST /c/stats/refresh': json(
-          { status: 'queued', requested_at: '2026-10-24T09:30:00Z' },
-          202,
-        ),
+        'POST /c/stats/refresh': () =>
+          json({ status: 'queued', requested_at: new Date().toISOString() }, 202)(),
         'GET /c/stats': [
           json(stats()),
           json(stats()),
           json(
             stats({
-              synced_at: '2026-10-24T09:31:00Z',
+              synced_at: new Date(Date.now() + 60_000).toISOString(),
               summary: { ...stats().summary, results: 50 },
             }),
           ),
@@ -754,5 +752,95 @@ describe('Page de campagne — Pubs, Réglages, Historique', () => {
       'Changement d’état',
     ]);
     expect(screen.getByText('Statut chez Meta : ACTIVE')).toBeTruthy();
+  });
+});
+
+describe('« Actualiser » : jamais bloqué après un échec ni sans fin (TR-PLA-06, EC-META-10)', () => {
+  const refreshRoutes = (statsAfter: Handler) =>
+    ROUTES({
+      'POST /c/stats/refresh': () =>
+        json({ status: 'queued', requested_at: new Date().toISOString() }, 202)(),
+      'GET /c/stats': [json(stats()), statsAfter],
+    });
+
+  it.each([
+    ['rate_limited', /Meta limite les requêtes : ces chiffres sont les derniers reçus/],
+    ['fx_not_available', /Taux de change indisponible : les chiffres ne sont pas à jour/],
+    ['meta_error', /Meta n’a pas répondu : ces chiffres sont les derniers reçus/],
+    ['token_expired', /Ta connexion à Meta a expiré : ces chiffres ne sont plus mis à jour/],
+  ])(
+    'la copie échoue (%s) : le bouton redevient « Actualiser », la raison s’affiche',
+    async (error, message) => {
+      stubApi(refreshRoutes(json(stats({ sync_error: error }))));
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        mount(page());
+        fireEvent.click(await screen.findByRole('button', { name: 'Actualiser' }));
+        await vi.advanceTimersByTimeAsync(7000);
+        expect(await screen.findByText(message)).toBeTruthy();
+        const button = await screen.findByRole('button', { name: 'Actualiser' });
+        expect(isDisabled(button)).toBe(false);
+        expect(screen.queryByRole('button', { name: 'Actualisation…' })).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it('sans réponse ni erreur : l’attente s’arrête après 2 minutes', async () => {
+    stubApi(refreshRoutes(json(stats())));
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      mount(page());
+      fireEvent.click(await screen.findByRole('button', { name: 'Actualiser' }));
+      expect(isDisabled(await screen.findByRole('button', { name: 'Actualisation…' }))).toBe(true);
+      await vi.advanceTimersByTimeAsync(121_000);
+      expect(isDisabled(await screen.findByRole('button', { name: 'Actualiser' }))).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('Attribution du taux : sous TOUT montant converti, quelle que soit la source (S15b)', () => {
+  it.each(['manual', 'saspay', 'exchangerate-api'])(
+    'source « %s » : le lien est affiché sous le montant converti',
+    async (source) => {
+      stubApi(
+        ROUTES({ 'GET /w/overview?range=week': json(overview({ fx: { ...FX_OK, source } })) }),
+      );
+      mount(<Dashboard workspaceId={WS} canCreate />);
+      expect(
+        await screen.findByRole('link', { name: 'Taux fournis par Exchange Rate API' }),
+      ).toBeTruthy();
+    },
+  );
+
+  it('page de campagne, onglet Résultats : le lien reste affiché avec une autre source', async () => {
+    stubApi(ROUTES({ 'GET /c/stats': json(stats({ fx: { ...FX_OK, source: 'manual' } })) }));
+    mount(page());
+    expect(
+      await screen.findByRole('link', { name: 'Taux fournis par Exchange Rate API' }),
+    ).toBeTruthy();
+  });
+
+  it('onglet Réglages : le budget par jour converti porte l’attribution', async () => {
+    stubApi(ROUTES());
+    mount(page(), 'fr', '?onglet=settings');
+    expect(await screen.findByText(/2\s?400\s?FCFA par jour/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Taux fournis par Exchange Rate API' })).toBeTruthy();
+  });
+
+  it('dollar seul (taux indisponible) : pas de lien, la phrase le dit', async () => {
+    stubApi(
+      ROUTES({
+        'GET /w/overview?range=week': json(
+          overview({ fx: FX_NONE, spent_month: money(6000, null) }),
+        ),
+      }),
+    );
+    mount(<Dashboard workspaceId={WS} canCreate />);
+    expect(await screen.findByText(/Taux de change indisponible/)).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Taux fournis par Exchange Rate API' })).toBeNull();
   });
 });

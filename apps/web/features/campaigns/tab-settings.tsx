@@ -5,7 +5,7 @@ import { Card } from '@pubeka/ui';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import type { Campaign } from '../campaign-wizard/proposal-api';
-import { moneyText, useUiLocale } from './money';
+import { FxAttributionLink, moneyText, useUiLocale } from './money';
 
 function countryName(code: string, locale: string): string {
   try {
@@ -57,6 +57,7 @@ export function SettingsTab({ campaign }: { campaign: Campaign }): ReactNode {
           </div>
         ))}
       </dl>
+      {daily?.local_minor == null ? null : <FxAttributionLink />}
       <p className="text-meta text-muted">{t('how_to_change')}</p>
     </Card>
   );

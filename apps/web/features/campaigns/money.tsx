@@ -42,29 +42,33 @@ export function MoneyStack({
   );
 }
 
-/** Lien d'attribution exigé par ExchangeRate-API partout où un montant converti est affiché. */
+/** Lien d'attribution exigé par ExchangeRate-API sous tout montant converti en monnaie locale. */
+export function FxAttributionLink(): ReactNode {
+  const t = useTranslations('campaigns.fx');
+  return (
+    <p className="text-meta text-muted">
+      <a
+        href="https://www.exchangerate-api.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline underline-offset-2"
+      >
+        {t('attribution')}
+      </a>
+    </p>
+  );
+}
+
+/**
+ * Attribution sous les montants d'un écran : affichée dès qu'un montant est converti (`fx.status === 'ok'`), QUELLE QUE SOIT la source
+ * du taux ; sans taux frais, on dit que le dollar est seul.
+ */
 export function FxAttribution({ fx }: { fx: StatsFx }): ReactNode {
   const t = useTranslations('campaigns.fx');
-  if (fx.status === 'ok' && fx.source === 'exchangerate-api') {
-    return (
-      <p className="text-meta text-muted">
-        <a
-          href="https://www.exchangerate-api.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline underline-offset-2"
-        >
-          {t('attribution')}
-        </a>
-      </p>
-    );
-  }
-  if (fx.status === 'fx_not_available') {
-    return (
-      <p role="status" className="text-meta text-muted">
-        {t('unavailable')}
-      </p>
-    );
-  }
-  return null;
+  if (fx.status === 'ok') return <FxAttributionLink />;
+  return (
+    <p role="status" className="text-meta text-muted">
+      {t('unavailable')}
+    </p>
+  );
 }
