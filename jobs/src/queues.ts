@@ -17,4 +17,5 @@ export const queues = {
     name: 'meta-publish',
     concurrencyLimit: QUEUE_CONCURRENCY['meta-publish'],
   }),
+  metaSync: queue({ name: 'meta-sync', concurrencyLimit: QUEUE_CONCURRENCY['meta-sync'] }),
 } as const;
