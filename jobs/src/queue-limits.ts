@@ -6,6 +6,7 @@ export const QUEUE_NAMES = [
   'media-byteplus-video',
   'agents',
   'meta-publish',
+  'meta-sync',
 ] as const;
 export type QueueName = (typeof QUEUE_NAMES)[number];
 
@@ -17,6 +18,8 @@ export type QueueName = (typeof QUEUE_NAMES)[number];
  * - `agents` : selon la passerelle IA ; 5 pour commencer (à confirmer en S14, mesure réelle).
  * - `meta-publish` : publications chez Meta (S16). 5 en même temps pour rester loin des limites de débit de l'API Meta par compte
  *   publicitaire (à mesurer ; EC-META-10) ; une publication prend quelques secondes à une minute.
+ * - `meta-sync` : lectures chez Meta (S17 : statuts toutes les 15 minutes, statistiques toutes les heures et à la demande). 3 en même
+ *   temps : des LECTURES, séparées des publications pour ne jamais les retarder ; l'arrêt sur limite de débit (EC-META-10) est dans `core`.
  * L'offre gratuite de Trigger.dev plafonne de toute façon à 10 tâches en même temps (ARCHITECTURE §2).
  */
 export const QUEUE_CONCURRENCY: Readonly<Record<QueueName, number>> = {
@@ -25,4 +28,5 @@ export const QUEUE_CONCURRENCY: Readonly<Record<QueueName, number>> = {
   'media-byteplus-video': 3,
   agents: 5,
   'meta-publish': 5,
+  'meta-sync': 3,
 };
