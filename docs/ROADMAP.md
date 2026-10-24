@@ -45,7 +45,7 @@
 | 2. Interface de base | S08-S09 | ✅ ✅ |
 | 3. Meta | S10-S12 | ✅ ✅ ✅ |
 | 4. Agents et création de campagne | S13-S16 | ✅ ⬜ ⬜ ⬜ |
-| 5. Vie de la campagne | S17-S19 | ⬜ ⬜ ⬜ |
+| 5. Vie de la campagne | S17-S19 | ✅ ⬜ ⬜ |
 | 6. Images | S20-S23 | ⬜ ⬜ ⬜ ⬜ |
 | 7. Argent | S24-S26 | ⬜ ⬜ ⬜ |
 | 8. Notifications, support, Optimiseur | S27-S29 | ⬜ ⬜ ⬜ |
