@@ -53,3 +53,22 @@ export const relaunchSchema = z.discriminatedUnion('mode', [
   z.strictObject({ mode: z.literal('recover'), version: z.number().int().min(1) }),
   z.strictObject({ mode: z.literal('copy'), visual_mode: z.enum(['same', 'similar', 'change']) }),
 ]);
+
+/** Liste des campagnes : filtres et pagination (champ inconnu → 400). `limit` est revérifié par le cas d'usage (1 à 100). */
+export const listCampaignsQuery = z.strictObject({
+  status: z.string().max(20).optional(),
+  page_id: z.uuid().optional(),
+  limit: z.coerce.number().int().optional(),
+  cursor: z.string().max(200).optional(),
+});
+
+/** Statistiques : période en dates AAAA-MM-JJ (revérifiées et bornées à 366 jours par le cas d'usage). */
+export const statsQuery = z.strictObject({
+  from: z.string().max(10).optional(),
+  to: z.string().max(10).optional(),
+});
+
+/** Tableau de bord : `week` ou `month` (revérifié par le cas d'usage). */
+export const overviewQuery = z.strictObject({
+  range: z.string().max(10).optional(),
+});

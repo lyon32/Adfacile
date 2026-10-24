@@ -7,6 +7,7 @@ import { recordMetaStatusEvents } from '@pubeka/core';
 import { createLogger, createRequestId, getEnv } from '@pubeka/shared';
 import { api } from '../../../../../server/http/routes';
 import { fieldError, problem } from '../../../../../server/http/problem';
+import { syncJobs } from '../../campaigns/services';
 import { extractStatusEvents, MetaWebhookSchema } from './events';
 import { verifyMetaSignature, verifyTokenMatches, webhookEventId } from './signature';
 
@@ -93,6 +94,19 @@ export const POST = api(
         ignored,
         unknown: outcome.unknown,
       });
+    }
+    // S17 : le signal est enregistré ; on lance la relecture du statut chez Meta (le webhook n'est qu'un signal, TR-PLA-05). Un échec
+    // de lancement ne fait jamais échouer le webhook (déjà marqué « vu ») : la vérification toutes les 15 minutes rattrape.
+    if (outcome.recorded > 0) {
+      const eventId = webhookEventId(rawBody);
+      try {
+        await syncJobs().enqueue('campaign.sync-status', { scope: 'webhook' }, `campaign.sync-status:${eventId}`);
+      } catch (error) {
+        logger.warn('Webhook Meta : relecture non lancée, la vérification planifiée rattrape', {
+          requestId: ctx.requestId,
+          err: error,
+        });
+      }
     }
     return { status: 200, body: { status: 'processed', recorded: outcome.recorded } };
   },
