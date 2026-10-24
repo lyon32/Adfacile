@@ -2,7 +2,7 @@
 // réel) : liste, statistiques, « Actualiser » (TR-PLA-06), historique, publicités, tableau de bord. Les 5 cas de chaque route.
 // Chiffres et taux D'ESSAI (le produit n'en contient aucun).
 import { randomUUID } from 'node:crypto';
-import { calendarDateIn } from '@pubeka/shared';
+import { calendarDateIn, convertUsdCents } from '@pubeka/shared';
 import {
   describeRoute,
   na,
@@ -20,7 +20,7 @@ import { GET as statsRoute } from '../workspaces/[workspaceId]/campaigns/[campai
 import { POST as refreshRoute } from '../workspaces/[workspaceId]/campaigns/[campaignId]/stats/refresh/route';
 import { campaignParams, ensureTestFx, json, resetRateLimits } from './int-support';
 import { JobRecorder, publishableCampaign, publishedCampaign } from './publish-support';
-import { overridePublishDeps } from './services';
+import { overridePublishDeps, overrideSyncJobs } from './services';
 
 type Who = SeededWorkspace['owner'];
 let s: SeededWorkspace;
@@ -33,17 +33,39 @@ beforeAll(async () => {
 beforeEach(async () => {
   await resetRateLimits();
   jobs = new JobRecorder();
-  overridePublishDeps(jobs.deps());
+  // La publication garde ses dépendances normales (tâche `inline` + fausse Meta) : `publishedCampaign` doit amener la campagne à
+  // `in_review`. Seul le lanceur de « Actualiser » est remplacé par l'enregistreur.
+  overridePublishDeps(undefined);
+  overrideSyncJobs(jobs.deps().jobs);
 });
 afterAll(() => {
+  overrideSyncJobs(undefined);
   overridePublishDeps(undefined);
 });
 
 const CONVERSATION = 'onsite_conversion.messaging_conversation_started_7d';
 
-async function seedStats(workspaceId: string, campaignId: string): Promise<void> {
-  const today = calendarDateIn(new Date(), 'Africa/Douala');
-  const yesterday = calendarDateIn(new Date(Date.now() - 86_400_000), 'Africa/Douala');
+/** Taux XAF le plus récent de la base (celui que le serveur utilise) : les montants attendus ne dépendent pas d'un taux supposé. */
+async function latestXafRate(): Promise<number> {
+  const found = await testServiceClient()
+    .from('exchange_rates')
+    .select('rate')
+    .eq('quote', 'XAF')
+    .order('fetched_at', { ascending: false })
+    .limit(1)
+    .single();
+  expect(found.error).toBeNull();
+  return found.data?.rate ?? 0;
+}
+
+/** `stats` lit en UTC, `overview` dans le fuseau de la personne (Douala) : on sème les jours du fuseau qui sera lu. */
+async function seedStats(
+  workspaceId: string,
+  campaignId: string,
+  zone: 'UTC' | 'Africa/Douala' = 'UTC',
+): Promise<void> {
+  const today = calendarDateIn(new Date(), zone);
+  const yesterday = calendarDateIn(new Date(Date.now() - 86_400_000), zone);
   const rows = [today, yesterday].map((date) => ({
     workspace_id: workspaceId,
     campaign_id: campaignId,
@@ -191,8 +213,12 @@ describeRoute('getCampaignStats', {
     expect(body.summary).toMatchObject({
       results: 40,
       result_kind: 'whatsapp_conversation',
-      // 2 jours × 30 $ = 60 $ ; taux d'essai 600 → 36 000 FCFA ; coût par résultat : 60 $ ÷ 40 = 1,50 $.
-      spend: { usd_cents: 6000, local_minor: 36_000, currency: 'XAF' },
+      // 2 jours × 30 $ = 60 $ ; montant local = 60 $ au taux le plus récent de la base ; coût par résultat : 60 $ ÷ 40 = 1,50 $.
+      spend: {
+        usd_cents: 6000,
+        local_minor: convertUsdCents(6000, await latestXafRate(), 'XAF'),
+        currency: 'XAF',
+      },
       cost_per_result: { usd_cents: 150 },
     });
     expect(body.fx.status).toBe('ok');
@@ -284,14 +310,9 @@ describeRoute('refreshCampaignStats', {
     },
     'le lancement échoue : 503 et la fenêtre est rendue (réessai immédiat possible)': async () => {
       const { campaign } = await publishedCampaign(s);
-      const failing = new JobRecorder();
-      const deps = failing.deps();
-      overridePublishDeps({
-        ...deps,
-        jobs: { enqueue: () => Promise.reject(new Error('file indisponible')) },
-      });
+      overrideSyncJobs({ enqueue: () => Promise.reject(new Error('file indisponible')) });
       expect((await refresh(s, s.owner, campaign.id)).status).toBe(503);
-      overridePublishDeps(jobs.deps());
+      overrideSyncJobs(jobs.deps().jobs);
       expect((await refresh(s, s.owner, campaign.id)).status).toBe(202);
     },
   },
@@ -362,7 +383,7 @@ describeRoute('getWorkspaceOverview', {
   success: async () => {
     const mine = await seedWorkspace();
     const { campaign } = await publishedCampaign(mine);
-    await seedStats(mine.workspace.id, campaign.id);
+    await seedStats(mine.workspace.id, campaign.id, 'Africa/Douala');
     const res = await overview(mine, mine.viewer, '?range=month');
     expect(res.status).toBe(200);
     const body = (await json(res)) as {
@@ -412,7 +433,7 @@ describe('isolation', () => {
     const a = await seedWorkspace();
     const b = await seedWorkspace();
     const { campaign } = await publishedCampaign(b);
-    await seedStats(b.workspace.id, campaign.id);
+    await seedStats(b.workspace.id, campaign.id, 'Africa/Douala');
     const body = (await json(await overview(a, a.owner, '?range=month'))) as {
       spent_month: { usd_cents: number };
       campaigns: unknown[];
