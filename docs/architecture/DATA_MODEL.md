@@ -835,6 +835,11 @@ RLS : activée · 1 politique(s)
 | n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
 
+| Index | Définition |
+|---|---|
+| campaign_status_events_campaign_idx | `public.campaign_status_events USING btree (campaign_id, id DESC)` |
+| campaign_status_events_webhook_idx | `public.campaign_status_events USING btree (created_at DESC) WHERE (source = 'webhook'::text)` |
+
 RLS : activée · 1 politique(s)
 
 #### `public.campaigns`
@@ -881,6 +886,10 @@ RLS : activée · 1 politique(s)
 | publish_error | jsonb | oui |  |
 | quota_state | text | non | 'none'::text |
 | paused_at | timestamp with time zone | oui |  |
+| status_synced_at | timestamp with time zone | oui |  |
+| stats_synced_at | timestamp with time zone | oui |  |
+| stats_refresh_requested_at | timestamp with time zone | oui |  |
+| stats_sync_error | text | oui |  |
 
 | Contrainte | Définition |
 |---|---|
@@ -899,8 +908,9 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK ((optimization_goal = ANY (ARRAY['CONVERSATIONS'::text, 'LINK_CLICKS'::text, 'LANDING_PAGE_VIEWS'::text, 'POST_ENGAGEMENT'::text, 'REACH'::text, 'OFFSITE_CONVERSIONS'::text])))` |
 | Contrôle | `CHECK ((publish_attempt >= 0))` |
 | Contrôle | `CHECK ((publish_phase = ANY (ARRAY['none'::text, 'creating'::text, 'created'::text, 'activating'::text, 'done'::text])))` |
-| Contrôle | `CHECK ((publish_ref ~ '^pk-[0-9a-f]{8}-[0-9]{1,4}$'::text))` |
+| Contrôle | `CHECK ((publish_ref ~ '^pk-[0-9a-f]{12}-[0-9]{1,4}$'::text))` |
 | Contrôle | `CHECK ((quota_state = ANY (ARRAY['none'::text, 'held'::text, 'counted'::text, 'released'::text])))` |
+| Contrôle | `CHECK ((stats_sync_error = ANY (ARRAY['rate_limited'::text, 'fx_not_available'::text, 'meta_error'::text, 'token_expired'::text])))` |
 | Contrôle | `CHECK (((vat_rate >= (0)::numeric) AND (vat_rate <= 0.5)))` |
 | Contrôle | `CHECK ((version >= 1))` |
 | Contrôle | `CHECK ((char_length(visual_brief) <= 1000))` |
@@ -932,7 +942,7 @@ RLS : activée · 1 politique(s)
 | campaigns_analysis_id_idx | `public.campaigns USING btree (analysis_id)` |
 | campaigns_meta_campaign_id_idx | `public.campaigns USING btree (meta_campaign_id)` |
 | campaigns_publish_key_idx | `public.campaigns USING btree (workspace_id, publish_idempotency_key) WHERE (publish_idempotency_key IS NOT NULL)` |
-| campaigns_publish_ref_uniq | `UNIQUE public.campaigns USING btree (publish_ref) WHERE (publish_ref IS NOT NULL)` |
+| campaigns_publish_ref_uniq | `UNIQUE public.campaigns USING btree (workspace_id, publish_ref) WHERE (publish_ref IS NOT NULL)` |
 | campaigns_workspace_id_status_idx | `public.campaigns USING btree (workspace_id, status)` |
 
 RLS : activée · 3 politique(s)
@@ -1813,6 +1823,7 @@ RLS : activée · 1 politique(s)
 |---|---|
 | stats_daily_campaign_id_date_idx | `public.stats_daily USING btree (campaign_id, date DESC)` |
 | stats_daily_uniq | `UNIQUE public.stats_daily USING btree (campaign_id, COALESCE(ad_id, '00000000-0000-0000-0000-000000000000'::uuid), date)` |
+| stats_daily_workspace_date_idx | `public.stats_daily USING btree (workspace_id, date DESC)` |
 
 RLS : activée · 1 politique(s)
 
