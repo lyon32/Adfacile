@@ -391,7 +391,7 @@ Source unique des versions du projet. Règles d'épinglage : [CONVENTIONS §1](C
 
 | Paquet | Version | Rôle |
 |---|---|---|
-| `next` | **16.3.6** | Cadre. Depuis Next 16, `proxy.ts` remplace `middleware.ts` |
+| `next` | **16.4.1** | Cadre. Depuis Next 16, `proxy.ts` remplace `middleware.ts` |
 | `react`, `react-dom` | **19.3.0** | Interface |
 | `@supabase/supabase-js` | **2.117.2** | Client Supabase (Realtime côté navigateur) |
 | `@supabase/ssr` | **0.12.7** | Session Supabase en cookies (serveur) |
@@ -411,7 +411,7 @@ Source unique des versions du projet. Règles d'épinglage : [CONVENTIONS §1](C
 | `server-only` | **0.0.1** | Bloque l'import d'un module serveur côté navigateur |
 | `tailwindcss`, `@tailwindcss/postcss` | **4.3.3** | Styles |
 | `@types/react` *(dev)* | **19.3.0** | Types |
-| `eslint-config-next` *(dev)* | **16.3.6** | Toujours la même version que `next` |
+| `eslint-config-next` *(dev)* | **16.4.1** | Toujours la même version que `next` |
 | `@playwright/test` *(dev)* | **1.63.0** | Tests de parcours |
 | `@axe-core/playwright` *(dev)* | **4.13.0** | Accessibilité automatique dans les parcours |
 | `@testing-library/react` *(dev)* | **16.3.3** | Tests de composants |
