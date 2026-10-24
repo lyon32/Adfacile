@@ -421,8 +421,11 @@ Détail des corps de requête et de réponse : [`api/openapi.yaml`](../../api/op
 | POST 🔑 | `{ws}/campaigns/{id}/publish` | Publier (202) |
 | POST | `{ws}/campaigns/{id}/pause` · `/resume` | Pause, reprise |
 | POST | `{ws}/campaigns/{id}/relaunch` | Relancer en nouveau brouillon |
-| GET | `{ws}/campaigns/{id}/stats` | Statistiques |
-| POST | `{ws}/campaigns/{id}/stats/refresh` | Actualiser maintenant |
+| GET | `{ws}/campaigns/{id}/stats` | Statistiques (onglet Résultats ; montants en dollars, en monnaie locale avec un taux de moins de 48 h) |
+| POST | `{ws}/campaigns/{id}/stats/refresh` | Actualiser maintenant (202 ; 429 `rate_limited` avec `Retry-After` si moins de 5 minutes) |
+| GET | `{ws}/campaigns/{id}/events` | Historique (onglet Historique) |
+| GET | `{ws}/campaigns/{id}/ads` | Publicités et visuel (onglet Pubs) |
+| GET | `{ws}/overview` | Tableau de bord et bandeau du haut |
 | GET | `{ws}/campaigns/{id}/rejections/{rid}` | Rapport du Modérateur |
 | POST 🔑 | `{ws}/campaigns/{id}/rejections/{rid}/apply-fix` | Corriger et republier |
 

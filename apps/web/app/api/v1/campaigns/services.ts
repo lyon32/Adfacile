@@ -31,6 +31,11 @@ function createJobEnqueuer(): JobEnqueuer {
   };
 }
 
+/** Lanceur de tâches des routes de lecture (« Actualiser », signal d'un webhook) : celui de `publishDeps`, remplaçable par les tests. */
+export function syncJobs(): JobEnqueuer {
+  return publishDeps().jobs;
+}
+
 let publishOverride: PublishCampaignDeps | undefined;
 let publishDefault: PublishCampaignDeps | undefined;
 

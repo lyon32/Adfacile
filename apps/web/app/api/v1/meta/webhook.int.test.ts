@@ -10,7 +10,9 @@ import {
   setMaintenance,
   testServiceClient,
 } from '@pubeka/testing';
-import { beforeAll, expect } from 'vitest';
+import { afterAll, beforeAll, beforeEach, expect } from 'vitest';
+import { JobRecorder } from '../campaigns/publish-support';
+import { overridePublishDeps } from '../campaigns/services';
 import { GET as verify, POST as receive } from '../webhooks/meta/route';
 import { webhookEventId } from '../webhooks/meta/signature';
 
@@ -35,6 +37,15 @@ function get(query: Record<string, string>): Request {
 }
 
 let campaign: { id: string; workspaceId: string; metaId: string };
+// Aucune tâche réelle : les lancements sont enregistrés (S17 : le signal déclenche la relecture du statut chez Meta).
+let jobs: JobRecorder;
+beforeEach(() => {
+  jobs = new JobRecorder();
+  overridePublishDeps(jobs.deps());
+});
+afterAll(() => {
+  overridePublishDeps(undefined);
+});
 
 function body(
   objectId: string,
@@ -141,6 +152,10 @@ describeRoute('metaWebhook', {
       workspace_id: campaign.workspaceId,
       payload: { level: 'CAMPAIGN', error_code: '1815', error_summary: 'Problème succes' },
     });
+    // TR-PLA-05 : le signal lance la relecture du statut chez Meta (et seulement elle : aucune charge venue du webhook).
+    expect(jobs.jobs).toEqual([
+      expect.objectContaining({ taskId: 'campaign.sync-status', payload: { scope: 'webhook' } }),
+    ]);
     // Le webhook n'est qu'un signal : le statut de la campagne n'a pas bougé (Meta fait foi, S17).
     const row = await testServiceClient()
       .from('campaigns')
@@ -242,7 +257,19 @@ describeRoute('metaWebhook', {
       const res = await receive(signedPost(body('699999999999', { nonce: 'inconnu' })));
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({ status: 'processed', recorded: 0 });
+      // Rien à relire : aucune tâche lancée.
+      expect(jobs.jobs).toHaveLength(0);
     },
+    'TR-PLA-05 : si la relecture ne peut pas être lancée, le webhook répond quand même 200 (la vérification de 15 minutes rattrape)':
+      async () => {
+        overridePublishDeps({
+          ...jobs.deps(),
+          jobs: { enqueue: () => Promise.reject(new Error('file indisponible')) },
+        });
+        const res = await receive(signedPost(body(campaign.metaId, { nonce: 'file-en-panne' })));
+        expect(res.status).toBe(200);
+        expect(await res.json()).toEqual({ status: 'processed', recorded: 1 });
+      },
     'un champ que Pubeka ne lit pas est ignoré (200)': async () => {
       const before = (await statusEvents(campaign.id)).length;
       const res = await receive(

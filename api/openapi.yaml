@@ -836,12 +836,25 @@ paths:
       tags: [ Campagnes ]
       operationId: getCampaignStats
       summary: Statistiques (copiées toutes les heures)
+      description: |
+        Onglet « Résultats » (APPFLOW §11.3). Lecture seule, tout membre. Les chiffres viennent de NOTRE base (copiés de Meta
+        toutes les heures, ou à la demande avec `stats/refresh`), jamais lus chez Meta à la volée. Montants : dollars toujours,
+        monnaie locale seulement avec un taux de change de moins de 48 h (sinon `local_minor` et `currency` valent `null` et
+        `fx.status` vaut `fx_not_available`) ; aucune TVA. Le taux lui-même n'est jamais publié (licence du fournisseur) : seul
+        le montant converti sort, avec `fx.source` pour le lien d'attribution obligatoire.
+        `summary.result_kind` dit QUEL résultat c'est (l'écran écrit la phrase : « 42 conversations WhatsApp, soit 357 FCFA par client
+        potentiel ») ; seul le résultat principal est compté. `summary.reach` est la somme des portées quotidiennes.
+        Limite de débit de Meta (EC-META-10) : les dernières valeurs restent, `synced_at` donne l'heure de la dernière copie
+        réussie et `sync_error` la raison du dernier échec.
       parameters:
-        - { name: from, in: query, required: false, schema: { type: string, format: date } }
-        - { name: to, in: query, required: false, schema: { type: string, format: date } }
+        - { name: from, in: query, required: false, schema: { type: string, format: date }, description: "Début (AAAA-MM-JJ). Défaut : 29 jours avant `to`." }
+        - { name: to, in: query, required: false, schema: { type: string, format: date }, description: "Fin (AAAA-MM-JJ), incluse. Défaut : aujourd'hui (UTC). Période de 366 jours au plus." }
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/CampaignStats' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
   /workspaces/{workspaceId}/campaigns/{campaignId}/stats/refresh:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -850,9 +863,64 @@ paths:
       tags: [ Campagnes ]
       operationId: refreshCampaignStats
       summary: Actualiser maintenant (limité à 1 fois toutes les 5 minutes)
+      description: |
+        Bouton « Actualiser » (TR-PLA-06). Tout membre (lecture seule chez Meta : aucune dépense). La limite de 5 minutes par
+        campagne est appliquée par la base (deux clics simultanés : un seul passe) ; au-delà, `429 rate_limited` avec
+        `Retry-After` (secondes restantes). Une campagne jamais publiée chez Meta renvoie `409 conflict`
+        (`meta.reason: not_published_on_meta`). La copie se fait en arrière-plan : l'écran se met à jour tout seul (Realtime).
       responses:
-        '202': { description: Synchronisation lancée ; l'écran se met à jour en temps réel }
+        '202': { description: "Synchronisation lancée ; l'écran se met à jour en temps réel", content: { application/json: { schema: { $ref: '#/components/schemas/StatsRefresh' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+  /workspaces/{workspaceId}/campaigns/{campaignId}/events:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/CampaignId' }
+    get:
+      tags: [ Campagnes ]
+      operationId: listCampaignEvents
+      summary: Historique de la campagne (publication, vérification, pauses, refus, signaux de Meta)
+      description: |
+        Onglet « Historique ». Les 50 derniers événements, du plus récent au plus ancien. Tout membre. Seuls quelques champs courts
+        de détail sortent (liste blanche) ; jamais de jeton ni de charge brute.
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/CampaignEventList' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /workspaces/{workspaceId}/campaigns/{campaignId}/ads:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/CampaignId' }
+    get:
+      tags: [ Campagnes ]
+      operationId: listCampaignAds
+      summary: Publicités de la campagne et leur visuel
+      description: |
+        Onglet « Pubs ». Tout membre. `photo_url` est une adresse signée valable 15 minutes (900 s) vers la photo utilisée comme visuel
+        tant que l'étape Visuel (S23) n'existe pas. La publicité gagnante d'un test A/B arrivera avec les statistiques par publicité.
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/CampaignAdList' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /workspaces/{workspaceId}/overview:
+    parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+    get:
+      tags: [ Campagnes ]
+      operationId: getWorkspaceOverview
+      summary: Tableau de bord et bandeau du haut
+      description: |
+        APPFLOW §7 et PRD §10.1. Tout membre, lecture seule. Compteurs par statut, dépensé ce mois (monnaie locale avec les dollars
+        dessous), graphique des résultats (semaine : 7 derniers jours ; mois : du 1er du mois à aujourd'hui, fuseau de la personne) et
+        tableau des campagnes (100 plus récentes) avec résultat, dépensé et coût par résultat. Mêmes règles de montants que `stats`
+        (taux de moins de 48 h, aucune TVA). Les crédits restants arrivent avec la facturation (S24).
+      parameters:
+        - { name: range, in: query, required: false, schema: { type: string, enum: [ week, month ], default: week } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/WorkspaceOverview' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
   /workspaces/{workspaceId}/campaigns/{campaignId}/rejections/{rejectionId}:
     parameters:
@@ -2055,24 +2123,149 @@ components:
         warnings: { type: array, items: { type: string } }
         visual_brief: { type: string }
         flags: { type: array, items: { type: string } }
+    StatsMoney:
+      type: object
+      description: |
+        Montant d'une statistique : TOUJOURS les centimes de dollar ; la monnaie locale (unités mineures ISO 4217) seulement avec un
+        taux de change de moins de 48 h, sinon `local_minor` et `currency` valent `null`. Aucune TVA.
+      required: [ usd_cents, local_minor, currency ]
+      properties:
+        usd_cents: { type: integer }
+        local_minor: { type: [ integer, 'null' ] }
+        currency: { type: [ string, 'null' ], pattern: '^[A-Z]{3}$' }
+    StatsFx:
+      type: object
+      description: |
+        État du change pour l'affichage. Le taux n'est jamais publié (ExchangeRate-API interdit la redistribution) : seulement la
+        monnaie, la source (pour l'attribution « Taux fournis par Exchange Rate API », obligatoire sous tout montant converti) et la
+        date de lecture.
+      required: [ status, currency, source, fetched_at ]
+      properties:
+        status: { type: string, enum: [ ok, fx_not_available ] }
+        currency: { type: [ string, 'null' ] }
+        source: { type: [ string, 'null' ] }
+        fetched_at: { type: [ string, 'null' ], format: date-time }
+    ResultKind:
+      type: string
+      description: Le résultat principal de la campagne (F7). L'écran écrit la phrase dans la langue de la personne.
+      enum: [ whatsapp_conversation, messenger_conversation, instagram_conversation, conversation, purchase, lead, link_click, post_engagement ]
+    StatsSyncError:
+      type: string
+      description: Raison du dernier échec de synchronisation ; les valeurs affichées sont celles de la dernière copie réussie (`synced_at`).
+      enum: [ rate_limited, fx_not_available, meta_error, token_expired ]
     CampaignStats:
       type: object
-      required: [ summary, daily ]
+      required: [ range, summary, daily, fx, synced_at, sync_error ]
       properties:
+        range:
+          type: object
+          required: [ from, to ]
+          properties: { from: { type: string, format: date }, to: { type: string, format: date } }
         summary:
           type: object
+          required: [ spend, results, result_kind, cost_per_result, reach, impressions, clicks, ctr, cpm, frequency ]
           properties:
-            spend: { $ref: '#/components/schemas/Money' }
-            results: { type: integer }
-            result_type: { type: string }
-            cost_per_result: { $ref: '#/components/schemas/Money' }
-            reach: { type: integer }
+            spend: { $ref: '#/components/schemas/StatsMoney' }
+            results: { type: integer, description: "Résultat principal seulement (les autres types ne sont pas additionnés)" }
+            result_kind: { oneOf: [ { $ref: '#/components/schemas/ResultKind' }, { type: 'null' } ] }
+            cost_per_result: { oneOf: [ { $ref: '#/components/schemas/StatsMoney' }, { type: 'null' } ] }
+            reach: { type: integer, description: "Somme des portées quotidiennes (une personne vue deux jours est comptée deux fois)" }
             impressions: { type: integer }
             clicks: { type: integer }
-            ctr: { type: number }
-            plain_text: { type: string, description: "« 42 messages WhatsApp, soit 357 FCFA par client potentiel »" }
-        daily: { type: array, items: { type: object, additionalProperties: true } }
-        synced_at: { type: string, format: date-time }
+            ctr: { type: [ number, 'null' ], description: "En pourcentage, deux décimales" }
+            cpm: { oneOf: [ { $ref: '#/components/schemas/StatsMoney' }, { type: 'null' } ] }
+            frequency: { type: [ number, 'null' ] }
+        daily:
+          type: array
+          items:
+            type: object
+            required: [ date, spend, results, impressions, reach, clicks ]
+            properties:
+              date: { type: string, format: date }
+              spend: { $ref: '#/components/schemas/StatsMoney' }
+              results: { type: integer }
+              impressions: { type: integer }
+              reach: { type: integer }
+              clicks: { type: integer }
+        fx: { $ref: '#/components/schemas/StatsFx' }
+        synced_at: { type: [ string, 'null' ], format: date-time, description: "Heure de la dernière copie réussie ; null : jamais synchronisée" }
+        sync_error: { oneOf: [ { $ref: '#/components/schemas/StatsSyncError' }, { type: 'null' } ] }
+    StatsRefresh:
+      type: object
+      required: [ status, requested_at ]
+      properties:
+        status: { type: string, enum: [ queued ] }
+        requested_at: { type: string, format: date-time }
+    CampaignEvent:
+      type: object
+      required: [ id, created_at, status, source, detail ]
+      properties:
+        id: { type: integer }
+        created_at: { type: string, format: date-time }
+        status: { type: string, description: "Nouveau statut (`active`, `paused`…), ou `meta_status`, `in_process`, `with_issues` pour un signal de Meta" }
+        source: { type: string, enum: [ webhook, poll, user ] }
+        detail:
+          type: object
+          additionalProperties: false
+          properties:
+            raw_status: { type: string, maxLength: 100 }
+            event: { type: string, maxLength: 100 }
+            reason: { type: string, maxLength: 100 }
+            from: { type: string, maxLength: 100 }
+    CampaignEventList:
+      type: object
+      required: [ data ]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/CampaignEvent' } }
+    CampaignAd:
+      type: object
+      required: [ id, format, variant, status, photo_url ]
+      properties:
+        id: { type: string, format: uuid }
+        format: { type: [ string, 'null' ] }
+        variant: { type: [ string, 'null' ], enum: [ A, B, null ] }
+        status: { type: [ string, 'null' ] }
+        photo_url: { type: [ string, 'null' ], format: uri }
+    CampaignAdList:
+      type: object
+      required: [ data, ab_test ]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/CampaignAd' } }
+        ab_test: { type: boolean }
+    WorkspaceOverview:
+      type: object
+      required: [ counts, month, spent_month, range, chart, campaigns, fx ]
+      properties:
+        counts:
+          type: object
+          required: [ active, in_review, paused, stopped, other ]
+          properties: { active: { type: integer }, in_review: { type: integer }, paused: { type: integer }, stopped: { type: integer }, other: { type: integer } }
+        month: { type: string, pattern: '^[0-9]{4}-[0-9]{2}$' }
+        spent_month: { $ref: '#/components/schemas/StatsMoney' }
+        range: { type: string, enum: [ week, month ] }
+        chart:
+          type: array
+          items:
+            type: object
+            required: [ date, results, spend_usd_cents ]
+            properties: { date: { type: string, format: date }, results: { type: integer }, spend_usd_cents: { type: integer } }
+        campaigns:
+          type: array
+          items:
+            type: object
+            required: [ id, name, status, paused_at, results, result_kind, spend, cost_per_result, synced_at, sync_error ]
+            properties:
+              id: { type: string, format: uuid }
+              name: { type: string }
+              status: { $ref: '#/components/schemas/CampaignStatus' }
+              paused_at: { type: [ string, 'null' ], format: date-time }
+              results: { type: integer }
+              result_kind: { oneOf: [ { $ref: '#/components/schemas/ResultKind' }, { type: 'null' } ] }
+              spend: { $ref: '#/components/schemas/StatsMoney' }
+              cost_per_result: { oneOf: [ { $ref: '#/components/schemas/StatsMoney' }, { type: 'null' } ] }
+              synced_at: { type: [ string, 'null' ], format: date-time }
+              sync_error: { oneOf: [ { $ref: '#/components/schemas/StatsSyncError' }, { type: 'null' } ] }
+        fx: { $ref: '#/components/schemas/StatsFx' }
     Rejection:
       type: object
       required: [ id, report ]

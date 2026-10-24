@@ -840,7 +840,18 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Statistiques (copiées toutes les heures) */
+        /**
+         * Statistiques (copiées toutes les heures)
+         * @description Onglet « Résultats » (APPFLOW §11.3). Lecture seule, tout membre. Les chiffres viennent de NOTRE base (copiés de Meta
+         *     toutes les heures, ou à la demande avec `stats/refresh`), jamais lus chez Meta à la volée. Montants : dollars toujours,
+         *     monnaie locale seulement avec un taux de change de moins de 48 h (sinon `local_minor` et `currency` valent `null` et
+         *     `fx.status` vaut `fx_not_available`) ; aucune TVA. Le taux lui-même n'est jamais publié (licence du fournisseur) : seul
+         *     le montant converti sort, avec `fx.source` pour le lien d'attribution obligatoire.
+         *     `summary.result_kind` dit QUEL résultat c'est (l'écran écrit la phrase : « 42 conversations WhatsApp, soit 357 FCFA par client
+         *     potentiel ») ; seul le résultat principal est compté. `summary.reach` est la somme des portées quotidiennes.
+         *     Limite de débit de Meta (EC-META-10) : les dernières valeurs restent, `synced_at` donne l'heure de la dernière copie
+         *     réussie et `sync_error` la raison du dernier échec.
+         */
         get: operations["getCampaignStats"];
         put?: never;
         post?: never;
@@ -862,8 +873,87 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Actualiser maintenant (limité à 1 fois toutes les 5 minutes) */
+        /**
+         * Actualiser maintenant (limité à 1 fois toutes les 5 minutes)
+         * @description Bouton « Actualiser » (TR-PLA-06). Tout membre (lecture seule chez Meta : aucune dépense). La limite de 5 minutes par
+         *     campagne est appliquée par la base (deux clics simultanés : un seul passe) ; au-delà, `429 rate_limited` avec
+         *     `Retry-After` (secondes restantes). Une campagne jamais publiée chez Meta renvoie `409 conflict`
+         *     (`meta.reason: not_published_on_meta`). La copie se fait en arrière-plan : l'écran se met à jour tout seul (Realtime).
+         */
         post: operations["refreshCampaignStats"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspaceId}/campaigns/{campaignId}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: components["parameters"]["WorkspaceId"];
+                campaignId: components["parameters"]["CampaignId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Historique de la campagne (publication, vérification, pauses, refus, signaux de Meta)
+         * @description Onglet « Historique ». Les 50 derniers événements, du plus récent au plus ancien. Tout membre. Seuls quelques champs courts
+         *     de détail sortent (liste blanche) ; jamais de jeton ni de charge brute.
+         */
+        get: operations["listCampaignEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspaceId}/campaigns/{campaignId}/ads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: components["parameters"]["WorkspaceId"];
+                campaignId: components["parameters"]["CampaignId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Publicités de la campagne et leur visuel
+         * @description Onglet « Pubs ». Tout membre. `photo_url` est une adresse signée valable 15 minutes (900 s) vers la photo utilisée comme visuel
+         *     tant que l'étape Visuel (S23) n'existe pas. La publicité gagnante d'un test A/B arrivera avec les statistiques par publicité.
+         */
+        get: operations["listCampaignAds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspaceId}/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: components["parameters"]["WorkspaceId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Tableau de bord et bandeau du haut
+         * @description APPFLOW §7 et PRD §10.1. Tout membre, lecture seule. Compteurs par statut, dépensé ce mois (monnaie locale avec les dollars
+         *     dessous), graphique des résultats (semaine : 7 derniers jours ; mois : du 1er du mois à aujourd'hui, fuseau de la personne) et
+         *     tableau des campagnes (100 plus récentes) avec résultat, dépensé et coût par résultat. Mêmes règles de montants que `stats`
+         *     (taux de moins de 48 h, aucune TVA). Les crédits restants arrivent avec la facturation (S24).
+         */
+        get: operations["getWorkspaceOverview"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2237,24 +2327,149 @@ export interface components {
             visual_brief: string;
             flags: string[];
         };
+        /**
+         * @description Montant d'une statistique : TOUJOURS les centimes de dollar ; la monnaie locale (unités mineures ISO 4217) seulement avec un
+         *     taux de change de moins de 48 h, sinon `local_minor` et `currency` valent `null`. Aucune TVA.
+         */
+        StatsMoney: {
+            usd_cents: number;
+            local_minor: number | null;
+            currency: string | null;
+        };
+        /**
+         * @description État du change pour l'affichage. Le taux n'est jamais publié (ExchangeRate-API interdit la redistribution) : seulement la
+         *     monnaie, la source (pour l'attribution « Taux fournis par Exchange Rate API », obligatoire sous tout montant converti) et la
+         *     date de lecture.
+         */
+        StatsFx: {
+            /** @enum {string} */
+            status: "ok" | "fx_not_available";
+            currency: string | null;
+            source: string | null;
+            /** Format: date-time */
+            fetched_at: string | null;
+        };
+        /**
+         * @description Le résultat principal de la campagne (F7). L'écran écrit la phrase dans la langue de la personne.
+         * @enum {string}
+         */
+        ResultKind: "whatsapp_conversation" | "messenger_conversation" | "instagram_conversation" | "conversation" | "purchase" | "lead" | "link_click" | "post_engagement";
+        /**
+         * @description Raison du dernier échec de synchronisation ; les valeurs affichées sont celles de la dernière copie réussie (`synced_at`).
+         * @enum {string}
+         */
+        StatsSyncError: "rate_limited" | "fx_not_available" | "meta_error" | "token_expired";
         CampaignStats: {
+            range: {
+                /** Format: date */
+                from: string;
+                /** Format: date */
+                to: string;
+            };
             summary: {
-                spend?: components["schemas"]["Money"];
-                results?: number;
-                result_type?: string;
-                cost_per_result?: components["schemas"]["Money"];
-                reach?: number;
-                impressions?: number;
-                clicks?: number;
-                ctr?: number;
-                /** @description « 42 messages WhatsApp, soit 357 FCFA par client potentiel » */
-                plain_text?: string;
+                spend: components["schemas"]["StatsMoney"];
+                /** @description Résultat principal seulement (les autres types ne sont pas additionnés) */
+                results: number;
+                result_kind: components["schemas"]["ResultKind"] | null;
+                cost_per_result: components["schemas"]["StatsMoney"] | null;
+                /** @description Somme des portées quotidiennes (une personne vue deux jours est comptée deux fois) */
+                reach: number;
+                impressions: number;
+                clicks: number;
+                /** @description En pourcentage, deux décimales */
+                ctr: number | null;
+                cpm: components["schemas"]["StatsMoney"] | null;
+                frequency: number | null;
             };
             daily: {
-                [key: string]: unknown;
+                /** Format: date */
+                date: string;
+                spend: components["schemas"]["StatsMoney"];
+                results: number;
+                impressions: number;
+                reach: number;
+                clicks: number;
             }[];
+            fx: components["schemas"]["StatsFx"];
+            /**
+             * Format: date-time
+             * @description Heure de la dernière copie réussie ; null : jamais synchronisée
+             */
+            synced_at: string | null;
+            sync_error: components["schemas"]["StatsSyncError"] | null;
+        };
+        StatsRefresh: {
+            /** @enum {string} */
+            status: "queued";
             /** Format: date-time */
-            synced_at?: string;
+            requested_at: string;
+        };
+        CampaignEvent: {
+            id: number;
+            /** Format: date-time */
+            created_at: string;
+            /** @description Nouveau statut (`active`, `paused`…), ou `meta_status`, `in_process`, `with_issues` pour un signal de Meta */
+            status: string;
+            /** @enum {string} */
+            source: "webhook" | "poll" | "user";
+            detail: {
+                raw_status?: string;
+                event?: string;
+                reason?: string;
+                from?: string;
+            };
+        };
+        CampaignEventList: {
+            data: components["schemas"]["CampaignEvent"][];
+        };
+        CampaignAd: {
+            /** Format: uuid */
+            id: string;
+            format: string | null;
+            /** @enum {string|null} */
+            variant: "A" | "B" | null;
+            status: string | null;
+            /** Format: uri */
+            photo_url: string | null;
+        };
+        CampaignAdList: {
+            data: components["schemas"]["CampaignAd"][];
+            ab_test: boolean;
+        };
+        WorkspaceOverview: {
+            counts: {
+                active: number;
+                in_review: number;
+                paused: number;
+                stopped: number;
+                other: number;
+            };
+            month: string;
+            spent_month: components["schemas"]["StatsMoney"];
+            /** @enum {string} */
+            range: "week" | "month";
+            chart: {
+                /** Format: date */
+                date: string;
+                results: number;
+                spend_usd_cents: number;
+            }[];
+            campaigns: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                status: components["schemas"]["CampaignStatus"];
+                /** Format: date-time */
+                paused_at: string | null;
+                results: number;
+                result_kind: components["schemas"]["ResultKind"] | null;
+                spend: components["schemas"]["StatsMoney"];
+                cost_per_result: components["schemas"]["StatsMoney"] | null;
+                /** Format: date-time */
+                synced_at: string | null;
+                sync_error: components["schemas"]["StatsSyncError"] | null;
+            }[];
+            fx: components["schemas"]["StatsFx"];
         };
         Rejection: {
             /** Format: uuid */
@@ -4066,7 +4281,9 @@ export interface operations {
     getCampaignStats: {
         parameters: {
             query?: {
+                /** @description Début (AAAA-MM-JJ). Défaut : 29 jours avant `to`. */
                 from?: string;
+                /** @description Fin (AAAA-MM-JJ), incluse. Défaut : aujourd'hui (UTC). Période de 366 jours au plus. */
                 to?: string;
             };
             header?: never;
@@ -4087,7 +4304,10 @@ export interface operations {
                     "application/json": components["schemas"]["CampaignStats"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     refreshCampaignStats: {
@@ -4107,10 +4327,91 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["StatsRefresh"];
+                };
             };
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
+        };
+    };
+    listCampaignEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: components["parameters"]["WorkspaceId"];
+                campaignId: components["parameters"]["CampaignId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignEventList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listCampaignAds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: components["parameters"]["WorkspaceId"];
+                campaignId: components["parameters"]["CampaignId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignAdList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getWorkspaceOverview: {
+        parameters: {
+            query?: {
+                range?: "week" | "month";
+            };
+            header?: never;
+            path: {
+                workspaceId: components["parameters"]["WorkspaceId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceOverview"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
         };
     };
     getRejection: {
