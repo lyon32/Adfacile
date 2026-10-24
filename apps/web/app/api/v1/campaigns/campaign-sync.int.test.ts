@@ -43,6 +43,9 @@ afterAll(() => {
   overridePublishDeps(undefined);
 });
 
+// IMPORTANT : tout espace qui publie réellement (fausse Meta, tâche `inline`) doit être relié par la VRAIE route de connexion
+// (`connected: true`, jeton chiffré en base). Un brouillon préparé avec `publishableCampaign(s)` crée une connexion SANS jeton ;
+// `publishedCampaign(s)` la réutilise alors et la tâche de publication échoue (statut `error`).
 const CONVERSATION = 'onsite_conversion.messaging_conversation_started_7d';
 
 /** Taux XAF le plus récent de la base (celui que le serveur utilise) : les montants attendus ne dépendent pas d'un taux supposé. */
@@ -118,7 +121,7 @@ const problemOf = async (res: Response): Promise<Problem> =>
 
 describeRoute('listCampaigns', {
   success: async () => {
-    const { campaign } = await publishableCampaign(s);
+    const { campaign } = await publishableCampaign(s, { connected: true });
     const res = await list(s, s.owner);
     expect(res.status).toBe(200);
     const body = (await json(res)) as { data: { id: string }[]; next_cursor: string | null };
@@ -227,17 +230,17 @@ describeRoute('getCampaignStats', {
     expect(JSON.stringify(body)).not.toContain('"rate"');
   },
   unauthenticated: async () => {
-    const { campaign } = await publishableCampaign(s);
+    const { campaign } = await publishableCampaign(s, { connected: true });
     expect((await stats(s, { ...s.owner, headers: {} }, campaign.id)).status).toBe(401);
   },
   otherWorkspace: async () => {
-    const { campaign } = await publishableCampaign(s);
+    const { campaign } = await publishableCampaign(s, { connected: true });
     const stranger = await seedWorkspace();
     expect((await stats(stranger, stranger.owner, campaign.id)).status).toBe(404);
   },
   forbiddenRole: na('la lecture est permise à tout membre, y compris « viewer »'),
   invalidBody: async () => {
-    const { campaign } = await publishableCampaign(s);
+    const { campaign } = await publishableCampaign(s, { connected: true });
     expect((await stats(s, s.owner, 'pas-un-uuid')).status).toBe(400);
     expect((await stats(s, s.owner, campaign.id, '?from=hier')).status).toBe(400);
     expect((await stats(s, s.owner, campaign.id, '?from=2026-10-12&to=2026-10-01')).status).toBe(
@@ -264,7 +267,7 @@ describeRoute('refreshCampaignStats', {
     });
   },
   unauthenticated: async () => {
-    const { campaign } = await publishableCampaign(s);
+    const { campaign } = await publishableCampaign(s, { connected: true });
     expect((await refresh(s, { ...s.owner, headers: {} }, campaign.id)).status).toBe(401);
     expect(jobs.jobs).toHaveLength(0);
   },
@@ -303,7 +306,7 @@ describeRoute('refreshCampaignStats', {
       expect(jobs.jobs).toHaveLength(1);
     },
     'campagne jamais publiée chez Meta : 409, aucune tâche': async () => {
-      const { campaign } = await publishableCampaign(s);
+      const { campaign } = await publishableCampaign(s, { connected: true });
       const res = await refresh(s, s.owner, campaign.id);
       expect(res.status).toBe(409);
       expect(jobs.jobs).toHaveLength(0);
@@ -327,13 +330,13 @@ describeRoute('listCampaignEvents', {
     expect(body.data.map((e) => e.status)).toContain('in_review');
   },
   unauthenticated: async () => {
-    const { campaign } = await publishableCampaign(s);
+    const { campaign } = await publishableCampaign(s, { connected: true });
     expect(
       (await get(eventsRoute, s, { ...s.owner, headers: {} }, 'events', campaign.id)).status,
     ).toBe(401);
   },
   otherWorkspace: async () => {
-    const { campaign } = await publishableCampaign(s);
+    const { campaign } = await publishableCampaign(s, { connected: true });
     const stranger = await seedWorkspace();
     expect((await get(eventsRoute, stranger, stranger.owner, 'events', campaign.id)).status).toBe(
       404,
@@ -359,13 +362,13 @@ describeRoute('listCampaignAds', {
     expect(body.ab_test).toBe(false);
   },
   unauthenticated: async () => {
-    const { campaign } = await publishableCampaign(s);
+    const { campaign } = await publishableCampaign(s, { connected: true });
     expect((await get(adsRoute, s, { ...s.owner, headers: {} }, 'ads', campaign.id)).status).toBe(
       401,
     );
   },
   otherWorkspace: async () => {
-    const { campaign } = await publishableCampaign(s);
+    const { campaign } = await publishableCampaign(s, { connected: true });
     const stranger = await seedWorkspace();
     expect((await get(adsRoute, stranger, stranger.owner, 'ads', campaign.id)).status).toBe(404);
   },
