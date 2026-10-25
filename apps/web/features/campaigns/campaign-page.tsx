@@ -147,11 +147,6 @@ export function CampaignPage({ workspace, campaignId }: CampaignPageProps): Reac
                   {t('resume')}
                 </Button>
               ) : null}
-              <RejectionBanner
-                workspaceId={workspace.id}
-                campaignId={campaignId}
-                enabled={published}
-              />
               {status === 'stopped' ? (
                 <Button
                   type="button"
@@ -189,6 +184,7 @@ export function CampaignPage({ workspace, campaignId }: CampaignPageProps): Reac
           ) : null}
         </div>
 
+        <RejectionBanner workspaceId={workspace.id} campaignId={campaignId} enabled={published} />
         {status === 'stopped' ? (
           <Card role="status" className="flex flex-col gap-1">
             <p className="font-semibold">{t('stopped_title')}</p>

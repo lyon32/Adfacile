@@ -111,6 +111,7 @@ function RejectionContent({
   analysisId: string | null;
 }): ReactNode {
   const t = useTranslations('campaigns.rejection');
+  const common = useTranslations('common');
   const router = useRouter();
   const apply = useApplyFix(workspace.id, campaignId, rejection.id);
   const control = useControlCampaign(workspace.id, campaignId);
@@ -331,7 +332,7 @@ function RejectionContent({
       </div>
 
       <Dialog open={confirming} onOpenChange={setConfirming}>
-        <DialogContent closeLabel={t('cancel')}>
+        <DialogContent closeLabel={common('close')}>
           <DialogTitle>{t('confirm_title')}</DialogTitle>
           <DialogDescription>{t('confirm_body')}</DialogDescription>
           <p className="text-meta text-muted mt-3">{t('confirm_warning')}</p>
@@ -464,9 +465,10 @@ function AppealGuide({
   onOpenChange: (open: boolean) => void;
 }): ReactNode {
   const t = useTranslations('campaigns.rejection');
+  const common = useTranslations('common');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent closeLabel={t('appeal_close')}>
+      <DialogContent closeLabel={common('close')}>
         <DialogTitle>{t('appeal_title')}</DialogTitle>
         <DialogDescription>{t('appeal_intro')}</DialogDescription>
         <ol className="mt-4 flex list-decimal flex-col gap-2 pl-5 text-sm">
@@ -488,7 +490,7 @@ function AppealGuide({
         <div className="mt-5 flex justify-end">
           <DialogClose asChild>
             <Button type="button" variant="quiet">
-              {t('appeal_close')}
+              {t('appeal_done')}
             </Button>
           </DialogClose>
         </div>

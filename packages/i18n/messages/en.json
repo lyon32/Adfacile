@@ -1350,7 +1350,6 @@
       "appeal_delay": "Meta aims to answer within 48 hours.",
       "appeal_warning": "Do not delete the ad first: you might lose the option to ask for this review.",
       "appeal_source": "Meta help page on rejected ads",
-      "appeal_close": "Close",
       "error_publish_disabled": "Real publishing is turned off for now: nothing was sent to Meta.",
       "error_fix_not_applicable": "This fix cannot be applied in one click. Edit your ad yourself.",
       "error_partial_rejection": "Only one of the two ads is rejected: the campaign is not republished as a whole.",
@@ -1358,7 +1357,8 @@
       "error_not_explained": "The report is not ready yet. Try again in a moment.",
       "error_validation": "Your campaign does not pass the checks before publishing. Fix it, then try again.",
       "nothing_changed": "Nothing changed on your campaign.",
-      "error_read_only": "Your workspace is read-only: nothing was republished."
+      "error_read_only": "Your workspace is read-only: nothing was republished.",
+      "appeal_done": "Got it"
     }
   }
 }

@@ -1350,7 +1350,6 @@
       "appeal_delay": "Meta vise une réponse sous 48 heures.",
       "appeal_warning": "Ne supprime pas la pub avant : tu perdrais peut-être la possibilité de demander cet examen.",
       "appeal_source": "Page d’aide de Meta sur les pubs refusées",
-      "appeal_close": "Fermer",
       "error_publish_disabled": "La publication réelle est désactivée pour le moment : rien n’a été envoyé à Meta.",
       "error_fix_not_applicable": "Cette correction ne peut pas s’appliquer en un clic. Modifie ta pub toi-même.",
       "error_partial_rejection": "Seule une des deux pubs est refusée : la campagne ne repart pas en entier.",
@@ -1358,7 +1357,8 @@
       "error_not_explained": "Le rapport n’est pas encore prêt. Réessaie dans un instant.",
       "error_validation": "Ta campagne ne passe pas la vérification avant publication. Corrige-la puis réessaie.",
       "nothing_changed": "Rien n’a changé sur ta campagne.",
-      "error_read_only": "Ton espace est en lecture seule : rien n’a été republié."
+      "error_read_only": "Ton espace est en lecture seule : rien n’a été republié.",
+      "appeal_done": "J’ai compris"
     }
   }
 }
