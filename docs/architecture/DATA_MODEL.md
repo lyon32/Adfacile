@@ -1712,18 +1712,29 @@ RLS : activée · 1 politique(s)
 | memory_pattern | text | oui |  |
 | fixed_and_republished | boolean | non | false |
 | created_at | timestamp with time zone | non | now() |
+| explain_status | text | non | 'pending'::text |
+| explain_error | text | oui |  |
 
 | Contrainte | Définition |
 |---|---|
+| Contrôle | `CHECK (((explain_error IS NULL) OR (char_length(explain_error) <= 64)))` |
+| Contrôle | `CHECK ((explain_status = ANY (ARRAY['pending'::text, 'running'::text, 'ready'::text, 'failed'::text])))` |
 | Clé étrangère | `FOREIGN KEY (ad_id) REFERENCES ads(id) ON DELETE SET NULL` |
 | Clé étrangère | `FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE` |
 | Clé étrangère | `FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE` |
 | n | `NOT NULL campaign_id` |
 | n | `NOT NULL created_at` |
+| n | `NOT NULL explain_status` |
 | n | `NOT NULL fixed_and_republished` |
 | n | `NOT NULL id` |
 | n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
+
+| Index | Définition |
+|---|---|
+| rejections_campaign_idx | `public.rejections USING btree (campaign_id, created_at DESC)` |
+| rejections_open_per_ad_idx | `UNIQUE public.rejections USING btree (campaign_id, COALESCE(ad_id, '00000000-0000-0000-0000-000000000000'::uuid)) WHERE (NOT fixed_and_republished)` |
+| rejections_pending_idx | `public.rejections USING btree (created_at) WHERE (explain_status = 'pending'::text)` |
 
 RLS : activée · 1 politique(s)
 

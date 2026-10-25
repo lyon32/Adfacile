@@ -1882,6 +1882,8 @@ export type Database = {
           ad_id: string | null;
           campaign_id: string;
           created_at: string;
+          explain_error: string | null;
+          explain_status: string;
           fixed_and_republished: boolean;
           id: string;
           memory_pattern: string | null;
@@ -1893,6 +1895,8 @@ export type Database = {
           ad_id?: string | null;
           campaign_id: string;
           created_at?: string;
+          explain_error?: string | null;
+          explain_status?: string;
           fixed_and_republished?: boolean;
           id?: string;
           memory_pattern?: string | null;
@@ -1904,6 +1908,8 @@ export type Database = {
           ad_id?: string | null;
           campaign_id?: string;
           created_at?: string;
+          explain_error?: string | null;
+          explain_status?: string;
           fixed_and_republished?: boolean;
           id?: string;
           memory_pattern?: string | null;
@@ -2662,6 +2668,7 @@ export type Database = {
         }[];
       };
       record_meta_webhook: { Args: { p_event_id: string; p_events: Json }; Returns: number };
+      record_rejection_pattern: { Args: { p_now: string; p_pattern: string }; Returns: number };
       record_webhook_event: { Args: { p_event_id: string; p_provider: string }; Returns: boolean };
       release_credits: { Args: { amount?: number; job: string }; Returns: number };
       request_stats_refresh: {
