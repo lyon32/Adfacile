@@ -16,6 +16,8 @@ const calls = vi.hoisted(() => {
     statusArgs: [] as unknown[],
     statsArgs: [] as unknown[],
     depsArgs: [] as unknown[],
+    explainArgs: [] as unknown[],
+    rejections: 0,
   };
 });
 
@@ -41,9 +43,14 @@ vi.mock('@pubeka/core', async (importOriginal) => {
       calls.depsArgs.push(args);
       return { marker: 'deps' };
     },
+    createExplainDeps: () => ({ marker: 'explain-deps' }),
+    explainPendingRejections: (...args: unknown[]) => {
+      calls.explainArgs.push(args);
+      return Promise.resolve({ explained: 1, failed: 0, skipped: 0 });
+    },
     syncCampaignStatuses: (...args: unknown[]) => {
       calls.statusArgs.push(args);
-      return Promise.resolve({ scanned: 0 });
+      return Promise.resolve({ scanned: 0, rejections: calls.rejections });
     },
     syncCampaignStats: (...args: unknown[]) => {
       calls.statsArgs.push(args);
@@ -69,6 +76,8 @@ beforeEach(() => {
   calls.statusArgs.length = 0;
   calls.statsArgs.length = 0;
   calls.depsArgs.length = 0;
+  calls.explainArgs.length = 0;
+  calls.rejections = 0;
   for (const key of Object.keys(calls.env)) Reflect.deleteProperty(calls.env, key);
   calls.env.NEXT_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321';
   calls.env.SUPABASE_SECRET_KEY = 'sb_secret_factice';
@@ -185,5 +194,18 @@ describe('Mode inline et file', () => {
     expect(QUEUE_NAMES).toContain('meta-sync');
     expect(QUEUE_CONCURRENCY['meta-sync']).toBe(3);
     expect(QUEUE_CONCURRENCY['meta-publish']).toBe(5);
+  });
+});
+
+describe('S18 — le Modérateur explique tout de suite un refus qui vient d’être enregistré', () => {
+  it('sans nouveau refus, le Modérateur n’est pas appelé', async () => {
+    await campaignSyncStatusHandler.run({}, ctx);
+    expect(calls.explainArgs).toHaveLength(0);
+  });
+
+  it('avec un nouveau refus, une passe d’explication suit la synchronisation', async () => {
+    calls.rejections = 1;
+    await campaignSyncStatusHandler.run({ scope: 'webhook' }, ctx);
+    expect(calls.explainArgs).toHaveLength(1);
   });
 });
