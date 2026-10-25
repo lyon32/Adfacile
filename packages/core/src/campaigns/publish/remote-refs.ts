@@ -16,6 +16,7 @@ export async function loadRefs(
       .select('meta_ad_id, meta_creative_id')
       .eq('workspace_id', row.workspace_id)
       .eq('campaign_id', row.id)
+      .not('meta_ad_id', 'is', null)
       .order('id', { ascending: true })
       .limit(1)
       .maybeSingle(),

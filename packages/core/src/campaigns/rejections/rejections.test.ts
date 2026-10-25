@@ -412,7 +412,8 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
     expect(s.w.hooks.count('beforeSpend')).toBe(0);
     expect(s.w.hooks.count('afterAccepted')).toBe(0);
     expect(s.w.hooks.count('release')).toBe(0);
-    expect(rejections(s)[0]?.fixed_and_republished).toBe(true);
+    // Le refus n'est « corrigé » que quand la TÂCHE a fait accepter la nouvelle campagne par Meta (pas à la route).
+    expect(rejections(s)[0]?.fixed_and_republished).toBe(false);
     expect(s.w.jobs.jobs.filter((j) => j.taskId === 'campaign.publish')).toHaveLength(2);
   });
 
@@ -462,6 +463,7 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
   it('une autre clé sur un refus déjà corrigé : 409 already_fixed', async () => {
     const { s, id } = await explainedWorld();
     await applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s));
+    expect((await runTask(s)).outcome).toBe('accepted');
     const error = await failure(
       applyRejectionFix(
         s.w.ctx,
@@ -531,7 +533,10 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
     const error = await failure(
       applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s)),
     );
-    expect(error.opts.meta).toMatchObject({ reason: 'product_not_allowed' });
+    expect(error.opts.meta).toMatchObject({
+      reason: 'fix_not_applicable',
+      cause: 'product_not_allowed',
+    });
     expect(rowOf(s.w.db, s.id).status).toBe('rejected');
   });
 
@@ -544,7 +549,10 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
     const error = await failure(
       applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s)),
     );
-    expect(error.opts.meta).toMatchObject({ reason: 'field_not_text' });
+    expect(error.opts.meta).toMatchObject({
+      reason: 'fix_not_applicable',
+      cause: 'field_not_text',
+    });
   });
 
   it('une campagne qui n’est plus « refusée » ne repart pas (409)', async () => {
@@ -577,7 +585,6 @@ describe('connecteur', () => {
   });
 });
 
-
 // ---- Contrôle S18 : sécurité de l'argent et de la republication --------------------------------------------------------------
 
 type TaskConnector = Parameters<typeof runPublication>[2]['connector'];
@@ -604,7 +611,8 @@ function flaky(
   failures: { getStatus?: boolean; deleteCampaign?: boolean },
 ): TaskConnector {
   const fake = s.fake;
-  const down = () => Promise.reject(new AppError('meta_error', { cause: new TypeError('fetch failed') }));
+  const down = () =>
+    Promise.reject(new AppError('meta_error', { cause: new TypeError('fetch failed') }));
   return {
     createCampaign: (token, spec) => fake.createCampaign(token, spec),
     resume: (token, refs) => fake.resume(token, refs),
@@ -618,7 +626,12 @@ function flaky(
   };
 }
 
-const refsOfOld = (campaignId: string) => ({ campaignId, adsetId: null, adId: null, creativeId: null });
+const refsOfOld = (campaignId: string) => ({
+  campaignId,
+  adsetId: null,
+  adId: null,
+  creativeId: null,
+});
 
 async function republishing() {
   const made = await explainedWorld();
@@ -716,7 +729,9 @@ describe('B1 — la nouvelle campagne n’est créée que si l’ancienne est re
     r.s.w.db
       .rows('stats_daily')
       .push({ campaign_id: r.s.id, ad_id: adRow?.id, date: '2026-10-10', results: 3 });
-    r.s.fake.simulateCreateRefusal(new AppError('meta_error', { meta: { title: 'Refus de Meta' } }));
+    r.s.fake.simulateCreateRefusal(
+      new AppError('meta_error', { meta: { title: 'Refus de Meta' } }),
+    );
     const outcome = await runTask(r.s);
     expect(outcome).toMatchObject({ outcome: 'failed' });
     expect(r.s.fake.campaigns.get(r.oldMeta)?.deleted).toBe(true);

@@ -9,7 +9,7 @@ import {
   idempotencyKeyOf,
   rejectionIdParam,
 } from '../../../../../../../campaigns/params';
-import { publishDeps } from '../../../../../../../campaigns/services';
+import { rejectionFixDeps } from '../../../../../../../campaigns/services';
 
 export const POST = api(
   {
@@ -26,7 +26,7 @@ export const POST = api(
       campaignIdParam(params),
       rejectionIdParam(params),
       { idempotencyKey: idempotencyKeyOf(headers) },
-      publishDeps(),
+      rejectionFixDeps(),
     ),
   }),
 );

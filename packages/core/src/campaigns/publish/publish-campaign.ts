@@ -326,7 +326,8 @@ export async function publishCampaign(
   await assertTotalStillValid(ctx, row, start, input.confirmedTotal);
 
   // Quota retenu APRÈS toute la validation, AVANT le passage en `publishing` : un refus (402) ne modifie rien.
-  const holding = needsQuotaHold(row);
+  // Une republication après refus (`copy` fourni) ne retient JAMAIS de quota : la campagne a déjà été décomptée (EC-CAMP-07).
+  const holding = input.copy === undefined && needsQuotaHold(row);
   if (holding && deps.beforeSpend !== undefined) await deps.beforeSpend(campaignId, workspaceId);
 
   const attempt = row.publish_attempt + 1;

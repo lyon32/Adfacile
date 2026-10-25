@@ -19,6 +19,7 @@ import {
   isAmbiguousMetaFailure,
   toAppError,
   type PlatformConnector,
+  type PlatformStatus,
   type PlatformToken,
 } from '@pubeka/platforms';
 import { calendarDateIn } from '@pubeka/shared';
@@ -99,6 +100,24 @@ async function prepareRemote(
     throw error instanceof AppError ? error : internal(error);
   }
   return { token, refs };
+}
+
+/**
+ * Statut EFFECTIF de la campagne chez Meta (lecture seule : aucune dépense, aucune écriture). Sert à la correction d'un refus :
+ * on n'agit sur la campagne refusée que si Meta la montre toujours refusée (le client a pu gagner son appel entre-temps).
+ */
+export async function readMetaStatus(
+  ctx: MemberCtx,
+  campaignId: string,
+  deps: CampaignControlDeps,
+): Promise<PlatformStatus> {
+  const row = await loadPublishRow(ctx.db, ctx.workspace.id, campaignId);
+  const remote = await prepareRemote(ctx, row, deps);
+  try {
+    return await deps.connector.getStatus(remote.token, remote.refs);
+  } catch (error) {
+    throw toAppError(error);
+  }
 }
 
 async function view(ctx: MemberCtx, row: CampaignRow): Promise<CampaignView> {

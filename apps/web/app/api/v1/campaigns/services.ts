@@ -8,6 +8,7 @@ import {
   type CampaignControlDeps,
   type JobEnqueuer,
   type ProposalDeps,
+  type RejectionFixDeps,
   type PublishCampaignDeps,
 } from '@pubeka/core';
 import { getEnv } from '@pubeka/shared';
@@ -72,6 +73,11 @@ export function publishDeps(): PublishCampaignDeps {
     metaPublishEnabled: () => metaPublishAllowed(getEnv()),
   };
   return publishDefault;
+}
+
+/** Dépendances de « Appliquer la correction et republier » : la publication (tâche, interrupteur) et la LECTURE du statut chez Meta. */
+export function rejectionFixDeps(): RejectionFixDeps {
+  return { ...publishDeps(), meta: controlDeps() };
 }
 
 /** Tests d'intégration seulement : remplace les dépendances (fausse file de tâches, quota simulé). Refusé en production. */

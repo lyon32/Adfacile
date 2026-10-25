@@ -25,6 +25,7 @@ import {
   toAppError,
   type PlatformCampaignRefs,
   type PlatformConnector,
+  type PlatformStatus,
   type PlatformToken,
   type RemoteCampaign,
 } from '@pubeka/platforms';
@@ -226,17 +227,37 @@ async function persistRefs(
   );
   if (updated === null) return false;
   if (refs.adId !== null) {
-    const inserted = await run.svc.from('ads').insert({
-      workspace_id: run.row.workspace_id,
-      campaign_id: run.row.id,
-      meta_ad_id: refs.adId,
-      meta_creative_id: refs.creativeId,
-      format: '4:5',
-      status: 'paused',
-    });
+    // Republication d'une campagne refusée : la ligne de publicité « vidée » est RÉUTILISÉE (les statistiques par publicité lui sont
+    // rattachées en CASCADE : la supprimer les perdrait) ; sinon, une ligne neuve.
+    const emptied = unwrap<{ id: string }[]>(
+      await run.svc
+        .from('ads')
+        .select('id')
+        .eq('workspace_id', run.row.workspace_id)
+        .eq('campaign_id', run.row.id)
+        .is('meta_ad_id', null)
+        .order('id', { ascending: true })
+        .limit(1),
+    );
+    const reused = emptied[0];
+    const written =
+      reused === undefined
+        ? await run.svc.from('ads').insert({
+            workspace_id: run.row.workspace_id,
+            campaign_id: run.row.id,
+            meta_ad_id: refs.adId,
+            meta_creative_id: refs.creativeId,
+            format: '4:5',
+            status: 'paused',
+          })
+        : await run.svc
+            .from('ads')
+            .update({ meta_ad_id: refs.adId, meta_creative_id: refs.creativeId, status: 'paused' })
+            .eq('workspace_id', run.row.workspace_id)
+            .eq('id', reused.id);
     // 23505 : déjà enregistrée par une exécution précédente, sans conséquence.
-    if (inserted.error !== null && inserted.error.code !== '23505') {
-      throw new AppError('internal_error', { cause: inserted.error });
+    if (written.error !== null && written.error.code !== '23505') {
+      throw new AppError('internal_error', { cause: written.error });
     }
   }
   return true;
@@ -397,6 +418,16 @@ async function accept(
   );
   if (sent === null) return { outcome: 'skipped', reason: 'done' };
   await recordStatusEvent(run.svc, sent, 'in_review', 'user', { adopted });
+  // Republication après refus (S18) : le refus n'est « corrigé » que maintenant, quand Meta a reçu la nouvelle campagne.
+  const fixed = await run.svc
+    .from('rejections')
+    .update({ fixed_and_republished: true })
+    .eq('workspace_id', sent.workspace_id)
+    .eq('campaign_id', sent.id)
+    .eq('fixed_and_republished', false);
+  if (fixed.error !== null) {
+    logger.error('Refus non marqué corrigé', { campaignId: sent.id, code: fixed.error.code });
+  }
 
   if (sent.quota_state === 'held' && run.deps.afterAccepted !== undefined) {
     try {
@@ -458,38 +489,47 @@ async function lockPage(svc: ServiceClient, row: PublishRow, now: Date): Promise
 }
 
 /**
- * Republication d'une campagne REFUSÉE (S18, `applyRejectionFix`) : elle repart d'une création neuve, donc l'ancienne campagne
- * refusée (qui ne diffuse pas et ne dépense rien) est retirée de chez Meta, puis oubliée avec sa publicité. On ne retire QUE
- * ce que Meta montre refusé ou en pause : une campagne qui diffuse n'est jamais supprimée d'ici. Un échec de suppression est
- * journalisé et n'empêche pas la republication.
+ * Republication d'une campagne REFUSÉE (S18, `applyRejectionFix`) : elle repart d'une création neuve. RÈGLE D'ARGENT : la nouvelle
+ * campagne n'est créée QUE si l'ancienne n'existe plus chez Meta (supprimée avec succès ou absente) ; sinon deux campagnes pourraient
+ * diffuser en même temps. L'ancienne n'est retirée que si Meta la montre refusée ou en pause (relu ICI, juste avant : le client a pu
+ * gagner son appel). Tout autre cas échoue net, SANS création et sans relance automatique (EC-META-05), avec une raison que l'écran
+ * explique :
+ *  - `previous_campaign_still_live` : Meta ne la montre plus refusée (elle diffuse ou est en vérification) ;
+ *  - `previous_campaign_unreadable` : son statut n'a pas pu être lu ;
+ *  - `previous_campaign_not_removed` : sa suppression a échoué.
+ * Les lignes de publicité ne sont jamais supprimées (leurs statistiques y sont rattachées en CASCADE) : après une suppression
+ * réussie, elles sont seulement « vidées » de leurs identifiants Meta, puis réutilisées par la nouvelle création.
  */
-async function removePreviousAttempt(run: Run): Promise<void> {
+async function removePreviousAttempt(run: Run): Promise<AppError | null> {
   const { row } = run;
-  if (row.meta_campaign_id === null) return;
+  if (row.meta_campaign_id === null) return null;
   const refs = await loadRefs(run.svc, row, run.adAccountId);
-  if (refs === null) return;
+  if (refs === null) return null;
+  const blocked = (reason: string): AppError => new AppError('meta_error', { meta: { reason } });
+  let remoteStatus: PlatformStatus['status'];
   try {
-    const status = await run.deps.connector.getStatus(run.token, refs);
-    if (status.status !== 'rejected' && status.status !== 'paused') {
-      logger.warn('Ancienne campagne laissée chez Meta : elle n’est ni refusée ni en pause', {
-        campaignId: row.id,
-      });
-      return;
-    }
+    remoteStatus = (await run.deps.connector.getStatus(run.token, refs)).status;
   } catch (error) {
-    logger.warn('État de l’ancienne campagne illisible : elle est laissée chez Meta', {
+    logger.warn('État de l’ancienne campagne illisible : rien n’est créé', {
       campaignId: row.id,
       err: error,
     });
-    return;
+    return blocked('previous_campaign_unreadable');
   }
-  if (!(await removeRemote(run, refs))) return;
-  const forgotten = await run.svc
+  if (remoteStatus !== 'rejected' && remoteStatus !== 'paused') {
+    logger.warn('Ancienne campagne encore vivante chez Meta : rien n’est créé', {
+      campaignId: row.id,
+    });
+    return blocked('previous_campaign_still_live');
+  }
+  if (!(await removeRemote(run, refs))) return blocked('previous_campaign_not_removed');
+
+  const emptied = await run.svc
     .from('ads')
-    .delete()
+    .update({ meta_ad_id: null, meta_creative_id: null, status: 'paused' })
     .eq('workspace_id', row.workspace_id)
     .eq('campaign_id', row.id);
-  if (forgotten.error !== null) throw new AppError('internal_error', { cause: forgotten.error });
+  if (emptied.error !== null) throw new AppError('internal_error', { cause: emptied.error });
   const cleared = await run.svc
     .from('campaigns')
     .update({ meta_campaign_id: null, meta_adset_id: null })
@@ -500,11 +540,14 @@ async function removePreviousAttempt(run: Run): Promise<void> {
   if (cleared.error !== null) throw new AppError('internal_error', { cause: cleared.error });
   run.row.meta_campaign_id = null;
   run.row.meta_adset_id = null;
+  return null;
 }
 
 /** Création chez Meta : la seule étape qui ne se rejoue pas. */
 async function create(run: Run): Promise<PublicationOutcome> {
-  await removePreviousAttempt(run);
+  const previous = await removePreviousAttempt(run);
+  // L'ancienne campagne est toujours chez Meta (ou son état est inconnu) : on ne crée RIEN.
+  if (previous !== null) return fail(run, previous);
   const spec = await buildSpec(run);
   const claimed = await updateWhilePublishing(
     run.svc,

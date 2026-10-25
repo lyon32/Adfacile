@@ -50,7 +50,14 @@ export interface RejectionContext {
 
 /** Une seule des publicités du test est refusée et la campagne continue (EC-META-06). */
 export function isPartial(row: RejectionRow, context: RejectionContext): boolean {
-  return !row.fixed_and_republished && row.ad_id !== null && context.campaignStatus !== 'rejected';
+  // La campagne « continue » (vérification, diffusion, pause) : ni refusée en entier, ni en cours de republication, ni en erreur.
+  return (
+    !row.fixed_and_republished &&
+    row.ad_id !== null &&
+    (context.campaignStatus === 'in_review' ||
+      context.campaignStatus === 'active' ||
+      context.campaignStatus === 'paused')
+  );
 }
 
 export function toRejectionView(row: RejectionRow, context: RejectionContext): RejectionView {
@@ -64,7 +71,7 @@ export function toRejectionView(row: RejectionRow, context: RejectionContext): R
     isFixableCopyField(fix.field) &&
     !row.fixed_and_republished &&
     !partial &&
-    context.campaignStatus === 'rejected';
+    (context.campaignStatus === 'rejected' || context.campaignStatus === 'error');
   return {
     id: row.id,
     campaign_id: row.campaign_id,
