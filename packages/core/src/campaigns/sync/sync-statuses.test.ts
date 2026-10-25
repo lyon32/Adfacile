@@ -88,10 +88,10 @@ describe('TR-PLA-05 — synchronisation des statuts', () => {
     expect(s.fake.resumeAttempts).toBe(1); // l'activation de la publication d'essai
   });
 
-  it('ne regarde ni les brouillons, ni les campagnes sans identifiant Meta, ni les campagnes déjà refusées ou arrêtées', async () => {
+  it('ne regarde ni les brouillons, ni les campagnes sans identifiant Meta, ni les campagnes arrêtées, terminées ou en erreur', async () => {
     const s = await syncWorld();
     const { connector, calls } = counting(s);
-    for (const status of ['draft', 'rejected', 'stopped', 'ended', 'error']) {
+    for (const status of ['draft', 'stopped', 'ended', 'error']) {
       rowOf(s.w.db, s.id).status = status;
       await syncCampaignStatuses(s.ctxAt(15), s.deps({ connector }));
     }
@@ -100,6 +100,15 @@ describe('TR-PLA-05 — synchronisation des statuts', () => {
     rowOf(s.w.db, s.id).meta_campaign_id = null;
     await syncCampaignStatuses(s.ctxAt(15), s.deps({ connector }));
     expect(calls).toEqual([]);
+  });
+
+  it('S18 : une campagne déjà refusée n’a plus son statut lu ; seul le motif du refus manquant est lu chez Meta', async () => {
+    const s = await syncWorld();
+    const { connector, calls } = counting(s);
+    rowOf(s.w.db, s.id).status = 'rejected';
+    await syncCampaignStatuses(s.ctxAt(15), s.deps({ connector }));
+    expect(calls).not.toContain('getStatus');
+    expect(calls).not.toContain('fetchStats');
   });
 
   it('perte de course : si le client met la campagne en pause pendant la lecture, rien n’est écrasé et aucun historique n’est écrit', async () => {

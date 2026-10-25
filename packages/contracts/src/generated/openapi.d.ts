@@ -966,6 +966,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workspaces/{workspaceId}/campaigns/{campaignId}/rejections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: components["parameters"]["WorkspaceId"];
+                campaignId: components["parameters"]["CampaignId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Refus de Meta de la campagne (le plus récent d'abord)
+         * @description Tout membre. Un refus naît quand Meta refuse la publicité (ou l'une des deux d'un test A/B) ; son rapport est rédigé par le
+         *     Modérateur, une seule fois. `status` dit où en est cette explication.
+         */
+        get: operations["listRejections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspaces/{workspaceId}/campaigns/{campaignId}/rejections/{rejectionId}": {
         parameters: {
             query?: never;
@@ -977,7 +1001,10 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Rapport du Modérateur sur un refus */
+        /**
+         * Rapport du Modérateur sur un refus
+         * @description Tout membre. Un refus d'un autre espace ou d'une autre campagne est introuvable (404).
+         */
         get: operations["getRejection"];
         put?: never;
         post?: never;
@@ -1003,7 +1030,16 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Appliquer la correction et republier (sans quota) */
+        /**
+         * Appliquer la correction et republier (sans quota)
+         * @description Propriétaire ou éditeur, espace modifiable, `Idempotency-Key` obligatoire. Remplace le texte refusé par la correction du
+         *     Modérateur puis republie la MÊME campagne : aucun quota de campagnes n'est décompté (EC-CAMP-07). Comme toute publication, la
+         *     route ne parle pas à Meta : elle passe la campagne en « publication » et lance la tâche `campaign.publish` ; elle est bloquée
+         *     (503 `provider_unavailable`, `meta.reason = publish_disabled`) tant que la publication réelle n'est pas activée.
+         *     409 : refus déjà corrigé, rapport pas encore prêt (`rejection_not_explained`), produit interdit ou correction non applicable en un
+         *     clic (visuel, page de destination : `fix_not_applicable`), refus partiel d'un test A/B dont l'autre publicité continue
+         *     (`partial_rejection`), campagne qui n'est pas refusée (`invalid_transition`).
+         */
         post: operations["applyRejectionFix"];
         delete?: never;
         options?: never;
@@ -2477,14 +2513,62 @@ export interface components {
             }[];
             fx: components["schemas"]["StatsFx"];
         };
+        /** @description Un refus de Meta et le rapport du Modérateur (docs/agents/04). */
         Rejection: {
             /** Format: uuid */
             id: string;
-            meta_reason?: string;
-            /** @description Sortie du Modérateur (docs/agents/04) */
-            report: Record<string, never>;
-            can_fix?: boolean;
-            appeal_recommended?: boolean;
+            /** Format: uuid */
+            campaign_id: string;
+            /**
+             * Format: uuid
+             * @description Publicité refusée ; null quand la campagne entière est refusée
+             */
+            ad_id: string | null;
+            /** @enum {string|null} */
+            variant: "A" | "B" | null;
+            /**
+             * @description État de l'explication par le Modérateur
+             * @enum {string}
+             */
+            status: "pending" | "running" | "ready" | "failed";
+            /** @description Une seule des deux publicités d'un test A/B est refusée : la campagne continue avec l'autre (EC-META-06) */
+            partial: boolean;
+            /** @description Corrigé et republié */
+            fixed: boolean;
+            /** @description Motif officiel de Meta, tel que lu chez Meta */
+            meta_reason: string | null;
+            report: components["schemas"]["RejectionReport"] | null;
+            /** @description Faux tant que le rapport n'est pas prêt, et pour un produit interdit par Meta */
+            can_fix: boolean;
+            /** @description Le bouton « Appliquer la correction et republier » est proposé (correction de texte, campagne refusée en entier, rapport prêt, pas déjà corrigé) */
+            fix_applicable: boolean;
+            appeal_recommended: boolean;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /** @description Sortie du Modérateur, validée (docs/agents/04 §6). La mémoire des refus (motif anonymisé) n'est pas exposée. */
+        RejectionReport: {
+            /** @enum {string} */
+            rejection_category: "personal_attributes" | "misleading_claims" | "before_after" | "prohibited_product" | "restricted_product" | "sensational_content" | "adult_content" | "landing_page" | "intellectual_property" | "text_quality" | "other";
+            culprit: {
+                /** @enum {string} */
+                where: "primary_text" | "headline" | "description" | "visual" | "landing_page" | "product" | "unknown";
+                excerpt: string | null;
+            };
+            /** @enum {string} */
+            cause_certainty: "high" | "medium" | "low";
+            can_fix: boolean;
+            fix: {
+                field: string;
+                original: string | null;
+                suggested: string;
+            } | null;
+            appeal_recommended: boolean;
+            /** @description 3 à 5 phrases, langue de l'utilisateur */
+            report: string;
+        };
+        RejectionList: {
+            data: components["schemas"]["Rejection"][];
         };
         /** @enum {string} */
         Capability: "c1_text_to_image" | "c2_reference_to_image" | "c3_edit" | "c4_extend" | "cutout" | "c5_image_to_video" | "c6_text_to_video" | "c7_reference_to_video";
@@ -4421,6 +4505,31 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    listRejections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: components["parameters"]["WorkspaceId"];
+                campaignId: components["parameters"]["CampaignId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RejectionList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     getRejection: {
         parameters: {
             query?: never;
@@ -4444,6 +4553,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     applyRejectionFix: {
@@ -4471,8 +4581,12 @@ export interface operations {
                     "application/json": components["schemas"]["Campaign"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     listMediaModels: {

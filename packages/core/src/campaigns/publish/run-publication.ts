@@ -457,8 +457,54 @@ async function lockPage(svc: ServiceClient, row: PublishRow, now: Date): Promise
   }
 }
 
+/**
+ * Republication d'une campagne REFUSÉE (S18, `applyRejectionFix`) : elle repart d'une création neuve, donc l'ancienne campagne
+ * refusée (qui ne diffuse pas et ne dépense rien) est retirée de chez Meta, puis oubliée avec sa publicité. On ne retire QUE
+ * ce que Meta montre refusé ou en pause : une campagne qui diffuse n'est jamais supprimée d'ici. Un échec de suppression est
+ * journalisé et n'empêche pas la republication.
+ */
+async function removePreviousAttempt(run: Run): Promise<void> {
+  const { row } = run;
+  if (row.meta_campaign_id === null) return;
+  const refs = await loadRefs(run.svc, row, run.adAccountId);
+  if (refs === null) return;
+  try {
+    const status = await run.deps.connector.getStatus(run.token, refs);
+    if (status.status !== 'rejected' && status.status !== 'paused') {
+      logger.warn('Ancienne campagne laissée chez Meta : elle n’est ni refusée ni en pause', {
+        campaignId: row.id,
+      });
+      return;
+    }
+  } catch (error) {
+    logger.warn('État de l’ancienne campagne illisible : elle est laissée chez Meta', {
+      campaignId: row.id,
+      err: error,
+    });
+    return;
+  }
+  if (!(await removeRemote(run, refs))) return;
+  const forgotten = await run.svc
+    .from('ads')
+    .delete()
+    .eq('workspace_id', row.workspace_id)
+    .eq('campaign_id', row.id);
+  if (forgotten.error !== null) throw new AppError('internal_error', { cause: forgotten.error });
+  const cleared = await run.svc
+    .from('campaigns')
+    .update({ meta_campaign_id: null, meta_adset_id: null })
+    .eq('workspace_id', row.workspace_id)
+    .eq('id', row.id)
+    .eq('status', 'publishing')
+    .eq('publish_phase', 'none');
+  if (cleared.error !== null) throw new AppError('internal_error', { cause: cleared.error });
+  run.row.meta_campaign_id = null;
+  run.row.meta_adset_id = null;
+}
+
 /** Création chez Meta : la seule étape qui ne se rejoue pas. */
 async function create(run: Run): Promise<PublicationOutcome> {
+  await removePreviousAttempt(run);
   const spec = await buildSpec(run);
   const claimed = await updateWhilePublishing(
     run.svc,

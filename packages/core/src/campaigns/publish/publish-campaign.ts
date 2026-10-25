@@ -16,7 +16,7 @@ import { calendarDateIn } from '@pubeka/shared';
 import type { MemberCtx } from '../../context';
 import { assertRole, assertWritable } from '../../workspaces/guards';
 import { checkCampaignFields } from '../campaign-fields';
-import { copySchema, geoSchema, readJson, targetingSchema } from '../campaign-schemas';
+import { copySchema, geoSchema, readJson, targetingSchema, type AdCopy } from '../campaign-schemas';
 import { nextCampaignStatus } from '../campaign-state';
 import { toCampaignView, type CampaignView } from '../campaign-view';
 import { campaignCost } from '../cost';
@@ -47,6 +47,11 @@ export interface PublishCampaignInput {
   acceptLiability: boolean;
   /** Total affiché à l'écran (EC-CAMP-05). */
   confirmedTotal?: ConfirmedTotal | undefined;
+  /**
+   * Textes qui REMPLACENT ceux de la campagne dans la même opération (correction d'un refus, S18) : validés comme les autres
+   * champs, puis écrits avec le passage en `publishing`. Si la publication est refusée, rien n'est modifié.
+   */
+  copy?: AdCopy | undefined;
 }
 
 /** Écart de total toléré entre l'écran et le recalcul : au-delà, le client reconfirme (SECURITY_NOTES EC-CAMP-05). */
@@ -253,7 +258,8 @@ export async function publishCampaign(
   // Interrupteur de sécurité : Meta réel et publication non activée = refus AVANT toute lecture, écriture ou décompte de quota.
   assertMetaPublishEnabled(deps);
   const workspaceId = ctx.workspace.id;
-  const row = await loadPublishRow(ctx.db, workspaceId, campaignId);
+  const loaded = await loadPublishRow(ctx.db, workspaceId, campaignId);
+  const row: PublishRow = input.copy === undefined ? loaded : { ...loaded, copy: input.copy };
 
   // Rejeu de la même clé : on rend l'état actuel, sans rien refaire (EC-CAMP-01). Jamais une deuxième publication.
   if (row.publish_idempotency_key === input.idempotencyKey && row.status !== 'draft') {
@@ -338,6 +344,7 @@ export async function publishCampaign(
       publish_started_at: ctx.now().toISOString(),
       publish_error: null,
       quota_state: holding ? 'held' : row.quota_state,
+      ...(input.copy === undefined ? {} : { copy: input.copy }),
     },
     { version: row.version },
   );

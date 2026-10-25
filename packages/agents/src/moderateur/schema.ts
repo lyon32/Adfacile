@@ -105,6 +105,12 @@ const baseOutputSchema = z.strictObject({
 });
 export type ModerateurOutput = z.infer<typeof baseOutputSchema>;
 
+/** Rapport tel qu'il est enregistré (sortie du modèle + signalements internes), relu avec tolérance. */
+export const moderateurStoredSchema = baseOutputSchema.extend({
+  flags: z.array(z.string()).optional(),
+});
+export type ModerateurStored = z.infer<typeof moderateurStoredSchema>;
+
 /** Phrases du rapport : « 3 à 5 phrases » (docs/agents/04 §7), tolérance de 6 comme le banc. */
 function sentenceCount(report: string): number {
   return report.split(/[.!?]+\s/).filter((part) => part.trim() !== '').length;
