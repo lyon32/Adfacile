@@ -33,11 +33,25 @@ export async function loadCampaignAds(
   );
 }
 
+/** Lectures de refus restantes pour la passe (limite de débit de Meta, EC-META-10) : chaque `fetchRejection` en consomme une. */
+export interface ReadBudget {
+  left: number;
+}
+
+export function takeRead(budget: ReadBudget | undefined): boolean {
+  if (budget === undefined) return true;
+  if (budget.left <= 0) return false;
+  budget.left -= 1;
+  return true;
+}
+
 export interface AdsReview {
   /** Plusieurs publicités (test A/B) : la logique « partielle » s'applique. */
   multi: boolean;
   total: number;
   rejected: number;
+  /** Une lecture a été sautée faute de budget : le résultat n'est PAS complet (jamais conclure « toutes refusées »). */
+  incomplete: boolean;
   /** Refus enregistrés pendant cette lecture (à expliquer). */
   recorded: string[];
 }
@@ -54,16 +68,24 @@ export async function reviewAds(
     campaignId: string;
     token: PlatformToken;
     refs: PlatformCampaignRefs;
+    budget?: ReadBudget;
   },
 ): Promise<AdsReview> {
   const ads = await loadCampaignAds(svc, input.workspaceId, input.campaignId);
-  if (ads.length < 2) return { multi: false, total: ads.length, rejected: 0, recorded: [] };
+  if (ads.length < 2) {
+    return { multi: false, total: ads.length, rejected: 0, incomplete: false, recorded: [] };
+  }
 
   let rejected = 0;
+  let incomplete = false;
   const recorded: string[] = [];
   for (const ad of ads) {
     if (await hasOpenRejection(svc, input.workspaceId, input.campaignId, ad.id)) {
       rejected += 1;
+      continue;
+    }
+    if (!takeRead(input.budget)) {
+      incomplete = true;
       continue;
     }
     const result = await recordRejection(svc, connector, { ...input, ad });
@@ -71,5 +93,5 @@ export async function reviewAds(
     rejected += 1;
     if (result.created) recorded.push(result.id);
   }
-  return { multi: true, total: ads.length, rejected, recorded };
+  return { multi: true, total: ads.length, rejected, incomplete, recorded };
 }

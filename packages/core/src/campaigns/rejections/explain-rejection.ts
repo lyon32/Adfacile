@@ -12,6 +12,7 @@ import {
   AgentRunError,
   createAiGateway,
   EnvAgentConfigSource,
+  isAnonymousPattern,
   moderateurAgent,
   moderateurInputSchema,
   prepareModerateurMessage,
@@ -65,15 +66,19 @@ function str(value: unknown): string | null {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : null;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 function field(source: unknown, key: string): unknown {
-  return typeof source === 'object' && source !== null && key in source
-    ? (source as Record<string, unknown>)[key]
-    : null;
+  return isRecord(source) ? (source[key] ?? null) : null;
 }
 
 interface AdMaterial {
   language: 'fr' | 'en';
   input: unknown;
+  /** Textes du client (jamais écrits dans la mémoire des refus). */
+  clientTexts: string[];
   summary: NonNullable<Json>;
 }
 
@@ -128,7 +133,7 @@ async function gatherMaterial(svc: ServiceClient, rejection: RejectionRow): Prom
       );
       const profile = business?.profile;
       const products = field(profile, 'products');
-      const firstProduct = Array.isArray(products) ? (products[0] as unknown) : null;
+      const firstProduct: unknown = Array.isArray(products) ? products.at(0) : null;
       product =
         str(field(firstProduct, 'name')) ??
         str(field(field(profile, 'business_name'), 'value')) ??
@@ -159,6 +164,7 @@ async function gatherMaterial(svc: ServiceClient, rejection: RejectionRow): Prom
   return {
     language,
     input,
+    clientTexts: [copy.primary_text ?? '', copy.headline ?? '', copy.description ?? '', product],
     // Le journal garde un RÉSUMÉ : jamais les textes du client (R11).
     summary: {
       rejection_id: rejection.id,
@@ -210,7 +216,11 @@ export async function explainRejection(
 ): Promise<ExplainOutcome> {
   const claimed = await ctx.svc
     .from('rejections')
-    .update({ explain_status: 'running', explain_error: null })
+    .update({
+      explain_status: 'running',
+      explain_error: null,
+      explain_started_at: ctx.now().toISOString(),
+    })
     .eq('workspace_id', ref.workspaceId)
     .eq('id', ref.rejectionId)
     .eq('explain_status', 'pending')
@@ -263,7 +273,14 @@ export async function explainRejection(
       memory_pattern: output.memory_pattern,
     });
     if (!saved) return 'skipped';
-    await remember(ctx.svc, output.memory_pattern, ctx.now());
+    // Mémoire des refus : anonyme ou rien (aucune donnée personnelle ni suite de mots du texte du client).
+    if (isAnonymousPattern(output.memory_pattern, material.clientTexts)) {
+      await remember(ctx.svc, output.memory_pattern, ctx.now());
+    } else {
+      logger.warn('Motif non anonyme : la mémoire des refus n’est pas écrite', {
+        rejectionId: rejection.id,
+      });
+    }
     return 'explained';
   } catch (error) {
     const code = error instanceof AppError ? error.code : 'internal_error';
@@ -272,12 +289,59 @@ export async function explainRejection(
   }
 }
 
+/** Une explication « en cours » plus vieille que cela est considérée perdue (processus mort) : elle passe à « échec ». */
+export const EXPLAIN_STALE_MS = 10 * 60_000;
+
+/**
+ * Rend « échec » (`explain_timeout`) les explications restées « en cours » au-delà de `EXPLAIN_STALE_MS`, SANS relancer le modèle :
+ * un appel au résultat incertain n'est jamais rejoué d'office (EC-META-05). L'écran propose alors les actions manuelles.
+ */
+export async function failStaleExplanations(
+  ctx: ServiceCtx,
+  maxAgeMs = EXPLAIN_STALE_MS,
+): Promise<number> {
+  const cutoff = ctx.now().getTime() - maxAgeMs;
+  const running = unwrap<
+    {
+      id: string;
+      workspace_id: string;
+      explain_started_at: string | null;
+      created_at: string | null;
+    }[]
+  >(
+    await ctx.svc
+      .from('rejections')
+      .select('id, workspace_id, explain_started_at, created_at')
+      .eq('explain_status', 'running')
+      .limit(200),
+  );
+  let failed = 0;
+  for (const row of running) {
+    // Sans date de prise (créé avant la migration 0019), la date de création fait foi.
+    const since = Date.parse(row.explain_started_at ?? row.created_at ?? '');
+    if (Number.isNaN(since) || since > cutoff) continue;
+    const written = await ctx.svc
+      .from('rejections')
+      .update({ explain_status: 'failed', explain_error: 'explain_timeout' })
+      .eq('workspace_id', row.workspace_id)
+      .eq('id', row.id)
+      .eq('explain_status', 'running')
+      .select('id');
+    if (written.error === null && written.data.length > 0) failed += 1;
+  }
+  return failed;
+}
+
 /** Explique les refus en attente (les plus anciens d'abord), au plus `limit` par passage. Ne lance jamais. */
 export async function explainPendingRejections(
   ctx: ServiceCtx,
   deps: ExplainDeps,
   limit = 10,
 ): Promise<{ explained: number; failed: number; skipped: number }> {
+  const stale = await failStaleExplanations(ctx).catch((error: unknown) => {
+    logger.error('Explications perdues non traitées', { err: error });
+    return 0;
+  });
   const pending = unwrap<{ id: string; workspace_id: string }[]>(
     await ctx.svc
       .from('rejections')
@@ -286,7 +350,7 @@ export async function explainPendingRejections(
       .order('created_at', { ascending: true })
       .limit(Math.max(1, Math.min(limit, 50))),
   );
-  const report = { explained: 0, failed: 0, skipped: 0 };
+  const report = { explained: 0, failed: stale, skipped: 0 };
   for (const item of pending) {
     try {
       const outcome = await explainRejection(ctx, deps, {

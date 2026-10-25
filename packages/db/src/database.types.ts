@@ -1883,6 +1883,7 @@ export type Database = {
           campaign_id: string;
           created_at: string;
           explain_error: string | null;
+          explain_started_at: string | null;
           explain_status: string;
           fixed_and_republished: boolean;
           id: string;
@@ -1896,6 +1897,7 @@ export type Database = {
           campaign_id: string;
           created_at?: string;
           explain_error?: string | null;
+          explain_started_at?: string | null;
           explain_status?: string;
           fixed_and_republished?: boolean;
           id?: string;
@@ -1909,6 +1911,7 @@ export type Database = {
           campaign_id?: string;
           created_at?: string;
           explain_error?: string | null;
+          explain_started_at?: string | null;
           explain_status?: string;
           fixed_and_republished?: boolean;
           id?: string;

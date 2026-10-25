@@ -148,6 +148,20 @@ await check('la fonction de mémoire est réservée au serveur (pas aux connect�
   return a && b;
 });
 
+// --- Migration 0019 : horodatage de la prise d'une explication ---
+await check('0019 : un refus neuf n’a pas de date de prise ; elle peut être écrite', async () => {
+  const c = await newCampaign(); await reject(WS1, c);
+  const [r] = await q(`select explain_started_at t from public.rejections where campaign_id=$1`, [c]);
+  await db.query(`update public.rejections set explain_status='running', explain_started_at=$2 where campaign_id=$1`, [c, NOW]);
+  const [after] = await q(`select explain_started_at t from public.rejections where campaign_id=$1`, [c]);
+  return r.t === null && new Date(after.t).getTime() === Date.parse(NOW);
+});
+await check('0019 : un membre ne peut pas écrire la date de prise', async () => {
+  const c = await newCampaign(); await reject(WS1, c);
+  return as('authenticated', U1, (tx) => tx.query(`update public.rejections set explain_started_at=now() where campaign_id=$1`, [c])).then(
+    (r) => r.affectedRows === 0, (e) => /permission denied/i.test(e.message));
+});
+
 for (const r of results) console.log(r);
 console.log(`\n${pass} réussis, ${fail} échoués`);
 process.exit(fail === 0 ? 0 : 1);

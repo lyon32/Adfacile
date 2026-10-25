@@ -974,7 +974,7 @@ paths:
         (503 `provider_unavailable`, `meta.reason = publish_disabled`) tant que la publication réelle n'est pas activée.
         409 : refus déjà corrigé, rapport pas encore prêt (`rejection_not_explained`), produit interdit ou correction non applicable en un
         clic (visuel, page de destination : `fix_not_applicable`), refus partiel d'un test A/B dont l'autre publicité continue
-        (`partial_rejection`), campagne qui n'est pas refusée (`invalid_transition`).
+        (`partial_rejection`), campagne qui n'est pas refusée (`invalid_transition`), campagne que Meta ne montre plus refusée (`no_longer_rejected` : le statut est relu chez Meta avant toute écriture ; 502 `meta_error` si la lecture échoue), clé d'idempotence déjà utilisée par une autre publication (`idempotency_key_reused`). Si l'ancienne campagne est encore chez Meta au moment de la tâche, rien n'est créé : la campagne passe en `error` avec `publication_error.reason` = `previous_campaign_still_live`, `previous_campaign_unreadable` ou `previous_campaign_not_removed`, le refus reste ouvert et peut être corrigé de nouveau.
       responses:
         '202': { description: Republiée, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
         '400': { $ref: '#/components/responses/BadRequest' }

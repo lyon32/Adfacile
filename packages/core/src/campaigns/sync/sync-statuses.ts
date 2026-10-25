@@ -20,7 +20,7 @@ import { loadPublishRow } from '../publish/publish-row';
 import type { PublishRow } from '../publish/publish-types';
 import { loadRefs } from '../publish/remote-refs';
 import { recordRejection } from '../rejections/record-rejection';
-import { loadCampaignAds, reviewAds } from '../rejections/review-ads';
+import { loadCampaignAds, reviewAds, takeRead, type ReadBudget } from '../rejections/review-ads';
 import { applyTransition, recordStatusEvent } from '../publish/transitions';
 import { metaRateLimitScope } from './meta-limits';
 import { decideStatusEvent, type StatusDecisionReason } from './status-decision';
@@ -31,6 +31,11 @@ const logger = createLogger({ base: { module: 'sync-statuses' } });
 /** Campagnes examinées au plus par passage (une passe toutes les 15 minutes). */
 export const STATUS_SYNC_BATCH = 200;
 /** Un signal de Meta plus vieux que cela est ignoré par la passe « webhook » (la passe de 15 minutes le rattrape). */
+/**
+ * Lectures de refus (`fetchRejection`) au plus par passe, en plus du statut : une passe de 200 campagnes ne doit pas doubler les
+ * appels vers Meta (limite de débit, EC-META-10). Le reste est lu à la passe suivante ; une limite de Meta arrête la passe.
+ */
+export const REJECTION_READS_PER_PASS = 40;
 export const WEBHOOK_SIGNAL_WINDOW_MS = 24 * 60 * 60_000;
 
 /** Statuts qui existent chez Meta et qu'on suit. `stopped` et `rejected` n'avancent que par une action du client. */
@@ -191,6 +196,7 @@ async function syncOne(
   candidate: Candidate,
   tokens: Map<string, Promise<PlatformToken>>,
   report: StatusSyncReport,
+  budget: ReadBudget,
 ): Promise<Outcome> {
   const row = await loadPublishRow(ctx.svc, candidate.workspace_id, candidate.id);
   if (!EXAMINED.includes(row.status)) return 'skipped';
@@ -214,8 +220,9 @@ async function syncOne(
   // Campagne déjà refusée : on ne lit pas son statut (il ne changera que par une action du client) ; on s'assure seulement que
   // chaque publicité refusée a son refus enregistré, pour que le Modérateur l'explique (S18).
   if (row.status === 'rejected') {
-    const found = await catchUpRejections(ctx, deps, row, accessToken, refs, report);
-    await markSynced(ctx, row);
+    const found = await catchUpRejections(ctx, deps, row, accessToken, refs, report, budget);
+    // Budget épuisé : on ne marque pas la campagne comme synchronisée, elle reste en tête de la prochaine passe.
+    if (budget.left > 0 || found) await markSynced(ctx, row);
     return found ? 'changed' : 'skipped';
   }
 
@@ -228,9 +235,15 @@ async function syncOne(
     campaignId: row.id,
     token: accessToken,
     refs,
+    budget,
   });
   report.rejections += review.recorded.length;
-  if (review.multi && remote.status === 'rejected' && review.rejected < review.total) {
+  // Jamais « refusée » sur une lecture incomplète (budget épuisé) : on attend la passe suivante.
+  if (
+    review.multi &&
+    remote.status === 'rejected' &&
+    (review.incomplete || review.rejected < review.total)
+  ) {
     const status =
       row.status === 'in_review' || row.status === 'active' || row.status === 'paused'
         ? row.status
@@ -271,7 +284,7 @@ async function syncOne(
     reason: decision.reason,
     from: row.status,
   });
-  if (decision.event === 'refuse' && !review.multi) {
+  if (decision.event === 'refuse' && !review.multi && takeRead(budget)) {
     // Refus de la campagne (une seule publicité) : on lit le motif chez Meta et on l'enregistre.
     const ad = (await loadCampaignAds(ctx.svc, written.workspace_id, written.id))[0] ?? null;
     const recorded = await recordRejection(ctx.svc, deps.connector, {
@@ -295,11 +308,13 @@ async function catchUpRejections(
   token: PlatformToken,
   refs: NonNullable<Awaited<ReturnType<typeof loadRefs>>>,
   report: StatusSyncReport,
+  budget: ReadBudget,
 ): Promise<boolean> {
   const ads = await loadCampaignAds(ctx.svc, row.workspace_id, row.id);
   const targets = ads.length === 0 ? [null] : ads;
   let found = false;
   for (const ad of targets) {
+    if (!takeRead(budget)) break;
     const recorded = await recordRejection(ctx.svc, deps.connector, {
       workspaceId: row.workspace_id,
       campaignId: row.id,
@@ -318,13 +333,14 @@ async function catchUpRejections(
 export async function syncCampaignStatuses(
   ctx: ServiceCtx,
   deps: SyncDeps,
-  options: { scope?: StatusSyncScope; limit?: number } = {},
+  options: { scope?: StatusSyncScope; limit?: number; rejectionReadBudget?: number } = {},
 ): Promise<StatusSyncReport> {
   const limit = Math.max(1, Math.min(options.limit ?? STATUS_SYNC_BATCH, STATUS_SYNC_BATCH));
   const candidates = await selectCandidates(ctx, options.scope ?? 'all', limit);
   const report = emptyReport();
   const tokens = new Map<string, Promise<PlatformToken>>();
   const blockedAdAccounts = new Set<string>();
+  const budget: ReadBudget = { left: options.rejectionReadBudget ?? REJECTION_READS_PER_PASS };
 
   for (const candidate of candidates) {
     report.scanned += 1;
@@ -335,7 +351,7 @@ export async function syncCampaignStatuses(
         continue;
       }
       try {
-        const outcome = await syncOne(ctx, deps, candidate, tokens, report);
+        const outcome = await syncOne(ctx, deps, candidate, tokens, report, budget);
         report[outcome] += 1;
       } catch (error) {
         const scope = metaRateLimitScope(error);

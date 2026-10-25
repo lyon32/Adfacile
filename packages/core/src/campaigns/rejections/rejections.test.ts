@@ -3,7 +3,7 @@
 // EC-META-05 (aucune relance automatique), TR-AGT-01 (au plus 2 appels), R8 (contenu non fiable), SECURITY_NOTES §2 (droits).
 import { EnvAgentConfigSource, FakeAiGateway } from '@pubeka/agents';
 import { AppError } from '@pubeka/contracts';
-import { FakeMetaConnector, type PlatformCampaignRefs } from '@pubeka/platforms';
+import { FakeMetaConnector, MetaGraphError, type PlatformCampaignRefs } from '@pubeka/platforms';
 import { describe, expect, it } from 'vitest';
 import { NOW, OTHER_W, W } from '../campaigns.test-helper';
 import { applyRejectionFix } from './apply-fix';
@@ -811,5 +811,242 @@ describe('A2 — la correction ne marque jamais un refus « corrigé » sans rep
     expect(error.code).toBe('idempotency_key_reused');
     expect(rejections(s)[0]?.fixed_and_republished).toBe(false);
     expect(rowOf(s.w.db, s.id).status).toBe('rejected');
+  });
+});
+
+describe('A5 — les lectures de refus par passe sont plafonnées (limite de débit de Meta, EC-META-10)', () => {
+  it('deux campagnes refusées sans refus enregistré, plafond de 1 lecture : une seule est traitée par passe, l’autre à la suivante', async () => {
+    const a = await refusedWorld();
+    const second = a.s.w.db.nextId();
+    a.s.w.db.rows('campaigns').push({ ...rowOf(a.s.w.db, a.s.id), id: second, publish_ref: 'x2' });
+    a.s.w.db.rows('ads').push({
+      ...a.s.w.db.rows('ads')[0],
+      id: 'ad-second',
+      campaign_id: second,
+      meta_ad_id: '900000000077',
+    });
+    rejections(a.s).length = 0;
+    const calls: string[] = [];
+    const connector: SyncConnector = {
+      getStatus: (t, r) => a.s.fake.getStatus(t, r),
+      fetchStats: (t, r, g) => a.s.fake.fetchStats(t, r, g),
+      fetchRejection: (t, r) => {
+        calls.push(String(r.adId));
+        return Promise.resolve({ reason: REASON, adId: r.adId });
+      },
+    };
+    const first = await syncCampaignStatuses(a.s.ctxAt(30), a.s.deps({ connector }), {
+      rejectionReadBudget: 1,
+    });
+    expect(calls).toHaveLength(1);
+    expect(first.rejections).toBe(1);
+    const next = await syncCampaignStatuses(a.s.ctxAt(45), a.s.deps({ connector }), {
+      rejectionReadBudget: 1,
+    });
+    expect(next.rejections).toBe(1);
+    expect(rejections(a.s)).toHaveLength(2);
+    // Rien de plus à lire ensuite : plus aucun appel.
+    const calm = await syncCampaignStatuses(a.s.ctxAt(60), a.s.deps({ connector }), {
+      rejectionReadBudget: 1,
+    });
+    expect(calm.rejections).toBe(0);
+    expect(calls).toHaveLength(2);
+  });
+
+  it('test A/B dont les lectures par publicité ne peuvent pas toutes se faire : la campagne n’est JAMAIS marquée refusée par erreur', async () => {
+    const s = await syncWorld({ activateAs: 'active' });
+    rowOf(s.w.db, s.id).status = 'in_review';
+    const first = s.w.db.rows('ads')[0];
+    s.w.db.rows('ads').push({ ...first, id: 'ad-b', meta_ad_id: '900000000002', variant: 'B' });
+    const connector: SyncConnector = {
+      getStatus: () => Promise.resolve({ status: 'rejected', rawStatus: 'DISAPPROVED' }),
+      fetchStats: (t, r, g) => s.fake.fetchStats(t, r, g),
+      fetchRejection: () => Promise.resolve(null),
+    };
+    await syncCampaignStatuses(s.ctxAt(15), s.deps({ connector }), { rejectionReadBudget: 0 });
+    expect(rowOf(s.w.db, s.id).status).toBe('in_review');
+    expect(rejections(s)).toHaveLength(0);
+  });
+
+  it('une limite de débit de Meta pendant la lecture d’un refus arrête la passe sans rien écrire de faux', async () => {
+    const s = await syncWorld();
+    rowOf(s.w.db, s.id).status = 'rejected';
+    const connector: SyncConnector = {
+      getStatus: (t, r) => s.fake.getStatus(t, r),
+      fetchStats: (t, r, g) => s.fake.fetchStats(t, r, g),
+      fetchRejection: () => Promise.reject(new MetaGraphError({ code: 4, message: 'limite' }, 400)),
+    };
+    const report = await syncCampaignStatuses(s.ctxAt(15), s.deps({ connector }));
+    expect(report.rateLimited).toBe(true);
+    expect(rejections(s)).toHaveLength(0);
+  });
+});
+
+describe('B2 — un rapport « en cours » ne reste jamais bloqué (processus mort), sans relancer le modèle', () => {
+  const MIN = 60_000;
+
+  it('la prise de l’explication est horodatée', async () => {
+    const { s } = await refusedWorld();
+    const gateway = new FakeAiGateway({ dynamicFixtures: { moderateur: fakeModerateurOutput } });
+    await explainRejection(s.ctxAt(20), explainDeps(gateway), {
+      rejectionId: String(rejections(s)[0]?.id),
+      workspaceId: W,
+    });
+    expect(rejections(s)[0]?.explain_started_at).toBe(
+      new Date(NOW.getTime() + 20 * 60_000).toISOString(),
+    );
+  });
+
+  it('un « en cours » vieux de plus de 10 minutes passe à « échec » (explain_timeout) sans appeler le modèle', async () => {
+    const { s } = await refusedWorld();
+    const row = rejections(s)[0];
+    if (row === undefined) throw new Error('refus absent');
+    Object.assign(row, {
+      explain_status: 'running',
+      explain_started_at: new Date(NOW.getTime() - 20 * MIN).toISOString(),
+    });
+    const deps = explainDeps();
+    const report = await explainPendingRejections(s.ctxAt(0), deps);
+    expect(row.explain_status).toBe('failed');
+    expect(row.explain_error).toBe('explain_timeout');
+    expect(deps.gateway.calls).toHaveLength(0);
+    expect(report.failed).toBe(1);
+    // L'écran peut alors proposer les actions manuelles : le rapport est « échec », pas « en cours ».
+    const view = await getRejection(s.w.ctx, s.id, String(row.id));
+    expect(view.status).toBe('failed');
+  });
+
+  it('un « en cours » récent n’est pas touché', async () => {
+    const { s } = await refusedWorld();
+    const row = rejections(s)[0];
+    if (row === undefined) throw new Error('refus absent');
+    Object.assign(row, {
+      explain_status: 'running',
+      explain_started_at: new Date(NOW.getTime() - 3 * MIN).toISOString(),
+    });
+    await explainPendingRejections(s.ctxAt(0), explainDeps());
+    expect(row.explain_status).toBe('running');
+  });
+
+  it('un « en cours » sans horodatage (créé avant la migration 0019) est jugé sur sa date de création', async () => {
+    const { s } = await refusedWorld();
+    const row = rejections(s)[0];
+    if (row === undefined) throw new Error('refus absent');
+    Object.assign(row, {
+      explain_status: 'running',
+      explain_started_at: null,
+      created_at: new Date(NOW.getTime() - 60 * MIN).toISOString(),
+    });
+    await explainPendingRejections(s.ctxAt(0), explainDeps());
+    expect(row.explain_status).toBe('failed');
+  });
+
+  it('un refus échoué n’est jamais repris automatiquement par une passe suivante (EC-META-05)', async () => {
+    const { s } = await refusedWorld();
+    const row = rejections(s)[0];
+    if (row === undefined) throw new Error('refus absent');
+    Object.assign(row, {
+      explain_status: 'running',
+      explain_started_at: new Date(NOW.getTime() - 20 * MIN).toISOString(),
+    });
+    const deps = explainDeps();
+    await explainPendingRejections(s.ctxAt(0), deps);
+    await explainPendingRejections(s.ctxAt(10), deps);
+    expect(deps.gateway.calls).toHaveLength(0);
+  });
+});
+
+describe('Mémoire des refus : jamais de donnée personnelle ni de texte du client (anonyme)', () => {
+  it('le Modérateur voit sa sortie refusée par le schéma quand le motif contient un numéro, un e-mail, une adresse ou un extrait du texte du client', async () => {
+    const { s } = await refusedWorld({
+      copy: {
+        primary_text: 'Appelez Awa au 0690123456 pour la crème miracle',
+        headline: 'Crème miracle',
+      },
+    });
+    const bad = [
+      'promesse de la crème appelez Awa au 0690123456',
+      'contact awa@exemple.test dans le texte',
+      'lien https://boutique.example/creme dans le texte',
+      'promesse vue sur boutique.com/creme',
+    ];
+    const text = 'Appelez Awa au 0690123456 pour la crème miracle';
+    const outputFor = (memory_pattern: string) => ({
+      ...(fakeModerateurOutput({
+        model: 'm',
+        temperature: 0,
+        responseFormat: { type: 'json_object' },
+        messages: [
+          {
+            role: 'user',
+            content: JSON.stringify({
+              output_language: 'fr',
+              ad: { primary_text: text },
+              meta_rejection: REASON,
+            }),
+          },
+        ],
+      }) as object),
+      memory_pattern,
+    });
+    for (const pattern of bad) {
+      const deps = explainDeps(
+        new FakeAiGateway()
+          .enqueue({ json: outputFor(pattern) })
+          .enqueue({ json: outputFor(pattern) }),
+      );
+      const row = rejections(s)[0];
+      if (row === undefined) throw new Error('refus absent');
+      Object.assign(row, { explain_status: 'pending', explain_error: null, report: null });
+      const outcome = await explainRejection(s.ctxAt(20), deps, {
+        rejectionId: String(row.id),
+        workspaceId: W,
+      });
+      expect(outcome, pattern).toBe('failed');
+    }
+  });
+
+  it('un motif qui recopie une suite de mots du texte du client : le rapport est gardé, mais la mémoire n’est PAS écrite', async () => {
+    const { s } = await refusedWorld({
+      copy: { primary_text: 'Appelez Awa pour la crème miracle du quartier', headline: 'Crème' },
+    });
+    const patterns = installMemoryRpc(s);
+    const output = {
+      ...(fakeModerateurOutput({
+        model: 'm',
+        temperature: 0,
+        responseFormat: { type: 'json_object' },
+        messages: [
+          {
+            role: 'user',
+            content: JSON.stringify({
+              output_language: 'fr',
+              ad: { primary_text: 'Appelez Awa pour la crème miracle du quartier' },
+              meta_rejection: REASON,
+            }),
+          },
+        ],
+      }) as object),
+      memory_pattern: 'promesse sur la crème miracle du quartier',
+    };
+    const deps = explainDeps(new FakeAiGateway().enqueue({ json: output }));
+    const outcome = await explainRejection(s.ctxAt(20), deps, {
+      rejectionId: String(rejections(s)[0]?.id),
+      workspaceId: W,
+    });
+    expect(outcome).toBe('explained');
+    expect(patterns).toEqual([]);
+  });
+
+  it('la mémoire n’est jamais écrite avec un motif qui contient un chiffre de téléphone (défense en profondeur côté serveur)', async () => {
+    const { s } = await refusedWorld();
+    const patterns = installMemoryRpc(s);
+    const deps = explainDeps();
+    await explainRejection(s.ctxAt(20), deps, {
+      rejectionId: String(rejections(s)[0]?.id),
+      workspaceId: W,
+    });
+    expect(patterns.every((p) => !/\d{3,}|@|https?:/i.test(p))).toBe(true);
+    expect(patterns).toHaveLength(1);
   });
 });

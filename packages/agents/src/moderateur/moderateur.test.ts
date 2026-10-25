@@ -14,6 +14,8 @@ import {
 } from './agent';
 import { MODERATEUR_PROMPT_V2 } from './prompt-v2';
 import {
+  isAnonymousPattern,
+  isPersonalDataFree,
   moderateurInputSchema,
   moderateurOutputSchemaFor,
   type ModerateurOutput,
@@ -240,5 +242,32 @@ describe('exécution avec la fausse passerelle', () => {
     );
     expect(error).toBeInstanceOf(AgentRunError);
     expect((error as AgentRunError).run.attempts).toBe(2);
+  });
+});
+
+describe('mémoire des refus : motif anonyme', () => {
+  it('refuse numéro de téléphone, e-mail et adresse ; garde un motif générique, même avec « avant/après »', () => {
+    expect(
+      isPersonalDataFree('promesse chiffrée de perte de poids rapide et images avant/après'),
+    ).toBe(true);
+    expect(isPersonalDataFree('question directe sur un problème de peau')).toBe(true);
+    expect(isPersonalDataFree('contactez le 0690123456')).toBe(false);
+    expect(isPersonalDataFree('écrire à awa@exemple.test')).toBe(false);
+    expect(isPersonalDataFree('voir https://boutique.example/creme')).toBe(false);
+    expect(isPersonalDataFree('voir boutique.com')).toBe(false);
+    expect(isPersonalDataFree('+237 690 12 34 56')).toBe(false);
+  });
+
+  it('refuse un motif qui recopie 4 mots de suite du texte du client, accepte un motif générique', () => {
+    const texts = ['Perdez dix kilos en sept jours avec notre thé du quartier'];
+    expect(isAnonymousPattern('promesse de perdez dix kilos en sept jours', texts)).toBe(false);
+    expect(isAnonymousPattern('promesse chiffrée de perte de poids', texts)).toBe(true);
+  });
+
+  it('la sortie du modèle est refusée par le schéma quand le motif contient une donnée personnelle', () => {
+    expect(problems(output({ memory_pattern: 'appelez le 0690123456' })).join()).toContain(
+      'anonyme',
+    );
+    expect(problems(output({ memory_pattern: 'question directe sur la peau' }))).toEqual([]);
   });
 });

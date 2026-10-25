@@ -84,6 +84,46 @@ export function appearsIn(excerpt: string, haystack: string): boolean {
   return normalizeForMatch(haystack).includes(normalizeForMatch(excerpt));
 }
 
+const PHONE = /\+?\d[\d\s.()-]{4,}\d/;
+const DIGIT_RUN = /\d{3,}/;
+const EMAIL = /\S+@\S+/;
+const LINK =
+  /https?:|www\.|[\p{L}\d-]+\.(?:com|net|org|co|cm|ci|sn|fr|app|shop|store|me|io)(?![\p{L}\d])/iu;
+
+/** Vrai si le motif ne contient ni numéro, ni e-mail, ni adresse : un motif de la mémoire des refus reste anonyme. */
+export function isPersonalDataFree(pattern: string): boolean {
+  return !(
+    PHONE.test(pattern) ||
+    DIGIT_RUN.test(pattern) ||
+    EMAIL.test(pattern) ||
+    LINK.test(pattern)
+  );
+}
+
+const WINDOW_WORDS = 4;
+
+function wordsOf(text: string): string[] {
+  return normalizeForMatch(text)
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((word) => word !== '');
+}
+
+/**
+ * Motif de la mémoire des refus (anonyme) : sans donnée personnelle, et sans recopier une suite de {@link WINDOW_WORDS} mots du texte
+ * du client. La mémoire est comptée pour TOUS les espaces : un texte du client ne doit jamais y entrer.
+ */
+export function isAnonymousPattern(pattern: string, clientTexts: readonly string[]): boolean {
+  if (!isPersonalDataFree(pattern)) return false;
+  const patternWords = ` ${wordsOf(pattern).join(' ')} `;
+  for (const text of clientTexts) {
+    const words = wordsOf(text);
+    for (let i = 0; i + WINDOW_WORDS <= words.length; i += 1) {
+      if (patternWords.includes(` ${words.slice(i, i + WINDOW_WORDS).join(' ')} `)) return false;
+    }
+  }
+  return true;
+}
+
 const baseOutputSchema = z.strictObject({
   rejection_category: z.enum(REJECTION_CATEGORIES),
   culprit: z.strictObject({
@@ -151,6 +191,12 @@ export function moderateurOutputSchemaFor(
       issue(
         ['cause_certainty'],
         'certitude « high » impossible quand l’élément en cause est inconnu',
+      );
+    }
+    if (!isPersonalDataFree(out.memory_pattern)) {
+      issue(
+        ['memory_pattern'],
+        'le motif de la mémoire doit rester anonyme : ni numéro, ni e-mail, ni adresse',
       );
     }
     const sentences = sentenceCount(out.report);
