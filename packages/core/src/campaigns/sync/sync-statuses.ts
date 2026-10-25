@@ -20,7 +20,8 @@ import { loadPublishRow } from '../publish/publish-row';
 import type { PublishRow } from '../publish/publish-types';
 import { loadRefs } from '../publish/remote-refs';
 import { recordRejection } from '../rejections/record-rejection';
-import { loadCampaignAds, reviewAds, takeRead, type ReadBudget } from '../rejections/review-ads';
+import type { ReadBudget } from '../rejections/read-budget';
+import { loadCampaignAds, reviewAds } from '../rejections/review-ads';
 import { applyTransition, recordStatusEvent } from '../publish/transitions';
 import { metaRateLimitScope } from './meta-limits';
 import { decideStatusEvent, type StatusDecisionReason } from './status-decision';
@@ -40,11 +41,12 @@ export const WEBHOOK_SIGNAL_WINDOW_MS = 24 * 60 * 60_000;
 
 /** Statuts qui existent chez Meta et qu'on suit. `stopped` et `rejected` n'avancent que par une action du client. */
 const WATCHED: readonly CampaignStatus[] = ['in_review', 'active', 'paused'];
+/** Une campagne en erreur n'est suivie que si elle a des identifiants chez Meta (filtre de la requête) : elle peut y vivre et dépenser. */
 /**
  * Statuts examinés par la passe. `rejected` y figure pour UNE raison (S18) : s'assurer que le refus a son rapport (si
  * l'enregistrement du refus avait échoué, la passe suivante le rattrape). Sans refus manquant, aucun appel à Meta n'est fait.
  */
-const EXAMINED: readonly CampaignStatus[] = [...WATCHED, 'rejected'];
+const EXAMINED: readonly CampaignStatus[] = [...WATCHED, 'rejected', 'error'];
 
 export interface StatusSyncReport {
   scanned: number;
@@ -220,10 +222,10 @@ async function syncOne(
   // Campagne déjà refusée : on ne lit pas son statut (il ne changera que par une action du client) ; on s'assure seulement que
   // chaque publicité refusée a son refus enregistré, pour que le Modérateur l'explique (S18).
   if (row.status === 'rejected') {
-    const found = await catchUpRejections(ctx, deps, row, accessToken, refs, report, budget);
+    const caught = await catchUpRejections(ctx, deps, row, accessToken, refs, report, budget);
     // Budget épuisé : on ne marque pas la campagne comme synchronisée, elle reste en tête de la prochaine passe.
-    if (budget.left > 0 || found) await markSynced(ctx, row);
-    return found ? 'changed' : 'skipped';
+    if (!caught.exhausted) await markSynced(ctx, row);
+    return caught.found ? 'changed' : 'skipped';
   }
 
   let remote = await deps.connector.getStatus(accessToken, refs);
@@ -284,7 +286,7 @@ async function syncOne(
     reason: decision.reason,
     from: row.status,
   });
-  if (decision.event === 'refuse' && !review.multi && takeRead(budget)) {
+  if (decision.event === 'refuse' && !review.multi) {
     // Refus de la campagne (une seule publicité) : on lit le motif chez Meta et on l'enregistre.
     const ad = (await loadCampaignAds(ctx.svc, written.workspace_id, written.id))[0] ?? null;
     const recorded = await recordRejection(ctx.svc, deps.connector, {
@@ -293,8 +295,10 @@ async function syncOne(
       token: accessToken,
       refs,
       ad,
+      budget,
     });
-    if (recorded?.created === true) report.rejections += 1;
+    // Budget épuisé : le refus sera retrouvé à la passe suivante (la campagne refusée est examinée).
+    if (typeof recorded === 'object' && recorded?.created === true) report.rejections += 1;
   }
   await markSynced(ctx, written);
   return 'changed';
@@ -309,25 +313,26 @@ async function catchUpRejections(
   refs: NonNullable<Awaited<ReturnType<typeof loadRefs>>>,
   report: StatusSyncReport,
   budget: ReadBudget,
-): Promise<boolean> {
+): Promise<{ found: boolean; exhausted: boolean }> {
   const ads = await loadCampaignAds(ctx.svc, row.workspace_id, row.id);
   const targets = ads.length === 0 ? [null] : ads;
   let found = false;
   for (const ad of targets) {
-    if (!takeRead(budget)) break;
     const recorded = await recordRejection(ctx.svc, deps.connector, {
       workspaceId: row.workspace_id,
       campaignId: row.id,
       token,
       refs,
       ad,
+      budget,
     });
+    if (recorded === 'budget_exhausted') return { found, exhausted: true };
     if (recorded?.created === true) {
       report.rejections += 1;
       found = true;
     }
   }
-  return found;
+  return { found, exhausted: false };
 }
 
 export async function syncCampaignStatuses(

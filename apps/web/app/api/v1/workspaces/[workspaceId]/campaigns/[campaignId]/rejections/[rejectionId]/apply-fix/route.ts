@@ -1,7 +1,7 @@
 // POST /api/v1/workspaces/{workspaceId}/campaigns/{campaignId}/rejections/{rejectionId}/apply-fix : « Appliquer la correction et
 // republier » (202). Propriétaire ou éditeur, espace modifiable, `Idempotency-Key` obligatoire (UUID). Republie la MÊME campagne
-// sans décompter de quota (EC-CAMP-07) par le chemin de la publication : la route ne parle jamais à Meta, elle lance la tâche
-// `campaign.publish`, et elle est bloquée tant que la publication réelle n'est pas activée (PUBEKA_META_PUBLISH).
+// sans décompter de quota (EC-CAMP-07) par le chemin de la publication : la route ne fait qu'UNE LECTURE chez Meta (le statut, pour
+// vérifier que l'ancienne campagne n'y diffuse pas) puis lance la tâche `campaign.publish`, et elle est bloquée tant que la publication réelle n'est pas activée (PUBEKA_META_PUBLISH).
 import { applyRejectionFix } from '@pubeka/core';
 import { api } from '../../../../../../../../../../server/http/routes';
 import {

@@ -266,15 +266,17 @@ export async function explainRejection(
     const stored = injection
       ? { ...output, flags: ['PROMPT_INJECTION_SUSPECTED'] }
       : { ...output, flags: [] };
+    // Mémoire des refus : anonyme ou rien (aucune donnée personnelle ni suite de mots du texte du client), dans la colonne du refus
+    // comme dans le compteur commun.
+    const anonymous = isAnonymousPattern(output.memory_pattern, material.clientTexts);
     const saved = await settle(ctx.svc, rejection, {
       explain_status: 'ready',
       explain_error: null,
       report: stored,
-      memory_pattern: output.memory_pattern,
+      memory_pattern: anonymous ? output.memory_pattern : null,
     });
     if (!saved) return 'skipped';
-    // Mémoire des refus : anonyme ou rien (aucune donnée personnelle ni suite de mots du texte du client).
-    if (isAnonymousPattern(output.memory_pattern, material.clientTexts)) {
+    if (anonymous) {
       await remember(ctx.svc, output.memory_pattern, ctx.now());
     } else {
       logger.warn('Motif non anonyme : la mémoire des refus n’est pas écrite', {
@@ -313,6 +315,8 @@ export async function failStaleExplanations(
       .from('rejections')
       .select('id, workspace_id, explain_started_at, created_at')
       .eq('explain_status', 'running')
+      // Les plus anciennes d'abord : au-delà de 200, ce sont elles qui attendent depuis le plus longtemps.
+      .order('explain_started_at', { ascending: true, nullsFirst: true })
       .limit(200),
   );
   let failed = 0;

@@ -1051,7 +1051,6 @@ describe('Mémoire des refus : jamais de donnée personnelle ni de texte du clie
   });
 });
 
-
 // ---- 2e contrôle S18 : N1 (cul-de-sac), A-2 (campagne en erreur vivante chez Meta), remarques ----------------------------------
 
 const liveCampaigns = (s: SyncWorld) => [...s.fake.campaigns.values()].filter((c) => !c.deleted);
@@ -1060,7 +1059,9 @@ describe('N1 — une ancienne campagne SUPPRIMÉE chez Meta ne bloque jamais la 
   /** Republication dont l'activation est refusée : l'ancienne ET la nouvelle campagne sont supprimées chez Meta, la campagne passe en erreur. */
   async function failedAfterDeletion() {
     const r = await republishing();
-    r.s.fake.simulateResumeRefusal(new AppError('meta_error', { meta: { title: 'Refus de Meta' } }));
+    r.s.fake.simulateResumeRefusal(
+      new AppError('meta_error', { meta: { title: 'Refus de Meta' } }),
+    );
     const outcome = await runTask(r.s);
     return { ...r, outcome };
   }
@@ -1114,14 +1115,20 @@ describe('N1 — une ancienne campagne SUPPRIMÉE chez Meta ne bloque jamais la 
 
   it('une campagne ARCHIVÉE chez Meta ne diffuse pas : elle est lue « absente »', async () => {
     const r = await republishing();
-    r.s.fake.simulateRemoteStatus(refsOfOld(r.oldMeta), { status: 'stopped', rawStatus: 'ARCHIVED' });
+    r.s.fake.simulateRemoteStatus(refsOfOld(r.oldMeta), {
+      status: 'stopped',
+      rawStatus: 'ARCHIVED',
+    });
     expect((await runTask(r.s)).outcome).toBe('accepted');
     expect(liveCampaigns(r.s).filter((c) => c.refs.campaignId === r.oldMeta)).toHaveLength(1);
   });
 
   for (const [label, remote] of [
     ['arrêtée mais vivante (STOPPED)', { status: 'stopped', rawStatus: 'STOPPED' }],
-    ['problème de paiement (PENDING_BILLING_INFO)', { status: 'stopped', rawStatus: 'PENDING_BILLING_INFO' }],
+    [
+      'problème de paiement (PENDING_BILLING_INFO)',
+      { status: 'stopped', rawStatus: 'PENDING_BILLING_INFO' },
+    ],
     ['en vérification', { status: 'in_review', rawStatus: 'PENDING_REVIEW' }],
   ] as const) {
     it(`campagne ${label} : JAMAIS prise pour absente, la route refuse et la tâche ne crée rien`, async () => {
@@ -1224,7 +1231,9 @@ describe('Remarques du 2e contrôle', () => {
   it('(7) les lignes de publicité vidées (sans identifiant Meta) ne comptent pas comme publicités d’un test A/B', async () => {
     const s = await syncWorld({ activateAs: 'active' });
     rowOf(s.w.db, s.id).status = 'in_review';
-    s.w.db.rows('ads').push({ ...s.w.db.rows('ads')[0], id: 'ad-vide', meta_ad_id: null, meta_creative_id: null });
+    s.w.db
+      .rows('ads')
+      .push({ ...s.w.db.rows('ads')[0], id: 'ad-vide', meta_ad_id: null, meta_creative_id: null });
     const calls: string[] = [];
     const connector: SyncConnector = {
       getStatus: () => Promise.resolve({ status: 'rejected', rawStatus: 'DISAPPROVED' }),
@@ -1268,10 +1277,14 @@ describe('Remarques du 2e contrôle', () => {
       }) as object),
       memory_pattern: 'promesse sur la crème miracle du quartier',
     };
-    await explainRejection(s.ctxAt(20), explainDeps(new FakeAiGateway().enqueue({ json: output })), {
-      rejectionId: String(rejections(s)[0]?.id),
-      workspaceId: W,
-    });
+    await explainRejection(
+      s.ctxAt(20),
+      explainDeps(new FakeAiGateway().enqueue({ json: output })),
+      {
+        rejectionId: String(rejections(s)[0]?.id),
+        workspaceId: W,
+      },
+    );
     expect(rejections(s)[0]?.explain_status).toBe('ready');
     expect(rejections(s)[0]?.memory_pattern).toBeNull();
   });
@@ -1293,6 +1306,12 @@ describe('Remarques du 2e contrôle', () => {
     const { failStaleExplanations } = await import('./explain-rejection');
     expect(await failStaleExplanations(s.ctxAt(0))).toBe(200);
     const left = rejections(s).filter((r) => r.explain_status === 'running');
-    expect(left.map((r) => r.id).sort()).toEqual(['stale-000', 'stale-001', 'stale-002', 'stale-003', 'stale-004']);
+    expect(left.map((r) => r.id).sort()).toEqual([
+      'stale-000',
+      'stale-001',
+      'stale-002',
+      'stale-003',
+      'stale-004',
+    ]);
   });
 });

@@ -191,7 +191,7 @@ describe('pauseCampaign', () => {
     expect(t.fake.pauseAttempts).toBe(0);
   });
 
-  it.each(['draft', 'publishing', 'ended', 'stopped', 'rejected', 'error'] as const)(
+  it.each(['draft', 'publishing', 'ended', 'stopped', 'rejected'] as const)(
     'une campagne %s ne se met pas en pause (409)',
     async (status) => {
       const t = await live(status);
@@ -199,6 +199,15 @@ describe('pauseCampaign', () => {
       expect(t.fake.pauseAttempts).toBe(0);
     },
   );
+
+  it('contrôle S18 (A-2) : une campagne en erreur mais vivante chez Meta PEUT être mise en pause (le client arrête la dépense) ; sans identifiant Meta : 409', async () => {
+    const t = await live('error');
+    expect((await pauseCampaign(t.w.ctx, t.id, t.deps)).status).toBe('paused');
+    expect(t.fake.pauseAttempts).toBe(1);
+    const none = await live('error');
+    Object.assign(rowOf(none.w.db, none.id), { meta_campaign_id: null });
+    expect((await failure(pauseCampaign(none.w.ctx, none.id, none.deps))).code).toBe('conflict');
+  });
 
   it('sans identifiant Meta enregistré : 409, aucun appel', async () => {
     const t = await live('active');

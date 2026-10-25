@@ -87,6 +87,7 @@ export function appearsIn(excerpt: string, haystack: string): boolean {
 const PHONE = /\+?\d[\d\s.()-]{4,}\d/;
 const DIGIT_RUN = /\d{3,}/;
 const EMAIL = /\S+@\S+/;
+const HANDLE = /@[\p{L}\d._]{2,}/u;
 const LINK =
   /https?:|www\.|[\p{L}\d-]+\.(?:com|net|org|co|cm|ci|sn|fr|app|shop|store|me|io)(?![\p{L}\d])/iu;
 
@@ -96,6 +97,7 @@ export function isPersonalDataFree(pattern: string): boolean {
     PHONE.test(pattern) ||
     DIGIT_RUN.test(pattern) ||
     EMAIL.test(pattern) ||
+    HANDLE.test(pattern) ||
     LINK.test(pattern)
   );
 }

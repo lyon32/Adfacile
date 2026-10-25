@@ -418,6 +418,10 @@ export class FakeMetaConnector implements PlatformConnector {
 
   getStatus(token: PlatformToken, refs: PlatformCampaignRefs): Promise<PlatformStatus> {
     return this.respond(token, () => {
+      // Documentation de Meta (« Manage your ad object's status ») : un objet DELETED existe toujours et se lit par son identifiant,
+      // avec le statut effectif DELETED (rangé sous « stopped » par le vrai connecteur).
+      const removed = this.campaigns.get(refs.campaignId);
+      if (removed?.deleted === true) return { status: 'stopped', rawStatus: 'DELETED' };
       const campaign = this.find(refs);
       return (
         campaign.statusOverride ?? {

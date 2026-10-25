@@ -7,6 +7,7 @@
 // vient de `getStatus`, le refus est enregistré après la transition `refuse`.
 import { unwrap, type ServiceClient } from '@pubeka/db';
 import type { PlatformCampaignRefs, PlatformToken } from '@pubeka/platforms';
+import { type ReadBudget } from './read-budget';
 import { hasOpenRejection, recordRejection, type RejectionConnector } from './record-rejection';
 
 interface AdRow {
@@ -31,18 +32,6 @@ export async function loadCampaignAds(
   return rows.flatMap((row) =>
     row.meta_ad_id === null ? [] : [{ id: row.id, metaAdId: row.meta_ad_id, status: row.status }],
   );
-}
-
-/** Lectures de refus restantes pour la passe (limite de débit de Meta, EC-META-10) : chaque `fetchRejection` en consomme une. */
-export interface ReadBudget {
-  left: number;
-}
-
-export function takeRead(budget: ReadBudget | undefined): boolean {
-  if (budget === undefined) return true;
-  if (budget.left <= 0) return false;
-  budget.left -= 1;
-  return true;
 }
 
 export interface AdsReview {
@@ -84,11 +73,11 @@ export async function reviewAds(
       rejected += 1;
       continue;
     }
-    if (!takeRead(input.budget)) {
+    const result = await recordRejection(svc, connector, { ...input, ad });
+    if (result === 'budget_exhausted') {
       incomplete = true;
       continue;
     }
-    const result = await recordRejection(svc, connector, { ...input, ad });
     if (result === null) continue;
     rejected += 1;
     if (result.created) recorded.push(result.id);

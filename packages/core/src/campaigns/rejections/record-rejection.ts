@@ -8,6 +8,7 @@ import { unwrap, type ServiceClient } from '@pubeka/db';
 import type { PlatformCampaignRefs, PlatformConnector, PlatformToken } from '@pubeka/platforms';
 import { createLogger } from '@pubeka/shared';
 import { recordStatusEvent } from '../publish/transitions';
+import { takeRead, type ReadBudget } from './read-budget';
 
 const logger = createLogger({ base: { module: 'record-rejection' } });
 
@@ -73,13 +74,16 @@ export async function recordRejection(
     token: PlatformToken;
     refs: PlatformCampaignRefs;
     ad: AdRef | null;
+    /** Lectures restantes pour la passe : consommé seulement quand un appel à Meta a réellement lieu. */
+    budget?: ReadBudget;
   },
-): Promise<RecordedRejection | null> {
+): Promise<RecordedRejection | null | 'budget_exhausted'> {
   const { workspaceId, campaignId, ad } = input;
   const adId = ad?.id ?? null;
   const existing = await findOpen(svc, workspaceId, campaignId, adId);
   if (existing !== null) return { id: existing, created: false };
 
+  if (!takeRead(input.budget)) return 'budget_exhausted';
   const remote = await connector.fetchRejection(input.token, {
     ...input.refs,
     adId: ad?.metaAdId ?? input.refs.adId,

@@ -216,4 +216,12 @@ describe('FakeMetaConnector — pannes de résultat incertain (EC-META-05)', () 
       await fake.findCampaignsByReference(TOKEN, NAMED.adAccountId, 'pk-aaaaaaaaaaaa'),
     ).toEqual({ campaigns: [], exhaustive: false });
   });
+
+  it('documentation de Meta : un objet supprimé se lit encore par son identifiant, avec le statut effectif DELETED', async () => {
+    const fake = new FakeMetaConnector();
+    const token = { accessToken: 'jeton-de-test', expiresAt: null };
+    const refs = await fake.createCampaign(token, CONTRACT_SPEC);
+    await fake.deleteCampaign(token, refs);
+    expect(await fake.getStatus(token, refs)).toEqual({ status: 'stopped', rawStatus: 'DELETED' });
+  });
 });

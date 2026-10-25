@@ -25,7 +25,6 @@ import {
   toAppError,
   type PlatformCampaignRefs,
   type PlatformConnector,
-  type PlatformStatus,
   type PlatformToken,
   type RemoteCampaign,
 } from '@pubeka/platforms';
@@ -54,6 +53,7 @@ import {
   type PublishPayload,
   type PublishRow,
 } from './publish-types';
+import { classifyPreviousCampaign } from './previous-campaign';
 import { loadRefs } from './remote-refs';
 import { applyTransition, recordStatusEvent, updateWhilePublishing } from './transitions';
 
@@ -213,6 +213,43 @@ async function removeRemote(run: Run, refs: PlatformCampaignRefs): Promise<boole
   }
 }
 
+/**
+ * Oublie les identifiants Meta de la campagne ET de ses publicités quand la campagne correspondante n'existe plus chez Meta. Les
+ * lignes de publicité sont gardées (leurs statistiques y sont rattachées en CASCADE) : seuls leurs identifiants Meta sont vidés.
+ */
+async function forgetLocalRefs(run: Run): Promise<void> {
+  const { row } = run;
+  const emptied = await run.svc
+    .from('ads')
+    .update({ meta_ad_id: null, meta_creative_id: null, status: 'paused' })
+    .eq('workspace_id', row.workspace_id)
+    .eq('campaign_id', row.id);
+  if (emptied.error !== null) throw new AppError('internal_error', { cause: emptied.error });
+  const cleared = await run.svc
+    .from('campaigns')
+    .update({ meta_campaign_id: null, meta_adset_id: null })
+    .eq('workspace_id', row.workspace_id)
+    .eq('id', row.id)
+    .eq('status', 'publishing');
+  if (cleared.error !== null) throw new AppError('internal_error', { cause: cleared.error });
+  run.row.meta_campaign_id = null;
+  run.row.meta_adset_id = null;
+}
+
+/** Supprime chez Meta puis, si cela a réussi, oublie les identifiants locaux : un échec ne laisse jamais un identifiant mort en base. */
+async function removeRemoteAndForget(run: Run, refs: PlatformCampaignRefs): Promise<boolean> {
+  if (!(await removeRemote(run, refs))) return false;
+  try {
+    await forgetLocalRefs(run);
+  } catch (error) {
+    logger.error('Identifiants locaux non effacés après suppression chez Meta', {
+      campaignId: run.row.id,
+      err: error,
+    });
+  }
+  return true;
+}
+
 /** Enregistre les identifiants de Meta, puis la publicité (une ligne par publicité Meta). */
 async function persistRefs(
   run: Run,
@@ -352,8 +389,8 @@ async function activate(
     return await accept(active, adopted, 'activating');
   } catch (error) {
     if (!isAmbiguousMetaFailure(error)) {
-      // Refus net : rien n'est activé. On retire la campagne créée (en pause) et on conclut.
-      await removeRemote(active, refs);
+      // Refus net : rien n'est activé. On retire la campagne créée (en pause), on oublie ses identifiants et on conclut.
+      await removeRemoteAndForget(active, refs);
       return fail(active, toAppError(error));
     }
     return resolveActivation(active, refs, adopted, toAppError(error));
@@ -378,8 +415,8 @@ async function resolveActivation(
     return { outcome: 'pending', reason: 'activation_unknown' };
   }
   if (status.status === 'paused') {
-    // Meta n'a pas activé : on retire la campagne en pause et on conclut.
-    await removeRemote(run, refs);
+    // Meta n'a pas activé : on retire la campagne en pause, on oublie ses identifiants et on conclut.
+    await removeRemoteAndForget(run, refs);
     return fail(
       run,
       new AppError('meta_error', {
@@ -506,9 +543,9 @@ async function removePreviousAttempt(run: Run): Promise<AppError | null> {
   const refs = await loadRefs(run.svc, row, run.adAccountId);
   if (refs === null) return null;
   const blocked = (reason: string): AppError => new AppError('meta_error', { meta: { reason } });
-  let remoteStatus: PlatformStatus['status'];
+  let state: ReturnType<typeof classifyPreviousCampaign>;
   try {
-    remoteStatus = (await run.deps.connector.getStatus(run.token, refs)).status;
+    state = classifyPreviousCampaign(await run.deps.connector.getStatus(run.token, refs));
   } catch (error) {
     logger.warn('État de l’ancienne campagne illisible : rien n’est créé', {
       campaignId: row.id,
@@ -516,30 +553,17 @@ async function removePreviousAttempt(run: Run): Promise<AppError | null> {
     });
     return blocked('previous_campaign_unreadable');
   }
-  if (remoteStatus !== 'rejected' && remoteStatus !== 'paused') {
+  if (state === 'live') {
     logger.warn('Ancienne campagne encore vivante chez Meta : rien n’est créé', {
       campaignId: row.id,
     });
     return blocked('previous_campaign_still_live');
   }
-  if (!(await removeRemote(run, refs))) return blocked('previous_campaign_not_removed');
-
-  const emptied = await run.svc
-    .from('ads')
-    .update({ meta_ad_id: null, meta_creative_id: null, status: 'paused' })
-    .eq('workspace_id', row.workspace_id)
-    .eq('campaign_id', row.id);
-  if (emptied.error !== null) throw new AppError('internal_error', { cause: emptied.error });
-  const cleared = await run.svc
-    .from('campaigns')
-    .update({ meta_campaign_id: null, meta_adset_id: null })
-    .eq('workspace_id', row.workspace_id)
-    .eq('id', row.id)
-    .eq('status', 'publishing')
-    .eq('publish_phase', 'none');
-  if (cleared.error !== null) throw new AppError('internal_error', { cause: cleared.error });
-  run.row.meta_campaign_id = null;
-  run.row.meta_adset_id = null;
+  // `removable` : on la supprime d'abord ; `absent` (DELETED ou ARCHIVED chez Meta) : il n'y a rien à supprimer.
+  if (state === 'removable' && !(await removeRemote(run, refs))) {
+    return blocked('previous_campaign_not_removed');
+  }
+  await forgetLocalRefs(run);
   return null;
 }
 
@@ -569,7 +593,7 @@ async function create(run: Run): Promise<PublicationOutcome> {
     saved = await persistRefs(active, refs, 'creating');
   } catch (error) {
     // Les identifiants ne peuvent pas être enregistrés : on retire la campagne (en pause) plutôt que de la perdre de vue.
-    await removeRemote(active, refs);
+    await removeRemoteAndForget(active, refs);
     return fail(
       active,
       error instanceof AppError ? error : new AppError('internal_error', { cause: error }),

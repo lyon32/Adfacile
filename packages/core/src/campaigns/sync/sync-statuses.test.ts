@@ -88,10 +88,10 @@ describe('TR-PLA-05 — synchronisation des statuts', () => {
     expect(s.fake.resumeAttempts).toBe(1); // l'activation de la publication d'essai
   });
 
-  it('ne regarde ni les brouillons, ni les campagnes sans identifiant Meta, ni les campagnes arrêtées, terminées ou en erreur', async () => {
+  it('ne regarde ni les brouillons, ni les campagnes sans identifiant Meta, ni les campagnes arrêtées ou terminées (une campagne en erreur n’est suivie que si elle a des identifiants Meta : contrôle S18)', async () => {
     const s = await syncWorld();
     const { connector, calls } = counting(s);
-    for (const status of ['draft', 'stopped', 'ended', 'error']) {
+    for (const status of ['draft', 'stopped', 'ended']) {
       rowOf(s.w.db, s.id).status = status;
       await syncCampaignStatuses(s.ctxAt(15), s.deps({ connector }));
     }

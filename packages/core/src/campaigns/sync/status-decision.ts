@@ -42,7 +42,14 @@ export interface StatusDecisionInput {
 const BILLING_STATUSES: readonly string[] = ['PENDING_BILLING_INFO'];
 
 function remoteEvent(current: CampaignStatus, remote: PlatformStatus): CampaignEvent | null {
-  if (BILLING_STATUSES.includes(remote.rawStatus)) return 'stop';
+  if (BILLING_STATUSES.includes(remote.rawStatus)) return current === 'error' ? null : 'stop';
+  // Campagne en ERREUR chez Pubeka mais vivante chez Meta (republication refusée, activation incertaine) : le vrai statut remonte.
+  if (current === 'error') {
+    if (remote.status === 'active') return 'approve';
+    if (remote.status === 'in_review') return 'sent';
+    if (remote.status === 'paused') return 'pause';
+    return null;
+  }
   switch (remote.status) {
     case 'active':
       if (current === 'in_review') return 'approve';

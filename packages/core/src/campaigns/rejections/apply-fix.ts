@@ -24,6 +24,7 @@ import { nextCampaignStatus } from '../campaign-state';
 import { toCampaignView, type CampaignView } from '../campaign-view';
 import { loadCostContext } from '../cost-context';
 import { readMetaStatus, type CampaignControlDeps } from '../publish/campaign-control';
+import { classifyPreviousCampaign } from '../publish/previous-campaign';
 import { assertMetaPublishEnabled } from '../publish/publish-switch';
 import { publishCampaign } from '../publish/publish-campaign';
 import { loadPublishRow } from '../publish/publish-row';
@@ -89,11 +90,12 @@ export async function applyRejectionFix(
     throw conflict('invalid_transition', { status: campaign.status });
   }
 
-  // Meta fait foi : si l'ancienne campagne existe encore chez Meta, elle doit y être toujours refusée. Sinon (appel gagné, elle
+  // Meta fait foi : si l'ancienne campagne existe encore chez Meta, elle doit y être toujours refusée (ou en pause, ou supprimée). Sinon (appel gagné, elle
   // diffuse ou est en vérification), on ne touche à rien. Une lecture en échec est une erreur claire, rien n'est écrit.
   if (campaign.meta_campaign_id !== null) {
     const remote = await readMetaStatus(ctx, campaignId, deps.meta);
-    if (remote.status !== 'rejected') {
+    // Même règle que la tâche : refusée ou en pause (supprimable), ou supprimée / archivée (absente) ; le reste vit encore chez Meta.
+    if (classifyPreviousCampaign(remote) === 'live') {
       throw conflict('no_longer_rejected', { raw_status: remote.rawStatus });
     }
   }
