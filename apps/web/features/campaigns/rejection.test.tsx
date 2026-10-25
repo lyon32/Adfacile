@@ -652,3 +652,78 @@ describe('Contrôle S18 — jamais de cul-de-sac, jamais de promesse fausse', ()
     expect(screen.queryByRole('link', { name: 'Voir pourquoi' })).toBeNull();
   });
 });
+
+describe('2e contrôle S18 — A-1 : jamais « envoyée à Meta » tant que Meta n’a rien reçu', () => {
+  it('après le 202, « Republication en cours » (rien n’a encore atteint Meta) ; « Correction envoyée » seulement quand le refus est corrigé', async () => {
+    stubApi(
+      ROUTES({
+        [`POST /c/rejections/${RID}/apply-fix`]: json(campaign({ status: 'publishing' }), 202),
+        'GET /c': [
+          json(campaign()),
+          json(campaign({ status: 'publishing' })),
+          json(campaign({ status: 'in_review' })),
+        ],
+        [`GET /c/rejections/${RID}`]: [
+          json(rejection()),
+          json(rejection({ fix_applicable: false })),
+          json(rejection({ fixed: true, fix_applicable: false })),
+        ],
+      }),
+    );
+    mount(reportPage());
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Appliquer la correction et republier' }),
+    );
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Republier' }),
+    );
+    expect(await screen.findByText('Republication en cours')).toBeTruthy();
+    expect(screen.queryByText('Correction envoyée à Meta')).toBeNull();
+  });
+
+  it('refus corrigé : « Correction envoyée à Meta » sans délai non sourcé (aucune mention de 24 heures)', async () => {
+    stubApi(
+      ROUTES({
+        'GET /c': json(campaign({ status: 'in_review' })),
+        [`GET /c/rejections/${RID}`]: json(rejection({ fixed: true, fix_applicable: false })),
+      }),
+    );
+    mount(reportPage());
+    expect(await screen.findByText('Correction envoyée à Meta')).toBeTruthy();
+    expect(screen.queryByText(/24 heures|24 hours/)).toBeNull();
+  });
+
+  it('campagne en erreur après le 202 : la carte d’erreur l’emporte, aucun « envoyée à Meta », la correction reste proposée', async () => {
+    stubApi(
+      ROUTES({
+        [`POST /c/rejections/${RID}/apply-fix`]: json(campaign({ status: 'publishing' }), 202),
+        'GET /c': [
+          json(campaign()),
+          json(
+            campaign({
+              status: 'error',
+              publication_error: {
+                code: 'meta_error',
+                reason: 'previous_campaign_still_live',
+                at: '2026-10-24T10:00:00Z',
+              },
+            }),
+          ),
+        ],
+      }),
+    );
+    mount(reportPage());
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Appliquer la correction et republier' }),
+    );
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Republier' }),
+    );
+    expect(await screen.findByText('La republication n’a pas abouti')).toBeTruthy();
+    expect(screen.queryByText('Correction envoyée à Meta')).toBeNull();
+    expect(screen.queryByText('Republication en cours')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Appliquer la correction et republier' }),
+    ).toBeTruthy();
+  });
+});
