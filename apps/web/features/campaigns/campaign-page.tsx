@@ -19,6 +19,7 @@ import { useState, type ReactNode } from 'react';
 import { ApiError } from '../../lib/api';
 import { STATUSES, useCampaignDetail, useControlCampaign, type CampaignStatus } from './api';
 import { controlFailureOf } from './control-errors';
+import { RejectionBanner } from './rejection-banner';
 import { AdsTab } from './tab-ads';
 import { HistoryTab } from './tab-history';
 import { ResultsTab } from './tab-results';
@@ -146,6 +147,11 @@ export function CampaignPage({ workspace, campaignId }: CampaignPageProps): Reac
                   {t('resume')}
                 </Button>
               ) : null}
+              <RejectionBanner
+                workspaceId={workspace.id}
+                campaignId={campaignId}
+                enabled={published}
+              />
               {status === 'stopped' ? (
                 <Button
                   type="button"
