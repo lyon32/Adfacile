@@ -47,6 +47,18 @@ function rejections(s: SyncWorld) {
   return s.w.db.rows('rejections');
 }
 
+/** Dépendances de la correction : publication (tâche, interrupteur) et lecture du statut chez Meta (fausse Meta). */
+function fixDeps(s: SyncWorld) {
+  return {
+    ...s.w.deps,
+    meta: {
+      connector: s.fake,
+      loadToken: () => Promise.resolve(TOKEN),
+      metaPublishEnabled: () => true,
+    },
+  };
+}
+
 async function code(promise: Promise<unknown>): Promise<string> {
   try {
     await promise;
@@ -189,7 +201,7 @@ describe('EC-META-06 — refus partiel d’un test A/B', () => {
       fix_applicable: false,
     });
     const error = await failure(
-      applyRejectionFix(s.w.ctx, s.id, String(row?.id), { idempotencyKey: KEY_B }, s.w.deps),
+      applyRejectionFix(s.w.ctx, s.id, String(row?.id), { idempotencyKey: KEY_B }, fixDeps(s)),
     );
     expect(error.code).toBe('conflict');
     expect(error.opts.meta).toMatchObject({ reason: 'partial_rejection' });
@@ -389,7 +401,7 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
     const before = rowOf(s.w.db, s.id);
     const quotaBefore = before.quota_state;
     s.w.hooks.events.length = 0;
-    const view = await applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, s.w.deps);
+    const view = await applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s));
     expect(view.status).toBe('publishing');
     const after = rowOf(s.w.db, s.id);
     expect((after.copy as { primary_text: string }).primary_text).toContain(
@@ -410,7 +422,7 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
     rowOf(s.w.db, s.id).quota_state = 'none';
     s.w.hooks.events.length = 0;
     s.w.hooks.refuseWith = new AppError('campaign_quota_reached', { meta: { upgrade_to: 'pro' } });
-    const view = await applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, s.w.deps);
+    const view = await applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s));
     expect(view.status).toBe('publishing');
     expect(s.w.hooks.count('beforeSpend')).toBe(0);
   });
@@ -418,7 +430,7 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
   it('la tâche remplace l’ancienne campagne refusée chez Meta par une neuve, sans quota', async () => {
     const { s, id } = await explainedWorld();
     const oldCampaign = String(rowOf(s.w.db, s.id).meta_campaign_id);
-    await applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, s.w.deps);
+    await applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s));
     const createdBefore = s.fake.createAttempts;
     const outcome = await runPublication(
       { requestId: 'req_FIX', svc: s.w.db.asService(), now: () => NOW },
@@ -440,8 +452,8 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
 
   it('EC-CAMP-01 : la même clé rejouée ne republie pas une deuxième fois', async () => {
     const { s, id } = await explainedWorld();
-    await applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, s.w.deps);
-    const again = await applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, s.w.deps);
+    await applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s));
+    const again = await applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s));
     expect(again.status).toBe('publishing');
     expect(s.w.jobs.jobs.filter((j) => j.taskId === 'campaign.publish')).toHaveLength(2);
     expect(rowOf(s.w.db, s.id).publish_attempt).toBe(2);
@@ -449,14 +461,14 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
 
   it('une autre clé sur un refus déjà corrigé : 409 already_fixed', async () => {
     const { s, id } = await explainedWorld();
-    await applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, s.w.deps);
+    await applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s));
     const error = await failure(
       applyRejectionFix(
         s.w.ctx,
         s.id,
         id,
         { idempotencyKey: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' },
-        s.w.deps,
+        fixDeps(s),
       ),
     );
     expect(error.opts.meta).toMatchObject({ reason: 'already_fixed' });
@@ -471,7 +483,7 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
         s.id,
         id,
         { idempotencyKey: KEY_B },
-        { ...s.w.deps, metaPublishEnabled: () => false },
+        { ...fixDeps(s), metaPublishEnabled: () => false },
       ),
     );
     expect(error.code).toBe('provider_unavailable');
@@ -484,14 +496,14 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
     const { s, id } = await explainedWorld();
     const viewer = { ...s.w.ctx, workspace: { ...s.w.ctx.workspace, role: 'viewer' as const } };
     expect(
-      await code(applyRejectionFix(viewer, s.id, id, { idempotencyKey: KEY_B }, s.w.deps)),
+      await code(applyRejectionFix(viewer, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s))),
     ).toBe('role_insufficient');
     const readOnly = {
       ...s.w.ctx,
       workspace: { ...s.w.ctx.workspace, access: 'read_only' as const },
     };
     expect(
-      await code(applyRejectionFix(readOnly, s.id, id, { idempotencyKey: KEY_B }, s.w.deps)),
+      await code(applyRejectionFix(readOnly, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s))),
     ).toBe('workspace_read_only');
   });
 
@@ -499,7 +511,7 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
     const { s, id } = await explainedWorld();
     const other = { ...s.w.ctx, workspace: { ...s.w.ctx.workspace, id: OTHER_W } };
     expect(
-      await code(applyRejectionFix(other, s.id, id, { idempotencyKey: KEY_B }, s.w.deps)),
+      await code(applyRejectionFix(other, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s))),
     ).toBe('not_found');
   });
 
@@ -507,7 +519,7 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
     const { s } = await refusedWorld();
     const id = String(rejections(s)[0]?.id);
     const error = await failure(
-      applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, s.w.deps),
+      applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s)),
     );
     expect(error.opts.meta).toMatchObject({ reason: 'rejection_not_explained' });
   });
@@ -517,7 +529,7 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
       reason: 'Your ad wasn’t approved because it promotes tobacco products.',
     });
     const error = await failure(
-      applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, s.w.deps),
+      applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s)),
     );
     expect(error.opts.meta).toMatchObject({ reason: 'product_not_allowed' });
     expect(rowOf(s.w.db, s.id).status).toBe('rejected');
@@ -530,7 +542,7 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
     const report = stored.report as { fix: { field: string } };
     report.fix.field = 'visual';
     const error = await failure(
-      applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, s.w.deps),
+      applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s)),
     );
     expect(error.opts.meta).toMatchObject({ reason: 'field_not_text' });
   });
@@ -540,7 +552,7 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
     rowOf(s.w.db, s.id).status = 'active';
     rejections(s)[0]!.ad_id = null;
     const error = await failure(
-      applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, s.w.deps),
+      applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s)),
     );
     expect(error.code).toBe('conflict');
   });
@@ -550,7 +562,7 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
     rowOf(s.w.db, s.id).daily_budget_usd_cents = 10;
     const before = JSON.stringify(rowOf(s.w.db, s.id).copy);
     const outcome = await code(
-      applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, s.w.deps),
+      applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s)),
     );
     expect(outcome).not.toBe('ok');
     expect(JSON.stringify(rowOf(s.w.db, s.id).copy)).toBe(before);
@@ -562,5 +574,227 @@ describe('apply-fix — republication sans quota (EC-CAMP-07)', () => {
 describe('connecteur', () => {
   it('la fausse Meta sert bien fetchRejection (garde contre un changement du connecteur)', () => {
     expect(typeof new FakeMetaConnector().fetchRejection).toBe('function');
+  });
+});
+
+
+// ---- Contrôle S18 : sécurité de l'argent et de la republication --------------------------------------------------------------
+
+type TaskConnector = Parameters<typeof runPublication>[2]['connector'];
+
+const runTask = (
+  s: SyncWorld,
+  connector: TaskConnector = s.fake,
+  hooks: { afterAccepted?: () => Promise<void>; beforeSpend?: () => Promise<void> } = {},
+) =>
+  runPublication(
+    { requestId: 'req_FIX', svc: s.w.db.asService(), now: () => NOW },
+    { campaignId: s.id, workspaceId: W },
+    {
+      connector,
+      loadToken: () => Promise.resolve(TOKEN),
+      metaPublishEnabled: () => true,
+      ...hooks,
+    },
+  );
+
+/** Connecteur qui délègue à la fausse Meta, avec des pannes ciblées. */
+function flaky(
+  s: SyncWorld,
+  failures: { getStatus?: boolean; deleteCampaign?: boolean },
+): TaskConnector {
+  const fake = s.fake;
+  const down = () => Promise.reject(new AppError('meta_error', { cause: new TypeError('fetch failed') }));
+  return {
+    createCampaign: (token, spec) => fake.createCampaign(token, spec),
+    resume: (token, refs) => fake.resume(token, refs),
+    searchLocations: (token, query) => fake.searchLocations(token, query),
+    findCampaignsByReference: (token, account, ref) =>
+      fake.findCampaignsByReference(token, account, ref),
+    getStatus: (token, refs) =>
+      failures.getStatus === true ? down() : fake.getStatus(token, refs),
+    deleteCampaign: (token, refs) =>
+      failures.deleteCampaign === true ? down() : fake.deleteCampaign(token, refs),
+  };
+}
+
+const refsOfOld = (campaignId: string) => ({ campaignId, adsetId: null, adId: null, creativeId: null });
+
+async function republishing() {
+  const made = await explainedWorld();
+  const oldMeta = String(rowOf(made.s.w.db, made.s.id).meta_campaign_id);
+  const oldAds = made.s.w.db
+    .rows('ads')
+    .filter((a) => a.campaign_id === made.s.id)
+    .map((a) => ({ ...a }));
+  await applyRejectionFix(
+    made.s.w.ctx,
+    made.s.id,
+    made.id,
+    { idempotencyKey: KEY_B },
+    fixDeps(made.s),
+  );
+  return { ...made, oldMeta, oldAds };
+}
+
+function assertNothingCreated(s: SyncWorld, oldMeta: string, createdBefore: number): void {
+  expect(s.fake.createAttempts).toBe(createdBefore);
+  expect(s.fake.campaigns.get(oldMeta)?.deleted).toBe(false);
+}
+
+const reasonOf = (s: SyncWorld) =>
+  (rowOf(s.w.db, s.id).publish_error as { reason: string } | null)?.reason;
+
+describe('B1 — la nouvelle campagne n’est créée que si l’ancienne est retirée ou absente (jamais deux vivantes chez Meta)', () => {
+  it('avant tout, la route relit le statut chez Meta : une ancienne campagne redevenue active (appel gagné) refuse la correction (409), rien ne change', async () => {
+    const { s, id } = await explainedWorld();
+    s.fake.simulateRemoteStatus(refsOfOld(String(rowOf(s.w.db, s.id).meta_campaign_id)), {
+      status: 'active',
+      rawStatus: 'ACTIVE',
+    });
+    const before = JSON.stringify(rowOf(s.w.db, s.id));
+    const error = await failure(
+      applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s)),
+    );
+    expect(error.code).toBe('conflict');
+    expect(error.opts.meta).toMatchObject({ reason: 'no_longer_rejected' });
+    expect(JSON.stringify(rowOf(s.w.db, s.id))).toBe(before);
+    expect(s.w.jobs.jobs.filter((j) => j.taskId === 'campaign.publish')).toHaveLength(1);
+    expect(rejections(s)[0]?.fixed_and_republished).toBe(false);
+  });
+
+  it('la lecture du statut chez Meta échoue : 502, rien n’est écrit, aucune tâche lancée', async () => {
+    const { s, id } = await explainedWorld();
+    s.fake.simulateTransientError(1);
+    const before = JSON.stringify(rowOf(s.w.db, s.id));
+    const error = await failure(
+      applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s)),
+    );
+    expect(error.code).toBe('meta_error');
+    expect(JSON.stringify(rowOf(s.w.db, s.id))).toBe(before);
+    expect(s.w.jobs.jobs.filter((j) => j.taskId === 'campaign.publish')).toHaveLength(1);
+  });
+
+  it('la tâche relit aussi : ancienne campagne devenue active entre-temps → échec net SANS création, ancienne et ses publicités intactes', async () => {
+    const r = await republishing();
+    r.s.fake.simulateRemoteStatus(refsOfOld(r.oldMeta), { status: 'active', rawStatus: 'ACTIVE' });
+    const created = r.s.fake.createAttempts;
+    const outcome = await runTask(r.s);
+    expect(outcome).toMatchObject({ outcome: 'failed' });
+    assertNothingCreated(r.s, r.oldMeta, created);
+    expect(rowOf(r.s.w.db, r.s.id).status).toBe('error');
+    expect(rowOf(r.s.w.db, r.s.id).meta_campaign_id).toBe(r.oldMeta);
+    expect(reasonOf(r.s)).toBe('previous_campaign_still_live');
+    expect(r.s.w.db.rows('ads').filter((a) => a.campaign_id === r.s.id)).toEqual(r.oldAds);
+  });
+
+  it('la tâche ne peut pas lire le statut de l’ancienne campagne → échec net SANS création (jamais de relance automatique)', async () => {
+    const r = await republishing();
+    const created = r.s.fake.createAttempts;
+    const outcome = await runTask(r.s, flaky(r.s, { getStatus: true }));
+    expect(outcome).toMatchObject({ outcome: 'failed' });
+    assertNothingCreated(r.s, r.oldMeta, created);
+    expect(rowOf(r.s.w.db, r.s.id).status).toBe('error');
+    expect(reasonOf(r.s)).toBe('previous_campaign_unreadable');
+    expect(r.s.w.db.rows('ads').filter((a) => a.campaign_id === r.s.id)).toEqual(r.oldAds);
+  });
+
+  it('la suppression de l’ancienne campagne échoue → échec net SANS création, ses publicités ne sont pas touchées', async () => {
+    const r = await republishing();
+    const created = r.s.fake.createAttempts;
+    const outcome = await runTask(r.s, flaky(r.s, { deleteCampaign: true }));
+    expect(outcome).toMatchObject({ outcome: 'failed' });
+    assertNothingCreated(r.s, r.oldMeta, created);
+    expect(reasonOf(r.s)).toBe('previous_campaign_not_removed');
+    expect(rowOf(r.s.w.db, r.s.id).meta_campaign_id).toBe(r.oldMeta);
+    expect(r.s.w.db.rows('ads').filter((a) => a.campaign_id === r.s.id)).toEqual(r.oldAds);
+  });
+
+  it('A3 : suppression réussie puis création refusée → le refus reste ouvert, la ligne de publicité et ses statistiques sont gardées', async () => {
+    const r = await republishing();
+    const adRow = r.s.w.db.rows('ads').find((a) => a.campaign_id === r.s.id);
+    r.s.w.db
+      .rows('stats_daily')
+      .push({ campaign_id: r.s.id, ad_id: adRow?.id, date: '2026-10-10', results: 3 });
+    r.s.fake.simulateCreateRefusal(new AppError('meta_error', { meta: { title: 'Refus de Meta' } }));
+    const outcome = await runTask(r.s);
+    expect(outcome).toMatchObject({ outcome: 'failed' });
+    expect(r.s.fake.campaigns.get(r.oldMeta)?.deleted).toBe(true);
+    expect(rowOf(r.s.w.db, r.s.id).status).toBe('error');
+    expect(rejections(r.s)[0]?.fixed_and_republished).toBe(false);
+    const ads = r.s.w.db.rows('ads').filter((a) => a.campaign_id === r.s.id);
+    expect(ads).toHaveLength(1);
+    expect(ads[0]?.id).toBe(adRow?.id);
+    expect(r.s.w.db.rows('stats_daily')).toHaveLength(1);
+  });
+
+  it('succès : la ligne de publicité est RÉUTILISÉE (statistiques gardées), le refus est marqué corrigé seulement maintenant', async () => {
+    const r = await republishing();
+    const adRow = r.s.w.db.rows('ads').find((a) => a.campaign_id === r.s.id);
+    expect(rejections(r.s)[0]?.fixed_and_republished).toBe(false);
+    const outcome = await runTask(r.s);
+    expect(outcome.outcome).toBe('accepted');
+    const ads = r.s.w.db.rows('ads').filter((a) => a.campaign_id === r.s.id);
+    expect(ads).toHaveLength(1);
+    expect(ads[0]?.id).toBe(adRow?.id);
+    expect(ads[0]?.meta_ad_id).not.toBe(r.oldAds[0]?.meta_ad_id);
+    expect(rejections(r.s)[0]?.fixed_and_republished).toBe(true);
+  });
+
+  it('après un échec de republication, le refus reste corrigeable : campagne en erreur, refus ouvert, nouvelle correction acceptée', async () => {
+    const r = await republishing();
+    r.s.fake.simulateCreateRefusal(new AppError('meta_error'));
+    await runTask(r.s);
+    expect(rowOf(r.s.w.db, r.s.id).status).toBe('error');
+    const view = await getRejection(r.s.w.ctx, r.s.id, r.id);
+    expect(view).toMatchObject({ fixed: false, partial: false, fix_applicable: true });
+    const again = await applyRejectionFix(
+      r.s.w.ctx,
+      r.s.id,
+      r.id,
+      { idempotencyKey: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd' },
+      fixDeps(r.s),
+    );
+    expect(again.status).toBe('publishing');
+  });
+});
+
+describe('A1 — une republication après refus ne retient jamais de quota', () => {
+  for (const quota of ['none', 'released', 'counted'] as const) {
+    it(`quota_state « ${quota} » inchangé, aucun point d’accroche appelé, y compris après la tâche`, async () => {
+      const { s, id } = await explainedWorld();
+      rowOf(s.w.db, s.id).quota_state = quota;
+      s.w.hooks.events.length = 0;
+      await applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s));
+      expect(rowOf(s.w.db, s.id).quota_state).toBe(quota);
+      const calls: string[] = [];
+      const outcome = await runTask(s, s.fake, {
+        afterAccepted: () => {
+          calls.push('afterAccepted');
+          return Promise.resolve();
+        },
+        beforeSpend: () => {
+          calls.push('beforeSpend');
+          return Promise.resolve();
+        },
+      });
+      expect(outcome.outcome).toBe('accepted');
+      expect(rowOf(s.w.db, s.id).quota_state).toBe(quota);
+      expect(calls).toEqual([]);
+      expect(s.w.hooks.events).toEqual([]);
+    });
+  }
+});
+
+describe('A2 — la correction ne marque jamais un refus « corrigé » sans republication', () => {
+  it('la clé de la publication d’origine rejouée sur une campagne refusée : 409, rien n’est marqué corrigé ni republié', async () => {
+    const { s, id } = await explainedWorld();
+    const original = String(rowOf(s.w.db, s.id).publish_idempotency_key);
+    const error = await failure(
+      applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: original }, fixDeps(s)),
+    );
+    expect(error.code).toBe('idempotency_key_reused');
+    expect(rejections(s)[0]?.fixed_and_republished).toBe(false);
+    expect(rowOf(s.w.db, s.id).status).toBe('rejected');
   });
 });
