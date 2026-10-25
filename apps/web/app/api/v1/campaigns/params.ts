@@ -8,6 +8,12 @@ export function campaignIdParam(params: Record<string, string>): string {
   return value;
 }
 
+export function rejectionIdParam(params: Record<string, string>): string {
+  const value = params.rejectionId ?? '';
+  if (!isUuid(value)) throw fieldError('rejectionId', 'invalid_format', 'UUID attendu');
+  return value;
+}
+
 /** Numéro de version d'une proposition (entier ≥ 1), sinon 400. */
 export function proposalVersionParam(params: Record<string, string>): number {
   const raw = params.version ?? '';
