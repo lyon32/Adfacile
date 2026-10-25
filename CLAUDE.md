@@ -150,9 +150,10 @@ Compétences du dépôt utiles à Pubeka : `turborepo` (monodépôt, S01), `shad
 | Avant de dire « c'est fait »                | `superpowers:verification-before-completion`                                                                                            |
 | Fin de session, pull request                  | `superpowers:finishing-a-development-branch`, `superpowers:requesting-code-review`, `code-review-excellence`      |
 | **Tout écran ou composant**                  | **`frontend-design`** (obligatoire), puis `typography`, `tailwind-design-system`, `design-system-patterns`, `responsive-design`, `interaction-design` — **sans jamais toucher aux couleurs** (§3) |
+| **Retirer le « look IA »** (après `frontend-design`, avant « fini ») | `impeccable`, `emil-design-eng`, `baseline-ui` (du dépôt : pas de dégradés ni de violet, couleurs et jetons existants), puis `improve-ui` (audit en lecture seule) — **ils améliorent le rendu (espacement, hiérarchie, typographie, états, mouvement), jamais les couleurs ni l'identité** (§3) |
 | Composants shadcn                             | `shadcn` (du dépôt)                                                                                                                     |
 | Monodépôt, Turborepo                          | `turborepo` (du dépôt)                                                                                                                  |
-| Accessibilité                                | `accessibility-compliance`, puis `accesslint-audit`, `wcag-audit-patterns`                                                              |
+| Accessibilité, mouvement                     | `accessibility-compliance`, puis `accesslint-audit`, `wcag-audit-patterns`, `fixing-accessibility`, `fixing-motion-performance` (du dépôt) |
 | Next.js, React, état                         | `nextjs-app-router-patterns`, `react-best-practices`, `react-state-management`, `composition-patterns`, `typescript-advanced-types`     |
 | Base de données                              | `postgresql`, `database-migration`, `sql-optimization-patterns`                                                                         |
 | API, erreurs, connexion                       | `api-design-principles`, `openapi-spec-generation`, `error-handling-patterns`, `auth-implementation-patterns`                           |
