@@ -184,7 +184,12 @@ export function CampaignPage({ workspace, campaignId }: CampaignPageProps): Reac
           ) : null}
         </div>
 
-        <RejectionBanner workspaceId={workspace.id} campaignId={campaignId} enabled={published} />
+        <RejectionBanner
+          workspaceId={workspace.id}
+          campaignId={campaignId}
+          enabled={status !== 'draft' && status !== 'publishing'}
+          republishFailed={status === 'error'}
+        />
         {status === 'stopped' ? (
           <Card role="status" className="flex flex-col gap-1">
             <p className="font-semibold">{t('stopped_title')}</p>

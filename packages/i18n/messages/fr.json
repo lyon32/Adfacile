@@ -1337,8 +1337,8 @@
       "read_only": "Ton espace est en lecture seule : tu peux lire ce rapport, mais pas republier.",
       "viewer": "Seuls le propriétaire et les éditeurs peuvent republier.",
       "confirm_title": "Republier avec cette correction ?",
-      "confirm_body": "Ton texte est remplacé par la correction, puis Meta vérifie de nouveau ta pub. Cette republication ne compte pas comme une nouvelle campagne dans ta formule.",
-      "confirm_warning": "L’ancienne campagne refusée est retirée de Meta : tu ne pourras plus demander d’examen pour elle.",
+      "confirm_body": "Corriger recrée ta campagne chez Meta : ton texte est remplacé par la correction, puis Meta vérifie de nouveau ta pub. Cette republication ne compte pas comme une nouvelle campagne dans ta formule.",
+      "confirm_warning": "Avant de recréer la campagne, Pubeka retire l’ancienne campagne refusée de chez Meta. Tu ne pourras alors plus demander de nouvel examen pour elle : si tu penses que Meta s’est trompé, demande d’abord un nouvel examen. Si Meta ne la montre plus refusée, rien n’est modifié.",
       "confirm_apply": "Republier",
       "cancel": "Annuler",
       "appeal_title": "Demander un nouvel examen à Meta",
@@ -1358,7 +1358,15 @@
       "error_validation": "Ta campagne ne passe pas la vérification avant publication. Corrige-la puis réessaie.",
       "nothing_changed": "Rien n’a changé sur ta campagne.",
       "error_read_only": "Ton espace est en lecture seule : rien n’a été republié.",
-      "appeal_done": "J’ai compris"
+      "appeal_done": "J’ai compris",
+      "error_no_longer_rejected": "Meta ne montre plus cette campagne comme refusée (elle a peut-être été acceptée après un appel). Rien n’a été modifié : vérifie son statut chez Meta.",
+      "republish_failed_title": "La republication n’a pas abouti",
+      "republish_failed_still_live": "Ton ancienne campagne est toujours chez Meta et n’est plus refusée : vérifie son statut chez Meta. Rien n’a été créé.",
+      "republish_failed_unreadable": "Pubeka n’a pas pu lire l’état de ton ancienne campagne chez Meta. Rien n’a été créé : réessaie dans un instant.",
+      "republish_failed_not_removed": "Ton ancienne campagne n’a pas pu être retirée de Meta : elle y est toujours et rien n’a été créé. Réessaie, ou vérifie son statut chez Meta.",
+      "republish_failed_other": "La nouvelle campagne n’a pas été créée chez Meta.",
+      "republish_failed_open": "Ce refus reste ouvert tant que la republication n’a pas abouti : tu peux réessayer.",
+      "banner_body_republish_failed": "La republication n’a pas abouti. Le refus reste ouvert : voici ce qui s’est passé."
     }
   }
 }

@@ -42,6 +42,27 @@ export interface RejectionPageProps {
 /** Aide officielle de Meta sur les pubs refusées (la démarche du nouvel examen en vient). */
 const META_HELP_URL = 'https://www.facebook.com/business/help/1210227555661027';
 
+type RepublishKey =
+  | 'republish_failed_still_live'
+  | 'republish_failed_unreadable'
+  | 'republish_failed_not_removed'
+  | 'republish_failed_other';
+
+/** Pourquoi la republication n'a pas abouti : la raison enregistrée par la tâche décide du message. */
+function republishFailureKey(reason: string | null): RepublishKey {
+  if (reason === null) return 'republish_failed_other';
+  switch (reason) {
+    case 'previous_campaign_still_live':
+      return 'republish_failed_still_live';
+    case 'previous_campaign_unreadable':
+      return 'republish_failed_unreadable';
+    case 'previous_campaign_not_removed':
+      return 'republish_failed_not_removed';
+    default:
+      return 'republish_failed_other';
+  }
+}
+
 function asStatus(value: string): CampaignStatus {
   return STATUSES.find((status) => status === value) ?? 'error';
 }
@@ -86,6 +107,7 @@ export function RejectionPage({
         description: campaign.data.copy.description ?? '',
       }}
       campaignVersion={campaign.data.version}
+      publicationReason={campaign.data.publication_error?.reason ?? null}
       analysisId={campaign.data.analysis_id ?? null}
     />
   );
@@ -99,6 +121,7 @@ function RejectionContent({
   campaignStatus,
   copy,
   campaignVersion,
+  publicationReason,
   analysisId,
 }: {
   workspace: RejectionPageProps['workspace'];
@@ -108,6 +131,7 @@ function RejectionContent({
   campaignStatus: CampaignStatus;
   copy: Record<CopyField, string>;
   campaignVersion: number;
+  publicationReason: string | null;
   analysisId: string | null;
 }): ReactNode {
   const t = useTranslations('campaigns.rejection');
@@ -184,6 +208,13 @@ function RejectionContent({
             <span className="text-meta text-muted break-words">{campaignName}</span>
           </div>
         </div>
+        {campaignStatus === 'error' && !rejection.fixed ? (
+          <Card role="alert" className="border-error flex flex-col gap-1">
+            <p className="text-error font-semibold">{t('republish_failed_title')}</p>
+            <p className="text-sm">{t(republishFailureKey(publicationReason))}</p>
+            <p className="text-meta text-muted">{t('republish_failed_open')}</p>
+          </Card>
+        ) : null}
         {rejection.partial ? (
           <Card role="status" className="border-warn flex flex-col gap-1">
             <p className="font-semibold">{t('partial_notice', { variant: variant ?? '' })}</p>
@@ -302,7 +333,7 @@ function RejectionContent({
                 ) : null}
                 {report !== null && !report.can_fix && !failed ? null : (
                   <>
-                    {canAct && writable && !waiting ? (
+                    {canAct && writable ? (
                       <Button
                         type="button"
                         variant="quiet"
@@ -312,7 +343,7 @@ function RejectionContent({
                         {t('edit_myself')}
                       </Button>
                     ) : null}
-                    {(rejection.appeal_recommended || failed) && !waiting ? (
+                    {rejection.appeal_recommended || failed || waiting ? (
                       <Button
                         type="button"
                         variant="quiet"

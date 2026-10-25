@@ -83,7 +83,7 @@ async function seedRejection(campaign: PublishedCampaign, report: Record<string,
   expect(created.ok).toBe(true);
 }
 
-test('refus de Meta : bandeau, rapport du Modérateur, correction appliquée et republiée sans quota (clair)', async ({
+test('refus de Meta : bandeau, rapport du Modérateur, confirmation, et refus de la correction quand Meta ne montre plus la campagne refusée (clair)', async ({
   page,
 }, info) => {
   const campaign = await publishThroughWizard(page, 'light');
@@ -119,15 +119,19 @@ test('refus de Meta : bandeau, rapport du Modérateur, correction appliquée et 
   await expect(page.getByText(suggested)).toBeVisible();
   await checkScreen(page, 'refus-rapport', info, 'light');
 
-  // Appliquer : confirmation d'abord, puis la correction part ; la campagne repart chez Meta SANS toucher au quota (EC-CAMP-07).
+  // Appliquer : confirmation d'abord (elle dit que corriger RECRÉE la campagne chez Meta), puis la route relit le statut chez Meta.
+  // Ici le refus est posé en base alors que la fausse Meta montre la campagne « en vérification » : c'est exactement le cas d'un appel
+  // gagné chez Meta. La correction est donc REFUSÉE (409) et rien ne change, ni chez Meta, ni dans Pubeka. Le chemin de succès
+  // (statut refusé chez Meta → republication sans quota) est prouvé par les tests d'intégration avec la fausse Meta pilotée.
   await page.getByRole('button', { name: 'Appliquer la correction et republier' }).click();
-  await expect(
-    page.getByRole('dialog').getByText(/ne compte pas comme une nouvelle campagne/),
-  ).toBeVisible();
+  await expect(page.getByRole('dialog').getByText(/recrée ta campagne chez Meta/)).toBeVisible();
   await checkScreen(page, 'refus-confirmation', info, 'light');
   await page.getByRole('dialog').getByRole('button', { name: 'Republier' }).click();
-  await expect(page.getByText('Correction envoyée à Meta')).toBeVisible({ timeout: 60_000 });
-  await checkScreen(page, 'refus-envoye', info, 'light');
+  await expect(page.getByText(/ne montre plus cette campagne comme refusée/)).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect(page.getByText('Rien n’a changé sur ta campagne.')).toBeVisible();
+  await checkScreen(page, 'refus-plus-refusee-chez-meta', info, 'light');
 
   const after = (await (
     await serviceRest(
@@ -139,19 +143,15 @@ test('refus de Meta : bandeau, rapport du Modérateur, correction appliquée et 
     publish_attempt: number;
     copy: { primary_text: string };
   }[];
-  expect(after[0]?.copy.primary_text).toBe(suggested);
+  expect(after[0]?.status).toBe('rejected');
+  expect(after[0]?.copy.primary_text).toBe(campaign.primaryText);
   expect(after[0]?.quota_state).toBe(before[0]?.quota_state);
-  expect(after[0]?.publish_attempt).toBe((before[0]?.publish_attempt ?? 0) + 1);
-  expect(['publishing', 'in_review']).toContain(after[0]?.status);
+  expect(after[0]?.publish_attempt).toBe(before[0]?.publish_attempt);
   const fixed = (await (
     await serviceRest(`rejections?campaign_id=eq.${campaign.id}&select=fixed_and_republished`)
   ).json()) as { fixed_and_republished: boolean }[];
-  expect(fixed[0]?.fixed_and_republished).toBe(true);
-
-  // De retour sur la campagne : plus de bandeau de refus.
-  await page.getByRole('link', { name: 'Voir ma campagne' }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Voir pourquoi' })).toHaveCount(0);
+  expect(fixed[0]?.fixed_and_republished).toBe(false);
+  expect(suggested).not.toBe('');
 });
 
 test('motif vague de Meta : cause incertaine, nouvel examen conseillé, démarche officielle de Meta (sombre)', async ({

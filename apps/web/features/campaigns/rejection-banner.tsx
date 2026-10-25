@@ -9,7 +9,14 @@ import { useRejections, type Rejection } from './rejection-api';
 
 function bodyKey(
   rejection: Rejection,
-): 'banner_body_partial' | 'banner_body_pending' | 'banner_body_failed' | 'banner_body_ready' {
+  republishFailed: boolean,
+):
+  | 'banner_body_partial'
+  | 'banner_body_pending'
+  | 'banner_body_failed'
+  | 'banner_body_ready'
+  | 'banner_body_republish_failed' {
+  if (republishFailed) return 'banner_body_republish_failed';
   if (rejection.partial) return 'banner_body_partial';
   if (rejection.status === 'pending' || rejection.status === 'running')
     return 'banner_body_pending';
@@ -21,10 +28,13 @@ export function RejectionBanner({
   workspaceId,
   campaignId,
   enabled,
+  republishFailed = false,
 }: {
   workspaceId: string;
   campaignId: string;
   enabled: boolean;
+  /** La campagne est en erreur après une republication : le refus reste ouvert et on le dit. */
+  republishFailed?: boolean;
 }): ReactNode {
   const t = useTranslations('campaigns.rejection');
   const rejections = useRejections(workspaceId, campaignId, enabled);
@@ -45,7 +55,7 @@ export function RejectionBanner({
                   ? t('banner_title')
                   : t('banner_title_partial', { variant: rejection.variant })}
               </p>
-              <p className="text-meta text-muted">{t(bodyKey(rejection))}</p>
+              <p className="text-meta text-muted">{t(bodyKey(rejection, republishFailed))}</p>
             </div>
             <Button asChild variant="secondary" className="shrink-0 self-start sm:self-center">
               <Link href={`/campagnes/${campaignId}/refus/${rejection.id}`}>{t('banner_cta')}</Link>

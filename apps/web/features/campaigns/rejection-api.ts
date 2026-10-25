@@ -68,6 +68,13 @@ export const rejectionKeys = {
 const base = (ws: string, id: string): string => `/workspaces/${ws}/campaigns/${id}/rejections`;
 
 const POLL_REPORT_MS = 4_000;
+/** Un rapport toujours attendu après 2 minutes : on regarde moins souvent (le serveur le passe à « échec » après 10 minutes). */
+const POLL_REPORT_SLOW_MS = 15_000;
+const SLOW_AFTER_MS = 2 * 60_000;
+
+function reportPollMs(createdAt: string): number {
+  return Date.now() - Date.parse(createdAt) > SLOW_AFTER_MS ? POLL_REPORT_SLOW_MS : POLL_REPORT_MS;
+}
 const waiting = (rejection: Rejection): boolean =>
   rejection.status === 'pending' || rejection.status === 'running';
 
@@ -78,8 +85,10 @@ export function useRejections(ws: string, campaignId: string, enabled: boolean) 
     queryFn: ({ signal }) => apiFetch(base(ws, campaignId), RejectionListSchema, { signal }),
     staleTime: 10_000,
     refetchOnWindowFocus: true,
-    refetchInterval: (query) =>
-      query.state.data?.data.some(waiting) === true ? POLL_REPORT_MS : POLL_IDLE_MS,
+    refetchInterval: (query) => {
+      const pending = query.state.data?.data.find(waiting);
+      return pending === undefined ? POLL_IDLE_MS : reportPollMs(pending.created_at);
+    },
   });
 }
 
@@ -91,7 +100,9 @@ export function useRejection(ws: string, campaignId: string, rejectionId: string
     staleTime: 10_000,
     refetchOnWindowFocus: true,
     refetchInterval: (query) =>
-      query.state.data !== undefined && waiting(query.state.data) ? POLL_REPORT_MS : POLL_IDLE_MS,
+      query.state.data !== undefined && waiting(query.state.data)
+        ? reportPollMs(query.state.data.created_at)
+        : POLL_IDLE_MS,
   });
 }
 
@@ -124,6 +135,7 @@ export type FixFailureKind =
   | 'partial_rejection'
   | 'already_fixed'
   | 'not_explained'
+  | 'no_longer_rejected'
   | 'validation'
   | 'read_only'
   | 'other';
@@ -145,6 +157,7 @@ export function fixFailureOf(error: unknown): FixFailureKind {
       if (reason === 'partial_rejection') return 'partial_rejection';
       if (reason === 'already_fixed') return 'already_fixed';
       if (reason === 'rejection_not_explained') return 'not_explained';
+      if (reason === 'no_longer_rejected') return 'no_longer_rejected';
       return reason === 'fix_not_applicable' ? 'fix_not_applicable' : 'other';
     default:
       return 'other';

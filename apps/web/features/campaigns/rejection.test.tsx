@@ -306,7 +306,9 @@ describe('Écran « Voir pourquoi » (APPFLOW §12)', () => {
     expect(calls.some((c) => c.method === 'POST')).toBe(false);
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText(/ne compte pas comme une nouvelle campagne/)).toBeTruthy();
-    expect(within(dialog).getByText(/retirée de Meta/)).toBeTruthy();
+    expect(
+      within(dialog).getByText(/retire l’ancienne campagne refusée de chez Meta/),
+    ).toBeTruthy();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Republier' }));
     await waitFor(() => {
       expect(calls.some((c) => c.method === 'POST')).toBe(true);
@@ -566,11 +568,17 @@ describe('Contrôle S18 — jamais de cul-de-sac, jamais de promesse fausse', ()
   it('la confirmation dit en toutes lettres que corriger RECRÉE la campagne chez Meta et peut faire perdre le nouvel examen', async () => {
     stubApi(ROUTES());
     mount(reportPage());
-    fireEvent.click(await screen.findByRole('button', { name: 'Appliquer la correction et republier' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Appliquer la correction et republier' }),
+    );
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText(/recrée ta campagne chez Meta/)).toBeTruthy();
-    expect(within(dialog).getByText(/ne pourras alors plus demander de nouvel examen/)).toBeTruthy();
-    expect(within(dialog).getByText(/Si Meta ne la montre plus refusée, rien n’est modifié/)).toBeTruthy();
+    expect(
+      within(dialog).getByText(/ne pourras alors plus demander de nouvel examen/),
+    ).toBeTruthy();
+    expect(
+      within(dialog).getByText(/Si Meta ne la montre plus refusée, rien n’est modifié/),
+    ).toBeTruthy();
     expect(within(dialog).queryByText(/est retirée de Meta/)).toBeNull();
   });
 
@@ -583,8 +591,12 @@ describe('Contrôle S18 — jamais de cul-de-sac, jamais de promesse fausse', ()
       }),
     );
     mount(reportPage());
-    fireEvent.click(await screen.findByRole('button', { name: 'Appliquer la correction et republier' }));
-    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Republier' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Appliquer la correction et republier' }),
+    );
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Republier' }),
+    );
     expect(await screen.findByText(/ne montre plus cette campagne comme refusée/)).toBeTruthy();
     expect(screen.getByText('Rien n’a changé sur ta campagne.')).toBeTruthy();
   });
@@ -609,7 +621,9 @@ describe('Contrôle S18 — jamais de cul-de-sac, jamais de promesse fausse', ()
       expect(await screen.findByText('La republication n’a pas abouti')).toBeTruthy();
       expect(screen.getByText(expected)).toBeTruthy();
       expect(screen.getByText(/Ce refus reste ouvert/)).toBeTruthy();
-      expect(screen.getByRole('button', { name: 'Appliquer la correction et republier' })).toBeTruthy();
+      expect(
+        screen.getByRole('button', { name: 'Appliquer la correction et republier' }),
+      ).toBeTruthy();
     });
   }
 

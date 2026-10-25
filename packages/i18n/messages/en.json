@@ -1337,8 +1337,8 @@
       "read_only": "Your workspace is read-only: you can read this report, but not republish.",
       "viewer": "Only the owner and editors can republish.",
       "confirm_title": "Republish with this fix?",
-      "confirm_body": "Your text is replaced by the fix, then Meta reviews your ad again. This republication does not count as a new campaign in your plan.",
-      "confirm_warning": "The old rejected campaign is removed from Meta: you will no longer be able to ask for a review of it.",
+      "confirm_body": "Fixing recreates your campaign on Meta: your text is replaced by the fix, then Meta reviews your ad again. This republication does not count as a new campaign in your plan.",
+      "confirm_warning": "Before recreating the campaign, Pubeka removes the old rejected campaign from Meta. You will then no longer be able to ask for another review of it: if you think Meta made a mistake, ask for another review first. If Meta no longer shows it as rejected, nothing is changed.",
       "confirm_apply": "Republish",
       "cancel": "Cancel",
       "appeal_title": "Ask Meta for another review",
@@ -1358,7 +1358,15 @@
       "error_validation": "Your campaign does not pass the checks before publishing. Fix it, then try again.",
       "nothing_changed": "Nothing changed on your campaign.",
       "error_read_only": "Your workspace is read-only: nothing was republished.",
-      "appeal_done": "Got it"
+      "appeal_done": "Got it",
+      "error_no_longer_rejected": "Meta no longer shows this campaign as rejected (it may have been approved after an appeal). Nothing was changed: check its status on Meta.",
+      "republish_failed_title": "The republication did not go through",
+      "republish_failed_still_live": "Your old campaign is still on Meta and is no longer rejected: check its status on Meta. Nothing was created.",
+      "republish_failed_unreadable": "Pubeka could not read the state of your old campaign on Meta. Nothing was created: try again in a moment.",
+      "republish_failed_not_removed": "Your old campaign could not be removed from Meta: it is still there and nothing was created. Try again, or check its status on Meta.",
+      "republish_failed_other": "The new campaign was not created on Meta.",
+      "republish_failed_open": "This rejection stays open until the republication goes through: you can try again.",
+      "banner_body_republish_failed": "The republication did not go through. The rejection stays open: here is what happened."
     }
   }
 }
