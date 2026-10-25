@@ -20,7 +20,7 @@ import {
   testServiceClient,
   type SeededWorkspace,
 } from '@pubeka/testing';
-import { afterAll, beforeAll, beforeEach, expect } from 'vitest';
+import { afterAll, beforeAll, beforeEach, expect, vi } from 'vitest';
 import { call } from '../meta/int-support';
 import { POST as applyRoute } from '../workspaces/[workspaceId]/campaigns/[campaignId]/rejections/[rejectionId]/apply-fix/route';
 import { GET as getRoute } from '../workspaces/[workspaceId]/campaigns/[campaignId]/rejections/[rejectionId]/route';
@@ -28,6 +28,9 @@ import { GET as listRoute } from '../workspaces/[workspaceId]/campaigns/[campaig
 import { campaignParams, ensureTestFx, json, resetRateLimits } from './int-support';
 import { campaignRow, JobRecorder, publishedCampaign } from './publish-support';
 import { overridePublishDeps, overrideSyncJobs } from './services';
+
+// Chaque cas publie une campagne puis lance une synchronisation de TOUTES les campagnes de la base locale : sur une base chargée, 30 s ne suffisent pas.
+vi.setConfig({ testTimeout: 120_000 });
 
 type Who = SeededWorkspace['owner'];
 let s: SeededWorkspace;
@@ -239,6 +242,7 @@ describeRoute('applyRejectionFix', {
     const before = await campaignRow(campaign.id);
     expect(before?.status).toBe('rejected');
     const oldMeta = (await refsOf(campaign.id)).campaignId;
+    const adBefore = await svc().from('ads').select('id').eq('campaign_id', campaign.id).single();
 
     const res = await apply(s, s.owner, campaign.id, rejectionId);
     expect(res.status).toBe(202);
@@ -259,6 +263,8 @@ describeRoute('applyRejectionFix', {
     expect((await refsOf(campaign.id)).campaignId).not.toBe(oldMeta);
     const ads = await svc().from('ads').select('id').eq('campaign_id', campaign.id);
     expect(ads.data).toHaveLength(1);
+    // La ligne de publicité est RÉUTILISÉE (les statistiques par publicité lui sont rattachées en CASCADE).
+    expect(ads.data?.[0]?.id).toBe(adBefore.data?.id);
   },
   unauthenticated: async () => {
     const { campaign, rejectionId } = await refusedCampaign(s);
@@ -322,6 +328,37 @@ describeRoute('applyRejectionFix', {
       expect((await campaignRow(campaign.id))?.status).toBe('rejected');
       expect((await rejectionRows(campaign.id))[0]?.fixed_and_republished).toBe(false);
     },
+    'B1 : ancienne campagne redevenue active chez Meta (appel gagné) : 409 no_longer_rejected, rien n’est créé ni supprimé': async () => {
+      const { campaign, rejectionId } = await refusedCampaign(s);
+      const refs = await refsOf(campaign.id);
+      const fake = fakeMeta();
+      fake.simulateRemoteStatus(refs, { status: 'active', rawStatus: 'ACTIVE' });
+      const created = fake.createAttempts;
+      try {
+        const res = await apply(s, s.owner, campaign.id, rejectionId);
+        expect(res.status).toBe(409);
+        expect((await problemOf(res)).meta).toMatchObject({ reason: 'no_longer_rejected' });
+        expect(fake.createAttempts).toBe(created);
+        expect(fake.campaigns.get(refs.campaignId)?.deleted).toBe(false);
+        expect((await campaignRow(campaign.id))?.status).toBe('rejected');
+        expect((await rejectionRows(campaign.id))[0]?.fixed_and_republished).toBe(false);
+      } finally {
+        fake.simulateRemoteStatus(refs, undefined);
+      }
+    },
+    'A2 : la clé de la publication d’origine ne republie rien (409 idempotency_key_reused)': async () => {
+      const { campaign, rejectionId } = await refusedCampaign(s);
+      const row = await svc()
+        .from('campaigns')
+        .select('publish_idempotency_key')
+        .eq('id', campaign.id)
+        .single();
+      const res = await apply(s, s.owner, campaign.id, rejectionId, row.data?.publish_idempotency_key);
+      expect(res.status).toBe(409);
+      expect((await problemOf(res)).code).toBe('idempotency_key_reused');
+      expect((await campaignRow(campaign.id))?.status).toBe('rejected');
+      expect((await rejectionRows(campaign.id))[0]?.fixed_and_republished).toBe(false);
+    },
     'lecture seule : 403 workspace_read_only': async () => {
       const ro = await seedWorkspace();
       const { campaign, rejectionId } = await refusedCampaign(ro);
@@ -339,7 +376,7 @@ describeRoute('applyRejectionFix', {
       expect(view).toMatchObject({ can_fix: false, fix_applicable: false });
       const res = await apply(s, s.owner, campaign.id, rejectionId);
       expect(res.status).toBe(409);
-      expect((await problemOf(res)).meta).toMatchObject({ reason: 'product_not_allowed' });
+      expect((await problemOf(res)).meta).toMatchObject({ reason: 'fix_not_applicable', cause: 'product_not_allowed' });
       expect((await campaignRow(campaign.id))?.status).toBe('rejected');
     },
     'refus déjà corrigé : 409 already_fixed': async () => {
