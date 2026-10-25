@@ -1050,3 +1050,249 @@ describe('Mémoire des refus : jamais de donnée personnelle ni de texte du clie
     expect(patterns).toHaveLength(1);
   });
 });
+
+
+// ---- 2e contrôle S18 : N1 (cul-de-sac), A-2 (campagne en erreur vivante chez Meta), remarques ----------------------------------
+
+const liveCampaigns = (s: SyncWorld) => [...s.fake.campaigns.values()].filter((c) => !c.deleted);
+
+describe('N1 — une ancienne campagne SUPPRIMÉE chez Meta ne bloque jamais la republication', () => {
+  /** Republication dont l'activation est refusée : l'ancienne ET la nouvelle campagne sont supprimées chez Meta, la campagne passe en erreur. */
+  async function failedAfterDeletion() {
+    const r = await republishing();
+    r.s.fake.simulateResumeRefusal(new AppError('meta_error', { meta: { title: 'Refus de Meta' } }));
+    const outcome = await runTask(r.s);
+    return { ...r, outcome };
+  }
+
+  it('partout où la suppression chez Meta réussit avant un échec, les identifiants locaux sont effacés (campagne ET publicité)', async () => {
+    const r = await failedAfterDeletion();
+    expect(r.outcome).toMatchObject({ outcome: 'failed' });
+    expect(liveCampaigns(r.s)).toHaveLength(0);
+    const row = rowOf(r.s.w.db, r.s.id);
+    expect(row.status).toBe('error');
+    expect(row.meta_campaign_id).toBeNull();
+    expect(row.meta_adset_id).toBeNull();
+    const ads = r.s.w.db.rows('ads').filter((a) => a.campaign_id === r.s.id);
+    expect(ads).toHaveLength(1);
+    expect(ads[0]?.meta_ad_id).toBeNull();
+  });
+
+  it('puis un nouveau clic republie : une SEULE campagne vivante chez Meta', async () => {
+    const r = await failedAfterDeletion();
+    const again = await applyRejectionFix(
+      r.s.w.ctx,
+      r.s.id,
+      r.id,
+      { idempotencyKey: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' },
+      fixDeps(r.s),
+    );
+    expect(again.status).toBe('publishing');
+    expect((await runTask(r.s)).outcome).toBe('accepted');
+    expect(liveCampaigns(r.s)).toHaveLength(1);
+    expect(rowOf(r.s.w.db, r.s.id).status).toBe('in_review');
+  });
+
+  it('identifiant resté en base vers une campagne déjà supprimée chez Meta : la route et la tâche le lisent « absent » (DELETED) et republient', async () => {
+    const r = await failedAfterDeletion();
+    const deletedId = String([...r.s.fake.campaigns.keys()].at(-1));
+    rowOf(r.s.w.db, r.s.id).meta_campaign_id = deletedId;
+    const ad = r.s.w.db.rows('ads').find((a) => a.campaign_id === r.s.id);
+    if (ad !== undefined) ad.meta_ad_id = r.oldAds[0]?.meta_ad_id ?? '120000000099';
+    const view = await applyRejectionFix(
+      r.s.w.ctx,
+      r.s.id,
+      r.id,
+      { idempotencyKey: 'ffffffff-ffff-4fff-8fff-ffffffffffff' },
+      fixDeps(r.s),
+    );
+    expect(view.status).toBe('publishing');
+    expect((await runTask(r.s)).outcome).toBe('accepted');
+    expect(liveCampaigns(r.s)).toHaveLength(1);
+    expect(r.s.w.db.rows('ads').filter((a) => a.campaign_id === r.s.id)).toHaveLength(1);
+  });
+
+  it('une campagne ARCHIVÉE chez Meta ne diffuse pas : elle est lue « absente »', async () => {
+    const r = await republishing();
+    r.s.fake.simulateRemoteStatus(refsOfOld(r.oldMeta), { status: 'stopped', rawStatus: 'ARCHIVED' });
+    expect((await runTask(r.s)).outcome).toBe('accepted');
+    expect(liveCampaigns(r.s).filter((c) => c.refs.campaignId === r.oldMeta)).toHaveLength(1);
+  });
+
+  for (const [label, remote] of [
+    ['arrêtée mais vivante (STOPPED)', { status: 'stopped', rawStatus: 'STOPPED' }],
+    ['problème de paiement (PENDING_BILLING_INFO)', { status: 'stopped', rawStatus: 'PENDING_BILLING_INFO' }],
+    ['en vérification', { status: 'in_review', rawStatus: 'PENDING_REVIEW' }],
+  ] as const) {
+    it(`campagne ${label} : JAMAIS prise pour absente, la route refuse et la tâche ne crée rien`, async () => {
+      const r = await republishing();
+      r.s.fake.simulateRemoteStatus(refsOfOld(r.oldMeta), remote);
+      const created = r.s.fake.createAttempts;
+      expect((await runTask(r.s)).outcome).toBe('failed');
+      assertNothingCreated(r.s, r.oldMeta, created);
+      expect(reasonOf(r.s)).toBe('previous_campaign_still_live');
+    });
+  }
+
+  it('la route refuse aussi une campagne arrêtée mais vivante (409 no_longer_rejected)', async () => {
+    const { s, id } = await explainedWorld();
+    s.fake.simulateRemoteStatus(refsOfOld(String(rowOf(s.w.db, s.id).meta_campaign_id)), {
+      status: 'stopped',
+      rawStatus: 'STOPPED',
+    });
+    const error = await failure(
+      applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s)),
+    );
+    expect(error.opts.meta).toMatchObject({ reason: 'no_longer_rejected' });
+  });
+
+  it('route et tâche sont alignées : une ancienne campagne en pause chez Meta est acceptée des deux côtés', async () => {
+    const { s, id } = await explainedWorld();
+    const old = String(rowOf(s.w.db, s.id).meta_campaign_id);
+    s.fake.simulateRemoteStatus(refsOfOld(old), { status: 'paused', rawStatus: 'PAUSED' });
+    const view = await applyRejectionFix(s.w.ctx, s.id, id, { idempotencyKey: KEY_B }, fixDeps(s));
+    expect(view.status).toBe('publishing');
+    expect((await runTask(s)).outcome).toBe('accepted');
+  });
+});
+
+describe('A-2 — une campagne en erreur encore vivante chez Meta remonte son vrai statut (jamais un faux « erreur »)', () => {
+  async function inErrorWithIds() {
+    const s = await syncWorld();
+    rowOf(s.w.db, s.id).status = 'error';
+    return s;
+  }
+  for (const [remote, expected] of [
+    [{ status: 'active', rawStatus: 'ACTIVE' }, 'active'],
+    [{ status: 'in_review', rawStatus: 'PENDING_REVIEW' }, 'in_review'],
+    [{ status: 'paused', rawStatus: 'PAUSED' }, 'paused'],
+  ] as const) {
+    it(`Meta montre « ${remote.rawStatus} » : la campagne passe à « ${expected} » (le client peut la mettre en pause)`, async () => {
+      const s = await inErrorWithIds();
+      s.fake.simulateRemoteStatus(s.refs, remote);
+      await syncCampaignStatuses(s.ctxAt(15), s.deps());
+      expect(rowOf(s.w.db, s.id).status).toBe(expected);
+    });
+  }
+
+  it('supprimée chez Meta (DELETED) : la campagne reste en erreur, rien ne bouge', async () => {
+    const s = await inErrorWithIds();
+    s.fake.simulateRemoteStatus(s.refs, { status: 'stopped', rawStatus: 'DELETED' });
+    await syncCampaignStatuses(s.ctxAt(15), s.deps());
+    expect(rowOf(s.w.db, s.id).status).toBe('error');
+  });
+
+  it('en erreur SANS identifiant Meta : jamais examinée', async () => {
+    const s = await inErrorWithIds();
+    rowOf(s.w.db, s.id).meta_campaign_id = null;
+    const { connector, calls } = ((): { connector: SyncConnector; calls: string[] } => {
+      const list: string[] = [];
+      return {
+        calls: list,
+        connector: {
+          getStatus: (t, r) => {
+            list.push('getStatus');
+            return s.fake.getStatus(t, r);
+          },
+          fetchStats: (t, r, g) => s.fake.fetchStats(t, r, g),
+          fetchRejection: (t, r) => s.fake.fetchRejection(t, r),
+        },
+      };
+    })();
+    await syncCampaignStatuses(s.ctxAt(15), s.deps({ connector }));
+    expect(calls).toEqual([]);
+  });
+});
+
+describe('Remarques du 2e contrôle', () => {
+  it('(8) un refus déjà enregistré ne consomme AUCUNE lecture du budget et la campagne est marquée synchronisée', async () => {
+    const { s } = await refusedWorld();
+    const calls: string[] = [];
+    const connector: SyncConnector = {
+      getStatus: (t, r) => s.fake.getStatus(t, r),
+      fetchStats: (t, r, g) => s.fake.fetchStats(t, r, g),
+      fetchRejection: (t, r) => {
+        calls.push('fetch');
+        return s.fake.fetchRejection(t, r);
+      },
+    };
+    await syncCampaignStatuses(s.ctxAt(30), s.deps({ connector }), { rejectionReadBudget: 0 });
+    expect(calls).toEqual([]);
+    expect(rowOf(s.w.db, s.id).status_synced_at).not.toBeNull();
+  });
+
+  it('(7) les lignes de publicité vidées (sans identifiant Meta) ne comptent pas comme publicités d’un test A/B', async () => {
+    const s = await syncWorld({ activateAs: 'active' });
+    rowOf(s.w.db, s.id).status = 'in_review';
+    s.w.db.rows('ads').push({ ...s.w.db.rows('ads')[0], id: 'ad-vide', meta_ad_id: null, meta_creative_id: null });
+    const calls: string[] = [];
+    const connector: SyncConnector = {
+      getStatus: () => Promise.resolve({ status: 'rejected', rawStatus: 'DISAPPROVED' }),
+      fetchStats: (t, r, g) => s.fake.fetchStats(t, r, g),
+      fetchRejection: (_t, r) => {
+        calls.push(String(r.adId));
+        return Promise.resolve({ reason: REASON, adId: r.adId });
+      },
+    };
+    await syncCampaignStatuses(s.ctxAt(15), s.deps({ connector }));
+    // Une seule vraie publicité : comportement simple, la campagne est refusée en entier.
+    expect(rowOf(s.w.db, s.id).status).toBe('rejected');
+    expect(rejections(s)).toHaveLength(1);
+  });
+
+  it('(9) un identifiant @marque est refusé dans la mémoire des refus', async () => {
+    const { isPersonalDataFree } = await import('@pubeka/agents');
+    expect(isPersonalDataFree('promesse copiée du compte @bellecreme_cm')).toBe(false);
+    expect(isPersonalDataFree('promesse chiffrée de perte de poids')).toBe(true);
+  });
+
+  it('(9) le motif écrit sur le refus de l’espace passe aussi par le contrôle d’anonymat', async () => {
+    const { s } = await refusedWorld({
+      copy: { primary_text: 'Appelez Awa pour la crème miracle du quartier', headline: 'Crème' },
+    });
+    const output = {
+      ...(fakeModerateurOutput({
+        model: 'm',
+        temperature: 0,
+        responseFormat: { type: 'json_object' },
+        messages: [
+          {
+            role: 'user',
+            content: JSON.stringify({
+              output_language: 'fr',
+              ad: { primary_text: 'Appelez Awa pour la crème miracle du quartier' },
+              meta_rejection: REASON,
+            }),
+          },
+        ],
+      }) as object),
+      memory_pattern: 'promesse sur la crème miracle du quartier',
+    };
+    await explainRejection(s.ctxAt(20), explainDeps(new FakeAiGateway().enqueue({ json: output })), {
+      rejectionId: String(rejections(s)[0]?.id),
+      workspaceId: W,
+    });
+    expect(rejections(s)[0]?.explain_status).toBe('ready');
+    expect(rejections(s)[0]?.memory_pattern).toBeNull();
+  });
+
+  it('(10) les explications perdues sont traitées les plus anciennes d’abord', async () => {
+    const { s } = await refusedWorld();
+    const base = rejections(s)[0];
+    if (base === undefined) throw new Error('refus absent');
+    for (let i = 0; i < 205; i += 1) {
+      rejections(s).push({
+        ...base,
+        id: `stale-${String(i).padStart(3, '0')}`,
+        explain_status: 'running',
+        // i = 0 : le plus récent des 205 (mais déjà périmé) ; i = 204 : le plus ancien.
+        explain_started_at: new Date(NOW.getTime() - (20 + i) * 60_000).toISOString(),
+      });
+    }
+    base.explain_status = 'ready';
+    const { failStaleExplanations } = await import('./explain-rejection');
+    expect(await failStaleExplanations(s.ctxAt(0))).toBe(200);
+    const left = rejections(s).filter((r) => r.explain_status === 'running');
+    expect(left.map((r) => r.id).sort()).toEqual(['stale-000', 'stale-001', 'stale-002', 'stale-003', 'stale-004']);
+  });
+});

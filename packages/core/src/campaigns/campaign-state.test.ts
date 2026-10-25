@@ -35,6 +35,10 @@ const EXPECTED: readonly Row[] = [
   ['rejected', 'stop', 'stopped'],
   ['error', 'publish', 'publishing'],
   ['error', 'reset', 'draft'],
+  // Contrôle S18 (N1, A-2) : Meta a reçu (ou fait vivre) la campagne alors que Pubeka l'a marquée en erreur : son vrai statut remonte.
+  ['error', 'sent', 'in_review'],
+  ['error', 'approve', 'active'],
+  ['error', 'pause', 'paused'],
   ['stopped', 'recover', 'active'], // APPFLOW : paiement corrigé (LLD : terminal, voir rapport)
 ];
 
@@ -87,12 +91,12 @@ describe('machine d’état des campagnes', () => {
     for (const s of CAMPAIGN_STATUSES) expect(canTransition(s, s)).toBe(false);
   });
 
-  it('108 paires (9 états × 12 événements) : 19 autorisées, 89 interdites', () => {
+  it('108 paires (9 états × 12 événements) : 22 autorisées, 86 interdites', () => {
     let allowed = 0;
     for (const from of CAMPAIGN_STATUSES)
       for (const event of CAMPAIGN_EVENTS) if (nextCampaignStatus(from, event).ok) allowed += 1;
     expect([allowed, CAMPAIGN_STATUSES.length * CAMPAIGN_EVENTS.length - allowed]).toEqual([
-      19, 89,
+      22, 86,
     ]);
   });
 
