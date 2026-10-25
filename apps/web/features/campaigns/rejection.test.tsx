@@ -541,3 +541,100 @@ describe('Écran « Voir pourquoi » (APPFLOW §12)', () => {
     expect(screen.getByRole('button', { name: 'Edit it myself' })).toBeTruthy();
   });
 });
+
+describe('Contrôle S18 — jamais de cul-de-sac, jamais de promesse fausse', () => {
+  it('B2 : un rapport en cours (même longtemps) laisse « Modifier moi-même » et « Demander un nouvel examen »', async () => {
+    stubApi(
+      ROUTES({
+        [`GET /c/rejections/${RID}`]: json(
+          rejection({
+            status: 'running',
+            report: null,
+            can_fix: false,
+            fix_applicable: false,
+            created_at: '2026-10-24T08:00:00Z',
+          }),
+        ),
+      }),
+    );
+    mount(reportPage());
+    expect(await screen.findByText('On rédige ton rapport')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Modifier moi-même' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Demander un nouvel examen' })).toBeTruthy();
+  });
+
+  it('la confirmation dit en toutes lettres que corriger RECRÉE la campagne chez Meta et peut faire perdre le nouvel examen', async () => {
+    stubApi(ROUTES());
+    mount(reportPage());
+    fireEvent.click(await screen.findByRole('button', { name: 'Appliquer la correction et republier' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/recrée ta campagne chez Meta/)).toBeTruthy();
+    expect(within(dialog).getByText(/ne pourras alors plus demander de nouvel examen/)).toBeTruthy();
+    expect(within(dialog).getByText(/Si Meta ne la montre plus refusée, rien n’est modifié/)).toBeTruthy();
+    expect(within(dialog).queryByText(/est retirée de Meta/)).toBeNull();
+  });
+
+  it('B1 : Meta ne montre plus la campagne refusée (409 no_longer_rejected) : message dédié, rien n’a changé', async () => {
+    stubApi(
+      ROUTES({
+        [`POST /c/rejections/${RID}/apply-fix`]: problem('conflict', 409, {
+          reason: 'no_longer_rejected',
+        }),
+      }),
+    );
+    mount(reportPage());
+    fireEvent.click(await screen.findByRole('button', { name: 'Appliquer la correction et republier' }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Republier' }));
+    expect(await screen.findByText(/ne montre plus cette campagne comme refusée/)).toBeTruthy();
+    expect(screen.getByText('Rien n’a changé sur ta campagne.')).toBeTruthy();
+  });
+
+  for (const [reason, expected] of [
+    ['previous_campaign_still_live', /toujours chez Meta et n’est plus refusée/],
+    ['previous_campaign_unreadable', /n’a pas pu lire l’état de ton ancienne campagne/],
+    ['previous_campaign_not_removed', /n’a pas pu être retirée de Meta/],
+  ] as const) {
+    it(`A3 : republication échouée (${reason}) : le lien avec le refus est expliqué, le refus reste ouvert et corrigeable`, async () => {
+      stubApi(
+        ROUTES({
+          'GET /c': json(
+            campaign({
+              status: 'error',
+              publication_error: { code: 'meta_error', reason, at: '2026-10-24T10:00:00Z' },
+            }),
+          ),
+        }),
+      );
+      mount(reportPage());
+      expect(await screen.findByText('La republication n’a pas abouti')).toBeTruthy();
+      expect(screen.getByText(expected)).toBeTruthy();
+      expect(screen.getByText(/Ce refus reste ouvert/)).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Appliquer la correction et republier' })).toBeTruthy();
+    });
+  }
+
+  it('A3 : sur la page de la campagne en erreur, le bandeau du refus reste affiché', async () => {
+    stubApi(
+      ROUTES({
+        'GET /c': json(campaign({ status: 'error' })),
+        'GET /c/stats': json({}),
+        'GET /c/events': json({ data: [] }),
+      }),
+    );
+    mount(<CampaignPage workspace={workspace()} campaignId={ID} />);
+    expect(await screen.findByRole('link', { name: 'Voir pourquoi' })).toBeTruthy();
+  });
+
+  it('pendant la republication (campagne en publication), aucun bandeau de refus périmé', async () => {
+    stubApi(
+      ROUTES({
+        'GET /c': json(campaign({ status: 'publishing' })),
+        'GET /c/stats': json({}),
+        'GET /c/events': json({ data: [] }),
+      }),
+    );
+    mount(<CampaignPage workspace={workspace()} campaignId={ID} />);
+    await screen.findByRole('heading', { level: 1, name: 'Crème hydratante' });
+    expect(screen.queryByRole('link', { name: 'Voir pourquoi' })).toBeNull();
+  });
+});
