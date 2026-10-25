@@ -153,6 +153,9 @@ function RejectionContent({
   const fix = report?.fix ?? null;
   const fixField = fix === null ? null : asCopyField(fix.field);
   const sent = rejection.fixed;
+  // 202 reçu mais la tâche n'a pas (encore) fait accepter la campagne par Meta : « en cours », jamais « envoyée ». Une campagne en erreur
+  // l'emporte (la carte d'erreur est affichée en haut et la correction reste proposée).
+  const inProgress = !sent && apply.isSuccess && campaignStatus !== 'error';
 
   const editMyself = (): void => {
     control.mutate(
@@ -190,7 +193,7 @@ function RejectionContent({
   const failure = apply.isError ? fixFailureOf(apply.error) : null;
   const title = variant === null ? t('title') : t('title_partial', { variant });
   const canApply =
-    rejection.fix_applicable && canAct && writable && !sent && !apply.isSuccess && !waiting;
+    rejection.fix_applicable && canAct && writable && !sent && !inProgress && !waiting;
 
   return (
     <div className="flex flex-col gap-6">
@@ -270,10 +273,15 @@ function RejectionContent({
         <div className="flex min-w-0 flex-col gap-6 lg:sticky lg:top-6">
           <Card className="flex flex-col gap-4">
             <Eyebrow>{t('section_fix')}</Eyebrow>
-            {sent || apply.isSuccess ? (
+            {sent ? (
               <div role="status" className="flex flex-col gap-1">
                 <p className="font-semibold">{t('applied_title')}</p>
                 <p className="text-meta text-muted">{t('applied_body')}</p>
+              </div>
+            ) : inProgress ? (
+              <div role="status" className="flex flex-col gap-1">
+                <p className="font-semibold">{t('publishing_title')}</p>
+                <p className="text-meta text-muted">{t('publishing_body')}</p>
               </div>
             ) : waiting ? (
               <p className="text-meta text-muted">{t('pending_body')}</p>
@@ -310,7 +318,7 @@ function RejectionContent({
               </p>
             ) : null}
 
-            {sent || apply.isSuccess ? (
+            {sent || inProgress ? (
               <Button asChild>
                 <Link href={`/campagnes/${campaignId}`}>{t('see_campaign')}</Link>
               </Button>

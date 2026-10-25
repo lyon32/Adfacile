@@ -293,7 +293,7 @@ describe('Écran « Voir pourquoi » (APPFLOW §12)', () => {
     expect(screen.queryByRole('button', { name: 'Demander un nouvel examen' })).toBeNull();
   });
 
-  it('appliquer demande confirmation, envoie UNE Idempotency-Key (UUID) puis annonce la correction envoyée', async () => {
+  it('appliquer demande confirmation, envoie UNE Idempotency-Key (UUID) puis annonce « republication en cours »', async () => {
     const calls = stubApi(
       ROUTES({
         [`POST /c/rejections/${RID}/apply-fix`]: json(campaign({ status: 'publishing' }), 202),
@@ -315,7 +315,7 @@ describe('Écran « Voir pourquoi » (APPFLOW §12)', () => {
     });
     const post = calls.find((c) => c.method === 'POST');
     expect(post?.headers['idempotency-key']).toMatch(/^[0-9a-f-]{36}$/);
-    expect(await screen.findByText('Correction envoyée à Meta')).toBeTruthy();
+    expect(await screen.findByText('Republication en cours')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Voir ma campagne' }).getAttribute('href')).toBe(
       `/campagnes/${ID}`,
     );

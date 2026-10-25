@@ -1330,7 +1330,7 @@
       "failed_title": "The report could not be written",
       "failed_body": "Here is the reason Meta gave. You can edit your ad yourself or ask for another review.",
       "applied_title": "Fix sent to Meta",
-      "applied_body": "Meta reviews your ad again, usually within 24 hours.",
+      "applied_body": "Meta reviews your ad again.",
       "see_campaign": "See my campaign",
       "partial_notice": "Only ad {variant} is rejected. Your campaign keeps running the other ad.",
       "partial_no_apply": "One-click republishing is for campaigns rejected as a whole. For ad {variant}, edit it yourself.",
@@ -1366,7 +1366,9 @@
       "republish_failed_not_removed": "Your old campaign could not be removed from Meta: it is still there and nothing was created. Try again, or check its status on Meta.",
       "republish_failed_other": "The new campaign was not created on Meta.",
       "republish_failed_open": "This rejection stays open until the republication goes through: you can try again.",
-      "banner_body_republish_failed": "The republication did not go through. The rejection stays open: here is what happened."
+      "banner_body_republish_failed": "The republication did not go through. The rejection stays open: here is what happened.",
+      "publishing_title": "Republishing in progress",
+      "publishing_body": "Pubeka is recreating your campaign on Meta. Nothing has reached Meta until this step is done: this page updates when it is."
     }
   }
 }

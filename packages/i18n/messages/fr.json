@@ -1330,7 +1330,7 @@
       "failed_title": "Le rapport n’a pas pu être rédigé",
       "failed_body": "Voici le motif donné par Meta. Tu peux modifier ta pub toi-même ou demander un nouvel examen.",
       "applied_title": "Correction envoyée à Meta",
-      "applied_body": "Meta vérifie ta pub de nouveau, en général sous 24 heures.",
+      "applied_body": "Meta vérifie ta pub de nouveau.",
       "see_campaign": "Voir ma campagne",
       "partial_notice": "Seule la pub {variant} est refusée. Ta campagne continue de diffuser l’autre pub.",
       "partial_no_apply": "La republication en un clic concerne les campagnes refusées en entier. Pour la pub {variant}, modifie-la toi-même.",
@@ -1366,7 +1366,9 @@
       "republish_failed_not_removed": "Ton ancienne campagne n’a pas pu être retirée de Meta : elle y est toujours et rien n’a été créé. Réessaie, ou vérifie son statut chez Meta.",
       "republish_failed_other": "La nouvelle campagne n’a pas été créée chez Meta.",
       "republish_failed_open": "Ce refus reste ouvert tant que la republication n’a pas abouti : tu peux réessayer.",
-      "banner_body_republish_failed": "La republication n’a pas abouti. Le refus reste ouvert : voici ce qui s’est passé."
+      "banner_body_republish_failed": "La republication n’a pas abouti. Le refus reste ouvert : voici ce qui s’est passé.",
+      "publishing_title": "Republication en cours",
+      "publishing_body": "Pubeka recrée ta campagne chez Meta. Rien n’est encore parti tant que cette étape n’est pas terminée : cette page se met à jour quand c’est fait."
     }
   }
 }
