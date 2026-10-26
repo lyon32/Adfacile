@@ -358,7 +358,7 @@ describe('TR-PAY-07 : espace verrouillé', () => {
       join(API_DIR, 'workspaces/[workspaceId]/campaigns/[campaignId]/stats/route.ts'),
       'utf8',
     );
-    expect(/allowLocked/.test(stripComments(stats))).toBe(false);
+    expect(stripComments(stats).includes('allowLocked')).toBe(false);
   });
 });
 
