@@ -1,6 +1,6 @@
-// S19 / TR-PAY-07 contre la vraie base locale : l'accès d'un espace suit son ABONNEMENT (grâce de 3 jours, puis lecture seule ;
-// essai terminé = lecture seule tout de suite) ou la décision de l'administration (suspension), évalué à chaque requête.
-// La mise en pause reste permise dans tous les cas ; les autres écritures renvoient 403 (Problem Details). Fausse Meta : aucun appel réel.
+// S19 / TR-PAY-07 contre la vraie base locale : l'accès d'un espace suit son ABONNEMENT (grâce de 3 jours puis VERROUILLÉ ;
+// essai terminé = verrouillé tout de suite) ou la décision de l'administration (lecture seule, suspension), évalué à chaque requête.
+// La mise en pause reste permise dans tous les cas ; les autres écritures renvoient 403 (Problem Details), la lecture aussi en verrouillé. Fausse Meta : aucun appel réel.
 import { randomUUID } from 'node:crypto';
 import { seedWorkspace, testServiceClient, type SeededWorkspace } from '@pubeka/testing';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';

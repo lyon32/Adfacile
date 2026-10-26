@@ -541,6 +541,8 @@ export function graceEndsAt(sub: AccessSubscription): Date | null;
 export function lockAt(sub: AccessSubscription): Date | null;
 // `lockAt` = l'instant EXACT du verrouillage (fin d'essai, ou fin de grâce) : la session S19b (pause automatique des publicités à la
 // fin de la grâce, tâche planifiée + reprise après renouvellement) s'en sert pour savoir quels espaces traiter.
+// Reprise MANUELLE (décision confirmée le 26/10/2026) : la pause automatique de S19b n'est jamais suivie d'une reprise automatique ; bouton « Reprendre mes pubs ».
+// PRÉREQUIS BLOQUANT de mise en production, à livrer dans S19b : `POST /workspaces/{id}/campaigns/pause-all` (owner/editor, `allowLocked`, idempotente) pour le bouton de l'écran verrouillé ET la tâche de fin de grâce.
 // `packages/core/src/workspaces/access.ts` : `loadWorkspaceAccess(db, svc, workspaceId, now)` évalue l'accès À CHAQUE requête
 // (api(), callback Meta, acceptation d'invitation) : aucune tâche planifiée n'est nécessaire pour finir la grâce. La base applique la
 // même règle (`private.ws_access`, `ws_writable`, migration 0021), comparée à celle-ci par un test sur une grille.
