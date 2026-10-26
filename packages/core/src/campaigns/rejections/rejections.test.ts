@@ -285,6 +285,36 @@ describe('explication par le Modérateur (après un refus seulement)', () => {
     expect(gateway.calls).toHaveLength(1);
   });
 
+  it('TR-PAY-07 : un espace en lecture seule ou suspendu ne déclenche aucun appel au Modérateur (le refus reste en attente)', async () => {
+    for (const status of ['read_only', 'suspended'] as const) {
+      const { s } = await refusedWorld();
+      const workspace = s.w.db.rows('workspaces').find((row) => row.id === W);
+      Object.assign(workspace ?? {}, { status });
+      const deps = explainDeps();
+      const report = await explainPendingRejections(s.ctxAt(20), deps);
+      expect(deps.gateway.calls).toHaveLength(0);
+      expect(report).toEqual({ explained: 0, failed: 0, skipped: 1 });
+      expect(rejections(s)[0]).toMatchObject({ explain_status: 'pending' });
+      // Retour à la normale (renouvellement) : le refus est expliqué au passage suivant.
+      Object.assign(workspace ?? {}, { status: 'active' });
+      installMemoryRpc(s);
+      expect((await explainPendingRejections(s.ctxAt(30), deps)).explained).toBe(1);
+    }
+  });
+
+  it('TR-PAY-07 : un espace en lecture seule n’épuise pas le budget du passage (les autres espaces sont servis)', async () => {
+    const { s } = await refusedWorld();
+    const rows = rejections(s);
+    const first = rows[0];
+    if (first === undefined) throw new Error('refus absent');
+    rows.unshift({ ...first, id: 'a0000000-0000-4000-8000-000000000001', workspace_id: OTHER_W });
+    s.w.db.rows('workspaces').push({ id: OTHER_W, owner_id: 'x', status: 'read_only' });
+    installMemoryRpc(s);
+    const deps = explainDeps();
+    const report = await explainPendingRejections(s.ctxAt(20), deps, 1);
+    expect(report).toEqual({ explained: 1, failed: 0, skipped: 1 });
+  });
+
   it('TR-AGT-01 : une sortie invalide est renvoyée une fois, puis l’échec est visible (2 appels au plus)', async () => {
     const { s } = await refusedWorld();
     const gateway = new FakeAiGateway().enqueue({ text: 'pas du json' }).enqueue({ text: '{}' });

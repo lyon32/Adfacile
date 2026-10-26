@@ -27,6 +27,7 @@ import { AppError } from '@pubeka/contracts';
 import { unwrap, type Json, type ServiceClient, type TablesUpdate } from '@pubeka/db';
 import { createLogger, type Env } from '@pubeka/shared';
 import { journalAgentRun } from '../../agent-journal';
+import { loadWorkspaceAccess } from '../../workspaces/access';
 import type { ServiceCtx } from '../../context';
 import { copySchema, readJson } from '../campaign-schemas';
 import { fakeModerateurOutput } from './fake-moderateur';
@@ -352,10 +353,22 @@ export async function explainPendingRejections(
       .select('id, workspace_id')
       .eq('explain_status', 'pending')
       .order('created_at', { ascending: true })
-      .limit(Math.max(1, Math.min(limit, 50))),
+      .limit(50),
   );
   const report = { explained: 0, failed: stale, skipped: 0 };
+  const budget = Math.max(1, Math.min(limit, 50));
+  let attempted = 0;
   for (const item of pending) {
+    if (attempted >= budget) break;
+    // S19 : travail lancé par le système, pas par une action de la personne. Un espace en lecture
+    // seule ou suspendu n'en déclenche pas (appel payant du Modérateur) ; le refus reste « en
+    // attente » et sera expliqué au renouvellement. Ces refus ne comptent pas dans le budget.
+    const access = await loadWorkspaceAccess(ctx.svc, ctx.svc, item.workspace_id, ctx.now());
+    if (access === 'read_only' || access === 'suspended') {
+      report.skipped += 1;
+      continue;
+    }
+    attempted += 1;
     try {
       const outcome = await explainRejection(ctx, deps, {
         rejectionId: item.id,
