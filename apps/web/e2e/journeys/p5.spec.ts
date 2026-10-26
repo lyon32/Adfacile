@@ -110,8 +110,8 @@ test('P5 : grâce de 3 jours (lecture, pause) puis verrouillé (un seul écran, 
   await expect(banner).toContainText('Il te reste 2 jours.');
   await expect(banner).toContainText('toutes tes publicités seront mises en pause');
   const pay = banner.getByRole('button', { name: 'Payer' });
-  await expect(pay).toBeDisabled();
-  await expect(pay).toHaveAttribute('title', 'Bientôt disponible');
+  await expect(pay).toHaveAttribute('aria-disabled', 'true');
+  await expect(banner.getByText('Bientôt disponible')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Dupliquer' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Mettre en pause' })).toBeEnabled();
   await checkScreen(page, 'p5-grace', info, 'light');
@@ -135,8 +135,8 @@ test('P5 : grâce de 3 jours (lecture, pause) puis verrouillé (un seul écran, 
   ).toBeVisible({ timeout: 20_000 });
   await expect(banner).toHaveCount(0);
   const renew = page.getByRole('button', { name: 'Renouveler' });
-  await expect(renew).toBeDisabled();
-  await expect(renew).toHaveAttribute('title', 'Bientôt disponible');
+  await expect(renew).toHaveAttribute('aria-disabled', 'true');
+  await expect(page.getByText('Bientôt disponible')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Reprendre' })).toHaveCount(0);
   await checkScreen(page, 'p5-verrouille', info, 'dark');
   await page.goto('/campagnes/nouvelle');
@@ -202,6 +202,9 @@ test('essai terminé sans abonnement : verrouillé tout de suite, écran « Choi
   await expect(page.getByRole('heading', { level: 1, name: 'Ton essai est terminé' })).toBeVisible({
     timeout: 20_000,
   });
-  await expect(page.getByRole('button', { name: 'Choisir une formule' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Choisir une formule' })).toHaveAttribute(
+    'aria-disabled',
+    'true',
+  );
   await checkScreen(page, 'p5-essai-termine', info, 'light');
 });
