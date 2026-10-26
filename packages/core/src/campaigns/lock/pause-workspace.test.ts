@@ -269,3 +269,47 @@ describe('la pause ne reprend jamais', () => {
     expect(t.fake.resumeAttempts).toBe(0);
   });
 });
+
+describe('contrôle indépendant S19b — course avec la synchronisation des statuts', () => {
+  it('la synchronisation lit « paused » chez Meta et écrit paused SANS motif avant nous : le motif billing_lock est posé quand même (sinon jamais reprise)', async () => {
+    const t = lockWorld();
+    const id = await t.add('active');
+    const deps = patched(t, {
+      pause: async () => {
+        await t.fake.pause({ accessToken: 'x', expiresAt: null }, firstRefs(t));
+        // `campaign.sync-status` passe entre l'ordre et notre écriture : paused, sans motif.
+        Object.assign(rowOf(t.w.db, id), { status: 'paused', pause_reason: null });
+      },
+    });
+    const report = await run(t, {}, deps);
+    expect(report.paused).toBe(1);
+    expect(rowOf(t.w.db, id)).toMatchObject({ status: 'paused', pause_reason: 'billing_lock' });
+    expect(events(t, id)).toMatchObject([{ payload: { reason: 'billing_lock' } }]);
+  });
+
+  it('pause du client (sans motif) : la même course ne pose JAMAIS de motif', async () => {
+    const t = lockWorld();
+    const id = await t.add('active');
+    const deps = patched(t, {
+      pause: async () => {
+        await t.fake.pause({ accessToken: 'x', expiresAt: null }, firstRefs(t));
+        Object.assign(rowOf(t.w.db, id), { status: 'paused', pause_reason: null });
+      },
+    });
+    await run(t, { source: 'user', reason: null }, deps);
+    expect(rowOf(t.w.db, id).pause_reason ?? null).toBeNull();
+  });
+
+  it('déjà marquée par quelqu’un d’autre : le motif n’est pas réécrit, pas de second historique', async () => {
+    const t = lockWorld();
+    const id = await t.add('active');
+    const deps = patched(t, {
+      pause: async () => {
+        await t.fake.pause({ accessToken: 'x', expiresAt: null }, firstRefs(t));
+        Object.assign(rowOf(t.w.db, id), { status: 'paused', pause_reason: 'billing_lock' });
+      },
+    });
+    await run(t, {}, deps);
+    expect(events(t, id)).toHaveLength(0);
+  });
+});
