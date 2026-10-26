@@ -2,10 +2,13 @@
 // Écran VERROUILLÉ (décision de la personne du 26/10/2026) : essai terminé sans abonnement, ou grâce de 3 jours écoulée. L'API refuse
 // tout (`403 workspace_locked`), lecture des statistiques comprise ; il ne reste qu'un écran qui propose de s'abonner ou de renouveler.
 // Un seul message, une seule action, la cause exacte vient du serveur (`status_cause`). La page `/abonnement` (S24, S25) n'existe pas
-// encore : le bouton est affiché mais grisé, avec l'infobulle « Bientôt disponible ». Les campagnes déjà lancées continuent chez Meta
-// jusqu'à la pause automatique de S19b (EC-PAY-11) ; la reprise est manuelle (« Reprendre mes pubs »). Les textes ne promettent rien de plus. Couleurs : jetons existants.
+// encore : le bouton est affiché mais grisé, avec l'infobulle « Bientôt disponible ». S19b (EC-PAY-11) : la tâche planifiée
+// `campaign.lock-pause` met les publicités en pause chez Meta dans les minutes qui suivent le verrouillage, et le propriétaire ou
+// l'éditeur peut le faire tout de suite (`PauseAllPanel`). La reprise est MANUELLE (`ResumeBanner`, « Reprendre mes pubs »). Les textes
+// ne promettent rien de plus. Couleurs : jetons existants.
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
+import { PauseAllPanel } from './pause-all-panel';
 import { useSession } from './session-context';
 import { SoonButton } from './soon-button';
 
@@ -16,6 +19,8 @@ export function LockedScreen(): ReactNode {
   const cause = workspace?.statusCause === 'trial_ended' ? 'trial_ended' : 'subscription_ended';
   // Seul le propriétaire s'abonne ; les autres membres lisent le message.
   const showAction = workspace?.role === 'owner';
+  // Arrêter la dépense : propriétaire et éditeur (la route revérifie le rôle).
+  const canPause = workspace !== null && workspace.role !== 'viewer';
 
   return (
     <section
@@ -31,6 +36,7 @@ export function LockedScreen(): ReactNode {
       ) : (
         <p className="font-semibold">{t('ask_owner')}</p>
       )}
+      {canPause && workspace ? <PauseAllPanel workspaceId={workspace.id} /> : null}
     </section>
   );
 }

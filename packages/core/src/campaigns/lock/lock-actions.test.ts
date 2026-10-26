@@ -69,7 +69,9 @@ describe('pauseAllCampaigns — bouton « Mettre toutes mes publicités en pause
     t.fake.simulatePauseRefusal(new AppError('meta_token_expired'));
     const result = await pauseAllCampaigns(t.memberAt('locked'), t.deps);
     expect(result.paused).toBe(1);
-    expect(result.failed).toMatchObject([{ campaign_id: first, name: 'Promo A', code: 'meta_token_expired' }]);
+    expect(result.failed).toMatchObject([
+      { campaign_id: first, name: 'Promo A', code: 'meta_token_expired' },
+    ]);
     expect(rowOf(t.w.db, first).status).toBe('active');
     expect(rowOf(t.w.db, second).status).toBe('paused');
   });
@@ -128,12 +130,15 @@ describe('resumeLockedCampaigns — bouton « Reprendre mes pubs »', () => {
     ['grace', 'workspace_read_only'],
     ['read_only', 'workspace_read_only'],
     ['suspended', 'workspace_suspended'],
-  ] as const)('espace %s : la reprise est refusée (%s) — seul l’espace actif dépense', async (access, code) => {
-    const t = lockWorld();
-    await t.add('paused', { pauseReason: 'billing_lock' });
-    expect(await codeOf(resumeLockedCampaigns(t.memberAt(access), t.deps))).toBe(code);
-    expect(t.fake.resumeAttempts).toBe(0);
-  });
+  ] as const)(
+    'espace %s : la reprise est refusée (%s) — seul l’espace actif dépense',
+    async (access, code) => {
+      const t = lockWorld();
+      await t.add('paused', { pauseReason: 'billing_lock' });
+      expect(await codeOf(resumeLockedCampaigns(t.memberAt(access), t.deps))).toBe(code);
+      expect(t.fake.resumeAttempts).toBe(0);
+    },
+  );
 
   it('lecteur : refusé', async () => {
     const t = lockWorld();

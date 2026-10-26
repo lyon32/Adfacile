@@ -1,12 +1,21 @@
 // Monde de test de la pause automatique (S19b) : un espace, une fausse Meta, PLUSIEURS campagnes déjà chez Meta, une base en mémoire
 // qui sait répondre à `workspaces_to_lock_pause` (même règle que la fonction SQL de la migration 0022). Valeurs d'essai uniquement.
 import { workspaceAccess } from '@pubeka/billing';
-import { FakeMetaConnector, type PlatformCampaignRefs, type PlatformToken } from '@pubeka/platforms';
+import {
+  FakeMetaConnector,
+  type PlatformCampaignRefs,
+  type PlatformToken,
+} from '@pubeka/platforms';
 import type { MemberCtx, ServiceCtx } from '../../context';
 import { addDraft, NOW, OTHER_W, W } from '../campaigns.test-helper';
 import type { CampaignControlDeps } from '../publish/campaign-control';
 import { publishRef } from '../publish/publish-types';
-import { META_AD_ACCOUNT, publishWorld, rowOf, type PublishWorld } from '../publish/publish.test-helper';
+import {
+  META_AD_ACCOUNT,
+  publishWorld,
+  rowOf,
+  type PublishWorld,
+} from '../publish/publish.test-helper';
 
 export const TOKEN: PlatformToken = { accessToken: 'jeton-de-test', expiresAt: null };
 export const DAY = 24 * 3600 * 1000;
@@ -25,7 +34,10 @@ export interface LockWorld {
   /** Contexte de service à l'heure donnée. */
   serviceAt: (at: Date) => ServiceCtx;
   /** Le client (membre) à l'heure donnée, avec l'état d'accès donné. */
-  memberAt: (access: MemberCtx['workspace']['access'], role?: MemberCtx['workspace']['role']) => MemberCtx;
+  memberAt: (
+    access: MemberCtx['workspace']['access'],
+    role?: MemberCtx['workspace']['role'],
+  ) => MemberCtx;
   /** Le statut chez la fausse Meta d'une campagne Pubeka. */
   metaStatus: (id: string) => string | undefined;
 }
@@ -39,7 +51,10 @@ export function lockWorld(): LockWorld {
 
   const add: LockWorld['add'] = async (status, over = {}) => {
     const workspaceId = over.workspaceId ?? W;
-    if (workspaceId !== W && !w.db.rows('ad_accounts').some((a) => a.workspace_id === workspaceId)) {
+    if (
+      workspaceId !== W &&
+      !w.db.rows('ad_accounts').some((a) => a.workspace_id === workspaceId)
+    ) {
       // Un autre espace a SON compte publicitaire et SA connexion Meta : rien n'est partagé avec l'espace de l'essai.
       w.db.rows('ad_accounts').push({
         id: 'ad-other',
@@ -111,7 +126,10 @@ export function lockWorld(): LockWorld {
   // `workspaces_to_lock_pause` : les espaces dont la DERNIÈRE formule les verrouille à l'heure donnée et qui ont une campagne vivante.
   Reflect.set(w.db, 'rpc', (name: string, args: { p_now: string; p_limit: number }) => {
     if (name !== 'workspaces_to_lock_pause') {
-      return Promise.resolve({ data: null, error: { code: '42883', message: 'fonction inconnue' } });
+      return Promise.resolve({
+        data: null,
+        error: { code: '42883', message: 'fonction inconnue' },
+      });
     }
     const now = new Date(args.p_now);
     const ids = new Set<string>();

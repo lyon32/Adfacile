@@ -48,7 +48,10 @@ export async function pauseLockedWorkspaces(
 ): Promise<LockPauseReport> {
   const limit = Math.max(
     1,
-    Math.min(options.workspaceLimit ?? LOCK_PAUSE_WORKSPACES_PER_PASS, LOCK_PAUSE_WORKSPACES_PER_PASS),
+    Math.min(
+      options.workspaceLimit ?? LOCK_PAUSE_WORKSPACES_PER_PASS,
+      LOCK_PAUSE_WORKSPACES_PER_PASS,
+    ),
   );
   const listed = unwrap<{ workspace_id: string }[]>(
     await ctx.svc.rpc('workspaces_to_lock_pause', {

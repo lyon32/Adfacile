@@ -91,14 +91,40 @@
     "locked": {
       "label": "Accès verrouillé",
       "trial_ended_title": "Ton essai est terminé",
-      "trial_ended_body": "Choisis une formule pour retrouver tes campagnes, tes statistiques et tes visuels. Tes publicités ne sont plus gérées depuis Pubeka tant que tu n’as pas pris d’abonnement : elles seront mises en pause automatiquement, et tu les relanceras toi-même avec « Reprendre mes pubs » une fois abonné. Pour les arrêter tout de suite, ouvre le Gestionnaire de publicités de Meta.",
+      "trial_ended_body": "Choisis une formule pour retrouver tes campagnes, tes statistiques et tes visuels. Pubeka met tes publicités en pause chez Meta dans les minutes qui suivent la fin de ton essai. Une fois abonné, tu les relances toi-même avec « Reprendre mes pubs » : rien ne repart tout seul.",
       "trial_ended_cta": "Choisir une formule",
       "subscription_ended_title": "Ton abonnement est terminé",
-      "subscription_ended_body": "Renouvelle ton abonnement pour retrouver tes campagnes, tes statistiques et tes visuels. Tes publicités ne sont plus gérées depuis Pubeka tant que tu n’as pas renouvelé : elles seront mises en pause automatiquement, et tu les relanceras toi-même avec « Reprendre mes pubs » après le renouvellement. Pour les arrêter tout de suite, ouvre le Gestionnaire de publicités de Meta.",
+      "subscription_ended_body": "Renouvelle ton abonnement pour retrouver tes campagnes, tes statistiques et tes visuels. Pubeka met tes publicités en pause chez Meta dans les minutes qui suivent la fin de ta période de grâce. Après le renouvellement, tu les relances toi-même avec « Reprendre mes pubs » : rien ne repart tout seul.",
       "subscription_ended_cta": "Renouveler",
       "soon": "Bientôt disponible",
       "ask_owner": "Demande au propriétaire de l’espace de renouveler l’abonnement.",
-      "restricted_note": "Ton accès est restreint : seuls l’abonnement, le support et ton profil restent disponibles."
+      "restricted_note": "Ton accès est restreint : seuls l’abonnement, le support et ton profil restent disponibles.",
+      "pause_all_hint": "Tes publicités peuvent encore diffuser jusqu’à la pause automatique. Tu peux les arrêter maintenant.",
+      "pause_all": "Mettre toutes mes publicités en pause",
+      "pause_all_loading": "Mise en pause en cours…",
+      "pause_all_done": "{count, plural, one {# publicité est en pause chez Meta.} other {# publicités sont en pause chez Meta.}}",
+      "pause_all_none": "Aucune publicité n’est en diffusion. Rien à mettre en pause.",
+      "pause_all_failed": "{count, plural, one {# publicité n’a pas pu être mise en pause.} other {# publicités n’ont pas pu être mises en pause.}} Pubeka réessaie toutes les 10 minutes.",
+      "pause_all_error": "La demande n’a pas pu être envoyée. Réessaie, ou arrête tes publicités dans le Gestionnaire de publicités de Meta.",
+      "pause_reason_meta_connection": "La connexion à Meta a expiré. Arrête tes publicités dans le Gestionnaire de publicités de Meta.",
+      "pause_reason_rate_limited": "Meta limite les demandes pour le moment. Réessaie dans quelques minutes.",
+      "pause_reason_conflict": "Une publication est encore en cours : réessaie dans quelques minutes.",
+      "pause_reason_other": "Meta n’a pas répondu comme prévu."
+    },
+    "resume": {
+      "label": "Publicités en pause",
+      "title": "{count, plural, one {# publicité est en pause} other {# publicités sont en pause}}",
+      "body": "Pubeka les a mises en pause quand ton accès a été verrouillé. Elles ne repartent jamais toutes seules : reprends-les quand tu le décides.",
+      "cta": "Reprendre mes pubs",
+      "confirm_title": "Reprendre tes publicités ?",
+      "confirm_body": "{count, plural, one {Cette publicité redevient visible} other {Ces # publicités redeviennent visibles}} et Meta recommence à dépenser ton budget, jusqu’à {budget} par jour au total.",
+      "confirm": "Reprendre",
+      "cancel": "Annuler",
+      "loading": "Reprise en cours…",
+      "done": "{count, plural, one {# publicité a repris chez Meta.} other {# publicités ont repris chez Meta.}}",
+      "failed": "{count, plural, one {# publicité n’a pas pu être reprise.} other {# publicités n’ont pas pu être reprises.}} Elle reste en pause : réessaie.",
+      "error": "La reprise n’a pas pu être envoyée. Réessaie dans quelques instants.",
+      "disabled": "La reprise des publicités n’est pas encore activée sur cet environnement."
     }
   },
   "dashboard": {

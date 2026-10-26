@@ -105,7 +105,9 @@ describe('aucun autre compte touché', () => {
     const original = Reflect.get(t.w.db, 'rpc') as (...a: unknown[]) => Promise<unknown>;
     Reflect.set(t.w.db, 'rpc', async (...args: unknown[]) => {
       const answer = await original(...args);
-      Object.assign(t.w.db.rows('subscriptions')[0] ?? {}, { period_end: '2027-06-01T00:00:00.000Z' });
+      Object.assign(t.w.db.rows('subscriptions')[0] ?? {}, {
+        period_end: '2027-06-01T00:00:00.000Z',
+      });
       return answer;
     });
     const report = await pauseLockedWorkspaces(t.serviceAt(at(GRACE_END)), t.deps);
@@ -124,7 +126,9 @@ describe('rejouable sans double effet, jamais de reprise', () => {
     const again = await pauseLockedWorkspaces(ctx, t.deps);
     expect(again).toMatchObject({ workspaces: 0, paused: 0 });
     expect(t.fake.pauseAttempts).toBe(1);
-    expect(t.w.db.rows('campaign_status_events').filter((e) => e.campaign_id === id)).toHaveLength(1);
+    expect(t.w.db.rows('campaign_status_events').filter((e) => e.campaign_id === id)).toHaveLength(
+      1,
+    );
   });
 
   it('au renouvellement les publicités RESTENT en pause : la tâche ne reprend rien, même relancée', async () => {
@@ -132,7 +136,9 @@ describe('rejouable sans double effet, jamais de reprise', () => {
     const id = await t.add('active');
     await pauseLockedWorkspaces(t.serviceAt(at(GRACE_END)), t.deps);
     // Renouvellement : nouvelle période.
-    Object.assign(t.w.db.rows('subscriptions')[0] ?? {}, { period_end: '2027-06-01T00:00:00.000Z' });
+    Object.assign(t.w.db.rows('subscriptions')[0] ?? {}, {
+      period_end: '2027-06-01T00:00:00.000Z',
+    });
     const after = await pauseLockedWorkspaces(t.serviceAt(at(GRACE_END + DAY)), t.deps);
     expect(after.paused).toBe(0);
     expect(rowOf(t.w.db, id)).toMatchObject({ status: 'paused', pause_reason: 'billing_lock' });

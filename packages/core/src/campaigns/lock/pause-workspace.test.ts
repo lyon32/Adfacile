@@ -24,7 +24,10 @@ const events = (t: LockWorld, id: string) =>
   t.w.db.rows('campaign_status_events').filter((e) => e.campaign_id === id);
 
 /** La fausse Meta dont le connecteur se comporte autrement pour `pause` ou `getStatus`. */
-function patched(t: LockWorld, over: Partial<Record<'pause' | 'getStatus', () => Promise<unknown>>>) {
+function patched(
+  t: LockWorld,
+  over: Partial<Record<'pause' | 'getStatus', () => Promise<unknown>>>,
+) {
   const connector: PlatformConnector = new Proxy(t.fake, {
     get(target, key, receiver) {
       const replacement = typeof key === 'string' && key in over ? over[key as 'pause'] : undefined;
@@ -54,9 +57,15 @@ describe('TR-PAY-07 — mise en pause de toutes les publicités', () => {
       });
     }
     expect(events(t, a)).toMatchObject([
-      { status: 'paused', source: 'poll', payload: { event: 'pause', reason: 'billing_lock', from: 'active' } },
+      {
+        status: 'paused',
+        source: 'poll',
+        payload: { event: 'pause', reason: 'billing_lock', from: 'active' },
+      },
     ]);
-    expect(events(t, b)).toMatchObject([{ payload: { reason: 'billing_lock', from: 'in_review' } }]);
+    expect(events(t, b)).toMatchObject([
+      { payload: { reason: 'billing_lock', from: 'in_review' } },
+    ]);
   });
 
   it('une campagne en erreur mais connue de Meta (elle peut diffuser) est mise en pause aussi', async () => {
@@ -209,7 +218,9 @@ describe('EC-META-07 — jamais « en pause » sans la confirmation de Meta', ()
 
 describe('EC-META-10 — limites de débit de Meta pendant la pause', () => {
   const limited = (t: LockWorld, code: number) =>
-    patched(t, { pause: () => Promise.reject(new MetaGraphError({ code, message: 'limite' }, 400)) });
+    patched(t, {
+      pause: () => Promise.reject(new MetaGraphError({ code, message: 'limite' }, 400)),
+    });
 
   it.each([17, 613, 80004])(
     'code %i (compte publicitaire) : la campagne n’est pas marquée, les autres comptes ne sont pas arrêtés',

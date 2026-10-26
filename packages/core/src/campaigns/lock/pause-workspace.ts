@@ -193,7 +193,13 @@ async function listCandidates(ctx: ServiceCtx, workspaceId: string): Promise<Can
 }
 
 export function emptyPauseReport(): PauseReport {
-  return { paused: 0, failed: [], rate_limited: false, budget_exhausted: false, app_limited: false };
+  return {
+    paused: 0,
+    failed: [],
+    rate_limited: false,
+    budget_exhausted: false,
+    app_limited: false,
+  };
 }
 
 /**
@@ -206,7 +212,7 @@ export async function pauseWorkspaceCampaigns(
   deps: LockPauseDeps,
   workspaceId: string,
   options: PauseOptions,
-  tokens: Map<string, Promise<PlatformToken>> = new Map(),
+  tokens = new Map<string, Promise<PlatformToken>>(),
 ): Promise<PauseReport> {
   const report = emptyPauseReport();
   const blockedAdAccounts = new Set<string>();

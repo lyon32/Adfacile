@@ -6,7 +6,7 @@ import type * as SharedModule from '@pubeka/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const calls = vi.hoisted(() => ({
-  env: {} as Record<string, string | undefined>,
+  env: Object.create(null) as Record<string, string | undefined>,
   clientArgs: [] as unknown[],
   sweepArgs: [] as unknown[],
   depsArgs: [] as unknown[],
@@ -76,7 +76,9 @@ describe('tâche campaign.lock-pause (S19b)', () => {
   });
 
   it('refuse une charge invalide avant toute exécution (validation_failed)', async () => {
-    await expect(runHandler(campaignLockPauseHandler, { workspaceId: 'x' }, ctx)).rejects.toMatchObject({
+    await expect(
+      runHandler(campaignLockPauseHandler, { workspaceId: 'x' }, ctx),
+    ).rejects.toMatchObject({
       code: 'validation_failed',
     });
     expect(calls.sweepArgs).toHaveLength(0);

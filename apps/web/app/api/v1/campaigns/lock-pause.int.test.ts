@@ -16,7 +16,7 @@ import {
   testServiceClient,
   type SeededWorkspace,
 } from '@pubeka/testing';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { call } from '../meta/int-support';
 import { POST as pauseAllRoute } from '../workspaces/[workspaceId]/campaigns/pause-all/route';
 import { POST as resumeAllRoute } from '../workspaces/[workspaceId]/campaigns/resume-all/route';
@@ -27,10 +27,6 @@ import { overrideControlDeps, overridePublishDeps } from './services';
 const DAY = 24 * 3600 * 1000;
 type Who = SeededWorkspace['owner'];
 
-let s: SeededWorkspace;
-beforeAll(async () => {
-  s = await seedWorkspace();
-});
 beforeEach(async () => {
   await resetRateLimits();
   overridePublishDeps(undefined);

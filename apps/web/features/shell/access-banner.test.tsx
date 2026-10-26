@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // S19 / TR-PAY-07 (décision du 26/10/2026) : bandeaux de grâce (compte à rebours, promesse de pause), de lecture seule et de suspension
 // décidées par l'administration, et écran VERROUILLÉ (essai terminé, abonnement terminé), en FR et en EN.
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -28,7 +29,9 @@ function renderWith(
   };
   return render(
     <NextIntlClientProvider locale={locale} messages={messagesFor(locale)}>
-      <SessionProvider value={value}>{node}</SessionProvider>
+      <QueryClientProvider client={new QueryClient()}>
+        <SessionProvider value={value}>{node}</SessionProvider>
+      </QueryClientProvider>
     </NextIntlClientProvider>,
   );
 }
@@ -163,10 +166,14 @@ describe('LockedScreen : un seul écran, la cause exacte, le bouton grisé', () 
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Ton essai est terminé');
     const cta = screen.getByRole('button', { name: 'Choisir une formule' });
     expectSoon(cta, 'Bientôt disponible');
-    expect(document.body.textContent).toContain('ne sont plus gérées depuis Pubeka');
-    expect(document.body.textContent).toContain('Gestionnaire de publicités de Meta');
+    // S19b : la promesse est tenue, le texte décrit ce qui existe (pause automatique, bouton, reprise manuelle).
+    expect(document.body.textContent).toContain('met tes publicités en pause chez Meta');
     expect(document.body.textContent).toContain('Reprendre mes pubs');
-    expect(document.body.textContent).not.toContain('continuent chez Meta');
+    expect(document.body.textContent).toContain('rien ne repart tout seul');
+    expect(document.body.textContent).not.toContain('ne sont plus gérées depuis Pubeka');
+    expect(
+      screen.getByRole('button', { name: 'Mettre toutes mes publicités en pause' }),
+    ).toBeTruthy();
   });
 
   it('TR-PAY-07 : abonnement terminé (grâce écoulée), ou cause absente : « Renouveler », jamais « essai »', () => {
@@ -182,18 +189,27 @@ describe('LockedScreen : un seul écran, la cause exacte, le bouton grisé', () 
     );
   });
 
-  it('TR-PAY-07 : un membre qui n’est pas propriétaire lit le message sans bouton', () => {
+  it('TR-PAY-07 : un éditeur lit le message, sans bouton de paiement, mais peut mettre les publicités en pause', () => {
     renderLocked(ws({ status: 'locked', statusCause: 'trial_ended', role: 'editor' }));
     expect(screen.getByRole('heading', { level: 1 })).toBeTruthy();
-    expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Choisir une formule' })).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Mettre toutes mes publicités en pause' }),
+    ).toBeTruthy();
     expect(document.body.textContent).toContain(
       'Demande au propriétaire de l’espace de renouveler',
     );
+  });
+
+  it('TR-PAY-07 : un lecteur ne voit aucun bouton (il ne peut ni payer ni mettre en pause)', () => {
+    renderLocked(ws({ status: 'locked', statusCause: 'trial_ended', role: 'viewer' }));
+    expect(screen.queryByRole('button')).toBeNull();
   });
 
   it('TR-PAY-07 : anglais', () => {
     renderLocked(ws({ status: 'locked', statusCause: 'trial_ended' }), 'en');
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Your trial has ended');
     expect(screen.getByRole('button', { name: 'Choose a plan' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Pause all my ads' })).toBeTruthy();
   });
 });

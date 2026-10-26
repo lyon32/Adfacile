@@ -91,14 +91,40 @@
     "locked": {
       "label": "Access locked",
       "trial_ended_title": "Your trial has ended",
-      "trial_ended_body": "Choose a plan to get back your campaigns, statistics and visuals. Your ads are no longer managed from Pubeka until you subscribe: they will be paused automatically, and you restart them yourself with “Resume my ads” once subscribed. To stop them right now, open Meta Ads Manager.",
+      "trial_ended_body": "Choose a plan to get your campaigns, statistics and visuals back. Pubeka pauses your ads at Meta within minutes of your trial ending. Once subscribed, you restart them yourself with “Resume my ads”: nothing restarts on its own.",
       "trial_ended_cta": "Choose a plan",
       "subscription_ended_title": "Your subscription has ended",
-      "subscription_ended_body": "Renew your subscription to get back your campaigns, statistics and visuals. Your ads are no longer managed from Pubeka until you renew: they will be paused automatically, and you restart them yourself with “Resume my ads” after renewing. To stop them right now, open Meta Ads Manager.",
+      "subscription_ended_body": "Renew your subscription to get your campaigns, statistics and visuals back. Pubeka pauses your ads at Meta within minutes of your grace period ending. After renewing, you restart them yourself with “Resume my ads”: nothing restarts on its own.",
       "subscription_ended_cta": "Renew",
       "soon": "Coming soon",
       "ask_owner": "Ask the workspace owner to renew the subscription.",
-      "restricted_note": "Your access is restricted: only the subscription, support and your profile remain available."
+      "restricted_note": "Your access is restricted: only the subscription, support and your profile remain available.",
+      "pause_all_hint": "Your ads may keep running until the automatic pause. You can stop them now.",
+      "pause_all": "Pause all my ads",
+      "pause_all_loading": "Pausing…",
+      "pause_all_done": "{count, plural, one {# ad is paused at Meta.} other {# ads are paused at Meta.}}",
+      "pause_all_none": "No ad is running. Nothing to pause.",
+      "pause_all_failed": "{count, plural, one {# ad could not be paused.} other {# ads could not be paused.}} Pubeka tries again every 10 minutes.",
+      "pause_all_error": "The request could not be sent. Try again, or stop your ads in Meta Ads Manager.",
+      "pause_reason_meta_connection": "The connection to Meta has expired. Stop your ads in Meta Ads Manager.",
+      "pause_reason_rate_limited": "Meta is limiting requests right now. Try again in a few minutes.",
+      "pause_reason_conflict": "A publication is still in progress: try again in a few minutes.",
+      "pause_reason_other": "Meta did not respond as expected."
+    },
+    "resume": {
+      "label": "Paused ads",
+      "title": "{count, plural, one {# ad is paused} other {# ads are paused}}",
+      "body": "Pubeka paused them when your access was locked. They never restart on their own: resume them when you decide to.",
+      "cta": "Resume my ads",
+      "confirm_title": "Resume your ads?",
+      "confirm_body": "{count, plural, one {This ad becomes visible again} other {These # ads become visible again}} and Meta starts spending your budget again, up to {budget} per day in total.",
+      "confirm": "Resume",
+      "cancel": "Cancel",
+      "loading": "Resuming…",
+      "done": "{count, plural, one {# ad is running again at Meta.} other {# ads are running again at Meta.}}",
+      "failed": "{count, plural, one {# ad could not be resumed.} other {# ads could not be resumed.}} It stays paused: try again.",
+      "error": "The request could not be sent. Try again in a few moments.",
+      "disabled": "Resuming ads is not enabled on this environment yet."
     }
   },
   "dashboard": {
