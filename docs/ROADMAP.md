@@ -200,6 +200,14 @@
 - **Fait quand** : republication sans quota (EC-CAMP-07) ; banc des agents vert sur `rejections.json`.
 - **Hors périmètre** : —
 
+#### S18b · Modifier une publicité lancée · M · après : S18
+- **But** : le client modifie une publicité déjà lancée, comme sur Meta (décision de la personne, 26/10/2026), et la correction d'un refus s'en sert au lieu de recréer la campagne.
+- **Lire** : documentation officielle de Meta sur ce qui est modifiable après le lancement et sur ses effets (nouvel examen, phase d'apprentissage) AVANT tout code ; APPFLOW §11 (onglet Réglages, aujourd'hui en lecture seule) ; JOURNAL S17 et S18.
+- **Livrables** : modification d'une publicité chez Meta dans le connecteur (`packages/platforms`) : budget, dates, textes, image et le reste de ce que Meta permet ; cas d'usage et routes avec `Idempotency-Key` ; onglet Réglages modifiable avec confirmation avant toute modification qui dépense ou relance un examen ; correction d'un refus par modification (plus de suppression ni de recréation, fin du risque de double dépense).
+- **Fait quand** : chaque champ modifiable prouvé sur la fausse Meta ET sur le vrai compte de test (avec le « oui » de la personne avant toute dépense) ; EC-META-05 respecté ; aucune modification qui dépense sans confirmation.
+- **Hors périmètre** : republier une seule pub d'un test A/B (S23).
+- **Décisions ❓** : liste exacte des champs modifiables (selon la doc de Meta) ; ce qui reste figé après lancement.
+
 #### S19 · Lecture seule et accès selon l'état de l'espace · S · après : S16
 - **But** : grâce, lecture seule, suspension, fin d'essai, appliquées partout.
 - **Lire** : SECURITY_NOTES §2.1 et décisions §6 · APPFLOW §19 · TRD TR-PAY-07.
