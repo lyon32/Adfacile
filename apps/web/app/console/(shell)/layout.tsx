@@ -25,6 +25,8 @@ export default async function ShellLayout({
         lastName: me.last_name,
         locale: me.ui_language,
         theme: me.theme,
+        timezone: me.timezone,
+        serverNow: new Date().toISOString(),
         workspace:
           workspace === null
             ? null

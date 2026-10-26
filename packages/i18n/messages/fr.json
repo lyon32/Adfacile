@@ -53,6 +53,21 @@
       "business": "Formule Business",
       "trial": "Essai gratuit"
     },
+    "access": {
+      "label": "État de l’abonnement",
+      "grace_title": "Renouvelle avant le {date}",
+      "grace_body": "Ton abonnement est arrivé à échéance. Tout fonctionne encore ; après cette date, Pubeka passe en lecture seule. {days, plural, one {Il te reste # jour.} other {Il te reste # jours.}}",
+      "grace_cta": "Payer",
+      "trial_ended_title": "Ton essai est terminé",
+      "trial_ended_body": "Choisis une formule pour créer, générer et modifier. Tes campagnes en cours continuent chez Meta, et tu peux toujours les mettre en pause.",
+      "trial_ended_cta": "Choisir une formule",
+      "read_only_title": "Ton abonnement est terminé",
+      "read_only_body": "Tes campagnes continuent chez Meta, mais tu ne peux plus créer, générer ni modifier. Tu peux toujours les mettre en pause.",
+      "read_only_cta": "Renouveler",
+      "suspended_title": "Ton espace est suspendu",
+      "suspended_body": "Tu peux consulter tes campagnes, les mettre en pause et écrire au support. Le reste est bloqué tant que la suspension dure.",
+      "suspended_cta": "Écrire au support"
+    },
     "banner": {
       "empty_title": "Ta première campagne t’attend",
       "empty_body": "Colle le lien de ton site ou de ta Page : Pubeka prépare la pub.",

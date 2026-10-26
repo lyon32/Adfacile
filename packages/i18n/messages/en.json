@@ -53,6 +53,21 @@
       "business": "Business plan",
       "trial": "Free trial"
     },
+    "access": {
+      "label": "Subscription status",
+      "grace_title": "Renew before {date}",
+      "grace_body": "Your subscription has reached its end date. Everything still works; after this date, Pubeka becomes read-only. {days, plural, one {# day left.} other {# days left.}}",
+      "grace_cta": "Pay",
+      "trial_ended_title": "Your trial has ended",
+      "trial_ended_body": "Choose a plan to create, generate and edit. Your running campaigns keep going on Meta, and you can always pause them.",
+      "trial_ended_cta": "Choose a plan",
+      "read_only_title": "Your subscription has ended",
+      "read_only_body": "Your campaigns keep running on Meta, but you can no longer create, generate or edit. You can always pause them.",
+      "read_only_cta": "Renew",
+      "suspended_title": "Your workspace is suspended",
+      "suspended_body": "You can view your campaigns, pause them and write to support. Everything else is blocked while the suspension lasts.",
+      "suspended_cta": "Write to support"
+    },
     "banner": {
       "empty_title": "Your first campaign is waiting",
       "empty_body": "Paste the link to your website or Page: Pubeka prepares the ad.",

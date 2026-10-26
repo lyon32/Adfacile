@@ -14,6 +14,10 @@ export interface SessionValue {
   lastName: string | null;
   locale: Locale;
   theme: Theme;
+  /** Fuseau de la personne, pour afficher une date d'échéance (jamais l'heure de l'appareil). */
+  timezone?: string;
+  /** Heure du serveur au rendu : sert au décompte de la grâce (EC-TIME-03). */
+  serverNow?: string;
   workspace: {
     id: string;
     name: string;
