@@ -315,6 +315,55 @@ describe('explication par le Modérateur (après un refus seulement)', () => {
     expect(report).toEqual({ explained: 1, failed: 0, skipped: 1 });
   });
 
+  it('TR-PAY-07 : plus de 50 refus anciens d’espaces bloqués n’affament pas ceux d’un espace actif', async () => {
+    const { s } = await refusedWorld();
+    s.w.db.rows('workspaces').push({ id: OTHER_W, owner_id: 'x', status: 'read_only' });
+    const table = rejections(s);
+    const first = table[0];
+    if (first === undefined) throw new Error('refus absent');
+    for (let i = 0; i < 120; i += 1) {
+      table.push({
+        ...first,
+        id: `b0000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+        workspace_id: OTHER_W,
+        created_at: new Date(NOW.getTime() - (200 - i) * 60_000).toISOString(),
+      });
+    }
+    installMemoryRpc(s);
+    const deps = explainDeps();
+    const report = await explainPendingRejections(s.ctxAt(20), deps);
+    expect(report.explained).toBe(1);
+    expect(report.skipped).toBe(120);
+    expect(deps.gateway.calls).toHaveLength(1);
+    expect(
+      table.filter((row) => row.workspace_id === OTHER_W && row.explain_status === 'pending'),
+    ).toHaveLength(120);
+  });
+
+  it('TR-PAY-07 : l’état d’accès d’un espace n’est lu qu’une fois par passage', async () => {
+    const { s } = await refusedWorld();
+    s.w.db.rows('workspaces').push({ id: OTHER_W, owner_id: 'x', status: 'read_only' });
+    const table = rejections(s);
+    const first = table[0];
+    if (first === undefined) throw new Error('refus absent');
+    for (let i = 0; i < 30; i += 1) {
+      table.push({
+        ...first,
+        id: `c0000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+        workspace_id: OTHER_W,
+      });
+    }
+    installMemoryRpc(s);
+    const reads: string[] = [];
+    const original = s.w.db.from.bind(s.w.db);
+    Reflect.set(s.w.db, 'from', (table: string) => {
+      reads.push(table);
+      return original(table);
+    });
+    await explainPendingRejections(s.ctxAt(20), explainDeps());
+    expect(reads.filter((t) => t === 'workspaces' && true).length).toBeLessThanOrEqual(3);
+  });
+
   it('TR-AGT-01 : une sortie invalide est renvoyée une fois, puis l’échec est visible (2 appels au plus)', async () => {
     const { s } = await refusedWorld();
     const gateway = new FakeAiGateway().enqueue({ text: 'pas du json' }).enqueue({ text: '{}' });
