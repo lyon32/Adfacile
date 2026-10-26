@@ -385,15 +385,37 @@ describe('S19b — tâche planifiée campaign.lock-pause, de bout en bout (vraie
     expect((await row(id))?.status).toBe('in_review');
   });
 
-  it('un échec chez Meta ne marque rien ; la passe suivante réessaie et réussit', async () => {
+  it('un échec chez Meta ne marque rien, fait ÉCHOUER la tâche (bruyant), pose un recul ; une fois le délai écoulé la passe réessaie et réussit', async () => {
     const { space, id } = await spaceWithCampaign();
     await subscribe(space, 'active', -5);
     fakeMeta().simulateTransientError(1);
-    const first = await run();
-    expect(first.failed.some((f) => f.campaign_id === id)).toBe(true);
+    await expect(run()).rejects.toThrow(/campaign\.lock-pause : .*pause\(s\) en échec/);
     expect(await row(id)).toMatchObject({ status: 'in_review', pause_reason: null });
+    const backoff = await svc()
+      .from('campaigns')
+      .select('lock_pause_failures, lock_pause_retry_at, version')
+      .eq('id', id)
+      .single();
+    expect(backoff.data?.lock_pause_failures).toBe(1);
+    expect(Date.parse(backoff.data?.lock_pause_retry_at ?? '')).toBeGreaterThan(Date.now());
+    // Avant l'échéance : aucune nouvelle tentative (pas de bruit, pas de budget consommé).
+    const attempts = fakeMeta().pauseAttempts;
+    await run();
+    expect(fakeMeta().pauseAttempts).toBe(attempts);
+    expect((await row(id))?.status).toBe('in_review');
+    // Le délai est écoulé : la passe suivante réessaie et réussit ; le recul est effacé.
+    await svc()
+      .from('campaigns')
+      .update({ lock_pause_retry_at: new Date(Date.now() - 1000).toISOString() })
+      .eq('id', id);
     await run();
     expect(await row(id)).toMatchObject({ status: 'paused', pause_reason: 'billing_lock' });
+    const cleared = await svc()
+      .from('campaigns')
+      .select('lock_pause_failures, lock_pause_retry_at')
+      .eq('id', id)
+      .single();
+    expect(cleared.data).toEqual({ lock_pause_failures: 0, lock_pause_retry_at: null });
   });
 
   it('au renouvellement les publicités RESTENT en pause (la tâche ne reprend jamais) jusqu’au clic « Reprendre mes pubs »', async () => {

@@ -891,6 +891,8 @@ RLS : activée · 1 politique(s)
 | stats_refresh_requested_at | timestamp with time zone | oui |  |
 | stats_sync_error | text | oui |  |
 | pause_reason | text | oui |  |
+| lock_pause_failures | integer | non | 0 |
+| lock_pause_retry_at | timestamp with time zone | oui |  |
 
 | Contrainte | Définition |
 |---|---|
@@ -902,6 +904,7 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK (((start_date IS NULL) OR (end_date IS NULL) OR (end_date > start_date)))` |
 | Contrôle | `CHECK ((fx_currency ~ '^[A-Z]{3}$'::text))` |
 | Contrôle | `CHECK ((fx_rate_xaf > (0)::numeric))` |
+| Contrôle | `CHECK ((lock_pause_failures >= 0))` |
 | Contrôle | `CHECK ((meta_adset_id ~ '^[0-9]{5,25}$'::text))` |
 | Contrôle | `CHECK ((meta_campaign_id ~ '^[0-9]{5,25}$'::text))` |
 | Contrôle | `CHECK (((char_length(name) >= 1) AND (char_length(name) <= 200)))` |
@@ -928,6 +931,7 @@ RLS : activée · 1 politique(s)
 | n | `NOT NULL editable` |
 | n | `NOT NULL geo` |
 | n | `NOT NULL id` |
+| n | `NOT NULL lock_pause_failures` |
 | n | `NOT NULL name` |
 | n | `NOT NULL platform` |
 | n | `NOT NULL publish_attempt` |
