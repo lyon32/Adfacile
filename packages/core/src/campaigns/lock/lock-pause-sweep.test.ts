@@ -1,6 +1,9 @@
 // TR-PAY-07, EC-PAY-11 : la tâche planifiée qui met en pause les publicités des espaces VERROUILLÉS. Horloge FIXÉE aux frontières
 // (J+3 exact, essai fini à la milliseconde), FAUSSE Meta. Jamais de reprise automatique, aucun autre espace touché.
+import { AppError } from '@pubeka/contracts';
+import { MetaGraphError } from '@pubeka/platforms';
 import { describe, expect, it } from 'vitest';
+import { pauseAllCampaigns } from './lock-actions';
 import { OTHER_W, W } from '../campaigns.test-helper';
 import { rowOf } from '../publish/publish.test-helper';
 import { LOCK_PAUSE_CAMPAIGNS_PER_PASS, pauseLockedWorkspaces } from './lock-pause-sweep';
@@ -224,5 +227,95 @@ describe('revue adversariale S19b — renouvellement pendant la passe, budget et
     expect(report.paused).toBe(1);
     expect(rowOf(t.w.db, other).status).toBe('paused');
     expect(rowOf(t.w.db, broken).status).toBe('active');
+  });
+});
+
+describe('contrôle indépendant S19b — recul progressif des échecs permanents', () => {
+  const MIN10 = 10 * 60_000;
+
+  async function failingWorld() {
+    const t = lockWorld();
+    const id = await t.add('active');
+    // Échec permanent : Meta refuse toujours (pub supprimée, jeton révoqué…).
+    const deps = {
+      ...t.deps,
+      connector: new Proxy(t.fake, {
+        get(target, key, receiver) {
+          if (key === 'pause') return () => Promise.reject(new AppError('meta_error'));
+          return Reflect.get(target, key, receiver) as unknown;
+        },
+      }),
+    };
+    return { t, id, deps };
+  }
+
+  it('chaque échec double le délai (10, 20, 40 min…) et la campagne n’est PAS retentée avant l’échéance', async () => {
+    const { t, id, deps } = await failingWorld();
+    const first = await pauseLockedWorkspaces(t.serviceAt(at(GRACE_END)), deps);
+    expect(first.failed).toHaveLength(1);
+    expect(rowOf(t.w.db, id)).toMatchObject({
+      lock_pause_failures: 1,
+      lock_pause_retry_at: new Date(GRACE_END + MIN10).toISOString(),
+    });
+    // Avant l'échéance : aucune tentative, aucun bruit.
+    const early = await pauseLockedWorkspaces(t.serviceAt(at(GRACE_END + MIN10 - 1)), deps);
+    expect(early).toMatchObject({ workspaces: 0, failed: [] });
+    // À l'échéance : nouvelle tentative, nouvel échec, délai doublé.
+    const second = await pauseLockedWorkspaces(t.serviceAt(at(GRACE_END + MIN10)), deps);
+    expect(second.failed).toHaveLength(1);
+    expect(rowOf(t.w.db, id)).toMatchObject({
+      lock_pause_failures: 2,
+      lock_pause_retry_at: new Date(GRACE_END + MIN10 + 2 * MIN10).toISOString(),
+    });
+  });
+
+  it('le délai est plafonné à 6 heures', async () => {
+    const { t, id, deps } = await failingWorld();
+    Object.assign(rowOf(t.w.db, id), { lock_pause_failures: 20 });
+    await pauseLockedWorkspaces(t.serviceAt(at(GRACE_END)), deps);
+    expect(rowOf(t.w.db, id).lock_pause_retry_at).toBe(
+      new Date(GRACE_END + 6 * 3600_000).toISOString(),
+    );
+  });
+
+  it('un succès ultérieur met la campagne en pause et efface le recul', async () => {
+    const { t, id, deps } = await failingWorld();
+    await pauseLockedWorkspaces(t.serviceAt(at(GRACE_END)), deps);
+    const ok = await pauseLockedWorkspaces(t.serviceAt(at(GRACE_END + MIN10)), t.deps);
+    expect(ok.paused).toBe(1);
+    expect(rowOf(t.w.db, id)).toMatchObject({
+      status: 'paused',
+      lock_pause_failures: 0,
+      lock_pause_retry_at: null,
+    });
+  });
+
+  it('une limite de débit de Meta n’est pas un échec permanent : aucun recul', async () => {
+    const t = lockWorld();
+    const id = await t.add('active');
+    const deps = {
+      ...t.deps,
+      connector: new Proxy(t.fake, {
+        get(target, key, receiver) {
+          if (key === 'pause') {
+            return () => Promise.reject(new MetaGraphError({ code: 4, message: 'limite' }, 400));
+          }
+          return Reflect.get(target, key, receiver) as unknown;
+        },
+      }),
+    };
+    await pauseLockedWorkspaces(t.serviceAt(at(GRACE_END)), deps);
+    expect(rowOf(t.w.db, id).lock_pause_failures ?? 0).toBe(0);
+  });
+
+  it('un clic du client (pause-all) ignore le recul : la pause est sans danger à rejouer', async () => {
+    const t = lockWorld();
+    const id = await t.add('active');
+    Object.assign(rowOf(t.w.db, id), {
+      lock_pause_failures: 4,
+      lock_pause_retry_at: new Date(GRACE_END + DAY).toISOString(),
+    });
+    const result = await pauseAllCampaigns(t.memberAt('locked'), t.deps);
+    expect(result.paused).toBe(1);
   });
 });

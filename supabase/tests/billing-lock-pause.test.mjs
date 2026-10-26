@@ -190,6 +190,43 @@ await check('un client ne peut pas appeler la liste des espaces à mettre en pau
 await check('le rôle service peut l’appeler', async () =>
   (await as('service_role', OWNER, (tx) => tx.query(`select * from public.workspaces_to_lock_pause($1::timestamptz,10)`, [iso(0)]))).rows.length >= 1);
 
+// --- 3. recul progressif des échecs permanents ---------------------------------------------------------------------------
+await check('une campagne dont la prochaine tentative est dans le futur n’est pas listée ; à l’échéance elle l’est de nouveau', async () => {
+  await db.query(`delete from public.campaigns`);
+  await subscribe(WS, 'active', -10);
+  const id = await campaign(WS, 'active');
+  await db.query(`update public.campaigns set lock_pause_failures=2, lock_pause_retry_at=$2 where id=$1`, [id, iso(1)]);
+  const before = (await toLock(0)).includes(WS);
+  const exactly = (await toLock(1)).includes(WS);
+  const after = (await toLock(2)).includes(WS);
+  return !before && exactly && after;
+});
+await check('un espace avec une campagne au recul ET une campagne saine reste listé', async () => {
+  await db.query(`delete from public.campaigns`);
+  await subscribe(WS, 'active', -10);
+  const bad = await campaign(WS, 'active');
+  await db.query(`update public.campaigns set lock_pause_failures=5, lock_pause_retry_at=$2 where id=$1`, [bad, iso(3)]);
+  await campaign(WS, 'in_review');
+  return (await toLock(0)).includes(WS);
+});
+await check('écrire le recul ne change PAS la version de la campagne (pas de 409 pour le client qui prépare une action)', async () => {
+  const id = await campaign(WS, 'active');
+  const v0 = (await q(`select version from public.campaigns where id=$1`, [id]))[0].version;
+  await db.query(`update public.campaigns set lock_pause_failures=1, lock_pause_retry_at=$2 where id=$1`, [id, iso(1)]);
+  const v1 = (await q(`select version from public.campaigns where id=$1`, [id]))[0].version;
+  await db.query(`update public.campaigns set name='autre' where id=$1`, [id]);
+  const v2 = (await q(`select version from public.campaigns where id=$1`, [id]))[0].version;
+  return v0 === v1 && v2 === v1 + 1;
+});
+await check('le compteur d’échecs ne peut pas être négatif', async () => {
+  const id = await campaign(WS, 'active');
+  return db.query(`update public.campaigns set lock_pause_failures=-1 where id=$1`, [id]).then(...refused(/check|violates/i));
+});
+await check('un membre ne peut pas écrire le recul avec son jeton', async () => {
+  const id = await campaign(WS, 'active');
+  return as('authenticated', EDITOR, (tx) => tx.query(`update public.campaigns set lock_pause_retry_at=now() where id=$1`, [id])).then(...refused(/permission denied/i));
+});
+
 for (const r of results) console.log(r);
 console.log(`\n${pass} réussis, ${fail} échoués`);
 process.exit(fail === 0 ? 0 : 1);

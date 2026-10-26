@@ -10,12 +10,33 @@
 --  2. `public.workspaces_to_lock_pause(p_now, p_limit)` : les espaces VERROUILLÉS (même règle que `private.ws_access`, mais à l'heure
 --     donnée : testable avec une horloge fixée) qui ont encore des campagnes vivantes chez Meta. Réservée au rôle service (tâche
 --     planifiée `campaign.lock-pause`). Ordre aléatoire : un espace dont la pause échoue sans cesse (jeton expiré) ne prive pas les autres.
+--  3. RECUL PROGRESSIF des échecs permanents (pub supprimée ou archivée chez Meta, jeton révoqué…) : `lock_pause_failures` (nombre d'échecs de
+--     la tâche) et `lock_pause_retry_at` (prochaine tentative autorisée). La tâche écrit ces deux colonnes à chaque échec (10 min, 20 min, 40 min…
+--     plafonné à 6 h) ; `workspaces_to_lock_pause` ignore les campagnes dont la prochaine tentative est dans le futur ; un clic du client
+--     (`pause-all`) ignore le recul (la pause est sans danger à rejouer). `bump_version` ne compte pas ces deux colonnes (comme celles de 0015).
 -- =====================================================================
 
 begin;
 
 alter table public.campaigns
   add column pause_reason text check (pause_reason in ('billing_lock'));
+
+alter table public.campaigns
+  add column lock_pause_failures int not null default 0 check (lock_pause_failures >= 0),
+  add column lock_pause_retry_at timestamptz;
+
+create or replace function private.bump_version()
+returns trigger language plpgsql set search_path = '' as $$
+declare
+  sync_columns constant text[] := array['status_synced_at','stats_synced_at','stats_refresh_requested_at','stats_sync_error','updated_at','lock_pause_failures','lock_pause_retry_at'];
+begin
+  if (to_jsonb(new) - sync_columns) is distinct from (to_jsonb(old) - sync_columns) then
+    new.version := old.version + 1;
+  else
+    new.version := old.version;
+  end if;
+  return new;
+end $$;
 
 alter table public.campaigns
   add constraint campaigns_pause_reason_only_paused check (pause_reason is null or status = 'paused');
@@ -55,6 +76,7 @@ returns table (workspace_id uuid) language sql volatile security definer set sea
       where c.workspace_id = w.id
         and c.status in ('in_review', 'active', 'error')
         and c.meta_campaign_id is not null
+        and (c.lock_pause_retry_at is null or c.lock_pause_retry_at <= p_now)
     )
   order by random()
   limit least(greatest(coalesce(p_limit, 1), 1), 500);

@@ -151,7 +151,9 @@ export function lockWorld(): LockWorld {
           (c) =>
             c.workspace_id === workspace.id &&
             ['in_review', 'active', 'error'].includes(String(c.status)) &&
-            c.meta_campaign_id !== null,
+            c.meta_campaign_id !== null &&
+            (c.lock_pause_retry_at == null ||
+              Date.parse(String(c.lock_pause_retry_at)) <= now.getTime()),
         );
       if (access === 'locked' && live) ids.add(String(workspace.id));
     }
