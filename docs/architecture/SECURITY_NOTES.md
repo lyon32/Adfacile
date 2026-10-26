@@ -118,7 +118,7 @@ L'administrateur agit **uniquement** depuis le chemin secret, en `aal2`. Dans l'
 
 1. **Dans `api()`** (LLD §6.1) : `roles` et `writable` déclarés sur chaque route ; les actions ✱ sont les **seules** routes d'écriture sans `writable: true`.
 2. **Dans le cas d'usage** (`core`) : `assertRole()` et `assertWritable()` revérifient, car une tâche de fond ou une autre route peut appeler le même cas d'usage.
-3. **Dans la base** : RLS, droits par colonne, `private.ws_writable()` (déjà testés, SECURITE-BACKEND §2).
+3. **Dans la base** : RLS, droits par colonne, `private.ws_writable()` (déjà testés, SECURITE-BACKEND §2). Depuis la migration 0021 (S19), `ws_writable` applique la MÊME règle que `workspaceAccess` (grâce de 72 h après la fin de période, lecture seule ensuite, essai et abonnement résilié échus = lecture seule tout de suite, suspension de l’administration) : un éditeur qui appelle PostgREST directement est refusé comme par l’API. Un test compare la règle SQL à la règle TypeScript sur une grille de dates et d’états.
 
 Les trois barrières sont **indépendantes** : une seule qui manque ne suffit pas à ouvrir un accès. Le test d'une route vérifie la première ; les tests PGlite vérifient la troisième.
 
