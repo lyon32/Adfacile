@@ -5,7 +5,6 @@ logs/
 tmp/
 scripts/*.cjs
 scripts/*.js
-scripts/tunnel-dev.mjs
 supabase/
 api/
 .claude/
