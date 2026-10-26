@@ -56,7 +56,7 @@
     "access": {
       "label": "État de l’abonnement",
       "grace_title": "Renouvelle avant le {date}",
-      "grace_body": "Ton abonnement est arrivé à échéance. Tu peux encore consulter tes campagnes, acheter des crédits et les mettre en pause, mais plus rien créer ni modifier. Passé le {date}, tu n’auras plus accès à rien et toutes tes publicités seront mises en pause. {days, plural, one {Il te reste # jour.} other {Il te reste # jours.}}",
+      "grace_body": "Ton abonnement est arrivé à échéance. Tu peux encore consulter tes campagnes, acheter des crédits et les mettre en pause, mais plus rien créer ni modifier. Passé le {date}, tu n’auras plus accès à rien et toutes tes publicités seront mises en pause automatiquement. Après ton renouvellement, tu les relanceras toi-même avec « Reprendre mes pubs » : rien ne repart tout seul. {days, plural, one {Il te reste # jour.} other {Il te reste # jours.}}",
       "suspended_title": "Ton espace est suspendu",
       "suspended_body": "Tu peux consulter tes campagnes, les mettre en pause et écrire au support. Le reste est bloqué tant que la suspension dure.",
       "suspended_cta": "Écrire au support",
@@ -64,7 +64,8 @@
       "admin_read_only_body": "L’équipe Pubeka a mis cet espace en lecture seule. Tu peux consulter tes campagnes et les mettre en pause ; pour le reste, écris au support.",
       "admin_read_only_cta": "Écrire au support",
       "soon": "Bientôt disponible",
-      "grace_cta": "Payer"
+      "grace_cta": "Payer",
+      "ask_owner": "Demande au propriétaire de renouveler l’abonnement."
     },
     "banner": {
       "empty_title": "Ta première campagne t’attend",
@@ -90,12 +91,14 @@
     "locked": {
       "label": "Accès verrouillé",
       "trial_ended_title": "Ton essai est terminé",
-      "trial_ended_body": "Choisis une formule pour retrouver tes campagnes, tes statistiques et tes visuels. Tes publicités déjà lancées continuent chez Meta.",
+      "trial_ended_body": "Choisis une formule pour retrouver tes campagnes, tes statistiques et tes visuels. Tes publicités ne sont plus gérées depuis Pubeka tant que tu n’as pas pris d’abonnement : elles seront mises en pause automatiquement, et tu les relanceras toi-même avec « Reprendre mes pubs » une fois abonné. Pour les arrêter tout de suite, ouvre le Gestionnaire de publicités de Meta.",
       "trial_ended_cta": "Choisir une formule",
       "subscription_ended_title": "Ton abonnement est terminé",
-      "subscription_ended_body": "Renouvelle ton abonnement pour retrouver tes campagnes, tes statistiques et tes visuels. Tes publicités déjà lancées continuent chez Meta.",
+      "subscription_ended_body": "Renouvelle ton abonnement pour retrouver tes campagnes, tes statistiques et tes visuels. Tes publicités ne sont plus gérées depuis Pubeka tant que tu n’as pas renouvelé : elles seront mises en pause automatiquement, et tu les relanceras toi-même avec « Reprendre mes pubs » après le renouvellement. Pour les arrêter tout de suite, ouvre le Gestionnaire de publicités de Meta.",
       "subscription_ended_cta": "Renouveler",
-      "soon": "Bientôt disponible"
+      "soon": "Bientôt disponible",
+      "ask_owner": "Demande au propriétaire de l’espace de renouveler l’abonnement.",
+      "restricted_note": "Ton accès est restreint : seuls l’abonnement, le support et ton profil restent disponibles."
     }
   },
   "dashboard": {
@@ -559,7 +562,8 @@
         "forbidden": "Tu n’as pas le droit de faire cela. Demande au propriétaire de l’espace.",
         "read_only": "Ton abonnement est expiré : renouvelle-le pour modifier tes Pages.",
         "generic": "Impossible d’enregistrer pour le moment. Réessaie dans quelques instants."
-      }
+      },
+      "admin_read_only": "Cet espace est en lecture seule : l’équipe Pubeka l’a décidé."
     },
     "brand": {
       "loading": "Chargement du kit de marque…",
@@ -606,7 +610,8 @@
         "color_invalid": "Couleur au format #RRGGBB, par exemple #1A2B3C.",
         "phone_invalid": "Numéro au format international, par exemple +237677000000.",
         "too_long": "Texte trop long."
-      }
+      },
+      "admin_read_only": "Cet espace est en lecture seule : l’équipe Pubeka l’a décidé."
     }
   },
   "campaign": {
@@ -1203,7 +1208,9 @@
       "tab_results": "Résultats",
       "tab_ads": "Pubs",
       "tab_settings": "Réglages",
-      "tab_history": "Historique"
+      "tab_history": "Historique",
+      "grace_notice": "Ton abonnement est arrivé à échéance : tu peux encore mettre en pause, mais pas reprendre ni dupliquer.",
+      "admin_tooltip": "Cet espace est en lecture seule"
     },
     "errors": {
       "publish_disabled": "La publication réelle est désactivée pour le moment.",

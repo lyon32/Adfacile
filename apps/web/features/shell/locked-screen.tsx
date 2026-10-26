@@ -4,10 +4,10 @@
 // Un seul message, une seule action, la cause exacte vient du serveur (`status_cause`). La page `/abonnement` (S24, S25) n'existe pas
 // encore : le bouton est affiché mais grisé, avec l'infobulle « Bientôt disponible ». Les campagnes déjà lancées continuent chez Meta
 // (EC-PAY-11). Couleurs : jetons existants.
-import { Button } from '@pubeka/ui';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { useSession } from './session-context';
+import { SoonButton } from './soon-button';
 
 export function LockedScreen(): ReactNode {
   const t = useTranslations('shell.locked');
@@ -27,10 +27,20 @@ export function LockedScreen(): ReactNode {
       </h1>
       <p className="text-muted max-w-[65ch]">{t(`${cause}_body`)}</p>
       {showAction ? (
-        <Button type="button" className="w-full self-start sm:w-auto" disabled title={t('soon')}>
-          {t(`${cause}_cta`)}
-        </Button>
-      ) : null}
+        <SoonButton soonLabel={t('soon')}>{t(`${cause}_cta`)}</SoonButton>
+      ) : (
+        <p className="font-semibold">{t('ask_owner')}</p>
+      )}
     </section>
+  );
+}
+
+/** Court texte au-dessus des pages restées joignables en verrouillé (abonnement, support, profil) : pourquoi l'accès est restreint. */
+export function LockedNotice(): ReactNode {
+  const t = useTranslations('shell.locked');
+  return (
+    <p role="status" className="text-meta text-muted mb-6 max-w-[65ch] font-semibold">
+      {t('restricted_note')}
+    </p>
   );
 }

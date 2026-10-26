@@ -56,7 +56,7 @@
     "access": {
       "label": "Subscription status",
       "grace_title": "Renew before {date}",
-      "grace_body": "Your subscription has reached its end date. You can still view your campaigns, buy credits and pause them, but you can no longer create or edit anything. After {date}, you will lose access to everything and all your ads will be paused. {days, plural, one {# day left.} other {# days left.}}",
+      "grace_body": "Your subscription has reached its end date. You can still view your campaigns, buy credits and pause them, but you can no longer create or edit anything. After {date}, you will lose access to everything and all your ads will be paused automatically. After you renew, you restart them yourself with “Resume my ads”: nothing restarts on its own. {days, plural, one {# day left.} other {# days left.}}",
       "suspended_title": "Your workspace is suspended",
       "suspended_body": "You can view your campaigns, pause them and write to support. Everything else is blocked while the suspension lasts.",
       "suspended_cta": "Write to support",
@@ -64,7 +64,8 @@
       "admin_read_only_body": "The Pubeka team has set this workspace to read-only. You can view your campaigns and pause them; for anything else, write to support.",
       "admin_read_only_cta": "Write to support",
       "soon": "Coming soon",
-      "grace_cta": "Pay"
+      "grace_cta": "Pay",
+      "ask_owner": "Ask the owner to renew the subscription."
     },
     "banner": {
       "empty_title": "Your first campaign is waiting",
@@ -90,12 +91,14 @@
     "locked": {
       "label": "Access locked",
       "trial_ended_title": "Your trial has ended",
-      "trial_ended_body": "Choose a plan to get back your campaigns, statistics and visuals. Ads you have already launched keep running on Meta.",
+      "trial_ended_body": "Choose a plan to get back your campaigns, statistics and visuals. Your ads are no longer managed from Pubeka until you subscribe: they will be paused automatically, and you restart them yourself with “Resume my ads” once subscribed. To stop them right now, open Meta Ads Manager.",
       "trial_ended_cta": "Choose a plan",
       "subscription_ended_title": "Your subscription has ended",
-      "subscription_ended_body": "Renew your subscription to get back your campaigns, statistics and visuals. Ads you have already launched keep running on Meta.",
+      "subscription_ended_body": "Renew your subscription to get back your campaigns, statistics and visuals. Your ads are no longer managed from Pubeka until you renew: they will be paused automatically, and you restart them yourself with “Resume my ads” after renewing. To stop them right now, open Meta Ads Manager.",
       "subscription_ended_cta": "Renew",
-      "soon": "Coming soon"
+      "soon": "Coming soon",
+      "ask_owner": "Ask the workspace owner to renew the subscription.",
+      "restricted_note": "Your access is restricted: only the subscription, support and your profile remain available."
     }
   },
   "dashboard": {
@@ -559,7 +562,8 @@
         "forbidden": "You are not allowed to do this. Ask the workspace owner.",
         "read_only": "Your subscription has expired: renew it to change your Pages.",
         "generic": "Unable to save right now. Try again in a few moments."
-      }
+      },
+      "admin_read_only": "This workspace is read-only: the Pubeka team set it so."
     },
     "brand": {
       "loading": "Loading the brand kit…",
@@ -606,7 +610,8 @@
         "color_invalid": "Color in #RRGGBB format, for example #1A2B3C.",
         "phone_invalid": "Number in international format, for example +237677000000.",
         "too_long": "Text too long."
-      }
+      },
+      "admin_read_only": "This workspace is read-only: the Pubeka team set it so."
     }
   },
   "campaign": {
@@ -1203,7 +1208,9 @@
       "tab_results": "Results",
       "tab_ads": "Ads",
       "tab_settings": "Settings",
-      "tab_history": "History"
+      "tab_history": "History",
+      "grace_notice": "Your subscription has reached its end date: you can still pause, but not resume or duplicate.",
+      "admin_tooltip": "This workspace is read-only"
     },
     "errors": {
       "publish_disabled": "Live publishing is turned off for now.",

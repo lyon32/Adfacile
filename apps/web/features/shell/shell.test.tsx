@@ -95,7 +95,7 @@ describe('TR-PAY-07 : espace verrouillé dans la coque', () => {
       },
     });
 
-  it('un seul écran remplace le contenu et le bandeau ; la navigation et le compte restent', () => {
+  it('TR-PAY-07 : un seul écran remplace le contenu et le bandeau ; la navigation et le compte restent', () => {
     navigation.pathname = '/campagnes';
     renderShell('fr', locked('subscription_ended'));
     expect(
@@ -106,17 +106,20 @@ describe('TR-PAY-07 : espace verrouillé dans la coque', () => {
     expect(screen.getAllByRole('navigation').length).toBeGreaterThan(0);
   });
 
-  it('essai terminé : « Choisis une formule »', () => {
+  it('TR-PAY-07 : essai terminé : « Choisis une formule »', () => {
     renderShell('fr', locked('trial_ended'));
     expect(screen.getByRole('heading', { level: 1, name: 'Ton essai est terminé' })).toBeTruthy();
   });
 
-  it('/abonnement, /support et le profil restent joignables', () => {
+  it('TR-PAY-07 : /abonnement, /support et le profil restent joignables, sans le bandeau du haut', () => {
     for (const path of ['/abonnement', '/support', '/reglages/profil']) {
       cleanup();
       navigation.pathname = path;
       renderShell('fr', locked('trial_ended'));
       expect(screen.getByText('contenu'), path).toBeTruthy();
+      // Jamais le bandeau du haut (il lit les statistiques, refusées en verrouillé) ; un court texte explique la restriction.
+      expect(screen.queryByText('bandeau'), path).toBeNull();
+      expect(screen.getByText(/Ton accès est restreint/), path).toBeTruthy();
     }
   });
 });

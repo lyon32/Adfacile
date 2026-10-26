@@ -7,10 +7,10 @@
 // infobulle « Bientôt disponible ».
 // PROMESSE DU BANDEAU DE GRÂCE : « toutes tes publicités seront mises en pause » à la fin de la grâce. Elle est honorée par la session
 // S19b (tâche planifiée) : ne pas déployer en production avant.
-import { Button } from '@pubeka/ui';
 import { useLocale, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { useSession } from './session-context';
+import { SoonButton } from './soon-button';
 
 const DAY_MS = 24 * 3600 * 1000;
 
@@ -86,16 +86,12 @@ export function AccessBanner(): ReactNode {
         </p>
       </div>
       {showAction ? (
-        <Button
-          type="button"
-          variant={notice === 'grace' ? 'primary' : 'secondary'}
-          className="w-full sm:w-auto"
-          disabled
-          title={t('soon')}
-        >
+        <SoonButton variant={notice === 'grace' ? 'primary' : 'secondary'} soonLabel={t('soon')}>
           {t(`${notice}_cta`)}
-        </Button>
-      ) : null}
+        </SoonButton>
+      ) : (
+        <p className="text-meta text-muted font-semibold">{t('ask_owner')}</p>
+      )}
     </section>
   );
 }

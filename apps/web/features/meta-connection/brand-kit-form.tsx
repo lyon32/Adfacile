@@ -11,7 +11,7 @@ import { useState, type ReactNode } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { SelectField } from '../settings/select-field';
-import { useWorkspaceWritable } from '../shell/use-writable';
+import { useRenewalMessage, useWorkspaceWritable } from '../shell/use-writable';
 import {
   BRAND_TONES,
   useBrandKit,
@@ -111,6 +111,7 @@ function Form({
   const t = useTranslations('meta.brand');
   const common = useTranslations('common');
   const writable = useWorkspaceWritable();
+  const renewal = useRenewalMessage();
   const [saved, setSaved] = useState(false);
   const putKit = usePutBrandKit(workspaceId);
   const updatePage = useUpdatePage(workspaceId);
@@ -295,7 +296,9 @@ function Form({
           ) : null}
         </div>
       ) : (
-        <p className="text-meta text-muted">{writable ? t('read_only') : t('renew_to_edit')}</p>
+        <p className="text-meta text-muted">
+          {writable ? t('read_only') : renewal ? t('renew_to_edit') : t('admin_read_only')}
+        </p>
       )}
     </form>
   );

@@ -8,7 +8,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { ApiError } from '../../lib/api';
 import { SelectField } from '../settings/select-field';
-import { useWorkspaceWritable } from '../shell/use-writable';
+import { useRenewalMessage, useWorkspaceWritable } from '../shell/use-writable';
 import { usePages, useUpdatePage, type MetaPage } from './api';
 
 type Role = 'owner' | 'editor' | 'viewer';
@@ -116,6 +116,7 @@ function PageRow({
 export function PagesPanel({ workspaceId, role }: { workspaceId: string; role: Role }): ReactNode {
   const t = useTranslations('meta.pages');
   const writable = useWorkspaceWritable();
+  const renewal = useRenewalMessage();
   const pages = usePages(workspaceId);
   const update = useUpdatePage(workspaceId);
 
@@ -172,7 +173,11 @@ export function PagesPanel({ workspaceId, role }: { workspaceId: string; role: R
           {t(`errors.${pageErrorKey(update.error)}`)}
         </p>
       ) : null}
-      {writable ? null : <p className="text-meta text-muted">{t('renew_to_edit')}</p>}
+      {writable ? null : (
+        <p className="text-meta text-muted">
+          {renewal ? t('renew_to_edit') : t('admin_read_only')}
+        </p>
+      )}
       {role === 'owner' ? null : <p className="text-meta text-muted">{t('only_owner')}</p>}
     </div>
   );
