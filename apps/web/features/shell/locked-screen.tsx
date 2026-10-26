@@ -19,8 +19,6 @@ export function LockedScreen(): ReactNode {
   const cause = workspace?.statusCause === 'trial_ended' ? 'trial_ended' : 'subscription_ended';
   // Seul le propriétaire s'abonne ; les autres membres lisent le message.
   const showAction = workspace?.role === 'owner';
-  // Arrêter la dépense : propriétaire et éditeur (la route revérifie le rôle).
-  const canPause = workspace !== null && workspace.role !== 'viewer';
 
   return (
     <section
@@ -36,7 +34,9 @@ export function LockedScreen(): ReactNode {
       ) : (
         <p className="font-semibold">{t('ask_owner')}</p>
       )}
-      {canPause && workspace ? <PauseAllPanel workspaceId={workspace.id} /> : null}
+      {workspace !== null && workspace.role !== 'viewer' ? (
+        <PauseAllPanel workspaceId={workspace.id} />
+      ) : null}
     </section>
   );
 }

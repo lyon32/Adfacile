@@ -19,7 +19,10 @@ interface Call {
   body: string | null;
 }
 let calls: Call[] = [];
-type Reply = { status: number; body: unknown };
+interface Reply {
+  status: number;
+  body: unknown;
+}
 let replies: ((call: Call) => Reply)[] = [];
 
 beforeEach(() => {
