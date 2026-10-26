@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { AccessBanner } from './access-banner';
+import { LockedScreen } from './locked-screen';
 import { AccountPanel } from './account-panel';
 import { Logo } from './logo';
 import { ACCOUNT_ITEMS, MENU_ITEMS, TAB_ITEMS, isActive, type NavItem } from './nav-config';
@@ -187,7 +188,12 @@ export function AppShell({
 }): ReactNode {
   const t = useTranslations('shell');
   const pathname = usePathname();
+  const session = useSession();
   const [accountOpen, setAccountOpen] = useState(false);
+  // Espace verrouillé : un seul écran remplace le contenu, sauf l'abonnement, le support et le profil (qui restent joignables).
+  const locked =
+    session.workspace?.status === 'locked' &&
+    !['/abonnement', '/support', '/reglages/profil'].some((href) => isActive(pathname, href));
   const openAccount = (): void => {
     setAccountOpen(true);
   };
@@ -207,9 +213,9 @@ export function AppShell({
           tabIndex={-1}
           className="mx-auto w-full max-w-5xl px-4 pt-6 pb-28 outline-none min-[980px]:px-10 min-[980px]:pt-10 min-[980px]:pb-16"
         >
-          <AccessBanner />
-          {pathname === '/' || pathname.startsWith('/bienvenue') ? null : banner}
-          {children}
+          {locked ? null : <AccessBanner />}
+          {locked || pathname === '/' || pathname.startsWith('/bienvenue') ? null : banner}
+          {locked ? <LockedScreen /> : children}
         </main>
       </div>
       <MobileTabs pathname={pathname} onOpenAccount={openAccount} />

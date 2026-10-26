@@ -214,7 +214,7 @@ export function CampaignWizard({ workspace }: CampaignWizardProps): ReactNode {
   if (workspace.status === 'suspended') {
     return <Gate title={t('suspended_title')} body={t('suspended_body')} />;
   }
-  if (workspace.status === 'read_only') {
+  if (workspace.status !== 'active') {
     return <Gate title={t('readonly_title')} body={t('readonly_body')} />;
   }
   if (workspace.role === 'viewer')

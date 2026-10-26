@@ -56,20 +56,15 @@
     "access": {
       "label": "État de l’abonnement",
       "grace_title": "Renouvelle avant le {date}",
-      "grace_body": "Ton abonnement est arrivé à échéance. Tout fonctionne encore ; après cette date, Pubeka passe en lecture seule. {days, plural, one {Il te reste # jour.} other {Il te reste # jours.}}",
-      "grace_cta": "Payer",
-      "trial_ended_title": "Ton essai est terminé",
-      "trial_ended_body": "Choisis une formule pour créer, générer et modifier. Tes campagnes en cours continuent chez Meta, et tu peux toujours les mettre en pause.",
-      "trial_ended_cta": "Choisir une formule",
-      "read_only_title": "Ton abonnement est terminé",
-      "read_only_body": "Tes campagnes continuent chez Meta, mais tu ne peux plus créer, générer ni modifier. Tu peux toujours les mettre en pause.",
-      "read_only_cta": "Renouveler",
+      "grace_body": "Ton abonnement est arrivé à échéance. Tu peux encore consulter tes campagnes, acheter des crédits et les mettre en pause, mais plus rien créer ni modifier. Passé le {date}, tu n’auras plus accès à rien et toutes tes publicités seront mises en pause. {days, plural, one {Il te reste # jour.} other {Il te reste # jours.}}",
       "suspended_title": "Ton espace est suspendu",
       "suspended_body": "Tu peux consulter tes campagnes, les mettre en pause et écrire au support. Le reste est bloqué tant que la suspension dure.",
       "suspended_cta": "Écrire au support",
       "admin_read_only_title": "Ton espace est en lecture seule",
       "admin_read_only_body": "L’équipe Pubeka a mis cet espace en lecture seule. Tu peux consulter tes campagnes et les mettre en pause ; pour le reste, écris au support.",
-      "admin_read_only_cta": "Écrire au support"
+      "admin_read_only_cta": "Écrire au support",
+      "soon": "Bientôt disponible",
+      "grace_cta": "Payer"
     },
     "banner": {
       "empty_title": "Ta première campagne t’attend",
@@ -91,6 +86,16 @@
       "sign_out": "Se déconnecter",
       "close": "Fermer",
       "update_failed": "Le changement n’a pas été enregistré. Réessaie."
+    },
+    "locked": {
+      "label": "Accès verrouillé",
+      "trial_ended_title": "Ton essai est terminé",
+      "trial_ended_body": "Choisis une formule pour retrouver tes campagnes, tes statistiques et tes visuels. Tes publicités déjà lancées continuent chez Meta.",
+      "trial_ended_cta": "Choisir une formule",
+      "subscription_ended_title": "Ton abonnement est terminé",
+      "subscription_ended_body": "Renouvelle ton abonnement pour retrouver tes campagnes, tes statistiques et tes visuels. Tes publicités déjà lancées continuent chez Meta.",
+      "subscription_ended_cta": "Renouveler",
+      "soon": "Bientôt disponible"
     }
   },
   "dashboard": {

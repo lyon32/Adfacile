@@ -9,7 +9,7 @@ function Probe() {
   return <p>{useWorkspaceWritable() ? 'oui' : 'non'}</p>;
 }
 
-function session(status: 'active' | 'grace' | 'read_only' | 'suspended'): SessionValue {
+function session(status: 'active' | 'grace' | 'locked' | 'read_only' | 'suspended'): SessionValue {
   return {
     userId: 'u',
     email: 'a@b.test',
@@ -26,7 +26,8 @@ afterEach(cleanup);
 describe('useWorkspaceWritable (TR-PAY-07)', () => {
   it.each([
     ['active', 'oui'],
-    ['grace', 'oui'],
+    ['grace', 'non'],
+    ['locked', 'non'],
     ['read_only', 'non'],
     ['suspended', 'non'],
   ] as const)('espace %s : modifiable = %s', (status, expected) => {

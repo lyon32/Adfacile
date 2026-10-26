@@ -39,7 +39,12 @@ import type { ConnectNotice } from './notice';
 export function errorKey(error: unknown): 'expired' | 'forbidden' | 'unavailable' | 'generic' {
   const code = error instanceof ApiError ? error.code : '';
   if (code === 'meta_token_expired') return 'expired';
-  if (code === 'role_insufficient' || code === 'forbidden' || code === 'workspace_read_only') {
+  if (
+    code === 'role_insufficient' ||
+    code === 'forbidden' ||
+    code === 'workspace_read_only' ||
+    code === 'workspace_locked'
+  ) {
     return 'forbidden';
   }
   return code === 'provider_unavailable' || code === 'maintenance' ? 'unavailable' : 'generic';

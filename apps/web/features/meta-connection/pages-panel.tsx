@@ -20,7 +20,7 @@ export function pageErrorKey(
   if (!(error instanceof ApiError)) return 'generic';
   if (error.code === 'page_limit_reached') return 'limit';
   if (error.code === 'conflict') return 'locked';
-  if (error.code === 'workspace_read_only') return 'read_only';
+  if (error.code === 'workspace_read_only' || error.code === 'workspace_locked') return 'read_only';
   if (error.code === 'role_insufficient' || error.code === 'forbidden') return 'forbidden';
   return 'generic';
 }

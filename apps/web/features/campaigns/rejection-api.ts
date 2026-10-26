@@ -149,6 +149,7 @@ export function fixFailureOf(error: unknown): FixFailureKind {
       return reason === 'publish_disabled' ? 'publish_disabled' : 'other';
     case 'workspace_read_only':
     case 'workspace_suspended':
+    case 'workspace_locked':
       return 'read_only';
     case 'validation_failed':
     case 'budget_too_low':
