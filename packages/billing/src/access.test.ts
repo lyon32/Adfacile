@@ -135,3 +135,10 @@ describe('accessCause : pourquoi l’espace n’est pas actif (bandeau exact)', 
     expect(accessCause('suspended', sub(), now)).toBe('admin');
   });
 });
+
+describe('horloge invalide', () => {
+  it('une heure illisible donne lecture seule : on n’ouvre jamais l’écriture par erreur', () => {
+    expect(workspaceAccess(sub(), new Date('pas une date'))).toBe('read_only');
+    expect(effectiveAccess('active', sub(), new Date(Number.NaN))).toBe('read_only');
+  });
+});

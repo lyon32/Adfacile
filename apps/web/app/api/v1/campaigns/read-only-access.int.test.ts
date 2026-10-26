@@ -107,6 +107,30 @@ describe('TR-PAY-07 : l’état de l’espace suit l’abonnement', () => {
     expect((await campaignRow(campaignId))?.status).toBe('paused');
   });
 
+  it('la pause part chez Meta dans TOUS les états (prudence : même code pendant la grâce, l’essai terminé et la suspension)', async () => {
+    const cases: [string, () => Promise<void>][] = [
+      ['grâce', () => subscribe('active', -1).then(() => undefined)],
+      ['essai terminé', () => subscribe('trialing', -0.01).then(() => undefined)],
+      ['lecture seule', () => subscribe('active', -5).then(() => undefined)],
+      [
+        'suspension',
+        async () => {
+          await subscribe('active', 20);
+          await setStored('suspended');
+        },
+      ],
+    ];
+    for (const [label, arrange] of cases) {
+      await setStored('active');
+      await subscribe('active', 10);
+      const { campaign } = await publishedCampaign(s);
+      await arrange();
+      const res = await pause(s, s.owner, campaign.id);
+      expect(res.status, label).toBe(200);
+      expect((await campaignRow(campaign.id))?.status, label).toBe('paused');
+    }
+  });
+
   it('même refus pour l’éditeur ; le lecteur garde son 403 de rôle', async () => {
     await subscribe('active', -5);
     expect((await pause(s, s.editor, campaignId)).status).toBe(200);
