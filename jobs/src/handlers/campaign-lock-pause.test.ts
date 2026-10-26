@@ -10,6 +10,7 @@ const calls = vi.hoisted(() => ({
   clientArgs: [] as unknown[],
   sweepArgs: [] as unknown[],
   depsArgs: [] as unknown[],
+  report: { workspaces: 0, paused: 0, failed: [] as Record<string, string>[] },
 }));
 
 vi.mock('@pubeka/shared', async (importOriginal) => {
@@ -36,7 +37,7 @@ vi.mock('@pubeka/core', async (importOriginal) => {
     },
     pauseLockedWorkspaces: (...args: unknown[]) => {
       calls.sweepArgs.push(args);
-      return Promise.resolve({ workspaces: 0, paused: 0 });
+      return Promise.resolve(calls.report);
     },
   };
 });
@@ -53,6 +54,7 @@ beforeEach(() => {
   calls.clientArgs.length = 0;
   calls.sweepArgs.length = 0;
   calls.depsArgs.length = 0;
+  calls.report = { workspaces: 0, paused: 0, failed: [] };
   for (const key of Object.keys(calls.env)) Reflect.deleteProperty(calls.env, key);
   calls.env.NEXT_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321';
   calls.env.SUPABASE_SECRET_KEY = 'sb_secret_factice';
@@ -86,7 +88,7 @@ describe('tâche campaign.lock-pause (S19b)', () => {
 
   it('lance une passe avec le client de service, l’heure du contexte et les dépendances de l’environnement', async () => {
     const result = await campaignLockPauseHandler.run({}, ctx);
-    expect(result).toEqual({ workspaces: 0, paused: 0 });
+    expect(result).toEqual({ workspaces: 0, paused: 0, failed: [] });
     expect(calls.clientArgs).toEqual([
       { url: 'http://127.0.0.1:54321', secretKey: 'sb_secret_factice' },
     ]);
@@ -105,5 +107,53 @@ describe('tâche campaign.lock-pause (S19b)', () => {
     expect(calls.clientArgs).toEqual([
       { url: 'http://supabase.interne:54321', secretKey: 'sb_secret_factice' },
     ]);
+  });
+
+  it('ÉCHEC BRUYANT : toutes les pauses échouent (jeton expiré…) : la tâche échoue avec un message clair, visible dans Trigger.dev', async () => {
+    calls.report = {
+      workspaces: 1,
+      paused: 0,
+      failed: [
+        {
+          campaign_id: 'c1',
+          name: 'Promo secrète',
+          code: 'meta_token_expired',
+          workspace_id: 'w1',
+        },
+        { campaign_id: 'c2', name: 'Autre', code: 'meta_token_expired', workspace_id: 'w1' },
+        { campaign_id: 'c3', name: 'Encore', code: 'meta_error', workspace_id: 'w2' },
+      ],
+    };
+    const error: unknown = await campaignLockPauseHandler.run({}, ctx).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(Error);
+    const message = (error as Error).message;
+    expect(message).toContain('campaign.lock-pause');
+    expect(message).toContain('3 pause(s) en échec');
+    expect(message).toContain('meta_token_expired×2');
+    expect(message).toContain('meta_error×1');
+    expect(message).toContain('2 espace(s)');
+    // Aucun nom de campagne (donnée du client) dans le message.
+    expect(message).not.toContain('Promo secrète');
+  });
+
+  it('une pause réussie dans la passe : pas d’échec de la tâche, même si d’autres pauses ont échoué (le reste sera retenté)', async () => {
+    calls.report = {
+      workspaces: 2,
+      paused: 1,
+      failed: [{ campaign_id: 'c1', name: 'x', code: 'meta_error', workspace_id: 'w1' }],
+    };
+    await expect(campaignLockPauseHandler.run({}, ctx)).resolves.toBeDefined();
+  });
+
+  it('une campagne en cours de publication (conflict) n’est pas une panne : pas d’échec de la tâche', async () => {
+    calls.report = {
+      workspaces: 1,
+      paused: 0,
+      failed: [{ campaign_id: 'c1', name: 'x', code: 'conflict', workspace_id: 'w1' }],
+    };
+    await expect(campaignLockPauseHandler.run({}, ctx)).resolves.toBeDefined();
   });
 });

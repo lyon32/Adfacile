@@ -91,6 +91,18 @@ export async function pauseLockedWorkspaces(
         tokens,
       );
       if (one.guard_stopped) report.not_locked += 1;
+      // Journal agrégé par espace (sans nom de campagne ni jeton) : une ligne d'erreur lisible dans les journaux, en plus de celle de chaque campagne.
+      const hard = one.failed.filter((f) => f.code !== 'conflict');
+      if (hard.length > 0) {
+        const codes: Record<string, number> = {};
+        for (const f of hard) codes[f.code] = (codes[f.code] ?? 0) + 1;
+        logger.error('Pause automatique incomplète pour un espace verrouillé', {
+          workspaceId,
+          paused: one.paused,
+          failed: hard.length,
+          codes,
+        });
+      }
       report.paused += one.paused;
       for (const failed of one.failed) report.failed.push({ ...failed, workspace_id: workspaceId });
       if (one.budget_exhausted) report.budget_exhausted = true;
