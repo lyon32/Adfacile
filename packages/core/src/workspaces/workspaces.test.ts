@@ -226,6 +226,7 @@ describe('listWorkspaces', () => {
         status: 'read_only',
         status: 'read_only',
         status_cause: 'admin',
+        role: 'viewer',
         plan: 'pro',
         period_end: '2026-10-01T00:00:00Z',
         grace_until: '2026-10-04T00:00:00Z',
