@@ -39,7 +39,7 @@ create index campaigns_live_idx on public.campaigns (workspace_id)
   where status in ('in_review', 'active', 'error') and meta_campaign_id is not null;
 
 create or replace function private.workspaces_to_lock_pause(p_now timestamptz, p_limit int)
-returns table (workspace_id uuid) language sql stable security definer set search_path = '' as $$
+returns table (workspace_id uuid) language sql volatile security definer set search_path = '' as $$
   select w.id
   from public.workspaces w
   left join lateral (
@@ -63,7 +63,7 @@ revoke all on function private.workspaces_to_lock_pause(timestamptz, int) from p
 grant execute on function private.workspaces_to_lock_pause(timestamptz, int) to service_role;
 
 create or replace function public.workspaces_to_lock_pause(p_now timestamptz, p_limit int)
-returns table (workspace_id uuid) language sql stable security invoker set search_path = '' as $$
+returns table (workspace_id uuid) language sql volatile security invoker set search_path = '' as $$
   select * from private.workspaces_to_lock_pause(p_now, p_limit) $$;
 revoke all on function public.workspaces_to_lock_pause(timestamptz, int) from public, anon, authenticated;
 grant execute on function public.workspaces_to_lock_pause(timestamptz, int) to service_role;

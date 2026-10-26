@@ -67,6 +67,20 @@ async function countLocked(ctx: MemberCtx): Promise<number> {
   return rows.length;
 }
 
+async function stillLocked(ctx: MemberCtx, campaignId: string): Promise<boolean> {
+  const rows = unwrap<{ id: string }[]>(
+    await ctx.db
+      .from('campaigns')
+      .select('id')
+      .eq('workspace_id', ctx.workspace.id)
+      .eq('id', campaignId)
+      .eq('status', 'paused')
+      .eq('pause_reason', BILLING_LOCK_REASON)
+      .limit(1),
+  );
+  return rows.length > 0;
+}
+
 /** Reprend les campagnes mises en pause par le verrouillage. Propriétaire ou éditeur, espace ACTIF, interrupteur de publication. */
 export async function resumeLockedCampaigns(
   ctx: MemberCtx,
@@ -88,6 +102,9 @@ export async function resumeLockedCampaigns(
   );
   const result: ResumeAllResult = { resumed: 0, failed: [], remaining: 0, rate_limited: false };
   for (const candidate of candidates) {
+    // Le motif est RELU juste avant chaque reprise : si le client a repris puis remis en pause cette campagne lui-même entre-temps, elle
+    // n'a plus le motif du verrouillage et n'est pas touchée.
+    if (!(await stillLocked(ctx, candidate.id))) continue;
     try {
       await resumeCampaign(ctx, candidate.id, deps);
       result.resumed += 1;

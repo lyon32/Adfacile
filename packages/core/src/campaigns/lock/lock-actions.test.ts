@@ -4,6 +4,7 @@ import { AppError } from '@pubeka/contracts';
 import { MetaGraphError } from '@pubeka/platforms';
 import { describe, expect, it } from 'vitest';
 import { rowOf } from '../publish/publish.test-helper';
+import { pauseCampaign } from '../publish/campaign-control';
 import { pauseAllCampaigns, resumeLockedCampaigns } from './lock-actions';
 import { lockWorld } from './lock.test-helper';
 
@@ -195,5 +196,45 @@ describe('resumeLockedCampaigns — bouton « Reprendre mes pubs »', () => {
     expect(result.resumed).toBe(1);
     expect(rowOf(t.w.db, mine).status).toBe('active');
     expect(rowOf(t.w.db, other)).toMatchObject({ status: 'paused', pause_reason: 'billing_lock' });
+  });
+});
+
+describe('revue adversariale S19b — courses entre le client et « Reprendre mes pubs »', () => {
+  it('le client reprend puis remet LUI-MÊME en pause une campagne pendant la boucle : le motif a disparu, elle n’est PAS reprise', async () => {
+    const t = lockWorld();
+    const first = await t.add('paused', { pauseReason: 'billing_lock', name: 'Promo A' });
+    const second = await t.add('paused', { pauseReason: 'billing_lock', name: 'Promo B' });
+    const deps = {
+      ...t.deps,
+      connector: new Proxy(t.fake, {
+        get(target, key, receiver) {
+          if (key === 'resume') {
+            return (...args: Parameters<typeof t.fake.resume>) => {
+              // Pendant la reprise de A, le client a repris puis re-pausé B : B est en pause SANS motif.
+              Object.assign(rowOf(t.w.db, second), { pause_reason: null });
+              return t.fake.resume(...args);
+            };
+          }
+          return Reflect.get(target, key, receiver) as unknown;
+        },
+      }),
+    };
+    const result = await resumeLockedCampaigns(t.memberAt('active'), deps);
+    expect(result.resumed).toBe(1);
+    expect(rowOf(t.w.db, first).status).toBe('active');
+    expect(rowOf(t.w.db, second).status).toBe('paused');
+    expect(t.metaStatus(second)).toBe('paused');
+    expect(t.fake.resumeAttempts).toBe(1);
+  });
+
+  it('pause d’une campagne seule en espace verrouillé : même motif que « tout mettre en pause » ; en espace actif, aucun motif', async () => {
+    const locked = lockWorld();
+    const a = await locked.add('active');
+    await pauseCampaign(locked.memberAt('locked'), a, locked.deps);
+    expect(rowOf(locked.w.db, a)).toMatchObject({ status: 'paused', pause_reason: 'billing_lock' });
+    const active = lockWorld();
+    const b = await active.add('active');
+    await pauseCampaign(active.memberAt('active'), b, active.deps);
+    expect(rowOf(active.w.db, b).pause_reason ?? null).toBeNull();
   });
 });

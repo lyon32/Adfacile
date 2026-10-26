@@ -182,3 +182,47 @@ describe('rejouable sans double effet, jamais de reprise', () => {
     expect(rowOf(t.w.db, id).status).toBe('paused');
   });
 });
+
+describe('revue adversariale S19b — renouvellement pendant la passe, budget et échecs locaux', () => {
+  it('l’espace est renouvelé APRÈS la 1re campagne : la suivante n’est pas mise en pause (accès relu avant chaque campagne)', async () => {
+    const t = lockWorld();
+    const first = await t.add('active');
+    const second = await t.add('active');
+    const deps = {
+      ...t.deps,
+      connector: new Proxy(t.fake, {
+        get(target, key, receiver) {
+          if (key === 'pause') {
+            return (...args: Parameters<typeof t.fake.pause>) => {
+              // Le client paie pendant la passe : la période suivante rouvre l'espace.
+              Object.assign(t.w.db.rows('subscriptions')[0] ?? {}, {
+                period_end: '2027-06-01T00:00:00.000Z',
+              });
+              return t.fake.pause(...args);
+            };
+          }
+          return Reflect.get(target, key, receiver) as unknown;
+        },
+      }),
+    };
+    const report = await pauseLockedWorkspaces(t.serviceAt(at(GRACE_END)), deps);
+    expect(report.paused).toBe(1);
+    expect(report.not_locked).toBe(1);
+    expect(rowOf(t.w.db, first).status).toBe('paused');
+    expect(rowOf(t.w.db, second).status).toBe('active');
+  });
+
+  it('une campagne en échec LOCAL (jeton expiré) ne consomme pas le budget : les autres campagnes du passage sont servies', async () => {
+    const t = lockWorld();
+    const broken = await t.add('active', { name: 'Compte en panne' });
+    const other = await t.add('active', { workspaceId: OTHER_W, name: 'Autre compte' });
+    subscription(t, OTHER_W, { status: 'active', period_end: '2026-11-01T00:00:00.000Z' });
+    Object.assign(t.w.db.rows('meta_connections')[0] ?? {}, { status: 'expired' });
+    const report = await pauseLockedWorkspaces(t.serviceAt(at(GRACE_END)), t.deps, {
+      campaignBudget: 1,
+    });
+    expect(report.paused).toBe(1);
+    expect(rowOf(t.w.db, other).status).toBe('paused');
+    expect(rowOf(t.w.db, broken).status).toBe('active');
+  });
+});

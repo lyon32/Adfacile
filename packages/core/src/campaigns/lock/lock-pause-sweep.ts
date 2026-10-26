@@ -76,18 +76,21 @@ export async function pauseLockedWorkspaces(
       break;
     }
     try {
-      const access = await loadWorkspaceAccess(ctx.svc, ctx.svc, workspaceId, ctx.now());
-      if (access !== 'locked') {
-        report.not_locked += 1;
-        continue;
-      }
       const one = await pauseWorkspaceCampaigns(
         ctx,
         deps,
         workspaceId,
-        { source: 'poll', reason: BILLING_LOCK_REASON, budget },
+        {
+          source: 'poll',
+          reason: BILLING_LOCK_REASON,
+          budget,
+          // L'accès est relu AVANT CHAQUE campagne : un renouvellement survenu pendant la passe n'est pas pausé.
+          stillApplies: async () =>
+            (await loadWorkspaceAccess(ctx.svc, ctx.svc, workspaceId, ctx.now())) === 'locked',
+        },
         tokens,
       );
+      if (one.guard_stopped) report.not_locked += 1;
       report.paused += one.paused;
       for (const failed of one.failed) report.failed.push({ ...failed, workspace_id: workspaceId });
       if (one.budget_exhausted) report.budget_exhausted = true;

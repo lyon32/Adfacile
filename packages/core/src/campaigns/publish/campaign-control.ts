@@ -189,8 +189,10 @@ export async function pauseCampaign(
     // Meta n'a pas répondu : la campagne n'est PAS affichée en pause (EC-META-07). Mettre en pause est idempotent chez Meta.
     throw toAppError(error);
   }
+  // Espace VERROUILLÉ : la pause garde le motif du verrouillage, comme `pause-all` (S19b), pour que « Reprendre mes pubs » la retrouve.
   const paused = await applyTransition(ctx.svc, row, 'pause', {
     paused_at: ctx.now().toISOString(),
+    ...(ctx.workspace.access === 'locked' ? { pause_reason: 'billing_lock' } : {}),
   });
   if (paused === null) return lost(ctx, campaignId, 'paused');
   await recordStatusEvent(ctx.svc, paused, 'paused', 'user');

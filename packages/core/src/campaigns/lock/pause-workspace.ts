@@ -73,6 +73,8 @@ export interface PauseReport {
   budget_exhausted: boolean;
   /** Vrai si la limite touchée est celle de l'APPLICATION chez Meta : inutile d'insister sur les autres espaces. */
   app_limited: boolean;
+  /** Vrai si `stillApplies` a répondu non (espace renouvelé en cours de passe) : le reste n'est pas touché. */
+  guard_stopped: boolean;
 }
 
 export interface PauseOptions {
@@ -81,6 +83,11 @@ export interface PauseOptions {
   /** `billing_lock` : le motif posé ; `null` : pause du client en dehors du verrouillage (aucun motif). */
   reason: PauseReason | null;
   budget: PauseBudget;
+  /**
+   * Revérifié AVANT CHAQUE campagne (un renouvellement peut survenir pendant la boucle) : faux = on s'arrête, rien de plus n'est mis en
+   * pause. La tâche y met « l'espace est-il toujours verrouillé ? ».
+   */
+  stillApplies?: () => Promise<boolean>;
 }
 
 /** Statuts qu'on peut mettre en pause (machine d'état). `publishing` est signalé mais jamais touché : la publication se termine. */
@@ -136,7 +143,7 @@ async function pauseOne(
   workspaceId: string,
   candidate: Candidate,
   options: PauseOptions,
-): Promise<'paused' | 'skipped'> {
+): Promise<'paused' | 'skipped' | 'budget'> {
   const row = await loadPublishRow(ctx.svc, workspaceId, candidate.id);
   if (row.status === 'paused') return 'skipped';
   if (!nextCampaignStatus(row.status, 'pause').ok) {
@@ -158,7 +165,11 @@ async function pauseOne(
     token = deps.loadToken(ctx.svc, workspaceId, connection);
     tokens.set(connection.id, token);
   }
-  await pauseAndConfirm(deps, await token, refs);
+  const accessToken = await token;
+  // Le budget ne compte que ce qui part réellement chez Meta : une campagne en échec LOCAL (jeton expiré, connexion absente) ne prive pas les autres.
+  if (options.budget.left <= 0) return 'budget';
+  options.budget.left -= 1;
+  await pauseAndConfirm(deps, accessToken, refs);
 
   const patch = {
     paused_at: ctx.now().toISOString(),
@@ -199,6 +210,7 @@ export function emptyPauseReport(): PauseReport {
     rate_limited: false,
     budget_exhausted: false,
     app_limited: false,
+    guard_stopped: false,
   };
 }
 
@@ -229,13 +241,16 @@ export async function pauseWorkspaceCampaigns(
       });
       continue;
     }
-    if (options.budget.left <= 0) {
-      report.budget_exhausted = true;
+    if (options.stillApplies !== undefined && !(await options.stillApplies())) {
+      report.guard_stopped = true;
       break;
     }
-    options.budget.left -= 1;
     try {
       const outcome = await pauseOne(ctx, deps, tokens, workspaceId, candidate, options);
+      if (outcome === 'budget') {
+        report.budget_exhausted = true;
+        break;
+      }
       if (outcome === 'paused') report.paused += 1;
     } catch (error) {
       const scope = metaRateLimitScope(error);
