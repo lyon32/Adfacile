@@ -8,6 +8,11 @@ export function assertRole(ctx: MemberCtx, roles: readonly MemberRole[]): void {
   if (!roles.includes(ctx.workspace.role)) throw new AppError('role_insufficient');
 }
 
+/** Actions d'argent permises en lecture seule (paiement, preuve de paiement) : seule la suspension les refuse (§2.1, décision 4). */
+export function assertNotSuspended(ctx: MemberCtx): void {
+  if (ctx.workspace.access === 'suspended') throw new AppError('workspace_suspended');
+}
+
 /** Espace modifiable : ni suspendu, ni en lecture seule (la grâce reste modifiable, §2.1). */
 export function assertWritable(ctx: MemberCtx): void {
   if (ctx.workspace.access === 'suspended') throw new AppError('workspace_suspended');

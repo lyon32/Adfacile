@@ -32,7 +32,9 @@ export type WebhookProvider = 'saspay' | 'meta' | 'higgsfield' | 'fal' | 'bytepl
 export type Access =
   | { auth: 'none' } // /public/*
   | { auth: 'user' } // /me, /notifications
-  | { auth: 'member'; roles?: readonly MemberRole[]; writable?: boolean } // /workspaces/{ws}/…
+  // `writable: true` : refusé en lecture seule ET en suspension. `'not_suspended'` : actions ✱ d'argent (paiement, preuve de paiement),
+  // permises en lecture seule mais refusées en suspension (SECURITY_NOTES §2.1, décision 4). Sans `writable` : lecture, pause, support.
+  | { auth: 'member'; roles?: readonly MemberRole[]; writable?: boolean | 'not_suspended' } // /workspaces/{ws}/…
   | { auth: 'admin' } // /admin/* (aal2, sinon 404)
   | { auth: 'webhook'; provider: WebhookProvider };
 
@@ -223,9 +225,11 @@ export function createApi(getDeps: () => ApiDeps) {
           if (options.roles !== undefined && !options.roles.includes(member.role)) {
             throw new AppError('role_insufficient');
           }
-          if (options.writable === true) {
+          if (options.writable === true || options.writable === 'not_suspended') {
             if (member.access === 'suspended') throw new AppError('workspace_suspended');
-            if (member.access === 'read_only') throw new AppError('workspace_read_only');
+          }
+          if (options.writable === true && member.access === 'read_only') {
+            throw new AppError('workspace_read_only');
           }
           workspace = { id: workspaceId, role: member.role, access: member.access };
         }

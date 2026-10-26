@@ -2,7 +2,15 @@
 // (pause d'une campagne, paiement, preuve de paiement, support, profil), les lectures déguisées en POST et les
 // routes sans espace échappent à `writable: true`. Une nouvelle route d'écriture non classée fait échouer ce test :
 // la session qui l'ajoute doit choisir son sort ici, par écrit.
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -12,8 +20,10 @@ const API_DIR = join(ROOT, 'apps/web/app/api/v1');
 type Kind =
   /** Écriture dans un espace : `writable: true` obligatoire (403 workspace_read_only / workspace_suspended). */
   | 'writable'
-  /** Action ✱ : toujours permise (SECURITY_NOTES §2.1). */
+  /** Action ✱ : toujours permise, même en suspension (pause, support, profil : SECURITY_NOTES §2.1). */
   | 'star'
+  /** ✱ d'argent : permise en lecture seule, REFUSÉE en suspension (décision 4) : `writable: 'not_suspended'`. */
+  | 'not_suspended'
   /** Lecture ou action sans effet sur l'espace, permise en lecture seule (tableaux de §2.4). */
   | 'read'
   /** Route sans espace (invitation) : l'état de l'espace est contrôlé dans le cas d'usage. */
@@ -58,14 +68,14 @@ const CLASSES: Record<string, Kind> = {
   [`POST ${CAMPAIGN}/rejections/{rejectionId}/apply-fix`]: 'writable',
   // Générations et visuels (S21 à S23)
   [`POST ${WS}/generations`]: 'writable',
-  [`POST ${WS}/generations/{generationId}/cancel`]: 'read',
+  [`POST ${WS}/generations/{generationId}/cancel`]: 'not_suspended',
   [`POST ${WS}/generations/{generationId}/fallback`]: 'writable',
   [`PATCH ${WS}/visuals/{visualId}`]: 'writable',
   [`POST ${WS}/visuals/{visualId}/edit`]: 'writable',
   [`POST ${WS}/visuals/{visualId}/formats`]: 'writable',
   // Argent, support, notifications (S24 à S29)
-  [`POST ${WS}/checkout`]: 'star',
-  [`POST ${WS}/payment-proofs`]: 'star',
+  [`POST ${WS}/checkout`]: 'not_suspended',
+  [`POST ${WS}/payment-proofs`]: 'not_suspended',
   [`POST ${WS}/recommendations/{recommendationId}/{decision}`]: 'writable',
   'POST /notifications/read': 'star',
   'PUT /notifications/preferences': 'star',
@@ -94,8 +104,6 @@ const STAR_ACTIONS = [
   'POST /notifications/read',
   `POST ${WS}/assistant/messages`,
   `POST ${CAMPAIGN}/pause`,
-  `POST ${WS}/checkout`,
-  `POST ${WS}/payment-proofs`,
   `POST ${WS}/tickets`,
   `POST ${WS}/tickets/{ticketId}/messages`,
   'PUT /notifications/preferences',
@@ -144,18 +152,63 @@ function fileOf(contractPath: string): string {
   return join(API_DIR, ...segments, 'route.ts');
 }
 
-/** Texte du gestionnaire exporté pour une méthode, ou null. */
-function handlerSource(file: string, method: string): string | null {
-  if (!existsSync(file)) return null;
-  const src = readFileSync(file, 'utf8');
-  const start = src.search(new RegExp(`export const ${method} = api\\(`));
-  if (start < 0) return null;
-  const rest = src.slice(start + 1);
-  const next = rest.search(/\nexport const /);
-  return next < 0 ? src.slice(start) : src.slice(start, start + 1 + next);
+/** Retire les commentaires : un commentaire « writable: true » ne protège rien. */
+export function stripComments(src: string): string {
+  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
 }
 
-const declaresWritable = (source: string): boolean => /\bwritable:\s*true\b/.test(source);
+/** Le fichier exporte-t-il ce verbe HTTP, sous quelque forme que ce soit ? */
+export function exportsMethod(src: string, method: string): boolean {
+  const code = stripComments(src);
+  return (
+    new RegExp(`export\\s+(?:const|let|var|async\\s+function|function)\\s+${method}\\b`).test(
+      code,
+    ) || new RegExp(`export\\s*\\{[^}]*\\b${method}\\b[^}]*\\}`).test(code)
+  );
+}
+
+/**
+ * Texte du gestionnaire `api({...}, …)` d'un verbe. Reconnaît `export const M = api(` et `export const M = withX(api(`.
+ * Toute AUTRE forme exportée (fonction, ré-export, alias) est inconnue : le test échoue plutôt que d'ignorer la route.
+ */
+export function handlerOf(
+  src: string,
+  method: string,
+): { kind: 'api'; source: string } | { kind: 'unknown' } | null {
+  if (!exportsMethod(src, method)) return null;
+  const code = stripComments(src);
+  const start = code.search(
+    new RegExp(`export\\s+const\\s+${method}\\s*=\\s*(?:[\\w.]+\\(\\s*)*api\\(`),
+  );
+  if (start < 0) return { kind: 'unknown' };
+  const rest = code.slice(start + 1);
+  const next = rest.search(/\nexport\s/);
+  return {
+    kind: 'api',
+    source: next < 0 ? code.slice(start) : code.slice(start, start + 1 + next),
+  };
+}
+
+/** Texte (sans commentaires) du gestionnaire d'un verbe dans un fichier de route ; null si absent ; échoue si la forme est inconnue. */
+function handlerSource(file: string, method: string): string | null {
+  if (!existsSync(file)) return null;
+  const found = handlerOf(readFileSync(file, 'utf8'), method);
+  if (found === null) return null;
+  if (found.kind === 'unknown') {
+    throw new Error(
+      `${file} : ${method} exporté sous une forme que ce test ne sait pas lire (api(...) attendu)`,
+    );
+  }
+  return found.source;
+}
+
+/** `writable: true`, `writable: 'not_suspended'` ou rien (commentaires exclus). */
+export function writableOf(source: string): 'true' | 'not_suspended' | null {
+  const code = stripComments(source);
+  if (/\bwritable:\s*true\b/.test(code)) return 'true';
+  if (/\bwritable:\s*['"]not_suspended['"]/.test(code)) return 'not_suspended';
+  return null;
+}
 
 describe('TR-PAY-07 : routes d’écriture et lecture seule', () => {
   const writes = contractWrites();
@@ -181,10 +234,11 @@ describe('TR-PAY-07 : routes d’écriture et lecture seule', () => {
       const source = handlerSource(fileOf(path), method);
       if (source === null) continue; // pas encore codée : sa session la déclarera (le test ci-dessus la force à la classer)
       checked.push(key);
-      const expected = kind === 'writable';
+      const expected =
+        kind === 'writable' ? 'true' : kind === 'not_suspended' ? 'not_suspended' : null;
       expect(
-        declaresWritable(source),
-        `${key} (${String(kind)}) : writable: true ${expected ? 'obligatoire' : 'interdit'}`,
+        writableOf(source),
+        `${key} (${String(kind)}) : writable attendu ${String(expected)}`,
       ).toBe(expected);
     }
     // Garde contre un chemin mal calculé : les routes d'espace déjà codées sont bien vérifiées.
@@ -209,7 +263,12 @@ describe('TR-PAY-07 : routes d’écriture et lecture seule', () => {
       const contractPath = rel.replace(/\[(\w+)\]/g, '{$1}');
       const src = readFileSync(file, 'utf8');
       for (const method of WRITE_METHODS) {
-        if (!new RegExp(`export const ${method} = api\\(`).test(src)) continue;
+        if (!exportsMethod(src, method)) continue;
+        // Forme inconnue (fonction, ré-export…) : refusée, jamais ignorée.
+        expect(
+          handlerOf(src, method)?.kind,
+          `${method} ${contractPath} : forme d'export inconnue`,
+        ).toBe('api');
         if (!declared.has(`${method} ${contractPath}`)) found.push(`${method} ${contractPath}`);
       }
     }
@@ -240,5 +299,58 @@ describe('TR-PAY-07 : tâches de fond', () => {
       .map((n) => n.replace(/.ts$/, ''))
       .sort();
     expect(found).toEqual(Object.keys(JOBS).sort());
+  });
+});
+
+describe('lecteur de routes (durcissement)', () => {
+  const route = (body: string) => `import { api } from 'x';\n${body}\n`;
+
+  it('un commentaire « writable: true » ne suffit pas', () => {
+    const src = route(
+      [
+        'export const POST = api(',
+        '  // writable: true,',
+        '  /* writable: true */',
+        "  { auth: 'member', rateLimit: 'write' },",
+        '  async () => ({ status: 204 }),',
+        ');',
+      ].join('\n'),
+    );
+    const found = handlerOf(src, 'POST');
+    expect(found?.kind).toBe('api');
+    expect(found?.kind === 'api' ? writableOf(found.source) : 'x').toBeNull();
+  });
+
+  it('writable: true et writable: not_suspended sont reconnus', () => {
+    expect(writableOf("api({ auth: 'member', writable: true, rateLimit: 'write' }")).toBe('true');
+    expect(writableOf("api({ auth: 'member', writable: 'not_suspended' }")).toBe('not_suspended');
+    expect(writableOf("api({ auth: 'member' }")).toBeNull();
+  });
+
+  it('reconnaît api(...) enveloppé : export const POST = withAudit(api(...))', () => {
+    const wrapped = "export const POST = withAudit(api({ auth: 'member', writable: true }, h));";
+    expect(handlerOf(route(wrapped), 'POST')?.kind).toBe('api');
+  });
+
+  it('formes inconnues : fonction exportée, ré-export, alias donnent « unknown », jamais ignorées', () => {
+    const fn = 'export async function POST() { return new Response(); }';
+    expect(handlerOf(route(fn), 'POST')?.kind).toBe('unknown');
+    const reexport = 'const h = api({}, g);\nexport { h as POST };';
+    expect(handlerOf(route(reexport), 'POST')?.kind).toBe('unknown');
+    expect(handlerOf(route('export const POST = handler;'), 'POST')?.kind).toBe('unknown');
+  });
+
+  it('un verbe non exporté est absent ; un export commenté ne compte pas', () => {
+    expect(handlerOf(route('export const GET = api({}, g);'), 'POST')).toBeNull();
+    expect(
+      handlerOf(route('// export const POST = api({ writable: true }, g);'), 'POST'),
+    ).toBeNull();
+  });
+
+  it('handlerSource échoue sur une forme inconnue dans une vraie route', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'routes-'));
+    const file = join(dir, 'route.ts');
+    writeFileSync(file, route('export async function POST() { return new Response(); }'));
+    expect(() => handlerSource(file, 'POST')).toThrow(/forme que ce test ne sait pas lire/);
   });
 });

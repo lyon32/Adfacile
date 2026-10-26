@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { MemberCtx, MemberRole, WorkspaceAccess } from '../context';
 import { FakeClient, type FakeResponse } from '../fake-client.test-helper';
-import { assertRole, assertWritable } from './guards';
+import { assertNotSuspended, assertRole, assertWritable } from './guards';
 import { assertMembersFitPlan, subscriptionsOf } from './plan-limits';
 import { getWorkspace, listWorkspaces, renameWorkspace } from './workspaces';
 
@@ -56,6 +56,20 @@ describe('assertRole / assertWritable (SECURITY_NOTES §2.7)', () => {
     expect(() => {
       assertWritable(ctx(f, f, 'owner', 'grace'));
     }).not.toThrow();
+  });
+});
+
+describe('assertNotSuspended (paiement et preuve de paiement, décision 4)', () => {
+  it('permis en lecture seule et en grâce, refusé en suspension', () => {
+    const f = new FakeClient();
+    for (const access of ['active', 'grace', 'read_only'] as const) {
+      expect(() => {
+        assertNotSuspended(ctx(f, f, 'owner', access));
+      }).not.toThrow();
+    }
+    expect(() => {
+      assertNotSuspended(ctx(f, f, 'owner', 'suspended'));
+    }).toThrow(expect.objectContaining({ code: 'workspace_suspended' }));
   });
 });
 

@@ -319,6 +319,23 @@ describe('api() : ordre des contrôles', () => {
     expect((await write(r(), seg({ workspaceId: WS }))).status).toBe(204);
   });
 
+  it("writable: 'not_suspended' (paiement, preuve de paiement) : permis en lecture seule et en grâce, refusé en suspension (décision 4)", async () => {
+    const h = harness();
+    const api = createApi(() => h.deps);
+    const pay = api({ auth: 'member', writable: 'not_suspended', rateLimit: 'write' }, () =>
+      Promise.resolve({ status: 204 }),
+    );
+    const r = () => req(`/api/v1/workspaces/${WS}/x`, { method: 'POST' });
+    for (const access of ['active', 'grace', 'read_only'] as const) {
+      h.access = access;
+      expect((await pay(r(), seg({ workspaceId: WS }))).status).toBe(204);
+    }
+    h.access = 'suspended';
+    const refused = await pay(r(), seg({ workspaceId: WS }));
+    expect(refused.status).toBe(403);
+    expect((await json(refused)).code).toBe('workspace_suspended');
+  });
+
   it('429 rate_limited avec Retry-After, avant le handler', async () => {
     const h = harness();
     h.limited = true;

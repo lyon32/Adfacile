@@ -351,7 +351,7 @@ Seules les fonctions **non triviales** sont listées. Les signatures sont en Typ
 type Access =
   | { auth: 'none' }                                    // /public/*
   | { auth: 'user' }                                    // /me, /notifications
-  | { auth: 'member'; roles?: MemberRole[]; writable?: boolean } // /workspaces/{ws}/…
+  | { auth: 'member'; roles?: MemberRole[]; writable?: boolean | 'not_suspended' } // /workspaces/{ws}/…
   | { auth: 'admin' }                                   // /admin/* (aal2, sinon 404)
   | { auth: 'webhook'; provider: WebhookProvider };
 
@@ -378,7 +378,7 @@ type ApiResult =
 
 Ordre fixe des contrôles (ne pas le changer) : `request_id` → maintenance → `Origin` (si écriture avec cookie) → session → appartenance → rôle → espace modifiable → limite de débit → idempotence → validation du corps → *handler*. Toute exception non `AppError` devient `500 internal_error`, envoyée à Sentry avec le `request_id`.
 
-`writable: true` est **obligatoire** sur toute écriture, sauf les trois exceptions de la lecture seule (API_SPEC §2.3) : pause d'une campagne, paiement, tickets.
+`writable: true` est **obligatoire** sur toute écriture, sauf les exceptions ✱ de la lecture seule (API_SPEC §2.3, SECURITY_NOTES §2.1) : pause d'une campagne, tickets et assistant, profil. Le paiement, la preuve de paiement et l'annulation d'une génération en file (✱ en lecture seule, mais refusés en suspension, décision 4) déclarent `writable: 'not_suspended'` : seule la suspension les refuse (`workspace_suspended`). Le test `write-routes.test.ts` classe chaque route d'écriture.
 
 ### 6.2 Erreurs — `packages/contracts/src/errors.ts` et `apps/web/server/http/problem.ts`
 
