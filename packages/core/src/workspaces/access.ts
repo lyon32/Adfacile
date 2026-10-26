@@ -38,6 +38,8 @@ export async function loadWorkspaceAccess(
       .select('status, period_end, grace_until')
       .eq('workspace_id', workspaceId)
       .order('created_at', { ascending: false })
+      // Départage déterministe (même règle que `private.ws_access`) : à `created_at` égal, l'id le plus grand gagne.
+      .order('id', { ascending: false })
       .limit(1),
   );
   return effectiveAccess(ws.status, rows[0] ?? null, now);

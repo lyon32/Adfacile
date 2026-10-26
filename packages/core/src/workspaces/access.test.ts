@@ -59,5 +59,6 @@ describe('loadWorkspaceAccess (TR-PAY-07)', () => {
     expect(svc.calls[0]?.target).toBe('subscriptions');
     expect(svc.calls[0]?.ops).toContainEqual(['eq', 'workspace_id', WS]);
     expect(svc.calls[0]?.ops).toContainEqual(['order', 'created_at', { ascending: false }]);
+    expect(svc.calls[0]?.ops).toContainEqual(['order', 'id', { ascending: false }]);
   });
 });

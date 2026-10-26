@@ -398,6 +398,8 @@ export async function explainPendingRejections(
         if (outcome === 'skipped') offset += 1;
       } catch (error) {
         report.failed += 1;
+        // Interrompu avant la prise : le refus reste « en attente », il occupe encore une place dans la fenêtre de lecture.
+        offset += 1;
         logger.error('Explication du refus interrompue', { rejectionId: item.id, err: error });
       }
     }

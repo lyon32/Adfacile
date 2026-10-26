@@ -54,7 +54,8 @@ export async function subscriptionsOf(
         .from('subscriptions')
         .select('workspace_id, plan_code, status, period_end, grace_until, created_at')
         .in('workspace_id', [...workspaceIds])
-        .order('created_at', { ascending: false }),
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false }),
     );
     for (const row of rows) {
       if (out.has(row.workspace_id)) continue;

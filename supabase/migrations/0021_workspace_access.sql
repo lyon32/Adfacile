@@ -15,14 +15,14 @@
 
 begin;
 
--- La règle, sans lecture de table ni d'horloge : testable avec n'importe quelle date.
+-- La règle, sans lecture de table ni d'horloge : testable avec n'importe quelle date. `stable` (pas `immutable`) : elle lit des types énumérés.
 create or replace function private.access_at(
   stored public.workspace_status,
   sub_status public.subscription_status,
   period_end timestamptz,
   grace_until timestamptz,
   at timestamptz
-) returns text language sql immutable set search_path = '' as $$
+) returns text language sql stable set search_path = '' as $$
   select case
     when stored = 'suspended' then 'suspended'
     when stored = 'read_only' then 'read_only'
@@ -44,7 +44,7 @@ returns text language sql stable security definer set search_path = '' as $$
     select sb.status, sb.period_end, sb.grace_until
     from public.subscriptions sb
     where sb.workspace_id = w.id
-    order by sb.created_at desc
+    order by sb.created_at desc, sb.id desc
     limit 1
   ) s on true
   where w.id = ws;
@@ -56,7 +56,7 @@ returns boolean language sql stable security definer set search_path = '' as $$
   select coalesce(private.ws_access(ws) = 'active', false);
 $$;
 
-create index if not exists subscriptions_workspace_created_idx on public.subscriptions (workspace_id, created_at desc);
+create index if not exists subscriptions_workspace_created_idx on public.subscriptions (workspace_id, created_at desc, id desc);
 
 grant execute on function private.ws_writable(uuid) to authenticated, service_role;
 grant execute on function private.ws_access(uuid) to service_role;

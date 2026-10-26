@@ -405,6 +405,57 @@ describe('explication par le Modérateur (après un refus seulement)', () => {
     }
   });
 
+  it('TR-PAY-07 : un refus qui reste « en attente » après une interruption fait avancer la fenêtre de lecture (aucun refus sauté ni relu)', async () => {
+    const { s } = await refusedWorld();
+    s.w.db.rows('workspaces').push({ id: OTHER_W, owner_id: 'x', status: 'read_only' });
+    const table = rejections(s);
+    const first = table[0];
+    if (first === undefined) throw new Error('refus absent');
+    // 45 refus bloqués, puis 4 refus d'espace actif de plus (5 au total avec le premier).
+    for (let i = 0; i < 45; i += 1) {
+      table.push({
+        ...first,
+        id: `d0000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+        workspace_id: OTHER_W,
+        created_at: new Date(NOW.getTime() - (500 - i) * 60_000).toISOString(),
+      });
+    }
+    for (let i = 0; i < 4; i += 1) {
+      table.push({
+        ...first,
+        id: `e0000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+        created_at: new Date(NOW.getTime() + (i + 1) * 60_000).toISOString(),
+      });
+    }
+    installMemoryRpc(s);
+    // Les 2 premières prises échouent : ces refus restent « en attente ».
+    let interruptions = 0;
+    s.w.db.beforeUpdate = (name, memory) => {
+      if (name === 'rejections' && interruptions < 2) {
+        interruptions += 1;
+        memory.failNext.add('rejections:update');
+      }
+    };
+    const starts: number[] = [];
+    const original = s.w.db.from.bind(s.w.db);
+    Reflect.set(s.w.db, 'from', (name: string) => {
+      const query = original(name);
+      if (name === 'rejections') {
+        const range = query.range.bind(query);
+        query.range = (from: number, to: number) => {
+          starts.push(from);
+          return range(from, to);
+        };
+      }
+      return query;
+    });
+    const report = await explainPendingRejections(s.ctxAt(20), explainDeps());
+    // 45 bloqués + 2 interrompus restés en attente : la 2e page commence à 47, pas à 45.
+    expect(starts).toEqual([0, 47]);
+    expect(report.explained).toBe(3);
+    expect(report.failed).toBeGreaterThanOrEqual(2);
+  });
+
   it('TR-AGT-01 : une sortie invalide est renvoyée une fois, puis l’échec est visible (2 appels au plus)', async () => {
     const { s } = await refusedWorld();
     const gateway = new FakeAiGateway().enqueue({ text: 'pas du json' }).enqueue({ text: '{}' });

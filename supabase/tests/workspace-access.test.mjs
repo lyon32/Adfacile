@@ -114,6 +114,23 @@ await check('sans abonnement : actif (l’essai démarre en S24)', async () => {
   await db.query(`delete from public.subscriptions where workspace_id=$1`, [WS]);
   return !(await denied(createDraft)) && (await writable());
 });
+await check('abonnement le plus récent : à created_at égal, l’id le plus grand gagne (départage déterministe), dans les deux sens', async () => {
+  await db.query(`delete from public.subscriptions where workspace_id=$1`, [WS]);
+  const ts = new Date().toISOString();
+  const ended = new Date(Date.now() - 10 * DAY).toISOString();
+  const live = new Date(Date.now() + 10 * DAY).toISOString();
+  const low = '00000000-0000-4000-8000-000000000001';
+  const high = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+  const put = (id, end) => db.query(
+    `insert into public.subscriptions (id,workspace_id,plan_code,status,period_start,period_end,created_at) values ($1,$2,'pro','active',$3,$4,$5)`,
+    [id, WS, new Date(Date.parse(end) - 30 * DAY).toISOString(), end, ts]);
+  await put(low, live); await put(high, ended);
+  const highExpired = !(await writable());
+  await db.query(`delete from public.subscriptions where workspace_id=$1`, [WS]);
+  await put(low, ended); await put(high, live);
+  const highLive = await writable();
+  return highExpired && highLive;
+});
 await check('espace inconnu : jamais modifiable', async () =>
   (await q(`select private.ws_writable('99999999-9999-4999-8999-999999999999') w`))[0].w === false);
 await check('un client ne peut pas appeler la règle directement (schéma private)', async () =>
