@@ -213,6 +213,7 @@ describe('listWorkspaces', () => {
         id: WS,
         name: 'Boutique Awa',
         status: 'active',
+        status_cause: null,
         role: 'owner',
         plan: 'trial',
         period_end: null,
@@ -223,7 +224,8 @@ describe('listWorkspaces', () => {
         id: WS2,
         name: 'Agence',
         status: 'read_only',
-        role: 'viewer',
+        status: 'read_only',
+        status_cause: 'admin',
         plan: 'pro',
         period_end: '2026-10-01T00:00:00Z',
         grace_until: '2026-10-04T00:00:00Z',
@@ -286,6 +288,51 @@ describe('getWorkspace / renameWorkspace', () => {
       expect((await getWorkspace(ctx(db, svc))).status).toBe(expected);
     },
   );
+
+  it.each([
+    ['active', 'active', '2026-11-01T09:00:00Z', null],
+    ['active', 'active', '2026-10-11T09:00:00Z', 'grace'],
+    ['active', 'active', '2026-10-09T09:00:00Z', 'subscription_ended'],
+    ['active', 'trialing', '2026-10-09T09:00:00Z', 'trial_ended'],
+    ['active', 'canceled', '2026-10-09T09:00:00Z', 'subscription_ended'],
+    ['read_only', 'trialing', '2026-11-01T09:00:00Z', 'admin'],
+    ['suspended', 'active', '2026-11-01T09:00:00Z', 'admin'],
+  ] as const)(
+    'cause du statut : espace %s, abonnement %s finissant le %s → %s',
+    async (stored, subStatus, periodEnd, cause) => {
+      const db = new FakeClient().reply(
+        { data: { id: WS, name: 'B', status: stored }, error: null },
+        { data: [{ workspace_id: WS }], error: null },
+      );
+      const svc = new FakeClient().reply(
+        {
+          data: [
+            {
+              workspace_id: WS,
+              plan_code: 'pro',
+              status: subStatus,
+              period_end: periodEnd,
+              grace_until: null,
+            },
+          ],
+          error: null,
+        },
+        PLANS,
+      );
+      expect((await getWorkspace(ctx(db, svc))).status_cause).toBe(cause);
+    },
+  );
+
+  it('sans abonnement : actif, aucune cause (jamais « essai terminé »)', async () => {
+    const db = new FakeClient().reply(
+      { data: { id: WS, name: 'B', status: 'active' }, error: null },
+      { data: [{ workspace_id: WS }], error: null },
+    );
+    const svc = new FakeClient().reply({ data: [], error: null }, PLANS);
+    const view = await getWorkspace(ctx(db, svc));
+    expect(view.status).toBe('active');
+    expect(view.status_cause).toBeNull();
+  });
 
   it('renomme (propriétaire) puis relit l’espace', async () => {
     const db = new FakeClient().reply({ data: [{ id: WS }], error: null });

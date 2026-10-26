@@ -1918,6 +1918,11 @@ export interface components {
              * @enum {string}
              */
             status: "active" | "grace" | "read_only" | "suspended";
+            /**
+             * @description Pourquoi l'espace n'est pas simplement actif : `grace`, `trial_ended` (essai terminé), `subscription_ended` (formule payée ou résiliée échue), `admin` (décision de l'administration) ; `null` quand l'espace est actif
+             * @enum {string|null}
+             */
+            status_cause?: "grace" | "trial_ended" | "subscription_ended" | "admin" | null;
             /** @enum {string} */
             role: "owner" | "editor" | "viewer";
             /**

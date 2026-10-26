@@ -69,3 +69,22 @@ export function effectiveAccess(
   if (stored === 'read_only') return 'read_only';
   return sub === null ? 'active' : workspaceAccess(sub, now);
 }
+
+export type AccessCause = 'grace' | 'trial_ended' | 'subscription_ended' | 'admin';
+
+/**
+ * Pourquoi l'espace n'est pas simplement actif, pour afficher le bon message : `grace` (abonnement échu depuis moins de 3 jours),
+ * `trial_ended` (essai terminé), `subscription_ended` (formule payée ou résiliée échue, ou abonnement en lecture seule),
+ * `admin` (lecture seule ou suspension décidée par l'administration). `null` : actif.
+ */
+export function accessCause(
+  stored: StoredWorkspaceStatus,
+  sub: AccessSubscription | null,
+  now: Date,
+): AccessCause | null {
+  if (stored !== 'active') return 'admin';
+  const access = effectiveAccess(stored, sub, now);
+  if (access === 'active') return null;
+  if (access === 'grace') return 'grace';
+  return sub?.status === 'trialing' ? 'trial_ended' : 'subscription_ended';
+}

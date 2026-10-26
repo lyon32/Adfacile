@@ -10,7 +10,7 @@ import { useSession } from './session-context';
 
 const DAY_MS = 24 * 3600 * 1000;
 
-type Notice = 'grace' | 'trial_ended' | 'read_only' | 'suspended';
+type Notice = 'grace' | 'trial_ended' | 'read_only' | 'admin_read_only' | 'suspended';
 
 function daysLeft(until: string | null | undefined, now: string | undefined): number {
   if (until === null || until === undefined || now === undefined) return 1;
@@ -18,30 +18,47 @@ function daysLeft(until: string | null | undefined, now: string | undefined): nu
   return Number.isNaN(diff) ? 1 : Math.max(1, Math.ceil(diff / DAY_MS));
 }
 
+/** Le message vient de la CAUSE donnée par le serveur : jamais déduit de la formule (un espace sans abonnement n'a pas « fini son essai »). */
+export function noticeOf(status: string, cause: string | null | undefined): Notice | null {
+  if (status === 'suspended') return 'suspended';
+  if (status === 'grace') return 'grace';
+  if (status !== 'read_only') return null;
+  if (cause === 'admin') return 'admin_read_only';
+  if (cause === 'trial_ended') return 'trial_ended';
+  return 'read_only';
+}
+
+/** Date d'échéance dans le fuseau de la personne ; un fuseau invalide ne casse pas l'écran (repli UTC). */
+export function formatDeadline(iso: string, locale: string, timeZone: string | undefined): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long' };
+  try {
+    return new Intl.DateTimeFormat(locale, { ...options, timeZone: timeZone ?? 'UTC' }).format(
+      date,
+    );
+  } catch {
+    return new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).format(date);
+  }
+}
+
 export function AccessBanner(): ReactNode {
   const t = useTranslations('shell.access');
   const locale = useLocale();
   const session = useSession();
   const workspace = session.workspace;
-  if (workspace === null || workspace.status === 'active') return null;
+  if (workspace === null) return null;
+  const notice = noticeOf(workspace.status, workspace.statusCause);
+  if (notice === null) return null;
 
-  const notice: Notice =
-    workspace.status === 'read_only' && workspace.plan === 'trial'
-      ? 'trial_ended'
-      : workspace.status;
-  const href = notice === 'suspended' ? '/support' : '/abonnement';
-  const isOwner = workspace.role === 'owner';
-  // Seul le propriétaire paie et écrit à l'administration de l'espace : les autres lisent le message sans bouton.
-  const showAction = notice === 'suspended' || isOwner;
-
+  const toSupport = notice === 'suspended' || notice === 'admin_read_only';
+  const href = toSupport ? '/support' : '/abonnement';
+  // Seul le propriétaire paie : les autres lisent le message sans bouton. Le support est ouvert à tous.
+  const showAction = toSupport || workspace.role === 'owner';
   const date =
     workspace.graceUntil === null || workspace.graceUntil === undefined
       ? ''
-      : new Intl.DateTimeFormat(locale, {
-          day: 'numeric',
-          month: 'long',
-          timeZone: session.timezone ?? 'UTC',
-        }).format(new Date(workspace.graceUntil));
+      : formatDeadline(workspace.graceUntil, locale, session.timezone);
 
   return (
     <section

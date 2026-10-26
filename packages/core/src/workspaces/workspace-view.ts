@@ -1,7 +1,9 @@
 // Forme `Workspace` d'openapi.yaml : espace, rôle de l'utilisateur, formule et quotas.
 import {
+  accessCause,
   effectiveAccess,
   graceEndsAt,
+  type AccessCause,
   type AccessSubscription,
   type StoredWorkspaceStatus,
 } from '@pubeka/billing';
@@ -29,6 +31,8 @@ export interface Workspace {
   id: string;
   name: string;
   status: WorkspaceStatus;
+  /** Pourquoi l'espace n'est pas simplement actif (message exact du bandeau) ; `null` : actif. */
+  status_cause: AccessCause | null;
   role: MemberRole;
   plan: WorkspacePlan;
   period_end: string | null;
@@ -71,6 +75,7 @@ export async function toWorkspaces(ctx: Ctx, refs: readonly WorkspaceRef[]): Pro
       id: ref.id,
       name: ref.name,
       status: effectiveAccess(ref.status, accessSub, ctx.now()),
+      status_cause: accessCause(ref.status, accessSub, ctx.now()),
       role: ref.role,
       plan: sub?.plan ?? 'trial',
       period_end: sub?.period_end ?? null,

@@ -3,6 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   GRACE_DAYS,
+  accessCause,
   effectiveAccess,
   graceEndsAt,
   workspaceAccess,
@@ -106,5 +107,31 @@ describe('graceEndsAt', () => {
     expect(graceEndsAt(sub({ status: 'canceled' }))).toBeNull();
     expect(graceEndsAt(sub({ status: 'read_only' }))).toBeNull();
     expect(graceEndsAt(sub({ period_end: 'x' }))).toBeNull();
+  });
+});
+
+describe('accessCause : pourquoi l’espace n’est pas actif (bandeau exact)', () => {
+  const now = new Date(END.getTime() + day);
+  it('active : aucune cause', () => {
+    expect(accessCause('active', sub(), new Date(END.getTime() - day))).toBeNull();
+    expect(accessCause('active', null, now)).toBeNull();
+  });
+  it('grâce', () => {
+    expect(accessCause('active', sub(), now)).toBe('grace');
+  });
+  it('essai terminé', () => {
+    expect(accessCause('active', sub({ status: 'trialing' }), now)).toBe('trial_ended');
+  });
+  it('abonnement terminé : formule payée après la grâce, résiliée échue, ou statut read_only', () => {
+    expect(accessCause('active', sub(), new Date(END.getTime() + 5 * day))).toBe(
+      'subscription_ended',
+    );
+    expect(accessCause('active', sub({ status: 'canceled' }), now)).toBe('subscription_ended');
+    expect(accessCause('active', sub({ status: 'read_only' }), now)).toBe('subscription_ended');
+  });
+  it('décision de l’administration : lecture seule posée sur l’espace, même sans abonnement ou avec un essai', () => {
+    expect(accessCause('read_only', null, now)).toBe('admin');
+    expect(accessCause('read_only', sub({ status: 'trialing' }), now)).toBe('admin');
+    expect(accessCause('suspended', sub(), now)).toBe('admin');
   });
 });

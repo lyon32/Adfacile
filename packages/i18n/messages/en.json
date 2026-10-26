@@ -66,7 +66,10 @@
       "read_only_cta": "Renew",
       "suspended_title": "Your workspace is suspended",
       "suspended_body": "You can view your campaigns, pause them and write to support. Everything else is blocked while the suspension lasts.",
-      "suspended_cta": "Write to support"
+      "suspended_cta": "Write to support",
+      "admin_read_only_title": "Your workspace is read-only",
+      "admin_read_only_body": "The Pubeka team has set this workspace to read-only. You can view your campaigns and pause them; for anything else, write to support.",
+      "admin_read_only_cta": "Write to support"
     },
     "banner": {
       "empty_title": "Your first campaign is waiting",

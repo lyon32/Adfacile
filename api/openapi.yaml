@@ -1729,6 +1729,7 @@ components:
         id: { type: string, format: uuid }
         name: { type: string }
         status: { type: string, enum: [ active, grace, read_only, suspended ], description: "Accès réel de l'espace (SECURITY_NOTES §2.1) : `grace` = abonnement échu depuis moins de 3 jours (tout fonctionne, bandeau de rappel) ; `read_only` = après la grâce ou essai terminé ; `suspended` = décision de l'administration" }
+        status_cause: { type: [ string, 'null' ], enum: [ grace, trial_ended, subscription_ended, admin, null ], description: "Pourquoi l'espace n'est pas simplement actif : `grace`, `trial_ended` (essai terminé), `subscription_ended` (formule payée ou résiliée échue), `admin` (décision de l'administration) ; `null` quand l'espace est actif" }
         role: { type: string, enum: [ owner, editor, viewer ] }
         plan: { type: string, enum: [ trial, starter, pro, business ], description: "Formule de l'abonnement le plus récent ; `trial` pendant l'essai et tant qu'aucune formule n'a été choisie (limites de Starter)" }
         period_end: { type: [ string, 'null' ], format: date-time }

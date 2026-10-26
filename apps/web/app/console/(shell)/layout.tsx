@@ -37,6 +37,7 @@ export default async function ShellLayout({
                 plan: workspace.plan,
                 status: workspace.status,
                 graceUntil: workspace.grace_until,
+                statusCause: workspace.status_cause,
               },
       }}
     >

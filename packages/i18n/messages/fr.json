@@ -66,7 +66,10 @@
       "read_only_cta": "Renouveler",
       "suspended_title": "Ton espace est suspendu",
       "suspended_body": "Tu peux consulter tes campagnes, les mettre en pause et écrire au support. Le reste est bloqué tant que la suspension dure.",
-      "suspended_cta": "Écrire au support"
+      "suspended_cta": "Écrire au support",
+      "admin_read_only_title": "Ton espace est en lecture seule",
+      "admin_read_only_body": "L’équipe Pubeka a mis cet espace en lecture seule. Tu peux consulter tes campagnes et les mettre en pause ; pour le reste, écris au support.",
+      "admin_read_only_cta": "Écrire au support"
     },
     "banner": {
       "empty_title": "Ta première campagne t’attend",

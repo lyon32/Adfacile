@@ -26,6 +26,8 @@ export interface SessionValue {
     status: 'active' | 'grace' | 'read_only' | 'suspended';
     /** Fin de la grâce (ISO) : seulement utile quand `status` vaut `grace`. */
     graceUntil?: string | null;
+    /** Pourquoi l'espace n'est pas actif (message exact du bandeau). */
+    statusCause?: 'grace' | 'trial_ended' | 'subscription_ended' | 'admin' | null;
   } | null;
 }
 
