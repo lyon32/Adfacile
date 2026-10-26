@@ -179,7 +179,30 @@ async function pauseOne(
   if (written === null) {
     // Quelqu'un a agi entre la lecture et l'écriture : si la campagne est maintenant en pause, le but est atteint.
     const latest = await loadPublishRow(ctx.svc, workspaceId, candidate.id);
-    return latest.status === 'paused' ? 'paused' : 'skipped';
+    if (latest.status !== 'paused') return 'skipped';
+    // Course avec `campaign.sync-status` : la synchronisation a lu « paused » chez Meta et écrit `paused` SANS motif avant nous. Meta a
+    // confirmé NOTRE pause : on pose le motif (une seule instruction gardée : statut paused ET motif encore vide), sinon « Reprendre mes
+    // pubs » ne retrouverait jamais la campagne.
+    if (options.reason !== null && (latest.pause_reason ?? null) === null) {
+      const marked = await ctx.svc
+        .from('campaigns')
+        .update({ pause_reason: options.reason })
+        .eq('workspace_id', workspaceId)
+        .eq('id', candidate.id)
+        .eq('status', 'paused')
+        .is('pause_reason', null)
+        .select('id');
+      if (marked.error !== null) throw new AppError('internal_error', { cause: marked.error });
+      if (marked.data.length > 0) {
+        await recordStatusEvent(ctx.svc, latest, 'paused', options.source, {
+          event: 'pause',
+          reason: options.reason,
+          from: row.status,
+          marked_after_sync: true,
+        });
+      }
+    }
+    return 'paused';
   }
   await recordStatusEvent(ctx.svc, written, 'paused', options.source, {
     event: 'pause',

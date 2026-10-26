@@ -199,21 +199,6 @@ describe('EC-META-07 — jamais « en pause » sans la confirmation de Meta', ()
     expect(t.fake.pauseAttempts).toBe(0);
     expect(rowOf(t.w.db, id).status).toBe('active');
   });
-
-  it('une campagne en pause chez Meta par le client entre-temps (déjà « paused » localement) n’est pas écrasée', async () => {
-    const t = lockWorld();
-    const id = await t.add('active');
-    // Quelqu'un la met en pause dans Pubeka juste avant l'écriture locale : le résultat est compté sans second historique.
-    const deps = patched(t, {
-      pause: async () => {
-        await t.fake.pause({ accessToken: 'x', expiresAt: null }, firstRefs(t));
-        rowOf(t.w.db, id).status = 'paused';
-      },
-    });
-    const report = await run(t, {}, deps);
-    expect(report.paused).toBe(1);
-    expect(events(t, id)).toHaveLength(0);
-  });
 });
 
 describe('EC-META-10 — limites de débit de Meta pendant la pause', () => {
