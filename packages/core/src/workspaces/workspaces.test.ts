@@ -224,7 +224,6 @@ describe('listWorkspaces', () => {
         id: WS2,
         name: 'Agence',
         status: 'read_only',
-        status: 'read_only',
         status_cause: 'admin',
         role: 'viewer',
         plan: 'pro',
