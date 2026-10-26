@@ -11,6 +11,7 @@ export const PauseAllSchema = z.object({
   paused: z.number(),
   failed: z.array(FailureSchema),
   rate_limited: z.boolean(),
+  more: z.boolean(),
 });
 export type PauseAllResult = z.infer<typeof PauseAllSchema>;
 
@@ -19,14 +20,53 @@ export const ResumeAllSchema = z.object({
   failed: z.array(FailureSchema),
   remaining: z.number(),
   rate_limited: z.boolean(),
+  more: z.boolean(),
 });
 export type ResumeAllResult = z.infer<typeof ResumeAllSchema>;
 
+const MoneySchema = z.object({
+  usd_cents: z.number(),
+  local_minor: z.number().nullable(),
+  currency: z.string().nullable(),
+});
+
 const BillingPausedSchema = z.object({
   data: z.array(
-    z.looseObject({ id: z.string(), daily_budget_usd_cents: z.number().nullable().optional() }),
+    z.looseObject({
+      id: z.string(),
+      daily_budget_usd_cents: z.number().nullable().optional(),
+      // Budget par jour converti PAR LE SERVEUR avec le taux réel (`exchange_rates`, moins de 48 h) ; `null` sinon : dollars seuls.
+      cost: z.looseObject({ daily: MoneySchema.nullable().optional() }).optional(),
+    }),
   ),
+  next_cursor: z.string().nullable().optional(),
 });
+
+/** Les campagnes mises en pause par le verrouillage (au plus 100 lues) et leur budget quotidien total. */
+export interface BillingPaused {
+  count: number;
+  /** Plus de 100 campagnes : le nombre et le montant sont des MINIMUMS (« au moins »). */
+  atLeast: boolean;
+  dailyBudgetUsdCents: number;
+  /** Total par jour en monnaie locale, SEULEMENT si toutes les campagnes ont un taux réel et la même monnaie ; sinon `null`. */
+  dailyLocalMinor: number | null;
+  currency: string | null;
+}
+
+/** Cumule les budgets quotidiens : monnaie locale seulement si TOUS ont un montant converti dans la même monnaie. */
+export function sumBudgets(
+  rows: { usd: number; local: { minor: number; currency: string } | null }[],
+): Pick<BillingPaused, 'dailyBudgetUsdCents' | 'dailyLocalMinor' | 'currency'> {
+  const usd = rows.reduce((sum, r) => sum + r.usd, 0);
+  const first = rows[0]?.local ?? null;
+  const same =
+    first !== null && rows.every((r) => r.local !== null && r.local.currency === first.currency);
+  return {
+    dailyBudgetUsdCents: usd,
+    dailyLocalMinor: same ? rows.reduce((sum, r) => sum + (r.local?.minor ?? 0), 0) : null,
+    currency: same ? first.currency : null,
+  };
+}
 
 export const billingPausedKey = (ws: string) => ['ws', ws, 'billing-paused'] as const;
 
@@ -53,10 +93,24 @@ export function useBillingPaused(ws: string, enabled: boolean) {
         BillingPausedSchema,
         { signal },
       );
-      return {
+      const rows = page.data.map((c) => {
+        const daily = c.cost?.daily ?? null;
+        return {
+          usd: c.daily_budget_usd_cents ?? 0,
+          local:
+            daily?.local_minor !== null &&
+            daily?.local_minor !== undefined &&
+            daily.currency !== null
+              ? { minor: daily.local_minor, currency: daily.currency }
+              : null,
+        };
+      });
+      const result: BillingPaused = {
         count: page.data.length,
-        dailyBudgetUsdCents: page.data.reduce((sum, c) => sum + (c.daily_budget_usd_cents ?? 0), 0),
+        atLeast: page.next_cursor !== null && page.next_cursor !== undefined,
+        ...sumBudgets(rows),
       };
+      return result;
     },
     staleTime: 30_000,
     refetchOnWindowFocus: true,

@@ -104,17 +104,19 @@
       "pause_all_loading": "Mise en pause en cours…",
       "pause_all_done": "{count, plural, one {# publicité est en pause chez Meta.} other {# publicités sont en pause chez Meta.}}",
       "pause_all_none": "Aucune publicité n’est en diffusion. Rien à mettre en pause.",
-      "pause_all_failed": "{count, plural, one {# publicité n’a pas pu être mise en pause.} other {# publicités n’ont pas pu être mises en pause.}} Pubeka réessaie toutes les 10 minutes.",
+      "pause_all_failed": "{count, plural, one {# publicité n’a pas pu être mise en pause.} other {# publicités n’ont pas pu être mises en pause.}}",
       "pause_all_error": "La demande n’a pas pu être envoyée. Réessaie, ou arrête tes publicités dans le Gestionnaire de publicités de Meta.",
-      "pause_reason_meta_connection": "La connexion à Meta a expiré. Arrête tes publicités dans le Gestionnaire de publicités de Meta.",
+      "pause_reason_meta_connection": "La connexion à Meta a expiré : Pubeka ne peut pas les arrêter. Arrête-les dans le Gestionnaire de publicités de Meta.",
       "pause_reason_rate_limited": "Meta limite les demandes pour le moment. Réessaie dans quelques minutes.",
       "pause_reason_conflict": "Une publication est encore en cours : réessaie dans quelques minutes.",
-      "pause_reason_other": "Meta n’a pas répondu comme prévu."
+      "pause_reason_other": "Meta n’a pas répondu comme prévu.",
+      "pause_retry_note": "Pubeka réessaie automatiquement, avec un délai qui s’allonge si Meta continue de refuser.",
+      "pause_all_more": "Il reste des publicités à mettre en pause : clique encore sur le bouton."
     },
     "resume": {
       "label": "Publicités en pause",
       "title": "{count, plural, one {# publicité est en pause} other {# publicités sont en pause}}",
-      "body": "Pubeka les a mises en pause quand ton accès a été verrouillé. Elles ne repartent jamais toutes seules : reprends-les quand tu le décides.",
+      "body": "Elles sont en pause depuis que ton accès est verrouillé. Elles ne repartent jamais toutes seules : reprends-les quand tu le décides.",
       "cta": "Reprendre mes pubs",
       "confirm_title": "Reprendre tes publicités ?",
       "confirm_body": "{count, plural, one {Cette publicité redevient visible} other {Ces # publicités redeviennent visibles}} et Meta recommence à dépenser ton budget, jusqu’à {budget} par jour au total.",
@@ -124,7 +126,11 @@
       "done": "{count, plural, one {# publicité a repris chez Meta.} other {# publicités ont repris chez Meta.}}",
       "failed": "{count, plural, one {# publicité n’a pas pu être reprise.} other {# publicités n’ont pas pu être reprises.}} Elle reste en pause : réessaie.",
       "error": "La reprise n’a pas pu être envoyée. Réessaie dans quelques instants.",
-      "disabled": "La reprise des publicités n’est pas encore activée sur cet environnement."
+      "disabled": "La reprise des publicités n’est pas encore activée sur cet environnement.",
+      "title_more": "Au moins {count} publicités sont en pause",
+      "confirm_body_more": "Au moins {count} publicités redeviennent visibles et Meta recommence à dépenser ton budget, au moins {budget} par jour au total.",
+      "confirm_batches": "Pubeka les reprend par lots de 10 : clique encore tant qu’il en reste.",
+      "more": "Il en reste : clique encore sur « Reprendre mes pubs »."
     }
   },
   "dashboard": {

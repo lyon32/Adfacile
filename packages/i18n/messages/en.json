@@ -104,17 +104,19 @@
       "pause_all_loading": "Pausing…",
       "pause_all_done": "{count, plural, one {# ad is paused at Meta.} other {# ads are paused at Meta.}}",
       "pause_all_none": "No ad is running. Nothing to pause.",
-      "pause_all_failed": "{count, plural, one {# ad could not be paused.} other {# ads could not be paused.}} Pubeka tries again every 10 minutes.",
+      "pause_all_failed": "{count, plural, one {# ad could not be paused.} other {# ads could not be paused.}}",
       "pause_all_error": "The request could not be sent. Try again, or stop your ads in Meta Ads Manager.",
-      "pause_reason_meta_connection": "The connection to Meta has expired. Stop your ads in Meta Ads Manager.",
+      "pause_reason_meta_connection": "The connection to Meta has expired: Pubeka cannot stop them. Stop them in Meta Ads Manager.",
       "pause_reason_rate_limited": "Meta is limiting requests right now. Try again in a few minutes.",
       "pause_reason_conflict": "A publication is still in progress: try again in a few minutes.",
-      "pause_reason_other": "Meta did not respond as expected."
+      "pause_reason_other": "Meta did not respond as expected.",
+      "pause_retry_note": "Pubeka tries again automatically, with a delay that grows if Meta keeps refusing.",
+      "pause_all_more": "Some ads still need to be paused: click the button again."
     },
     "resume": {
       "label": "Paused ads",
       "title": "{count, plural, one {# ad is paused} other {# ads are paused}}",
-      "body": "Pubeka paused them when your access was locked. They never restart on their own: resume them when you decide to.",
+      "body": "They have been paused since your access was locked. They never restart on their own: resume them when you decide to.",
       "cta": "Resume my ads",
       "confirm_title": "Resume your ads?",
       "confirm_body": "{count, plural, one {This ad becomes visible again} other {These # ads become visible again}} and Meta starts spending your budget again, up to {budget} per day in total.",
@@ -124,7 +126,11 @@
       "done": "{count, plural, one {# ad is running again at Meta.} other {# ads are running again at Meta.}}",
       "failed": "{count, plural, one {# ad could not be resumed.} other {# ads could not be resumed.}} It stays paused: try again.",
       "error": "The request could not be sent. Try again in a few moments.",
-      "disabled": "Resuming ads is not enabled on this environment yet."
+      "disabled": "Resuming ads is not enabled on this environment yet.",
+      "title_more": "At least {count} ads are paused",
+      "confirm_body_more": "At least {count} ads become visible again and Meta starts spending your budget again, at least {budget} per day in total.",
+      "confirm_batches": "Pubeka resumes them in batches of 10: click again while some remain.",
+      "more": "Some remain: click “Resume my ads” again."
     }
   },
   "dashboard": {

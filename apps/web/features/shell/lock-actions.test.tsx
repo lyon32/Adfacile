@@ -90,7 +90,10 @@ const PAUSE_ALL = 'Mettre toutes mes publicités en pause';
 describe('écran verrouillé : « Mettre toutes mes publicités en pause »', () => {
   it('un clic envoie UNE demande avec une Idempotency-Key neuve, montre l’état de chargement, puis le bilan du serveur', async () => {
     let release: () => void = () => undefined;
-    replies.push(() => ({ status: 200, body: { paused: 2, failed: [], rate_limited: false } }));
+    replies.push(() => ({
+      status: 200,
+      body: { paused: 2, failed: [], rate_limited: false, more: false },
+    }));
     const original = globalThis.fetch;
     const gate = new Promise<void>((resolve) => {
       release = resolve;
@@ -119,7 +122,10 @@ describe('écran verrouillé : « Mettre toutes mes publicités en pause »', ()
   });
 
   it('aucune publicité en diffusion : le dit clairement', async () => {
-    replies.push(() => ({ status: 200, body: { paused: 0, failed: [], rate_limited: false } }));
+    replies.push(() => ({
+      status: 200,
+      body: { paused: 0, failed: [], rate_limited: false, more: false },
+    }));
     renderWith(<LockedScreen />, locked);
     fireEvent.click(screen.getByRole('button', { name: PAUSE_ALL }));
     await waitFor(() => {
@@ -134,6 +140,7 @@ describe('écran verrouillé : « Mettre toutes mes publicités en pause »', ()
         paused: 1,
         failed: [{ campaign_id: 'c1', name: 'Promo', code: 'meta_token_expired' }],
         rate_limited: false,
+        more: false,
       },
     }));
     renderWith(<LockedScreen />, locked);
@@ -161,7 +168,10 @@ describe('écran verrouillé : « Mettre toutes mes publicités en pause »', ()
   });
 
   it('anglais', async () => {
-    replies.push(() => ({ status: 200, body: { paused: 1, failed: [], rate_limited: false } }));
+    replies.push(() => ({
+      status: 200,
+      body: { paused: 1, failed: [], rate_limited: false, more: false },
+    }));
     renderWith(<LockedScreen />, { ...locked, statusCause: 'trial_ended' }, 'en');
     fireEvent.click(screen.getByRole('button', { name: 'Pause all my ads' }));
     await waitFor(() => {
@@ -222,7 +232,7 @@ describe('espace actif : « Reprendre mes pubs » (reprise manuelle, confirmatio
     replies.push(() => listReply(1));
     replies.push(() => ({
       status: 200,
-      body: { resumed: 1, failed: [], remaining: 0, rate_limited: false },
+      body: { resumed: 1, failed: [], remaining: 0, rate_limited: false, more: false },
     }));
     replies.push(() => listReply(0));
     renderWith(<ResumeBanner />, ws({}));
@@ -262,5 +272,174 @@ describe('espace actif : « Reprendre mes pubs » (reprise manuelle, confirmatio
     renderWith(<ResumeBanner />, ws({}), 'en');
     expect((await screen.findByRole('heading', { level: 2 })).textContent).toBe('1 ad is paused');
     expect(screen.getByRole('button', { name: 'Resume my ads' })).toBeTruthy();
+  });
+});
+
+describe('contrôle indépendant S19b — textes exacts, monnaie du client, lots', () => {
+  const locked2 = ws({ status: 'locked', statusCause: 'subscription_ended' });
+
+  it('connexion Meta expirée : on ne promet PAS que Pubeka réessaie (il ne peut pas réussir)', async () => {
+    replies.push(() => ({
+      status: 200,
+      body: {
+        paused: 0,
+        failed: [{ campaign_id: 'c1', name: 'Promo', code: 'meta_token_expired' }],
+        rate_limited: false,
+        more: false,
+      },
+    }));
+    renderWith(<LockedScreen />, locked2);
+    fireEvent.click(screen.getByRole('button', { name: PAUSE_ALL }));
+    await waitFor(() => {
+      expect(screen.getByRole('status').textContent).toContain('Pubeka ne peut pas les arrêter');
+    });
+    expect(screen.getByRole('status').textContent).not.toContain('réessaie');
+  });
+
+  it('autre échec (Meta ne répond pas) : Pubeka réessaie, et le dit', async () => {
+    replies.push(() => ({
+      status: 200,
+      body: {
+        paused: 0,
+        failed: [{ campaign_id: 'c1', name: 'Promo', code: 'meta_error' }],
+        rate_limited: false,
+        more: false,
+      },
+    }));
+    renderWith(<LockedScreen />, locked2);
+    fireEvent.click(screen.getByRole('button', { name: PAUSE_ALL }));
+    await waitFor(() => {
+      expect(screen.getByRole('status').textContent).toContain('Pubeka réessaie automatiquement');
+    });
+  });
+
+  it('lot plein (more) : le dit et invite à recliquer', async () => {
+    replies.push(() => ({
+      status: 200,
+      body: { paused: 10, failed: [], rate_limited: false, more: true },
+    }));
+    renderWith(<LockedScreen />, locked2);
+    fireEvent.click(screen.getByRole('button', { name: PAUSE_ALL }));
+    await waitFor(() => {
+      expect(screen.getByRole('status').textContent).toContain('clique encore');
+    });
+  });
+
+  const money = (usd: number, local: number | null, currency: string | null) => ({
+    usd_cents: usd,
+    local_minor: local,
+    currency,
+  });
+  const campaign = (i: number, daily: ReturnType<typeof money>) => ({
+    id: `c${String(i)}`,
+    daily_budget_usd_cents: daily.usd_cents,
+    cost: { daily },
+  });
+
+  it('(c) budget en monnaie du client avec le TAUX RÉEL du serveur, dollars dessous, lien d’attribution sous le montant converti', async () => {
+    replies.push(() => ({
+      status: 200,
+      body: {
+        data: [campaign(1, money(500, 3000, 'XAF')), campaign(2, money(500, 3000, 'XAF'))],
+        next_cursor: null,
+      },
+    }));
+    renderWith(<ResumeBanner />, ws({}));
+    fireEvent.click(await screen.findByRole('button', { name: 'Reprendre mes pubs' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog.textContent).toContain('6');
+    expect(dialog.textContent).toContain('FCFA');
+    expect(
+      within(dialog).getByRole('link', { name: 'Taux fournis par Exchange Rate API' }),
+    ).toBeTruthy();
+  });
+
+  it('(c) pas de taux frais (le serveur ne convertit pas) : dollars seulement, aucun lien d’attribution', async () => {
+    replies.push(() => ({
+      status: 200,
+      body: { data: [campaign(1, money(500, null, null))], next_cursor: null },
+    }));
+    renderWith(<ResumeBanner />, ws({}));
+    fireEvent.click(await screen.findByRole('button', { name: 'Reprendre mes pubs' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog.textContent).toContain('$');
+    expect(dialog.textContent).not.toContain('FCFA');
+    expect(within(dialog).queryByRole('link')).toBeNull();
+  });
+
+  it('(c) monnaies différentes ou taux manquant sur UNE campagne : jamais une somme mélangée, dollars seulement', async () => {
+    replies.push(() => ({
+      status: 200,
+      body: {
+        data: [campaign(1, money(500, 3000, 'XAF')), campaign(2, money(500, null, null))],
+        next_cursor: null,
+      },
+    }));
+    renderWith(<ResumeBanner />, ws({}));
+    fireEvent.click(await screen.findByRole('button', { name: 'Reprendre mes pubs' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog.textContent).not.toContain('FCFA');
+  });
+
+  it('(d) plus de 100 campagnes : « au moins », jamais un total sous-estimé présenté comme exact ; lots de 10 expliqués', async () => {
+    replies.push(() => ({
+      status: 200,
+      body: {
+        data: Array.from({ length: 100 }, (_, i) => campaign(i, money(500, null, null))),
+        next_cursor: 'suite',
+      },
+    }));
+    renderWith(<ResumeBanner />, ws({}));
+    expect((await screen.findByRole('heading', { level: 2 })).textContent).toBe(
+      'Au moins 100 publicités sont en pause',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Reprendre mes pubs' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog.textContent).toContain('Au moins 100 publicités');
+    expect(dialog.textContent).toContain('au moins');
+    expect(dialog.textContent).toContain('par lots de 10');
+  });
+
+  it('(b) le texte du bandeau est exact pour une pause faite par le client lui-même : « depuis que ton accès est verrouillé »', async () => {
+    replies.push(() => ({
+      status: 200,
+      body: { data: [campaign(1, money(500, null, null))], next_cursor: null },
+    }));
+    renderWith(<ResumeBanner />, ws({}));
+    await screen.findByRole('heading', { level: 2 });
+    expect(document.body.textContent).toContain('en pause depuis que ton accès est verrouillé');
+    expect(document.body.textContent).not.toContain('Pubeka les a mises');
+  });
+
+  it('reprise par lots : « more » invite à recliquer', async () => {
+    replies.push(() => ({
+      status: 200,
+      body: {
+        data: Array.from({ length: 12 }, (_, i) => campaign(i, money(500, null, null))),
+        next_cursor: null,
+      },
+    }));
+    replies.push(() => ({
+      status: 200,
+      body: { resumed: 10, failed: [], remaining: 2, rate_limited: false, more: true },
+    }));
+    replies.push(() => ({
+      status: 200,
+      body: {
+        data: [campaign(1, money(500, null, null)), campaign(2, money(500, null, null))],
+        next_cursor: null,
+      },
+    }));
+    renderWith(<ResumeBanner />, ws({}));
+    fireEvent.click(await screen.findByRole('button', { name: 'Reprendre mes pubs' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog.textContent).toContain('par lots de 10');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Reprendre' }));
+    await waitFor(() => {
+      expect(screen.getByRole('status').textContent).toContain(
+        '10 publicités ont repris chez Meta.',
+      );
+    });
+    expect(screen.getByRole('status').textContent).toContain('clique encore');
   });
 });

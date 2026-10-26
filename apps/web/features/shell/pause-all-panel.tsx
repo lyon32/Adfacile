@@ -21,9 +21,14 @@ function Outcome({ result }: { result: PauseAllResult }): ReactNode {
   const reasons = [...new Set(result.failed.map((f) => reasonOf(f.code)))];
   if (result.failed.length === 0) {
     return (
-      <p>
-        {result.paused === 0 ? t('pause_all_none') : t('pause_all_done', { count: result.paused })}
-      </p>
+      <div className="flex flex-col gap-1">
+        <p>
+          {result.paused === 0
+            ? t('pause_all_none')
+            : t('pause_all_done', { count: result.paused })}
+        </p>
+        {result.more ? <p className="font-semibold">{t('pause_all_more')}</p> : null}
+      </div>
     );
   }
   return (
@@ -37,6 +42,11 @@ function Outcome({ result }: { result: PauseAllResult }): ReactNode {
           <li key={reason}>{t(`pause_reason_${reason}`)}</li>
         ))}
       </ul>
+      {/* « Pubeka réessaie » seulement quand un nouvel essai peut réussir : jamais pour une connexion Meta expirée. */}
+      {reasons.some((reason) => reason !== 'meta_connection') ? (
+        <p className="text-muted">{t('pause_retry_note')}</p>
+      ) : null}
+      {result.more ? <p className="font-semibold">{t('pause_all_more')}</p> : null}
     </div>
   );
 }

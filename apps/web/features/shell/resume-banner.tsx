@@ -11,20 +11,20 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@pubeka/ui';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useState, type ReactNode } from 'react';
 import { ApiError } from '../../lib/api';
+import { FxAttributionLink, moneyText, useUiLocale } from '../campaigns/money';
 import { useBillingPaused, useResumeAll } from './lock-api';
 import { useSession } from './session-context';
 
-function dollars(cents: number, locale: string): string {
-  return new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD' }).format(cents / 100);
-}
+/** Lots de la route (`ACTION_BATCH` côté serveur) : au-delà, la personne clique encore. */
+const BATCH = 10;
 
 export function ResumeBanner(): ReactNode {
   const t = useTranslations('shell.resume');
   const common = useTranslations('common');
-  const locale = useLocale();
+  const locale = useUiLocale();
   const session = useSession();
   const workspace = session.workspace;
   const [confirming, setConfirming] = useState(false);
@@ -35,6 +35,17 @@ export function ResumeBanner(): ReactNode {
   if (!eligible) return null;
 
   const count = paused.data?.count ?? 0;
+  const atLeast = paused.data?.atLeast ?? false;
+  // Budget quotidien en monnaie locale (taux réel de moins de 48 h, converti par le serveur) ; sinon dollars seuls.
+  const budget = moneyText(
+    {
+      usd_cents: paused.data?.dailyBudgetUsdCents ?? 0,
+      local_minor: paused.data?.dailyLocalMinor ?? null,
+      currency: paused.data?.currency ?? null,
+    },
+    locale,
+  );
+  const converted = (paused.data?.dailyLocalMinor ?? null) !== null;
   const done = resume.data;
   // Le bilan d'une reprise reste affiché même quand plus aucune publicité n'est en attente.
   if (count === 0 && done === undefined && !resume.isError && !resume.isPending) return null;
@@ -48,7 +59,9 @@ export function ResumeBanner(): ReactNode {
       <div className="max-w-[65ch]">
         {count > 0 ? (
           <>
-            <h2 className="text-title font-bold">{t('title', { count })}</h2>
+            <h2 className="text-title font-bold">
+              {atLeast ? t('title_more', { count }) : t('title', { count })}
+            </h2>
             <p className="text-meta text-muted mt-1">{t('body')}</p>
           </>
         ) : null}
@@ -57,6 +70,7 @@ export function ResumeBanner(): ReactNode {
           {done !== undefined && done.resumed > 0 ? (
             <p>{t('done', { count: done.resumed })}</p>
           ) : null}
+          {done?.more === true ? <p className="font-semibold">{t('more')}</p> : null}
           {done !== undefined && done.failed.length > 0 ? (
             <p className="text-error font-semibold">{t('failed', { count: done.failed.length })}</p>
           ) : null}
@@ -81,11 +95,14 @@ export function ResumeBanner(): ReactNode {
         <DialogContent closeLabel={common('close')}>
           <DialogTitle>{t('confirm_title')}</DialogTitle>
           <DialogDescription>
-            {t('confirm_body', {
-              count,
-              budget: dollars(paused.data?.dailyBudgetUsdCents ?? 0, locale),
-            })}
+            {atLeast
+              ? t('confirm_body_more', { count, budget })
+              : t('confirm_body', { count, budget })}
           </DialogDescription>
+          {count > BATCH || atLeast ? (
+            <p className="text-meta text-muted mt-2">{t('confirm_batches')}</p>
+          ) : null}
+          {converted ? <FxAttributionLink /> : null}
           <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <DialogClose asChild>
               <Button type="button" variant="quiet">
