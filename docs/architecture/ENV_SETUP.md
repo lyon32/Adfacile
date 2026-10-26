@@ -135,6 +135,8 @@ En local, les e-mails de **connexion** (lien magique, confirmation) ne passent p
 | `TRIGGER_ACCESS_TOKEN` | Déploiement des tâches depuis la CI (environnements GitHub, CI_CD §9.3) | CI | — | `tr_pat_…` |
 | `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `VERCEL_AUTOMATION_BYPASS_SECRET` | Déploiement Vercel et tests de fumée de la préproduction depuis la CI | CI | — | texte |
 
+**Tâches planifiées (déclarées dans le code, créées au déploiement)** : `campaign.sync-status` (15 min), `campaign.sync-stats` (1 h), `campaign.reconcile` (10 min), `campaign.explain-rejections` (5 min), `fx.refresh` (6 h) et, depuis S19b, `campaign.lock-pause` (10 min : pause automatique des publicités des espaces verrouillés ; dossier `jobs/src/schedules`). Aucune ne tourne tant que les variables d'environnement qu'elles lisent (`SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `TOKEN_ENCRYPTION_KEYS`, `TOKEN_ENCRYPTION_ACTIVE_KEY_ID`, `META_APP_ID`, `META_APP_SECRET`, …) ne sont pas posées sur Trigger.dev : démarche 👤 de la personne, staging puis production. `campaign.lock-pause` n'exige jamais `PUBEKA_META_PUBLISH` (la pause arrête la dépense).
+
 ### 1.10 Suivi
 
 | Variable | Rôle | Lue par | Local | Forme |
