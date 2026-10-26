@@ -307,7 +307,7 @@ describe('explication par le Modérateur (après un refus seulement)', () => {
     const rows = rejections(s);
     const first = rows[0];
     if (first === undefined) throw new Error('refus absent');
-    rows.unshift({ ...first, id: 'a0000000-0000-4000-8000-000000000001', workspace_id: OTHER_W });
+    rows.unshift({ ...first, id: '00000000-0000-4000-7000-000000000001', workspace_id: OTHER_W });
     s.w.db.rows('workspaces').push({ id: OTHER_W, owner_id: 'x', status: 'read_only' });
     installMemoryRpc(s);
     const deps = explainDeps();
@@ -459,6 +459,27 @@ describe('explication par le Modérateur (après un refus seulement)', () => {
     expect(starts).toEqual([0, 45 + stuck]);
     expect(report.explained).toBeGreaterThanOrEqual(1);
     expect(report.failed).toBeGreaterThanOrEqual(1);
+  });
+
+  it('TR-PAY-07 : la lecture des refus en attente est triée par created_at PUIS par id (ordre déterministe à date égale)', async () => {
+    const { s } = await refusedWorld();
+    const orders: string[] = [];
+    const original = s.w.db.from.bind(s.w.db);
+    Reflect.set(s.w.db, 'from', (name: string) => {
+      const query = original(name);
+      if (name === 'rejections') {
+        const order = query.order.bind(query);
+        query.order = (column?: string, options?: { ascending?: boolean }) => {
+          orders.push(String(column));
+          return order(column, options);
+        };
+      }
+      return query;
+    });
+    installMemoryRpc(s);
+    await explainPendingRejections(s.ctxAt(20), explainDeps());
+    const at = orders.indexOf('created_at');
+    expect(orders.slice(at, at + 2)).toEqual(['created_at', 'id']);
   });
 
   it('TR-AGT-01 : une sortie invalide est renvoyée une fois, puis l’échec est visible (2 appels au plus)', async () => {

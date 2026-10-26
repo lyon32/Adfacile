@@ -383,6 +383,8 @@ export async function explainPendingRejections(
         .select('id, workspace_id')
         .eq('explain_status', 'pending')
         .order('created_at', { ascending: true })
+        // Départage déterministe à `created_at` égal : la fenêtre de lecture par pages ne saute ni ne relit aucun refus.
+        .order('id', { ascending: true })
         .range(offset, offset + PAGE - 1),
     );
     for (const item of pending) {

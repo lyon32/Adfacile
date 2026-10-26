@@ -3,7 +3,7 @@
 // tout (`403 workspace_locked`), lecture des statistiques comprise ; il ne reste qu'un écran qui propose de s'abonner ou de renouveler.
 // Un seul message, une seule action, la cause exacte vient du serveur (`status_cause`). La page `/abonnement` (S24, S25) n'existe pas
 // encore : le bouton est affiché mais grisé, avec l'infobulle « Bientôt disponible ». Les campagnes déjà lancées continuent chez Meta
-// (EC-PAY-11). Couleurs : jetons existants.
+// jusqu'à la pause automatique de S19b (EC-PAY-11) ; la reprise est manuelle (« Reprendre mes pubs »). Les textes ne promettent rien de plus. Couleurs : jetons existants.
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { useSession } from './session-context';

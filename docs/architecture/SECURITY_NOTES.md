@@ -61,6 +61,7 @@ Un utilisateur peut être membre de **plusieurs** espaces, avec un rôle différ
 - **LIMITE CONNUE** : « plus rien n'est lisible » en verrouillé n'est vrai que **via l'API**. Les lectures directes avec un jeton (PostgREST, stockage ; politiques `is_member`) restent ouvertes en verrouillé : c'est voulu pour l'export et la suppression du compte (§2.2), mais ce n'est pas un blocage de lecture au niveau de la base.
 - **DÉPENDANCE S26 / S28** : `POST uploads` est `writable: true` et la politique de stockage `storage_upload_own_workspace` (0002) exige `private.ws_writable()`, vrai seulement en `active` (0021). Un client en grâce ou verrouillé ne peut donc ni envoyer une preuve de paiement (✱) ni une pièce jointe de support (✱). Avant S26 et S28, il faut une route/politique de dépôt dédiée aux ✱ (ex. `not_suspended` côté API et fonction `ws_can_upload_star` côté base, nouvelle migration). Aucune migration ajoutée en S19.
 - **Abonnement « le plus récent »** : l'accès se lit sur la ligne la plus récente (`created_at desc, id desc`, SQL et TypeScript). **S24/S25 : un renouvellement ne doit jamais créer une ligne plus récente dont `period_end` est plus ancienne** que celle qu'elle remplace (mettre à jour la ligne ou écrire une `period_end` supérieure).
+- **Limite connue du Modérateur** : la lecture des refus en attente est bornée (40 pages de 50, soit 2000 refus, triés par `created_at` puis `id`). Au-delà de 2000 refus `pending` anciens d'espaces non actifs, les espaces actifs ne sont pas atteints dans un passage (ils le seront quand ces refus seront expliqués au renouvellement ou purgés).
 - Boutons « Payer » et « Écrire au support » des bandeaux et de l'écran verrouillé : affichés mais grisés, infobulle « Bientôt disponible », tant que `/abonnement` (S24, S25) et `/support` (S28) n'existent pas. Page de paiement **dans Pubeka** : S25.
 
 ### 2.2 Compte et équipe
@@ -329,7 +330,7 @@ Avec la fausse Meta (`PUBEKA_FAKE_PROVIDERS` contenant `meta`, ou `all`) l'inter
 | EC-PAY-08 | Preuve de paiement envoyée pour un paiement déjà activé | Refus | `409 conflict` |
 | EC-PAY-09 | Période qui commence un 31 | Le mois suivant se termine le **dernier jour** du mois s'il n'a pas de 31 (ex. 31 janvier → 28 ou 29 février) 🔶 | — |
 | EC-PAY-10 | Affichage en XOF au lieu de XAF | Les deux francs CFA ont la même valeur (même parité fixe avec l'euro) : seule l'unité affichée change, aucun calcul | — |
-| EC-PAY-11 | Fin de l'essai avec une campagne en cours | Espace **verrouillé** (décision de la personne 26/10/2026) ; la campagne **continue chez Meta** (le client paie Meta directement) ; la pause reste possible | — |
+| EC-PAY-11 | Fin de l'essai avec une campagne en cours | Espace **verrouillé** (décision de la personne 26/10/2026) ; la campagne **continue chez Meta** (le client paie Meta directement) **jusqu'à la pause automatique de S19b**, puis la **reprise est manuelle** après abonnement ; la pause reste possible entre-temps | — |
 | EC-PAY-12 | Parrainage avec son propre code, ou filleul qui paie depuis le même numéro Mobile Money que le parrain | Pas de récompense 🔶 | — |
 | EC-PAY-13 | Deuxième essai gratuit sur un nouveau compte | Un essai par compte (✅ Q51) ; la détection des doublons entre comptes viendra plus tard | — |
 

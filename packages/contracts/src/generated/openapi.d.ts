@@ -1914,7 +1914,7 @@ export interface components {
             id: string;
             name: string;
             /**
-             * @description Accès réel de l'espace (SECURITY_NOTES §2.1, décision de la personne du 26/10/2026) : `grace` = formule payée échue depuis moins de 3 jours (lecture, achat de crédits et pause seulement) ; `locked` = essai terminé sans abonnement ou grâce écoulée (tout est refusé sauf s'abonner, payer, pause, support, compte : `403 workspace_locked`) ; `read_only` et `suspended` = décisions de l'administration
+             * @description Accès réel de l'espace (SECURITY_NOTES §2.1, décision de la personne du 26/10/2026) : `grace` = formule payée échue depuis moins de 3 jours (lecture, achat de crédits et pause seulement) ; `locked` = essai terminé sans abonnement ou grâce écoulée (tout est refusé sauf s'abonner, payer, pause, support, compte : `403 workspace_locked`) ; toutes les publicités du compte sont alors mises en pause automatiquement (session S19b, `pause-all`) et la reprise est manuelle ; `read_only` et `suspended` = décisions de l'administration
              * @enum {string}
              */
             status: "active" | "grace" | "locked" | "read_only" | "suspended";

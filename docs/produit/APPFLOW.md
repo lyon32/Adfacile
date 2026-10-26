@@ -559,7 +559,7 @@ Formule payée échue (ou annulée) : **lecture**, **achat de crédits** et **mi
 
 ### 19.2 Espace verrouillé (décision de la personne 26/10/2026)
 Essai terminé **sans abonnement** (tout de suite), ou grâce de 3 jours écoulée.
-- **Un seul écran** remplace l'application : « Ton essai est terminé » + **[Choisir une formule]**, ou « Ton abonnement est terminé » + **[Renouveler]** (boutons grisés, « Bientôt disponible », jusqu'à S24/S25). Les campagnes déjà lancées continuent chez Meta.
+- **Un seul écran** remplace l'application : « Ton essai est terminé » + **[Choisir une formule]**, ou « Ton abonnement est terminé » + **[Renouveler]** (boutons grisés, « Bientôt disponible », jusqu'à S24/S25). Les campagnes déjà lancées continuent chez Meta **jusqu'à la pause automatique** : À la fin de la grâce, ou à la fin d'un essai sans abonnement, **toutes les publicités du compte sont mises en pause automatiquement** (session **S19b**, prérequis **bloquant** de mise en production, avec la route `pause-all`) ; la **reprise est MANUELLE** après le renouvellement, avec « Reprendre mes pubs » (jamais automatique) ; en attendant, la personne peut les arrêter dans le Gestionnaire de publicités de Meta.
 - L'API refuse tout (`403 workspace_locked`), lecture des statistiques comprise, **sauf** : s'abonner ou renouveler (paiement, preuve de paiement), **mettre en pause** une campagne qui diffuse chez Meta, écrire au support, exporter et supprimer son compte, se déconnecter, lire l'état de l'espace.
 - À la fin de la grâce, Pubeka **met en pause toutes les publicités en cours** du compte jusqu'au renouvellement (session S19b : le bandeau de grâce l'annonce déjà).
 - Les **crédits achetés restent** et redeviennent utilisables au renouvellement.
