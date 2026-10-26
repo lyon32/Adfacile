@@ -25,6 +25,7 @@ import { HistoryTab } from './tab-history';
 import { ResultsTab } from './tab-results';
 import { SettingsTab } from './tab-settings';
 import { StatusPill, useStatusMessage } from './status';
+import { isWritableStatus } from '../shell/workspace-access';
 
 export interface CampaignPageProps {
   workspace: { id: string; role: 'owner' | 'editor' | 'viewer'; status: string };
@@ -77,7 +78,7 @@ export function CampaignPage({ workspace, campaignId }: CampaignPageProps): Reac
 
   const status = asStatus(campaign.status);
   const canAct = workspace.role === 'owner' || workspace.role === 'editor';
-  const writable = workspace.status === 'active';
+  const writable = isWritableStatus(workspace.status);
   const failure = control.isError ? controlFailureOf(control.error) : null;
   const published = status !== 'draft' && status !== 'publishing' && status !== 'error';
 

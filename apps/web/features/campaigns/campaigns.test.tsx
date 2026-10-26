@@ -563,6 +563,15 @@ describe('Page de campagne — en-tête et actions (APPFLOW §11.1-11.2)', () =>
     expect(screen.getByText(/lecture seule/)).toBeTruthy();
   });
 
+  it('TR-PAY-07 : pendant la grâce (3 jours après l’échéance) tout reste modifiable', async () => {
+    stubApi(ROUTES());
+    mount(page('owner', 'grace'));
+    await screen.findByRole('heading', { level: 1, name: 'Promo baskets' });
+    expect(isDisabled(screen.getByRole('button', { name: 'Mettre en pause' }))).toBe(false);
+    expect(isDisabled(screen.getByRole('button', { name: 'Dupliquer' }))).toBe(false);
+    expect(screen.queryByText(/lecture seule/)).toBeNull();
+  });
+
   it('campagne d’un autre espace ou inconnue : message clair, retour à la liste', async () => {
     stubApi(ROUTES({ 'GET /c': problem('not_found', 404) }));
     mount(page());
