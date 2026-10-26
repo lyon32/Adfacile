@@ -8,13 +8,18 @@ export function assertRole(ctx: MemberCtx, roles: readonly MemberRole[]): void {
   if (!roles.includes(ctx.workspace.role)) throw new AppError('role_insufficient');
 }
 
-/** Actions d'argent permises en lecture seule (paiement, preuve de paiement) : seule la suspension les refuse (§2.1, décision 4). */
-export function assertNotSuspended(ctx: MemberCtx): void {
-  if (ctx.workspace.access === 'suspended') throw new AppError('workspace_suspended');
+/**
+ * Espace modifiable : SEUL l'état « actif » écrit (décision de la personne du 26/10/2026). La grâce de 3 jours et la lecture seule
+ * de l'administration donnent `workspace_read_only`, le verrouillage `workspace_locked`, la suspension `workspace_suspended`.
+ */
+export function assertWritable(ctx: MemberCtx): void {
+  const access = ctx.workspace.access;
+  if (access === 'suspended') throw new AppError('workspace_suspended');
+  if (access === 'locked') throw new AppError('workspace_locked');
+  if (access !== 'active') throw new AppError('workspace_read_only');
 }
 
-/** Espace modifiable : ni suspendu, ni en lecture seule (la grâce reste modifiable, §2.1). */
-export function assertWritable(ctx: MemberCtx): void {
+/** Actions d'argent permises en grâce, lecture seule et verrouillé (paiement, preuve de paiement) : seule la suspension les refuse (§2.1, décision 4). */
+export function assertNotSuspended(ctx: MemberCtx): void {
   if (ctx.workspace.access === 'suspended') throw new AppError('workspace_suspended');
-  if (ctx.workspace.access === 'read_only') throw new AppError('workspace_read_only');
 }

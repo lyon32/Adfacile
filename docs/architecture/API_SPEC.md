@@ -144,8 +144,9 @@ Liste fermée : tout nouveau code doit être ajouté à l'énumération `ErrorCo
 | `plan_feature_locked` | 402 | Fonction absente de la formule (ex. Optimiseur en Starter) | Propose la formule supérieure |
 | `forbidden` | 403 | Origine refusée, action interdite | Message neutre |
 | `role_insufficient` | 403 | Rôle trop faible (ex. `viewer` qui publie) | « Demande au propriétaire » |
-| `workspace_read_only` | 403 | Abonnement expiré (après la grâce) | Bandeau « Renouvelle pour modifier » |
+| `workspace_read_only` | 403 | Pendant la grâce de 3 jours après la fin de période (lecture, achat de crédits et pause seulement), ou lecture seule décidée par l'administration | Bandeau « Renouvelle avant le JJ/MM » |
 | `workspace_suspended` | 403 | Espace suspendu par l'administration | Lien vers le support |
+| `workspace_locked` | 403 | Espace verrouillé : essai terminé sans abonnement, ou grâce de 3 jours écoulée (décision de la personne du 26/10/2026). Seuls s'abonner ou renouveler, mettre en pause, écrire au support et gérer son compte restent permis | Écran « Choisis une formule » ou « Renouvelle » |
 | `mfa_required` | 403 | Réauthentification récente nécessaire | Demande de se reconnecter |
 | `trial_already_used` | 403 | Essai déjà utilisé sur ce compte | Propose une formule |
 | `not_found` | 404 | Introuvable, autre espace, ou `/admin` sans droits | Page « introuvable » |

@@ -6,7 +6,7 @@ export type Locale = 'fr' | 'en';
 export type MemberRole = 'owner' | 'editor' | 'viewer';
 export type PlanCode = 'starter' | 'pro' | 'business';
 /** État d'accès de l'espace ; la règle complète (grâce, fin d'essai) arrive en S19. */
-export type WorkspaceAccess = 'active' | 'grace' | 'read_only' | 'suspended';
+export type WorkspaceAccess = 'active' | 'grace' | 'locked' | 'read_only' | 'suspended';
 
 export interface Ctx {
   requestId: string;

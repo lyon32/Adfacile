@@ -30,13 +30,13 @@ describe('loadWorkspaceAccess (TR-PAY-07)', () => {
     expect(await loadWorkspaceAccess(db.asDb(), svc.asService(), WS, NOW)).toBe('grace');
   });
 
-  it('abonnement échu depuis 5 jours : lecture seule, même si workspaces.status est encore active', async () => {
+  it('abonnement échu depuis 5 jours : VERROUILLÉ, même si workspaces.status est encore active', async () => {
     const { db, svc } = clients('active', {
       status: 'active',
       period_end: '2026-11-07T09:00:00Z',
       grace_until: null,
     });
-    expect(await loadWorkspaceAccess(db.asDb(), svc.asService(), WS, NOW)).toBe('read_only');
+    expect(await loadWorkspaceAccess(db.asDb(), svc.asService(), WS, NOW)).toBe('locked');
   });
 
   it('suspendu par l’administration : suspended', async () => {

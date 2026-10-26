@@ -31,7 +31,7 @@ describe('ErrorCode (TESTING §2, API_SPEC §4)', () => {
   });
 
   it('compte les 36 codes de la liste fermée', () => {
-    expect(ERROR_CODES).toHaveLength(36);
+    expect(ERROR_CODES).toHaveLength(37);
   });
 
   it("n'utilise que les statuts permis par API_SPEC §5", () => {

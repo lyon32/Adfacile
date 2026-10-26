@@ -212,7 +212,8 @@ export async function acceptInvitation(
   const access = await loadWorkspaceAccess(ctx.svc, ctx.svc, wsId, now);
   if (access === null) throw new AppError('gone');
   if (access === 'suspended') throw new AppError('workspace_suspended');
-  if (access === 'read_only') throw new AppError('workspace_read_only');
+  if (access === 'locked') throw new AppError('workspace_locked');
+  if (access !== 'active') throw new AppError('workspace_read_only');
 
   const already = unwrap<{ role: MemberRole } | null>(
     await ctx.svc

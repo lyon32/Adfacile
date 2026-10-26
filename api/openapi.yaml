@@ -1631,6 +1631,7 @@ components:
         - role_insufficient
         - workspace_read_only
         - workspace_suspended
+        - workspace_locked
         - not_found
         - conflict
         - idempotency_key_reused

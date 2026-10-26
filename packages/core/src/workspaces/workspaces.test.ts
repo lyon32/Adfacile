@@ -45,7 +45,7 @@ describe('assertRole / assertWritable (SECURITY_NOTES §2.7)', () => {
     }).not.toThrow();
   });
 
-  it('lecture seule et suspension refusées ; la grâce reste modifiable', () => {
+  it('décision du 26/10/2026 : seul « active » écrit ; grâce et lecture seule → workspace_read_only, verrouillé → workspace_locked, suspendu → workspace_suspended', () => {
     const f = new FakeClient();
     expect(() => {
       assertWritable(ctx(f, f, 'owner', 'read_only'));
@@ -55,14 +55,20 @@ describe('assertRole / assertWritable (SECURITY_NOTES §2.7)', () => {
     }).toThrow(expect.objectContaining({ code: 'workspace_suspended' }));
     expect(() => {
       assertWritable(ctx(f, f, 'owner', 'grace'));
+    }).toThrow(expect.objectContaining({ code: 'workspace_read_only' }));
+    expect(() => {
+      assertWritable(ctx(f, f, 'owner', 'locked'));
+    }).toThrow(expect.objectContaining({ code: 'workspace_locked' }));
+    expect(() => {
+      assertWritable(ctx(f, f, 'owner', 'active'));
     }).not.toThrow();
   });
 });
 
 describe('assertNotSuspended (paiement et preuve de paiement, décision 4)', () => {
-  it('permis en lecture seule et en grâce, refusé en suspension', () => {
+  it('permis en grâce, lecture seule et verrouillé (s’abonner, payer), refusé en suspension', () => {
     const f = new FakeClient();
-    for (const access of ['active', 'grace', 'read_only'] as const) {
+    for (const access of ['active', 'grace', 'read_only', 'locked'] as const) {
       expect(() => {
         assertNotSuspended(ctx(f, f, 'owner', access));
       }).not.toThrow();
@@ -261,7 +267,7 @@ describe('getWorkspace / renameWorkspace', () => {
 
   it.each([
     ['2026-10-11T09:00:00Z', 'grace'],
-    ['2026-10-09T09:00:00Z', 'read_only'],
+    ['2026-10-09T09:00:00Z', 'locked'],
     ['2026-11-01T09:00:00Z', 'active'],
   ] as const)(
     'TR-PAY-07 : abonnement finissant le %s → statut renvoyé « %s » (now = 12/10/2026)',

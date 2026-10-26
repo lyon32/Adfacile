@@ -364,6 +364,47 @@ describe('explication par le Modérateur (après un refus seulement)', () => {
     expect(reads.filter((t) => t === 'workspaces' && true).length).toBeLessThanOrEqual(3);
   });
 
+  it('décision S19 : le Modérateur n’explique rien dès que l’espace n’est plus actif (grâce de 3 jours, verrouillé), et reprend au renouvellement', async () => {
+    const day = 24 * 3600 * 1000;
+    const cases: [string, number][] = [
+      ['grâce', -1],
+      ['verrouillé', -5],
+    ];
+    for (const [label, endsInDays] of cases) {
+      const { s } = await refusedWorld();
+      const now = s.ctxAt(20).now();
+      Object.assign(s.w.db.rows('workspaces').find((row) => row.id === W) ?? {}, {
+        status: 'active',
+      });
+      const subscriptions = s.w.db.rows('subscriptions');
+      subscriptions.length = 0;
+      subscriptions.push({
+        workspace_id: W,
+        plan_code: 'pro',
+        status: 'active',
+        period_end: new Date(now.getTime() + endsInDays * day).toISOString(),
+        grace_until: null,
+        created_at: now.toISOString(),
+      });
+      const deps = explainDeps();
+      const report = await explainPendingRejections(s.ctxAt(20), deps);
+      expect(deps.gateway.calls, label).toHaveLength(0);
+      expect(report.skipped, label).toBe(1);
+      expect(rejections(s)[0], label).toMatchObject({ explain_status: 'pending' });
+      // Renouvellement : nouvelle période, le refus est expliqué.
+      subscriptions.push({
+        workspace_id: W,
+        plan_code: 'pro',
+        status: 'active',
+        period_end: new Date(now.getTime() + 30 * day).toISOString(),
+        grace_until: null,
+        created_at: new Date(now.getTime() + 1000).toISOString(),
+      });
+      installMemoryRpc(s);
+      expect((await explainPendingRejections(s.ctxAt(30), deps)).explained, label).toBe(1);
+    }
+  });
+
   it('TR-AGT-01 : une sortie invalide est renvoyée une fois, puis l’échec est visible (2 appels au plus)', async () => {
     const { s } = await refusedWorld();
     const gateway = new FakeAiGateway().enqueue({ text: 'pas du json' }).enqueue({ text: '{}' });

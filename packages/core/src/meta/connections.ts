@@ -110,11 +110,7 @@ export async function completeMetaConnect(
   }
   const membership = await callerMembership(ctx, payload.w);
   // Propriétaire et espace modifiable, comme pour `POST meta/connect` (lecture seule : refusé).
-  if (
-    membership?.role !== 'owner' ||
-    membership.access === 'suspended' ||
-    membership.access === 'read_only'
-  ) {
+  if (membership?.role !== 'owner' || membership.access !== 'active') {
     return { location: destination(back, 'forbidden') };
   }
   if (input.error !== undefined || input.code === undefined || input.code === '') {

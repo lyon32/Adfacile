@@ -358,7 +358,9 @@ export async function explainPendingRejections(
     const known = accessOf.get(workspaceId);
     if (known !== undefined) return known;
     const access = await loadWorkspaceAccess(ctx.svc, ctx.svc, workspaceId, ctx.now());
-    const allowed = access !== 'read_only' && access !== 'suspended';
+    // Décision S19 : le Modérateur (texte IA, coût de Pubeka, aucune action de la personne) n'explique plus rien dès que l'espace
+    // n'est plus actif : grâce, verrouillé, lecture seule de l'administration ou suspension.
+    const allowed = access === 'active';
     accessOf.set(workspaceId, allowed);
     return allowed;
   };
