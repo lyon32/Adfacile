@@ -1914,10 +1914,10 @@ export interface components {
             id: string;
             name: string;
             /**
-             * @description Accès réel de l'espace (SECURITY_NOTES §2.1) : `grace` = abonnement échu depuis moins de 3 jours (tout fonctionne, bandeau de rappel) ; `read_only` = après la grâce ou essai terminé ; `suspended` = décision de l'administration
+             * @description Accès réel de l'espace (SECURITY_NOTES §2.1, décision de la personne du 26/10/2026) : `grace` = formule payée échue depuis moins de 3 jours (lecture, achat de crédits et pause seulement) ; `locked` = essai terminé sans abonnement ou grâce écoulée (tout est refusé sauf s'abonner, payer, pause, support, compte : `403 workspace_locked`) ; `read_only` et `suspended` = décisions de l'administration
              * @enum {string}
              */
-            status: "active" | "grace" | "read_only" | "suspended";
+            status: "active" | "grace" | "locked" | "read_only" | "suspended";
             /**
              * @description Pourquoi l'espace n'est pas simplement actif : `grace`, `trial_ended` (essai terminé), `subscription_ended` (formule payée ou résiliée échue), `admin` (décision de l'administration) ; `null` quand l'espace est actif
              * @enum {string|null}

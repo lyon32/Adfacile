@@ -302,6 +302,66 @@ describe('TR-PAY-07 : tâches de fond', () => {
   });
 });
 
+// Espace VERROUILLÉ (essai terminé sans abonnement, ou grâce écoulée ; décision de la personne du 26/10/2026) : TOUT est refusé,
+// lecture des statistiques comprise (`403 workspace_locked`), sauf cette liste : s'abonner ou renouveler (checkout, preuve de
+// paiement), mettre en pause une campagne qui diffuse chez Meta, écrire au support, lire l'état de l'espace pour afficher l'écran de
+// verrouillage, et la gestion du compte (routes sans espace, hors de ce contrôle). Toute autre route d'espace doit refuser.
+const LOCKED_OK = new Set([
+  `GET ${WS}`,
+  `POST ${CAMPAIGN}/pause`,
+  `POST ${WS}/checkout`,
+  `POST ${WS}/payment-proofs`,
+  `POST ${WS}/tickets`,
+  `POST ${WS}/tickets/{ticketId}/messages`,
+  `POST ${WS}/assistant/messages`,
+  `POST ${WS}/generations/{generationId}/cancel`,
+]);
+
+describe('TR-PAY-07 : espace verrouillé', () => {
+  const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+
+  it('seules les routes de la liste restent permises quand l’espace est verrouillé ; toutes les autres routes d’espace refusent', () => {
+    const allowedFound: string[] = [];
+    const checked: string[] = [];
+    for (const file of routeFiles(API_DIR)) {
+      const rel = file
+        .slice(API_DIR.length)
+        .replace(/\\/g, '/')
+        .replace(/\/route\.ts$/, '');
+      if (!rel.startsWith('/workspaces/')) continue; // routes sans espace : /me, /notifications, /invitations… hors de ce contrôle
+      const contractPath = rel.replace(/\[(\w+)\]/g, '{$1}');
+      const src = readFileSync(file, 'utf8');
+      for (const method of METHODS) {
+        if (!exportsMethod(src, method)) continue;
+        const handler = handlerOf(src, method);
+        expect(handler?.kind, `${method} ${contractPath} : forme inconnue`).toBe('api');
+        if (handler?.kind !== 'api') continue;
+        const key = `${method} ${contractPath}`;
+        checked.push(key);
+        const code = stripComments(handler.source);
+        const allows =
+          /\ballowLocked:\s*true\b/.test(code) || writableOf(handler.source) === 'not_suspended';
+        expect(allows, `${key} : allowLocked ${LOCKED_OK.has(key) ? 'attendu' : 'interdit'}`).toBe(
+          LOCKED_OK.has(key),
+        );
+        if (allows) allowedFound.push(key);
+      }
+    }
+    expect(checked.length).toBeGreaterThan(30);
+    expect(allowedFound.sort()).toEqual(
+      [...LOCKED_OK].filter((key) => checked.includes(key)).sort(),
+    );
+  });
+
+  it('lecture : une route GET de statistiques refuse en verrouillé (elle ne déclare pas allowLocked)', () => {
+    const stats = readFileSync(
+      join(API_DIR, 'workspaces/[workspaceId]/campaigns/[campaignId]/stats/route.ts'),
+      'utf8',
+    );
+    expect(/allowLocked/.test(stripComments(stats))).toBe(false);
+  });
+});
+
 describe('lecteur de routes (durcissement)', () => {
   const route = (body: string) => `import { api } from 'x';\n${body}\n`;
 
