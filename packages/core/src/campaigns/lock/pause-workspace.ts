@@ -99,6 +99,15 @@ interface Candidate {
   status: string;
   ad_account_id: string | null;
   meta_campaign_id: string | null;
+  lock_pause_failures: number;
+  lock_pause_retry_at: string | null;
+}
+
+/** Recul des échecs de la tâche : 10 min, 20 min, 40 min… plafonné à 6 h (colonnes `lock_pause_*`, migration 0022). */
+export const BACKOFF_BASE_MS = 10 * 60_000;
+export const BACKOFF_MAX_MS = 6 * 3600_000;
+export function backoffDelayMs(failures: number): number {
+  return Math.min(BACKOFF_BASE_MS * 2 ** Math.min(Math.max(failures - 1, 0), 10), BACKOFF_MAX_MS);
 }
 
 function failure(candidate: Candidate, error: unknown): PauseFailure {
@@ -173,6 +182,9 @@ async function pauseOne(
 
   const patch = {
     paused_at: ctx.now().toISOString(),
+    // Pause réussie : plus de recul à garder.
+    lock_pause_failures: 0,
+    lock_pause_retry_at: null,
     ...(options.reason === null ? {} : { pause_reason: options.reason }),
   };
   const written = await applyTransition(ctx.svc, row, 'pause', patch);
@@ -212,18 +224,54 @@ async function pauseOne(
   return 'paused';
 }
 
-async function listCandidates(ctx: ServiceCtx, workspaceId: string): Promise<Candidate[]> {
+async function listCandidates(
+  ctx: ServiceCtx,
+  workspaceId: string,
+  respectBackoff: boolean,
+): Promise<Candidate[]> {
   const rows = unwrap<Candidate[]>(
     await ctx.svc
       .from('campaigns')
-      .select('id, name, status, ad_account_id, meta_campaign_id')
+      .select(
+        'id, name, status, ad_account_id, meta_campaign_id, lock_pause_failures, lock_pause_retry_at',
+      )
       .eq('workspace_id', workspaceId)
       .in('status', [...LIVE_STATUSES, 'publishing'])
       .order('created_at', { ascending: true })
       .limit(PAUSE_PER_WORKSPACE_MAX),
   );
   // Une campagne en erreur sans identifiant chez Meta n'existe pas chez Meta : rien à mettre en pause.
-  return rows.filter((row) => row.status !== 'error' || row.meta_campaign_id !== null);
+  const now = ctx.now().getTime();
+  return rows.filter(
+    (row) =>
+      (row.status !== 'error' || row.meta_campaign_id !== null) &&
+      // La tâche respecte le recul (échec permanent) ; un clic du client l'ignore : la pause est sans danger à rejouer.
+      !(
+        respectBackoff &&
+        row.lock_pause_retry_at !== null &&
+        Date.parse(row.lock_pause_retry_at) > now
+      ),
+  );
+}
+
+/** Note un échec de la tâche : compteur et prochaine tentative autorisée. Jamais bloquant pour la suite de la passe. */
+async function recordBackoff(
+  ctx: ServiceCtx,
+  workspaceId: string,
+  candidate: Candidate,
+): Promise<void> {
+  const failures = candidate.lock_pause_failures + 1;
+  const written = await ctx.svc
+    .from('campaigns')
+    .update({
+      lock_pause_failures: failures,
+      lock_pause_retry_at: new Date(ctx.now().getTime() + backoffDelayMs(failures)).toISOString(),
+    })
+    .eq('workspace_id', workspaceId)
+    .eq('id', candidate.id);
+  if (written.error !== null) {
+    logger.error('Recul non écrit', { campaignId: candidate.id, code: written.error.code });
+  }
 }
 
 export function emptyPauseReport(): PauseReport {
@@ -251,7 +299,7 @@ export async function pauseWorkspaceCampaigns(
 ): Promise<PauseReport> {
   const report = emptyPauseReport();
   const blockedAdAccounts = new Set<string>();
-  for (const candidate of await listCandidates(ctx, workspaceId)) {
+  for (const candidate of await listCandidates(ctx, workspaceId, options.source === 'poll')) {
     if (candidate.status === 'publishing') {
       report.failed.push({ campaign_id: candidate.id, name: candidate.name, code: 'conflict' });
       continue;
@@ -295,6 +343,7 @@ export async function pauseWorkspaceCampaigns(
       const entry = failure(candidate, error);
       report.failed.push(entry);
       logger.error('Pause impossible', { campaignId: candidate.id, code: entry.code, err: error });
+      if (options.source === 'poll') await recordBackoff(ctx, workspaceId, candidate);
     }
   }
   return report;

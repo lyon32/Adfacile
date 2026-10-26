@@ -108,6 +108,8 @@ export function lockWorld(): LockWorld {
       publish_attempt: 1,
       quota_state: 'counted',
       pause_reason: over.pauseReason ?? null,
+      lock_pause_failures: 0,
+      lock_pause_retry_at: null,
       ...(status === 'paused' ? { paused_at: NOW.toISOString() } : {}),
     });
     w.db.rows('ads').push({
@@ -152,8 +154,8 @@ export function lockWorld(): LockWorld {
             c.workspace_id === workspace.id &&
             ['in_review', 'active', 'error'].includes(String(c.status)) &&
             c.meta_campaign_id !== null &&
-            (c.lock_pause_retry_at == null ||
-              Date.parse(String(c.lock_pause_retry_at)) <= now.getTime()),
+            (typeof c.lock_pause_retry_at !== 'string' ||
+              Date.parse(c.lock_pause_retry_at) <= now.getTime()),
         );
       if (access === 'locked' && live) ids.add(String(workspace.id));
     }

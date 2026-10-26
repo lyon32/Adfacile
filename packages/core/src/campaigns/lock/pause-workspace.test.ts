@@ -20,6 +20,14 @@ const run = (
     ...over,
   });
 
+/** La passe suivante de la tâche, 10 minutes plus tard (le recul d'un échec est de 10 minutes). */
+const runLater = (t: LockWorld) =>
+  pauseWorkspaceCampaigns(t.serviceAt(new Date(NOW.getTime() + 10 * 60_000)), t.deps, W, {
+    source: 'poll',
+    reason: BILLING_LOCK_REASON,
+    budget: { left: 100 },
+  });
+
 const events = (t: LockWorld, id: string) =>
   t.w.db.rows('campaign_status_events').filter((e) => e.campaign_id === id);
 
@@ -139,7 +147,7 @@ describe('EC-META-07 — jamais « en pause » sans la confirmation de Meta', ()
     expect(rowOf(t.w.db, id)).toMatchObject({ status: 'active' });
     expect(rowOf(t.w.db, id).pause_reason ?? null).toBeNull();
     expect(events(t, id)).toHaveLength(0);
-    const second = await run(t);
+    const second = await runLater(t);
     expect(second.paused).toBe(1);
     expect(rowOf(t.w.db, id).status).toBe('paused');
   });
@@ -186,7 +194,7 @@ describe('EC-META-07 — jamais « en pause » sans la confirmation de Meta', ()
     const report = await run(t, {}, deps);
     expect(report.paused).toBe(0);
     expect(rowOf(t.w.db, id).status).toBe('active');
-    const next = await run(t);
+    const next = await runLater(t);
     expect(next.paused).toBe(1);
   });
 
