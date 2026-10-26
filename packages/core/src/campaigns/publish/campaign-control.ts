@@ -217,7 +217,11 @@ export async function resumeCampaign(
   await assertPageInPlan({ svc: ctx.svc, workspaceId: ctx.workspace.id }, inputs.page, row.page_id);
   const remote = await prepareRemote(ctx, row, deps);
   await resumeOnMeta(deps, remote);
-  const resumed = await applyTransition(ctx.svc, row, 'resume', { paused_at: null });
+  // `pause_reason: null` : la reprise efface le motif du verrouillage (le déclencheur de la base le ferait aussi : migration 0022).
+  const resumed = await applyTransition(ctx.svc, row, 'resume', {
+    paused_at: null,
+    pause_reason: null,
+  });
   if (resumed === null) return lost(ctx, campaignId, 'active');
   await recordStatusEvent(ctx.svc, resumed, 'active', 'user');
   return view(ctx, resumed);

@@ -21,6 +21,8 @@ export const LIST_MAX_LIMIT = 100;
 export interface ListCampaignsInput {
   status?: string | undefined;
   pageId?: string | undefined;
+  /** Seulement les campagnes mises en pause par le verrouillage (S19b : bouton « Reprendre mes pubs »). */
+  pauseReason?: string | undefined;
   limit?: number | undefined;
   cursor?: string | undefined;
 }
@@ -72,7 +74,11 @@ export async function listCampaigns(
   if (input.status !== undefined && !isCampaignStatus(input.status)) {
     throw badRequest('status', 'invalid_value', 'Statut inconnu');
   }
+  if (input.pauseReason !== undefined && input.pauseReason !== 'billing_lock') {
+    throw badRequest('pause_reason', 'invalid_value', 'Motif inconnu');
+  }
   const status = input.status;
+  const pauseReason = input.pauseReason;
   const pageId = input.pageId;
   const key = input.cursor === undefined ? null : decodeCursor(input.cursor, codec);
   const base = () => {
@@ -82,6 +88,7 @@ export async function listCampaigns(
       .eq('workspace_id', ctx.workspace.id);
     if (status !== undefined) query = query.eq('status', status);
     if (pageId !== undefined) query = query.eq('page_id', pageId);
+    if (pauseReason !== undefined) query = query.eq('pause_reason', pauseReason);
     return query;
   };
   const newest = (query: ReturnType<typeof base>, count: number) =>

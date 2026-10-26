@@ -550,6 +550,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workspaces/{workspaceId}/campaigns/pause-all": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description UUID v4 généré par le client pour cette intention. Même clé + même corps = même réponse ; même clé + corps différent = 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                workspaceId: components["parameters"]["WorkspaceId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mettre toutes les publicités de l'espace en pause (permis en grâce et verrouillé)
+         * @description Bouton « Mettre toutes mes publicités en pause » de l'écran verrouillé (S19b, TR-PAY-07, EC-PAY-11). Propriétaire ou éditeur.
+         *     Action ✱ comme la pause d'une campagne : permise en grâce, verrouillé, lecture seule et suspension (le client doit toujours pouvoir
+         *     arrêter de dépenser) ; jamais bloquée par l'interrupteur `PUBEKA_META_PUBLISH`. `Idempotency-Key` obligatoire (UUID v4) ; la même clé
+         *     rejoue la même réponse. Corps : objet vide `{}` (tout autre champ : `400 validation_failed`).
+         *
+         *     Pour CHAQUE campagne de l'espace en vérification, en diffusion ou en erreur (connue de Meta), Meta est appelé d'abord puis son statut
+         *     est RELU : la campagne n'est marquée `paused` dans Pubeka que si Meta confirme (EC-META-07). Une campagne dont la pause échoue (jeton
+         *     expiré, réseau) reste inchangée et figure dans `failed` avec le code de la liste fermée ; elle sera reprise au prochain clic ou à la
+         *     passe de la tâche `campaign.lock-pause`. Une campagne en cours de publication est signalée (`conflict`) sans être touchée. Les
+         *     campagnes des AUTRES espaces ne sont jamais lues. Rejouable sans double effet : une campagne déjà en pause n'est pas recomptée.
+         *     Quand l'espace est VERROUILLÉ, les campagnes mises en pause reçoivent le motif `billing_lock` (`Campaign.pause_reason`) : la reprise
+         *     manuelle `resume-all` pourra les retrouver ; en grâce ou actif, c'est une pause du client, sans motif.
+         */
+        post: operations["pauseAllCampaigns"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspaceId}/campaigns/resume-all": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description UUID v4 généré par le client pour cette intention. Même clé + même corps = même réponse ; même clé + corps différent = 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                workspaceId: components["parameters"]["WorkspaceId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reprendre les publicités mises en pause par le verrouillage
+         * @description Bouton « Reprendre mes pubs » (S19b), après le renouvellement. Propriétaire ou éditeur, espace ACTIF seulement (`403
+         *     workspace_locked`, `workspace_read_only`… sinon), `Idempotency-Key` obligatoire (UUID v4), corps `{}`. La reprise est TOUJOURS
+         *     manuelle : aucune tâche ne reprend une publicité d'office.
+         *
+         *     Ne reprend QUE les campagnes en pause avec le motif `billing_lock` : jamais une campagne que le client avait mise en pause lui-même.
+         *     Reprendre ACTIVE la campagne chez Meta et dépense de l'argent : même interrupteur de sécurité que la reprise d'une campagne
+         *     (`503 provider_unavailable`, `meta.reason: publish_disabled`, AVANT tout appel à Meta). Chaque campagne passe par la même logique que
+         *     `resume` (Meta d'abord, Page dans la formule, statut relu) : un échec sur l'une (`402 page_limit_reached`, `424 meta_token_expired`…)
+         *     figure dans `failed` sans empêcher les autres. `remaining` : campagnes encore en pause à cause du verrouillage après l'appel.
+         */
+        post: operations["resumeAllCampaigns"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspaces/{workspaceId}/campaigns/{campaignId}": {
         parameters: {
             query?: never;
@@ -2115,6 +2184,27 @@ export interface components {
         };
         /** @enum {string} */
         CampaignStatus: "draft" | "publishing" | "in_review" | "active" | "paused" | "rejected" | "ended" | "stopped" | "error";
+        PauseFailure: {
+            /** Format: uuid */
+            campaign_id: string;
+            name: string;
+            /** @description Code de la liste fermée d'API_SPEC §4 : `meta_token_expired`, `meta_not_connected`, `meta_error`, `rate_limited`, `conflict`… */
+            code: string;
+        };
+        PauseAllResult: {
+            /** @description Campagnes mises en pause chez Meta (confirmé) ET dans Pubeka par cet appel. */
+            paused: number;
+            failed: components["schemas"]["PauseFailure"][];
+            /** @description Meta a limité le débit : réessayer plus tard. */
+            rate_limited: boolean;
+        };
+        ResumeAllResult: {
+            resumed: number;
+            failed: components["schemas"]["PauseFailure"][];
+            /** @description Campagnes encore en pause à cause du verrouillage après cet appel. */
+            remaining: number;
+            rate_limited: boolean;
+        };
         Campaign: {
             /** Format: uuid */
             id: string;
@@ -2158,6 +2248,11 @@ export interface components {
              * @description Mise en pause par le client (« Mise en pause par toi le JJ/MM »)
              */
             paused_at?: string | null;
+            /**
+             * @description `billing_lock` : la campagne a été mise en pause à cause du verrouillage de l'espace (fin de grâce ou d'essai) ; seule la reprise manuelle `resume-all` la retrouve. `null` : aucune raison (pause du client).
+             * @enum {string|null}
+             */
+            pause_reason?: "billing_lock" | null;
             publication_error?: components["schemas"]["PublicationError"] | null;
             /** @description Augmente à chaque modification ; à renvoyer dans PATCH (SECURITY_NOTES EC-TEAM-08) */
             version: number;
@@ -3950,6 +4045,8 @@ export interface operations {
             query?: {
                 status?: components["schemas"]["CampaignStatus"];
                 page_id?: string;
+                /** @description Seulement les campagnes mises en pause par le verrouillage de l'espace (S19b) : sert au bouton « Reprendre mes pubs ». */
+                pause_reason?: "billing_lock";
                 limit?: components["parameters"]["Limit"];
                 cursor?: components["parameters"]["Cursor"];
             };
@@ -4013,6 +4110,75 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    pauseAllCampaigns: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description UUID v4 généré par le client pour cette intention. Même clé + même corps = même réponse ; même clé + corps différent = 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                workspaceId: components["parameters"]["WorkspaceId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Bilan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PauseAllResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    resumeAllCampaigns: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description UUID v4 généré par le client pour cette intention. Même clé + même corps = même réponse ; même clé + corps différent = 409. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                workspaceId: components["parameters"]["WorkspaceId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Bilan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumeAllResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     getCampaign: {

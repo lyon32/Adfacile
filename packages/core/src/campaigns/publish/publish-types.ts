@@ -39,7 +39,7 @@ export interface PublishCampaignDeps extends PublishHooks, MetaPublishGate {
 
 // Liste écrite en toutes lettres (et non composée) : le client Supabase en déduit le type des lignes à la compilation.
 export const PUBLISH_COLUMNS =
-  'id, workspace_id, page_id, ad_account_id, analysis_id, name, platform, objective, destination, optimization_goal, geo, targeting, daily_budget_usd_cents, fx_rate_xaf, start_date, end_date, copy, tracking, visual_brief, ab_test, status, published_at, editable, chosen_proposal_version, version, paused_at, publish_error, meta_campaign_id, meta_adset_id, publish_ref, publish_attempt, publish_idempotency_key, publish_phase, publish_started_at, quota_state';
+  'id, workspace_id, page_id, ad_account_id, analysis_id, name, platform, objective, destination, optimization_goal, geo, targeting, daily_budget_usd_cents, fx_rate_xaf, start_date, end_date, copy, tracking, visual_brief, ab_test, status, published_at, editable, chosen_proposal_version, version, paused_at, pause_reason, publish_error, meta_campaign_id, meta_adset_id, publish_ref, publish_attempt, publish_idempotency_key, publish_phase, publish_started_at, quota_state';
 
 export type PublishPhase = 'none' | 'creating' | 'created' | 'activating' | 'done';
 export type QuotaState = 'none' | 'held' | 'counted' | 'released';

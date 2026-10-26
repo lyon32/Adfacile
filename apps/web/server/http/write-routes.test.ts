@@ -62,6 +62,9 @@ const CLASSES: Record<string, Kind> = {
   [`POST ${CAMPAIGN}/proposals/{version}/choose`]: 'writable',
   [`POST ${CAMPAIGN}/publish`]: 'writable',
   [`POST ${CAMPAIGN}/pause`]: 'star',
+  // S19b : pause de toutes les publicités (écran verrouillé) = la même action ✱ ; la reprise de celles du verrouillage ACTIVE chez Meta : espace actif.
+  [`POST ${WS}/campaigns/pause-all`]: 'star',
+  [`POST ${WS}/campaigns/resume-all`]: 'writable',
   [`POST ${CAMPAIGN}/resume`]: 'writable',
   [`POST ${CAMPAIGN}/relaunch`]: 'writable',
   [`POST ${CAMPAIGN}/stats/refresh`]: 'read',
@@ -104,6 +107,7 @@ const STAR_ACTIONS = [
   'POST /notifications/read',
   `POST ${WS}/assistant/messages`,
   `POST ${CAMPAIGN}/pause`,
+  `POST ${WS}/campaigns/pause-all`,
   `POST ${WS}/tickets`,
   `POST ${WS}/tickets/{ticketId}/messages`,
   'PUT /notifications/preferences',

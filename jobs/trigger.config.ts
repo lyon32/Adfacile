@@ -17,7 +17,8 @@ const project = resolveProjectRef(process.env.TRIGGER_PROJECT_REF);
 
 export default defineConfig({
   project,
-  dirs: ['./src/tasks'],
+  // `schedules/` : les tâches planifiées de la facturation (S19b). `tasks/` : toutes les autres.
+  dirs: ['./src/tasks', './src/schedules'],
   runtime: 'node-24',
   // Une tâche de fond ne dépasse pas 15 minutes (secondes) ; les générations vidéo longues passent par webhook.
   maxDuration: 900,
