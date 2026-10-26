@@ -4,6 +4,7 @@ export {
   GRACE_DAYS,
   effectiveAccess,
   graceEndsAt,
+  lockAt,
   workspaceAccess,
   type AccessCause,
   type AccessSubscription,
