@@ -25,7 +25,7 @@
 16. Notifications
 17. Aide et support
 18. Parrainage
-19. Fin d'abonnement, lecture seule, suppression du compte
+19. Fin d'abonnement, grâce, espace verrouillé, suppression du compte
 20. Administration
 21. États transverses (chargement, vide, erreurs)
 22. Différences téléphone / ordinateur
@@ -250,7 +250,7 @@ Liste verte / rouge, chaque ligne rouge a **[Comment faire]** qui ouvre le guide
 | Meta non connecté | Carte « Connecte ton compte Meta pour publier » **[Connecter]** |
 | Essai en cours | Bandeau « Essai : X jours restants · 1 campagne · 3 visuels » **[Choisir une formule]** |
 | Grâce (paiement en retard) | Bandeau orange « Ton abonnement a expiré le JJ/MM. Il te reste X jours pour renouveler. **[Payer]** » |
-| Lecture seule | Bandeau rouge (voir §19) |
+| Lecture seule (administration) ou grâce | Bandeau (voir §19) |
 | Maintenance | Page dédiée avec le message de l'administrateur |
 
 ---
@@ -264,7 +264,7 @@ Assistant en **une colonne** (max 640 px), avec aperçu à droite sur grand écr
 |---|---|
 | Meta non connecté | « Connecte ton compte Meta pour publier. » **[Connecter]** (on peut quand même préparer la campagne : **[Préparer sans publier]**) |
 | Quota de campagnes atteint | « Tu as publié tes X campagnes de ce mois. » **[Passer à Pro]** · **[Préparer quand même]** (publication bloquée) |
-| Lecture seule | Écran bloqué (voir §19) |
+| Verrouillé | Écran bloqué unique (voir §19.2) |
 
 ### 8.1 Étape « Sources »
 ```
