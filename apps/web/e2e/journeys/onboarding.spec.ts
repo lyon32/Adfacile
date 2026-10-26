@@ -1,9 +1,8 @@
 // Première configuration (APPFLOW §5) : un compte sans pays est mené à /bienvenue/pays, passe les
 // cinq étapes, puis arrive au tableau de bord ; pays, ville, monnaie, fuseau et langue sont
 // enregistrés (TR-PLT-04).
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { createConfirmedUser, overflowsHorizontally, signIn } from './support';
+import { createConfirmedUser, overflowsHorizontally, signIn, axeAnalyze } from './support';
 
 test('de la première configuration au tableau de bord', async ({ page }, info) => {
   const user = await createConfirmedUser('Mariam', { onboarded: false });
@@ -16,7 +15,7 @@ test('de la première configuration au tableau de bord', async ({ page }, info) 
   await page.screenshot({
     path: `../../test-results/captures/bienvenue-pays-${info.project.name}.png`,
   });
-  expect((await new AxeBuilder({ page }).analyze()).violations.map((v) => v.id)).toEqual([]);
+  expect((await axeAnalyze(page)).violations.map((v) => v.id)).toEqual([]);
 
   // Sans pays, on ne continue pas.
   await page.getByRole('button', { name: 'Continuer' }).click();

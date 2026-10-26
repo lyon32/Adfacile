@@ -1,6 +1,5 @@
 // Réglages (APPFLOW §14) : profil, équipe, notifications. Chaque écran est enregistré, relu après
 // rechargement, accessible (axe) et sans défilement horizontal (TR-PLT-01), en clair et en sombre.
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import {
   createConfirmedUser,
@@ -8,6 +7,7 @@ import {
   patchMe,
   signIn,
   type TestUser,
+  axeAnalyze,
 } from './support';
 
 let user: TestUser;
@@ -24,7 +24,7 @@ test.beforeEach(async ({ page }) => {
 async function checkScreen(page: Page, name: string, project: string) {
   expect(await overflowsHorizontally(page)).toBe(false);
   await page.screenshot({ path: `../../test-results/captures/${name}-${project}.png` });
-  const results = await new AxeBuilder({ page }).analyze();
+  const results = await axeAnalyze(page);
   expect(results.violations.map((v) => `${v.id} : ${v.nodes[0]?.target.join(' ') ?? ''}`)).toEqual(
     [],
   );

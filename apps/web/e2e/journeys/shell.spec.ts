@@ -1,6 +1,5 @@
 // Coque de l'application : sans défilement horizontal (TR-PLT-01), accessible (axe), clair et
 // sombre, et bascule de langue sans texte français qui reste (TR-PLT-03).
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import {
   createConfirmedUser,
@@ -8,6 +7,7 @@ import {
   patchMe,
   signIn,
   type TestUser,
+  axeAnalyze,
 } from './support';
 
 let user: TestUser;
@@ -29,7 +29,7 @@ for (const theme of ['light', 'dark'] as const) {
     await page.screenshot({
       path: `../../test-results/captures/accueil-${info.project.name}-${theme}.png`,
     });
-    const results = await new AxeBuilder({ page }).analyze();
+    const results = await axeAnalyze(page);
     expect(
       results.violations.map((v) => `${v.id} : ${v.nodes[0]?.target.join(' ') ?? ''}`),
     ).toEqual([]);
@@ -48,7 +48,7 @@ test('le panneau du compte ne déborde pas et passe axe', async ({ page }, info)
   await expect(page.getByRole('dialog')).toBeVisible();
   expect(await overflowsHorizontally(page)).toBe(false);
   await page.screenshot({ path: `../../test-results/captures/compte-${info.project.name}.png` });
-  const results = await new AxeBuilder({ page }).analyze();
+  const results = await axeAnalyze(page);
   expect(results.violations.map((v) => v.id)).toEqual([]);
 });
 

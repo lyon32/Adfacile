@@ -928,6 +928,21 @@ paths:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/WorkspaceOverview' } } } }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+  /workspaces/{workspaceId}/campaigns/{campaignId}/rejections:
+    parameters:
+      - { $ref: '#/components/parameters/WorkspaceId' }
+      - { $ref: '#/components/parameters/CampaignId' }
+    get:
+      tags: [ Campagnes ]
+      operationId: listRejections
+      summary: Refus de Meta de la campagne (le plus récent d'abord)
+      description: |
+        Tout membre. Un refus naît quand Meta refuse la publicité (ou l'une des deux d'un test A/B) ; son rapport est rédigé par le
+        Modérateur, une seule fois. `status` dit où en est cette explication.
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/RejectionList' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /workspaces/{workspaceId}/campaigns/{campaignId}/rejections/{rejectionId}:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -937,9 +952,11 @@ paths:
       tags: [ Campagnes ]
       operationId: getRejection
       summary: Rapport du Modérateur sur un refus
+      description: Tout membre. Un refus d'un autre espace ou d'une autre campagne est introuvable (404).
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Rejection' } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /workspaces/{workspaceId}/campaigns/{campaignId}/rejections/{rejectionId}/apply-fix:
     parameters:
       - { $ref: '#/components/parameters/WorkspaceId' }
@@ -950,10 +967,22 @@ paths:
       tags: [ Campagnes ]
       operationId: applyRejectionFix
       summary: Appliquer la correction et republier (sans quota)
+      description: |
+        Propriétaire ou éditeur, espace modifiable, `Idempotency-Key` obligatoire. Remplace le texte refusé par la correction du
+        Modérateur puis republie la MÊME campagne : aucun quota de campagnes n'est décompté (EC-CAMP-07). Comme toute publication, la
+        route ne parle pas à Meta : elle passe la campagne en « publication » et lance la tâche `campaign.publish` ; elle est bloquée
+        (503 `provider_unavailable`, `meta.reason = publish_disabled`) tant que la publication réelle n'est pas activée.
+        409 : refus déjà corrigé, rapport pas encore prêt (`rejection_not_explained`), produit interdit ou correction non applicable en un
+        clic (visuel, page de destination : `fix_not_applicable`), refus partiel d'un test A/B dont l'autre publicité continue
+        (`partial_rejection`), campagne qui n'est pas refusée (`invalid_transition`), campagne que Meta ne montre plus refusée (`no_longer_rejected` : le statut est relu chez Meta avant toute écriture ; 502 `meta_error` si la lecture échoue), clé d'idempotence déjà utilisée par une autre publication (`idempotency_key_reused`). Si l'ancienne campagne est encore chez Meta au moment de la tâche, rien n'est créé : la campagne passe en `error` avec `publication_error.reason` = `previous_campaign_still_live`, `previous_campaign_unreadable` ou `previous_campaign_not_removed`, le refus reste ouvert et peut être corrigé de nouveau.
       responses:
         '202': { description: Republiée, content: { application/json: { schema: { $ref: '#/components/schemas/Campaign' } } } }
-        '409': { $ref: '#/components/responses/Conflict' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
   # ------------------------------------------------------------------ Médias
   /media-models:
@@ -2274,13 +2303,52 @@ components:
         fx: { $ref: '#/components/schemas/StatsFx' }
     Rejection:
       type: object
-      required: [ id, report ]
+      description: Un refus de Meta et le rapport du Modérateur (docs/agents/04).
+      required: [ id, campaign_id, ad_id, variant, status, partial, fixed, meta_reason, report, can_fix, fix_applicable, appeal_recommended, created_at ]
       properties:
         id: { type: string, format: uuid }
-        meta_reason: { type: string }
-        report: { type: object, description: Sortie du Modérateur (docs/agents/04) }
-        can_fix: { type: boolean }
+        campaign_id: { type: string, format: uuid }
+        ad_id: { type: [ string, 'null' ], format: uuid, description: "Publicité refusée ; null quand la campagne entière est refusée" }
+        variant: { type: [ string, 'null' ], enum: [ A, B, null ] }
+        status: { type: string, enum: [ pending, running, ready, failed ], description: "État de l'explication par le Modérateur" }
+        partial: { type: boolean, description: "Une seule des deux publicités d'un test A/B est refusée : la campagne continue avec l'autre (EC-META-06)" }
+        fixed: { type: boolean, description: "Corrigé et republié" }
+        meta_reason: { type: [ string, 'null' ], description: "Motif officiel de Meta, tel que lu chez Meta" }
+        report: { oneOf: [ { $ref: '#/components/schemas/RejectionReport' }, { type: 'null' } ] }
+        can_fix: { type: boolean, description: "Faux tant que le rapport n'est pas prêt, et pour un produit interdit par Meta" }
+        fix_applicable: { type: boolean, description: "Le bouton « Appliquer la correction et republier » est proposé (correction de texte, campagne refusée en entier, rapport prêt, pas déjà corrigé)" }
         appeal_recommended: { type: boolean }
+        created_at: { type: string, format: date-time }
+    RejectionReport:
+      type: object
+      description: Sortie du Modérateur, validée (docs/agents/04 §6). La mémoire des refus (motif anonymisé) n'est pas exposée.
+      required: [ rejection_category, culprit, cause_certainty, can_fix, fix, appeal_recommended, report ]
+      properties:
+        rejection_category: { type: string, enum: [ personal_attributes, misleading_claims, before_after, prohibited_product, restricted_product, sensational_content, adult_content, landing_page, intellectual_property, text_quality, other ] }
+        culprit:
+          type: object
+          required: [ where, excerpt ]
+          properties:
+            where: { type: string, enum: [ primary_text, headline, description, visual, landing_page, product, unknown ] }
+            excerpt: { type: [ string, 'null' ] }
+        cause_certainty: { type: string, enum: [ high, medium, low ] }
+        can_fix: { type: boolean }
+        fix:
+          oneOf:
+            - type: object
+              required: [ field, original, suggested ]
+              properties:
+                field: { type: string }
+                original: { type: [ string, 'null' ] }
+                suggested: { type: string }
+            - type: 'null'
+        appeal_recommended: { type: boolean }
+        report: { type: string, description: "3 à 5 phrases, langue de l'utilisateur" }
+    RejectionList:
+      type: object
+      required: [ data ]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Rejection' } }
 
     # ---------- Médias
     Capability:

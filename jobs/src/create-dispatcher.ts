@@ -8,6 +8,7 @@ import {
   type JobDispatcher,
 } from './dispatcher';
 import { analysisRunHandler } from './handlers/analysis-run';
+import { campaignExplainHandler } from './handlers/campaign-explain';
 import { campaignPublishHandler } from './handlers/campaign-publish';
 import { campaignReconcileHandler } from './handlers/campaign-reconcile';
 import { campaignSyncStatsHandler, campaignSyncStatusHandler } from './handlers/campaign-sync';
@@ -21,6 +22,7 @@ export const inlineHandlers = [
   registerHandler(fxRefreshHandler),
   registerHandler(campaignPublishHandler),
   registerHandler(campaignReconcileHandler),
+  registerHandler(campaignExplainHandler),
   registerHandler(campaignSyncStatusHandler),
   registerHandler(campaignSyncStatsHandler),
 ];

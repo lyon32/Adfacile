@@ -1714,6 +1714,7 @@ RLS : activée · 1 politique(s)
 | created_at | timestamp with time zone | non | now() |
 | explain_status | text | non | 'pending'::text |
 | explain_error | text | oui |  |
+| explain_started_at | timestamp with time zone | oui |  |
 
 | Contrainte | Définition |
 |---|---|
@@ -1735,6 +1736,7 @@ RLS : activée · 1 politique(s)
 | rejections_campaign_idx | `public.rejections USING btree (campaign_id, created_at DESC)` |
 | rejections_open_per_ad_idx | `UNIQUE public.rejections USING btree (campaign_id, COALESCE(ad_id, '00000000-0000-0000-0000-000000000000'::uuid)) WHERE (NOT fixed_and_republished)` |
 | rejections_pending_idx | `public.rejections USING btree (created_at) WHERE (explain_status = 'pending'::text)` |
+| rejections_running_idx | `public.rejections USING btree (explain_started_at) WHERE (explain_status = 'running'::text)` |
 
 RLS : activée · 1 politique(s)
 

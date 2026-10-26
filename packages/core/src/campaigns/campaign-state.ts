@@ -54,7 +54,15 @@ export const CAMPAIGN_TRANSITIONS = {
   rejected: { publish: 'publishing', stop: 'stopped' },
   ended: {},
   stopped: { recover: 'active' },
-  error: { publish: 'publishing', reset: 'draft' },
+  // Contrôle S18 (migration 0020) : Meta a reçu la campagne alors que Pubeka l'a marquée en erreur (republication refusée parce que
+  // l'ancienne campagne vivait encore, activation incertaine…) : son vrai statut remonte, le client peut la mettre en pause.
+  error: {
+    publish: 'publishing',
+    reset: 'draft',
+    sent: 'in_review',
+    approve: 'active',
+    pause: 'paused',
+  },
 } as const satisfies TransitionTable;
 
 export interface InvalidTransition {

@@ -19,6 +19,9 @@ import { loadPublishInputs } from '../publish/load-inputs';
 import { loadPublishRow } from '../publish/publish-row';
 import type { PublishRow } from '../publish/publish-types';
 import { loadRefs } from '../publish/remote-refs';
+import { recordRejection } from '../rejections/record-rejection';
+import type { ReadBudget } from '../rejections/read-budget';
+import { loadCampaignAds, reviewAds } from '../rejections/review-ads';
 import { applyTransition, recordStatusEvent } from '../publish/transitions';
 import { metaRateLimitScope } from './meta-limits';
 import { decideStatusEvent, type StatusDecisionReason } from './status-decision';
@@ -29,10 +32,21 @@ const logger = createLogger({ base: { module: 'sync-statuses' } });
 /** Campagnes examinées au plus par passage (une passe toutes les 15 minutes). */
 export const STATUS_SYNC_BATCH = 200;
 /** Un signal de Meta plus vieux que cela est ignoré par la passe « webhook » (la passe de 15 minutes le rattrape). */
+/**
+ * Lectures de refus (`fetchRejection`) au plus par passe, en plus du statut : une passe de 200 campagnes ne doit pas doubler les
+ * appels vers Meta (limite de débit, EC-META-10). Le reste est lu à la passe suivante ; une limite de Meta arrête la passe.
+ */
+export const REJECTION_READS_PER_PASS = 40;
 export const WEBHOOK_SIGNAL_WINDOW_MS = 24 * 60 * 60_000;
 
 /** Statuts qui existent chez Meta et qu'on suit. `stopped` et `rejected` n'avancent que par une action du client. */
 const WATCHED: readonly CampaignStatus[] = ['in_review', 'active', 'paused'];
+/** Une campagne en erreur n'est suivie que si elle a des identifiants chez Meta (filtre de la requête) : elle peut y vivre et dépenser. */
+/**
+ * Statuts examinés par la passe. `rejected` y figure pour UNE raison (S18) : s'assurer que le refus a son rapport (si
+ * l'enregistrement du refus avait échoué, la passe suivante le rattrape). Sans refus manquant, aucun appel à Meta n'est fait.
+ */
+const EXAMINED: readonly CampaignStatus[] = [...WATCHED, 'rejected', 'error'];
 
 export interface StatusSyncReport {
   scanned: number;
@@ -41,6 +55,8 @@ export interface StatusSyncReport {
   journaled: number;
   skipped: number;
   errors: number;
+  /** Refus de Meta enregistrés pendant la passe (le Modérateur les explique ensuite, une fois chacun). */
+  rejections: number;
   /** Vrai si Meta a limité le débit pendant la passe : les campagnes restantes gardent leur dernière valeur. */
   rateLimited: boolean;
 }
@@ -55,6 +71,7 @@ function emptyReport(): StatusSyncReport {
     journaled: 0,
     skipped: 0,
     errors: 0,
+    rejections: 0,
     rateLimited: false,
   };
 }
@@ -102,7 +119,7 @@ async function selectCandidates(
     ctx.svc
       .from('campaigns')
       .select('id, workspace_id, status_synced_at, meta_campaign_id, ad_account_id')
-      .in('status', [...WATCHED])
+      .in('status', [...EXAMINED])
       .not('meta_campaign_id', 'is', null)
       .order('status_synced_at', { ascending: true, nullsFirst: true });
   const clean = (rows: Candidate[]): Candidate[] =>
@@ -180,9 +197,11 @@ async function syncOne(
   deps: SyncDeps,
   candidate: Candidate,
   tokens: Map<string, Promise<PlatformToken>>,
+  report: StatusSyncReport,
+  budget: ReadBudget,
 ): Promise<Outcome> {
   const row = await loadPublishRow(ctx.svc, candidate.workspace_id, candidate.id);
-  if (!WATCHED.includes(row.status)) return 'skipped';
+  if (!EXAMINED.includes(row.status)) return 'skipped';
   const inputs = await loadPublishInputs(ctx.svc, row.workspace_id, row, ctx.now());
   if (inputs.adAccount === null || inputs.connection === null) return 'skipped';
   if (inputs.connection.status === 'expired' || inputs.connection.status === 'revoked') {
@@ -198,7 +217,41 @@ async function syncOne(
     token = deps.loadToken(ctx.svc, row.workspace_id, connection);
     tokens.set(connectionId, token);
   }
-  const remote = await deps.connector.getStatus(await token, refs);
+  const accessToken = await token;
+
+  // Campagne déjà refusée : on ne lit pas son statut (il ne changera que par une action du client) ; on s'assure seulement que
+  // chaque publicité refusée a son refus enregistré, pour que le Modérateur l'explique (S18).
+  if (row.status === 'rejected') {
+    const caught = await catchUpRejections(ctx, deps, row, accessToken, refs, report, budget);
+    // Budget épuisé : on ne marque pas la campagne comme synchronisée, elle reste en tête de la prochaine passe.
+    if (!caught.exhausted) await markSynced(ctx, row);
+    return caught.found ? 'changed' : 'skipped';
+  }
+
+  let remote = await deps.connector.getStatus(accessToken, refs);
+
+  // Test A/B (EC-META-06) : Meta donne le statut d'UNE publicité. Avec plusieurs publicités, on lit chacune ; la campagne n'est
+  // refusée que si TOUTES le sont. Une seule refusée : la campagne continue avec l'autre, et la publicité refusée a son rapport.
+  const review = await reviewAds(ctx.svc, deps.connector, {
+    workspaceId: row.workspace_id,
+    campaignId: row.id,
+    token: accessToken,
+    refs,
+    budget,
+  });
+  report.rejections += review.recorded.length;
+  // Jamais « refusée » sur une lecture incomplète (budget épuisé) : on attend la passe suivante.
+  if (
+    review.multi &&
+    remote.status === 'rejected' &&
+    (review.incomplete || review.rejected < review.total)
+  ) {
+    const status =
+      row.status === 'in_review' || row.status === 'active' || row.status === 'paused'
+        ? row.status
+        : remote.status;
+    remote = { status, rawStatus: remote.rawStatus };
+  }
 
   const today = ctx.now().toISOString().slice(0, 10);
   const decision = decideStatusEvent({
@@ -233,20 +286,66 @@ async function syncOne(
     reason: decision.reason,
     from: row.status,
   });
+  if (decision.event === 'refuse' && !review.multi) {
+    // Refus de la campagne (une seule publicité) : on lit le motif chez Meta et on l'enregistre.
+    const ad = (await loadCampaignAds(ctx.svc, written.workspace_id, written.id))[0] ?? null;
+    const recorded = await recordRejection(ctx.svc, deps.connector, {
+      workspaceId: written.workspace_id,
+      campaignId: written.id,
+      token: accessToken,
+      refs,
+      ad,
+      budget,
+    });
+    // Budget épuisé : le refus sera retrouvé à la passe suivante (la campagne refusée est examinée).
+    if (typeof recorded === 'object' && recorded?.created === true) report.rejections += 1;
+  }
   await markSynced(ctx, written);
   return 'changed';
+}
+
+/** Retrouve les refus manquants d'une campagne déjà refusée. Vrai si au moins un refus a été enregistré. */
+async function catchUpRejections(
+  ctx: ServiceCtx,
+  deps: SyncDeps,
+  row: PublishRow,
+  token: PlatformToken,
+  refs: NonNullable<Awaited<ReturnType<typeof loadRefs>>>,
+  report: StatusSyncReport,
+  budget: ReadBudget,
+): Promise<{ found: boolean; exhausted: boolean }> {
+  const ads = await loadCampaignAds(ctx.svc, row.workspace_id, row.id);
+  const targets = ads.length === 0 ? [null] : ads;
+  let found = false;
+  for (const ad of targets) {
+    const recorded = await recordRejection(ctx.svc, deps.connector, {
+      workspaceId: row.workspace_id,
+      campaignId: row.id,
+      token,
+      refs,
+      ad,
+      budget,
+    });
+    if (recorded === 'budget_exhausted') return { found, exhausted: true };
+    if (recorded?.created === true) {
+      report.rejections += 1;
+      found = true;
+    }
+  }
+  return { found, exhausted: false };
 }
 
 export async function syncCampaignStatuses(
   ctx: ServiceCtx,
   deps: SyncDeps,
-  options: { scope?: StatusSyncScope; limit?: number } = {},
+  options: { scope?: StatusSyncScope; limit?: number; rejectionReadBudget?: number } = {},
 ): Promise<StatusSyncReport> {
   const limit = Math.max(1, Math.min(options.limit ?? STATUS_SYNC_BATCH, STATUS_SYNC_BATCH));
   const candidates = await selectCandidates(ctx, options.scope ?? 'all', limit);
   const report = emptyReport();
   const tokens = new Map<string, Promise<PlatformToken>>();
   const blockedAdAccounts = new Set<string>();
+  const budget: ReadBudget = { left: options.rejectionReadBudget ?? REJECTION_READS_PER_PASS };
 
   for (const candidate of candidates) {
     report.scanned += 1;
@@ -257,7 +356,7 @@ export async function syncCampaignStatuses(
         continue;
       }
       try {
-        const outcome = await syncOne(ctx, deps, candidate, tokens);
+        const outcome = await syncOne(ctx, deps, candidate, tokens, report, budget);
         report[outcome] += 1;
       } catch (error) {
         const scope = metaRateLimitScope(error);

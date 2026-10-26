@@ -11,8 +11,8 @@ import { createFullMetaConnector } from '../../meta/connector-factory';
 import { loadToken } from '../../meta/token';
 import type { RunPublicationDeps } from '../publish/run-publication';
 
-/** Ce que les synchronisations demandent au connecteur : lire un statut, lire des statistiques. Jamais plus. */
-export type SyncConnector = Pick<PlatformConnector, 'getStatus' | 'fetchStats'>;
+/** Ce que les synchronisations demandent au connecteur : lire un statut, des statistiques, le motif d'un refus. Jamais plus. */
+export type SyncConnector = Pick<PlatformConnector, 'getStatus' | 'fetchStats' | 'fetchRejection'>;
 
 export interface SyncDeps {
   connector: SyncConnector;

@@ -1,6 +1,7 @@
 // Aides des parcours : création d'un compte de test par l'API d'administration de la pile
 // Supabase LOCALE (jamais un vrai service, TESTING §1), connexion par l'écran, mesure du
 // défilement horizontal.
+import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page } from '@playwright/test';
 
 const LOCAL_SUPABASE = /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/;
@@ -191,4 +192,76 @@ export async function connectFakeMeta(
   });
   expect(accounts.ok).toBe(true);
   return workspaceId;
+}
+
+// ---- Assistant jusqu'à l'aperçu (partagé par les parcours de publication et de refus) -------------------------------------
+
+const PNG_1X1 = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+/** Compte relié à la fausse Meta, wizard jusqu'à la proposition retenue : l'écran Aperçu s'ouvre. */
+export async function reachPreview(
+  page: Page,
+  theme: 'light' | 'dark',
+  options: { payment?: boolean; currency?: string } = {},
+) {
+  await ensureTestRate();
+  const user = await createConfirmedUser('Awa');
+  await signIn(page, user);
+  await patchMe(page, { theme, ui_language: 'fr' });
+  await connectFakeMeta(page, user, options);
+  await page.goto('/campagnes/nouvelle');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+  // La Page active de l'espace relié est choisie d'office : on attend que la liste soit chargée avant d'analyser.
+  await expect(page.getByLabel('Page', { exact: true })).toBeVisible({ timeout: 20_000 });
+  await page.getByRole('button', { name: /Photo du produit/ }).click();
+  await page
+    .locator('input[type="file"]')
+    .first()
+    .setInputFiles({ name: 'produit.png', mimeType: 'image/png', buffer: PNG_1X1 });
+  await page.getByRole('button', { name: /Description/ }).click();
+  await page
+    .getByLabel('Décris ton activité')
+    .fill('Je vends des baskets Nike à Abidjan Cocody, à partir de 25 000 F. Livraison en 24 h.');
+  await page.getByRole('button', { name: 'Analyser' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Quelques précisions' })).toBeVisible({
+    timeout: 30_000,
+  });
+  await page.getByRole('textbox').nth(0).fill('+237 690 12 34 56');
+  await page.getByRole('textbox').nth(1).fill('Douala');
+  await page.getByRole('button', { name: 'Générer la proposition' }).click();
+  await expect(page.getByText('Tes réponses sont enregistrées.')).toBeVisible();
+  await page.getByRole('button', { name: 'Continuer vers la proposition' }).click();
+  await page.getByRole('button', { name: 'Générer la proposition' }).click();
+  await expect(page.getByText('Coût estimé')).toBeVisible({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Continuer', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Aperçu de ta pub' })).toBeVisible({
+    timeout: 20_000,
+  });
+}
+
+// ---- Analyse d'accessibilité stable ------------------------------------------------------------------------------------------
+
+/**
+ * Attend la fin des animations et transitions CSS FINIES de la page (les boucles infinies, comme un indicateur de chargement,
+ * sont ignorées). Sans cela, axe lit les couleurs d'un onglet PENDANT son fondu (`transition-colors`) : des gris intermédiaires
+ * (ex. #adada9 sur #525250, ratio 3,47) qui n'existent pas à l'état stable. Le défaut est intermittent selon la vitesse de la
+ * machine (diagnostic S18 : les 60 analyses lancées juste après un clic d'onglet en reproduisaient 89).
+ */
+export async function waitForAnimations(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const finite = document.getAnimations().filter((animation) => {
+      const end = animation.effect?.getComputedTiming().endTime;
+      return typeof end === 'number' && Number.isFinite(end);
+    });
+    await Promise.all(finite.map((animation) => animation.finished.catch(() => undefined)));
+  });
+}
+
+/** Analyse axe sur un écran STABLE (animations terminées). */
+export async function axeAnalyze(page: Page) {
+  await waitForAnimations(page);
+  return new AxeBuilder({ page }).analyze();
 }

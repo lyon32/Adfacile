@@ -1,5 +1,7 @@
 import {
+  createExplainDeps,
   createSyncDeps,
+  explainPendingRejections,
   SYNC_STATS_TASK,
   syncCampaignStatuses,
   syncCampaignStats,
@@ -54,11 +56,16 @@ export const campaignSyncStatusHandler: JobHandlerDefinition<
   payloadSchema: campaignSyncStatusPayloadSchema,
   run: async (payload, ctx) => {
     const { env, svc } = serviceClient();
-    return syncCampaignStatuses(
-      { requestId: createRequestId(), svc, now: ctx.now },
-      createSyncDeps(env, ctx.now),
-      { scope: payload.scope ?? 'all' },
-    );
+    const serviceCtx = { requestId: createRequestId(), svc, now: ctx.now };
+    const report = await syncCampaignStatuses(serviceCtx, createSyncDeps(env, ctx.now), {
+      scope: payload.scope ?? 'all',
+    });
+    // S18 : un refus vient d'être enregistré, le Modérateur l'explique tout de suite (sinon `campaign.explain-rejections`, toutes
+    // les 5 minutes). Un échec d'explication n'efface jamais le résultat de la synchronisation.
+    if (report.rejections > 0) {
+      await explainPendingRejections(serviceCtx, createExplainDeps(env)).catch(() => undefined);
+    }
+    return report;
   },
 };
 

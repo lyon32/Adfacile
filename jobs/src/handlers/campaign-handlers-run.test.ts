@@ -12,6 +12,7 @@ const calls = vi.hoisted(() => {
     clientArgs: [] as unknown[],
     runArgs: [] as unknown[],
     reconcileArgs: [] as unknown[],
+    explainArgs: [] as unknown[],
     depsArgs: [] as unknown[],
     env,
   };
@@ -43,6 +44,11 @@ vi.mock('@pubeka/core', async (importOriginal) => {
       calls.runArgs.push(args);
       return Promise.resolve({ outcome: 'skipped', reason: 'done' });
     },
+    createExplainDeps: () => ({ marker: 'explain-deps' }),
+    explainPendingRejections: (...args: unknown[]) => {
+      calls.explainArgs.push(args);
+      return Promise.resolve({ explained: 0, failed: 0, skipped: 0 });
+    },
     reconcilePublications: (...args: unknown[]) => {
       calls.reconcileArgs.push(args);
       return Promise.resolve({ scanned: 0 });
@@ -52,6 +58,7 @@ vi.mock('@pubeka/core', async (importOriginal) => {
 
 const { campaignPublishHandler } = await import('./campaign-publish');
 const { campaignReconcileHandler } = await import('./campaign-reconcile');
+const { campaignExplainHandler, CAMPAIGN_EXPLAIN_CRON } = await import('./campaign-explain');
 
 const NOW = new Date('2026-10-17T10:00:00Z');
 const ctx = { now: () => NOW, runtime: 'inline' as const };
@@ -62,6 +69,7 @@ beforeEach(() => {
   calls.clientArgs.length = 0;
   calls.runArgs.length = 0;
   calls.reconcileArgs.length = 0;
+  calls.explainArgs.length = 0;
   calls.depsArgs.length = 0;
   for (const key of Object.keys(calls.env)) Reflect.deleteProperty(calls.env, key);
   calls.env.NEXT_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321';
@@ -117,5 +125,27 @@ describe('campaign.reconcile — exécution', () => {
     expect(calls.clientArgs).toEqual([
       { url: 'http://supabase.interne:54321', secretKey: 'sb_secret_factice' },
     ]);
+  });
+});
+
+describe('campaign.explain-rejections — exécution (S18)', () => {
+  it('toutes les 5 minutes, dans la file des agents', () => {
+    expect(CAMPAIGN_EXPLAIN_CRON).toBe('*/5 * * * *');
+    expect(campaignExplainHandler.id).toBe('campaign.explain-rejections');
+  });
+
+  it('explique les refus en attente avec le client de service et les dépendances de l’environnement', async () => {
+    const result = await campaignExplainHandler.run({}, ctx);
+    expect(result).toEqual({ explained: 0, failed: 0, skipped: 0 });
+    expect(calls.clientArgs).toEqual([
+      { url: 'http://127.0.0.1:54321', secretKey: 'sb_secret_factice' },
+    ]);
+    const [serviceCtx, deps] = calls.explainArgs[0] as [{ requestId: string }, unknown];
+    expect(serviceCtx.requestId).toBe('req_TEST');
+    expect(deps).toEqual({ marker: 'explain-deps' });
+  });
+
+  it('refuse une charge inattendue (schéma strict)', () => {
+    expect(campaignExplainHandler.payloadSchema.safeParse({ campaignId: 'x' }).success).toBe(false);
   });
 });

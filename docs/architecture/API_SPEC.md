@@ -426,8 +426,9 @@ Détail des corps de requête et de réponse : [`api/openapi.yaml`](../../api/op
 | GET | `{ws}/campaigns/{id}/events` | Historique (onglet Historique) |
 | GET | `{ws}/campaigns/{id}/ads` | Publicités et visuel (onglet Pubs) |
 | GET | `{ws}/overview` | Tableau de bord et bandeau du haut |
+| GET | `{ws}/campaigns/{id}/rejections` | Refus de la campagne et leur rapport (le plus récent d'abord) |
 | GET | `{ws}/campaigns/{id}/rejections/{rid}` | Rapport du Modérateur |
-| POST 🔑 | `{ws}/campaigns/{id}/rejections/{rid}/apply-fix` | Corriger et republier |
+| POST 🔑 | `{ws}/campaigns/{id}/rejections/{rid}/apply-fix` | Corriger et republier sans quota (202 ; 409 `rejection_not_explained`, `fix_not_applicable`, `partial_rejection`, `already_fixed`) |
 
 ### Médias
 

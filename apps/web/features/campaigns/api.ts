@@ -221,7 +221,9 @@ export function useCampaignDetail(ws: string, id: string) {
     queryKey: campaignKey(ws, id),
     queryFn: ({ signal }) => apiFetch(base(ws, id), CampaignSchema, { signal }),
     staleTime: 10_000,
-    refetchInterval: POLL_IDLE_MS,
+    // Une publication (ou republication) en cours : on regarde de près jusqu'à ce que Meta ait reçu la campagne ou que ça échoue.
+    refetchInterval: (query) =>
+      query.state.data?.status === 'publishing' ? POLL_WAITING_FAST_MS : POLL_IDLE_MS,
     refetchOnWindowFocus: true,
   });
 }
