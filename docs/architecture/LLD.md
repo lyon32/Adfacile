@@ -539,10 +539,14 @@ export function effectiveAccess(stored: 'active' | 'read_only' | 'suspended', su
 export function accessCause(stored, sub, now): 'grace' | 'trial_ended' | 'subscription_ended' | 'admin' | null;
 export function graceEndsAt(sub: AccessSubscription): Date | null;
 export function lockAt(sub: AccessSubscription): Date | null;
-// `lockAt` = l'instant EXACT du verrouillage (fin d'essai, ou fin de grâce) : la session S19b (pause automatique des publicités à la
-// fin de la grâce, tâche planifiée + reprise après renouvellement) s'en sert pour savoir quels espaces traiter.
-// Reprise MANUELLE (décision confirmée le 26/10/2026) : la pause automatique de S19b n'est jamais suivie d'une reprise automatique ; bouton « Reprendre mes pubs ».
-// PRÉREQUIS BLOQUANT de mise en production, à livrer dans S19b : `POST /workspaces/{id}/campaigns/pause-all` (owner/editor, `allowLocked`, idempotente) pour le bouton de l'écran verrouillé ET la tâche de fin de grâce.
+// `lockAt` = l'instant EXACT du verrouillage (fin d'essai, ou fin de grâce).
+// S19b (livrée) : pause automatique des publicités à la fin de la grâce, reprise MANUELLE.
+//   packages/core/src/campaigns/lock/pause-workspace.ts : `pauseWorkspaceCampaigns(ctx, deps, workspaceId, { source, reason, budget })` : moteur unique
+//     (Meta d'abord, statut RELU chez Meta avant de marquer `paused`, un seul écrit local par `applyTransition`, limites de débit EC-META-10).
+//   lock-pause-sweep.ts : `pauseLockedWorkspaces(ctx, deps)` : `rpc workspaces_to_lock_pause(now, limit)` (0022) puis `loadWorkspaceAccess` par espace.
+//   lock-actions.ts : `pauseAllCampaigns(ctx, deps)` (✱, `allowLocked`) et `resumeLockedCampaigns(ctx, deps)` (espace actif, interrupteur, seulement `pause_reason = billing_lock`).
+//   jobs : `campaign.lock-pause` (`handlers/campaign-lock-pause.ts`, planification `schedules/campaign-lock-pause.ts`, cron `*/10 * * * *`, file `meta-publish`, un seul essai).
+//   Routes : `POST /workspaces/{id}/campaigns/pause-all` et `/resume-all` (`Idempotency-Key`, corps `{}`). Colonne `campaigns.pause_reason` (`billing_lock`, migration 0022).
 // `packages/core/src/workspaces/access.ts` : `loadWorkspaceAccess(db, svc, workspaceId, now)` évalue l'accès À CHAQUE requête
 // (api(), callback Meta, acceptation d'invitation) : aucune tâche planifiée n'est nécessaire pour finir la grâce. La base applique la
 // même règle (`private.ws_access`, `ws_writable`, migration 0021), comparée à celle-ci par un test sur une grille.

@@ -30,7 +30,13 @@ export const GET = api(
     status: 200,
     body: await listCampaigns(
       ctx,
-      { status: query.status, pageId: query.page_id, limit: query.limit, cursor: query.cursor },
+      {
+        status: query.status,
+        pageId: query.page_id,
+        pauseReason: query.pause_reason,
+        limit: query.limit,
+        cursor: query.cursor,
+      },
       cursorCodec(),
     ),
   }),

@@ -890,6 +890,9 @@ RLS : activée · 1 politique(s)
 | stats_synced_at | timestamp with time zone | oui |  |
 | stats_refresh_requested_at | timestamp with time zone | oui |  |
 | stats_sync_error | text | oui |  |
+| pause_reason | text | oui |  |
+| lock_pause_failures | integer | non | 0 |
+| lock_pause_retry_at | timestamp with time zone | oui |  |
 
 | Contrainte | Définition |
 |---|---|
@@ -901,11 +904,14 @@ RLS : activée · 1 politique(s)
 | Contrôle | `CHECK (((start_date IS NULL) OR (end_date IS NULL) OR (end_date > start_date)))` |
 | Contrôle | `CHECK ((fx_currency ~ '^[A-Z]{3}$'::text))` |
 | Contrôle | `CHECK ((fx_rate_xaf > (0)::numeric))` |
+| Contrôle | `CHECK ((lock_pause_failures >= 0))` |
 | Contrôle | `CHECK ((meta_adset_id ~ '^[0-9]{5,25}$'::text))` |
 | Contrôle | `CHECK ((meta_campaign_id ~ '^[0-9]{5,25}$'::text))` |
 | Contrôle | `CHECK (((char_length(name) >= 1) AND (char_length(name) <= 200)))` |
 | Contrôle | `CHECK ((objective = ANY (ARRAY['OUTCOME_ENGAGEMENT'::text, 'OUTCOME_TRAFFIC'::text, 'OUTCOME_AWARENESS'::text, 'OUTCOME_SALES'::text])))` |
 | Contrôle | `CHECK ((optimization_goal = ANY (ARRAY['CONVERSATIONS'::text, 'LINK_CLICKS'::text, 'LANDING_PAGE_VIEWS'::text, 'POST_ENGAGEMENT'::text, 'REACH'::text, 'OFFSITE_CONVERSIONS'::text])))` |
+| Contrôle | `CHECK ((pause_reason = 'billing_lock'::text))` |
+| Contrôle | `CHECK (((pause_reason IS NULL) OR (status = 'paused'::campaign_status)))` |
 | Contrôle | `CHECK ((publish_attempt >= 0))` |
 | Contrôle | `CHECK ((publish_phase = ANY (ARRAY['none'::text, 'creating'::text, 'created'::text, 'activating'::text, 'done'::text])))` |
 | Contrôle | `CHECK ((publish_ref ~ '^pk-[0-9a-f]{12}-[0-9]{1,4}$'::text))` |
@@ -925,6 +931,7 @@ RLS : activée · 1 politique(s)
 | n | `NOT NULL editable` |
 | n | `NOT NULL geo` |
 | n | `NOT NULL id` |
+| n | `NOT NULL lock_pause_failures` |
 | n | `NOT NULL name` |
 | n | `NOT NULL platform` |
 | n | `NOT NULL publish_attempt` |
@@ -940,7 +947,9 @@ RLS : activée · 1 politique(s)
 | Index | Définition |
 |---|---|
 | campaigns_analysis_id_idx | `public.campaigns USING btree (analysis_id)` |
+| campaigns_live_idx | `public.campaigns USING btree (workspace_id) WHERE ((status = ANY (ARRAY['in_review'::campaign_status, 'active'::campaign_status, 'error'::campaign_status])) AND (meta_campaign_id IS NOT NULL))` |
 | campaigns_meta_campaign_id_idx | `public.campaigns USING btree (meta_campaign_id)` |
+| campaigns_pause_reason_idx | `public.campaigns USING btree (workspace_id) WHERE (pause_reason IS NOT NULL)` |
 | campaigns_publish_key_idx | `public.campaigns USING btree (workspace_id, publish_idempotency_key) WHERE (publish_idempotency_key IS NOT NULL)` |
 | campaigns_publish_ref_uniq | `UNIQUE public.campaigns USING btree (workspace_id, publish_ref) WHERE (publish_ref IS NOT NULL)` |
 | campaigns_workspace_id_status_idx | `public.campaigns USING btree (workspace_id, status)` |
@@ -1869,6 +1878,10 @@ RLS : activée · 1 politique(s)
 | n | `NOT NULL updated_at` |
 | n | `NOT NULL workspace_id` |
 | Clé primaire | `PRIMARY KEY (id)` |
+
+| Index | Définition |
+|---|---|
+| subscriptions_workspace_created_idx | `public.subscriptions USING btree (workspace_id, created_at DESC, id DESC)` |
 
 RLS : activée · 1 politique(s)
 

@@ -423,6 +423,8 @@ Détail des corps de requête et de réponse : [`api/openapi.yaml`](../../api/op
 | POST | `{ws}/campaigns/{id}/proposals/{version}/choose` | Retenir une proposition (corps `{ version }` : version du brouillon lue ; périmée → 409 `conflict`) |
 | POST 🔑 | `{ws}/campaigns/{id}/publish` | Publier (202) |
 | POST | `{ws}/campaigns/{id}/pause` · `/resume` | Pause, reprise |
+| POST | `{ws}/campaigns/pause-all` | Met TOUTES les publicités de l'espace en pause chez Meta (✱ : permis en grâce et verrouillé ; propriétaire et éditeur ; `Idempotency-Key`, corps `{}` ; Meta d'abord et confirmé par relecture ; 10 campagnes au plus par requête, `maxDuration` 120 s ; réponse `{ paused, failed[], rate_limited, more }`) — S19b |
+| POST | `{ws}/campaigns/resume-all` | « Reprendre mes pubs » : reprend SEULEMENT les campagnes mises en pause par le verrouillage (`pause_reason: billing_lock`) ; espace actif, `Idempotency-Key`, interrupteur `PUBEKA_META_PUBLISH` (503 `publish_disabled`) ; 10 campagnes au plus par requête ; réponse `{ resumed, failed[], remaining, rate_limited, more }` — S19b |
 | POST | `{ws}/campaigns/{id}/relaunch` | Relancer en nouveau brouillon |
 | GET | `{ws}/campaigns/{id}/stats` | Statistiques (onglet Résultats ; montants en dollars, en monnaie locale avec un taux de moins de 48 h) |
 | POST | `{ws}/campaigns/{id}/stats/refresh` | Actualiser maintenant (202 ; 429 `rate_limited` avec `Retry-After` si moins de 5 minutes) |

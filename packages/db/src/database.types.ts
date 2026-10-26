@@ -645,12 +645,15 @@ export type Database = {
           fx_rate_xaf: number | null;
           geo: NonNullable<Json>;
           id: string;
+          lock_pause_failures: number;
+          lock_pause_retry_at: string | null;
           meta_adset_id: string | null;
           meta_campaign_id: string | null;
           name: string;
           objective: string | null;
           optimization_goal: string | null;
           page_id: string | null;
+          pause_reason: string | null;
           paused_at: string | null;
           platform: Database['public']['Enums']['platform'];
           publish_attempt: number;
@@ -691,12 +694,15 @@ export type Database = {
           fx_rate_xaf?: number | null;
           geo?: NonNullable<Json>;
           id?: string;
+          lock_pause_failures?: number;
+          lock_pause_retry_at?: string | null;
           meta_adset_id?: string | null;
           meta_campaign_id?: string | null;
           name: string;
           objective?: string | null;
           optimization_goal?: string | null;
           page_id?: string | null;
+          pause_reason?: string | null;
           paused_at?: string | null;
           platform?: Database['public']['Enums']['platform'];
           publish_attempt?: number;
@@ -737,12 +743,15 @@ export type Database = {
           fx_rate_xaf?: number | null;
           geo?: NonNullable<Json>;
           id?: string;
+          lock_pause_failures?: number;
+          lock_pause_retry_at?: string | null;
           meta_adset_id?: string | null;
           meta_campaign_id?: string | null;
           name?: string;
           objective?: string | null;
           optimization_goal?: string | null;
           page_id?: string | null;
+          pause_reason?: string | null;
           paused_at?: string | null;
           platform?: Database['public']['Enums']['platform'];
           publish_attempt?: number;
@@ -2703,6 +2712,12 @@ export type Database = {
           ws: string;
         };
         Returns: string;
+      };
+      workspaces_to_lock_pause: {
+        Args: { p_limit: number; p_now: string };
+        Returns: {
+          workspace_id: string;
+        }[];
       };
     };
     Enums: {

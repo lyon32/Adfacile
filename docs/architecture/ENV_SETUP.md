@@ -135,6 +135,14 @@ En local, les e-mails de **connexion** (lien magique, confirmation) ne passent p
 | `TRIGGER_ACCESS_TOKEN` | Déploiement des tâches depuis la CI (environnements GitHub, CI_CD §9.3) | CI | — | `tr_pat_…` |
 | `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `VERCEL_AUTOMATION_BYPASS_SECRET` | Déploiement Vercel et tests de fumée de la préproduction depuis la CI | CI | — | texte |
 
+**Tâches planifiées (déclarées dans le code, créées au déploiement)** : `campaign.sync-status` (15 min), `campaign.sync-stats` (1 h), `campaign.reconcile` (10 min), `campaign.explain-rejections` (5 min), `fx.refresh` (6 h) et, depuis S19b, `campaign.lock-pause` (10 min : pause automatique des publicités des espaces verrouillés ; dossier `jobs/src/schedules`, dans `dirs` de `trigger.config.ts`). La planification existe dès le déploiement des tâches ; **sans les variables ci-dessous, elle tourne mais ÉCHOUE bruyamment** (erreur de configuration ou `provider_unavailable`, visible dans Trigger.dev), jamais en silence. Variables à poser sur Trigger.dev (staging puis production ; démarche 👤 de la personne), liste exacte, sans valeur :
+- `SUPABASE_URL` (ou à défaut `NEXT_PUBLIC_SUPABASE_URL`) et `SUPABASE_SECRET_KEY` : accès de service à la base ;
+- `TOKEN_ENCRYPTION_KEYS` et `TOKEN_ENCRYPTION_ACTIVE_KEY_ID` : déchiffrement des jetons Meta ;
+- `META_APP_ID` et `META_APP_SECRET` : **obligatoires** avec le vrai Meta, sinon `provider_unavailable` ; facultatives : `META_LOGIN_CONFIG_ID`, `META_GRAPH_API_VERSION` ;
+- `PUBEKA_FAKE_PROVIDERS` ne doit **pas** contenir `meta` (ni `all`) en production : sinon la tâche parle à la FAUSSE Meta et ne met rien en pause chez le vrai ;
+- toute autre variable obligatoire marquée « J » dans les tableaux ci-dessus (validée par `getEnv()` au démarrage de la tâche).
+`campaign.lock-pause` n'exige jamais `PUBEKA_META_PUBLISH` (la pause arrête la dépense).
+
 ### 1.10 Suivi
 
 | Variable | Rôle | Lue par | Local | Forme |

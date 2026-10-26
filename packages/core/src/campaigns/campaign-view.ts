@@ -17,7 +17,7 @@ import { readPublicationError } from './publish/publication-error';
 export type CampaignView = components['schemas']['Campaign'];
 
 export const CAMPAIGN_COLUMNS =
-  'id, workspace_id, page_id, ad_account_id, analysis_id, name, platform, objective, destination, optimization_goal, geo, targeting, daily_budget_usd_cents, fx_rate_xaf, start_date, end_date, copy, tracking, visual_brief, ab_test, status, published_at, editable, chosen_proposal_version, version, paused_at, publish_error';
+  'id, workspace_id, page_id, ad_account_id, analysis_id, name, platform, objective, destination, optimization_goal, geo, targeting, daily_budget_usd_cents, fx_rate_xaf, start_date, end_date, copy, tracking, visual_brief, ab_test, status, published_at, editable, chosen_proposal_version, version, paused_at, pause_reason, publish_error';
 
 export interface CampaignRow {
   id: string;
@@ -47,6 +47,8 @@ export interface CampaignRow {
   version: number;
   /** Colonnes de S16 : absentes d'une ancienne lecture, donc facultatives ici. */
   paused_at?: string | null;
+  /** Colonne de S19b (migration 0022) : `billing_lock` quand le verrouillage a mis la campagne en pause. */
+  pause_reason?: string | null;
   publish_error?: unknown;
 }
 
@@ -138,6 +140,7 @@ export function toCampaignView(row: CampaignRow, costContext: CostContext): Camp
     chosen_proposal_version: row.chosen_proposal_version,
     published_at: row.published_at,
     paused_at: row.paused_at ?? null,
+    pause_reason: row.pause_reason === 'billing_lock' ? 'billing_lock' : null,
     publication_error: readPublicationError(row.publish_error),
     version: row.version,
   };

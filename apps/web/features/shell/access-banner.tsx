@@ -5,8 +5,8 @@
 // requête avec l'échéance de l'abonnement) : le bandeau n'invente aucune règle. Couleurs : jetons existants.
 // Les pages `/abonnement` (S24, S25) et `/support` (S28) n'existent pas encore : les boutons sont affichés mais grisés, avec une
 // infobulle « Bientôt disponible ».
-// PROMESSE DU BANDEAU DE GRÂCE : « toutes tes publicités seront mises en pause » à la fin de la grâce. Elle est honorée par la session
-// S19b (tâche planifiée) : ne pas déployer en production avant.
+// PROMESSE DU BANDEAU DE GRÂCE : « toutes tes publicités seront mises en pause » à la fin de la grâce. Elle est honorée par la tâche
+// planifiée `campaign.lock-pause` (S19b, toutes les 10 minutes) ; la reprise est manuelle (`ResumeBanner`).
 import { useLocale, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { useSession } from './session-context';

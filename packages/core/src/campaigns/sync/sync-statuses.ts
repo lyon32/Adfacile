@@ -275,7 +275,7 @@ async function syncOne(
     decision.event === 'pause'
       ? { paused_at: ctx.now().toISOString() }
       : decision.event === 'resume'
-        ? { paused_at: null }
+        ? { paused_at: null, pause_reason: null }
         : {};
   const written = await applyTransition(ctx.svc, row, decision.event, patch);
   // Quelqu'un a agi entre la lecture et l'écriture (pause du client…) : la passe suivante relira.

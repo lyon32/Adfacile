@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { AccessBanner } from './access-banner';
 import { LockedNotice, LockedScreen } from './locked-screen';
+import { ResumeBanner } from './resume-banner';
 import { AccountPanel } from './account-panel';
 import { Logo } from './logo';
 import { ACCOUNT_ITEMS, MENU_ITEMS, TAB_ITEMS, isActive, type NavItem } from './nav-config';
@@ -215,6 +216,7 @@ export function AppShell({
           className="mx-auto w-full max-w-5xl px-4 pt-6 pb-28 outline-none min-[980px]:px-10 min-[980px]:pt-10 min-[980px]:pb-16"
         >
           {lockedState ? null : <AccessBanner />}
+          {lockedState ? null : <ResumeBanner />}
           {/* Verrouillé : JAMAIS le bandeau du haut (il lit les statistiques, refusées en `workspace_locked`), même sur les pages restées joignables. */}
           {lockedState || pathname === '/' || pathname.startsWith('/bienvenue') ? null : banner}
           {lockedState && !locked ? <LockedNotice /> : null}

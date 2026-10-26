@@ -62,6 +62,9 @@ const CLASSES: Record<string, Kind> = {
   [`POST ${CAMPAIGN}/proposals/{version}/choose`]: 'writable',
   [`POST ${CAMPAIGN}/publish`]: 'writable',
   [`POST ${CAMPAIGN}/pause`]: 'star',
+  // S19b : pause de toutes les publicités (écran verrouillé) = la même action ✱ ; la reprise de celles du verrouillage ACTIVE chez Meta : espace actif.
+  [`POST ${WS}/campaigns/pause-all`]: 'star',
+  [`POST ${WS}/campaigns/resume-all`]: 'writable',
   [`POST ${CAMPAIGN}/resume`]: 'writable',
   [`POST ${CAMPAIGN}/relaunch`]: 'writable',
   [`POST ${CAMPAIGN}/stats/refresh`]: 'read',
@@ -104,6 +107,7 @@ const STAR_ACTIONS = [
   'POST /notifications/read',
   `POST ${WS}/assistant/messages`,
   `POST ${CAMPAIGN}/pause`,
+  `POST ${WS}/campaigns/pause-all`,
   `POST ${WS}/tickets`,
   `POST ${WS}/tickets/{ticketId}/messages`,
   'PUT /notifications/preferences',
@@ -252,6 +256,17 @@ describe('TR-PAY-07 : routes d’écriture et lecture seule', () => {
     expect(pause).toMatch(/roles:\s*\['owner',\s*'editor'\]/);
   });
 
+  it('S19b : pause-all (✱) reste permise verrouillé, avec Idempotency-Key ; resume-all dépense : espace actif, jamais allowLocked', () => {
+    const pauseAll = handlerSource(fileOf(`${WS}/campaigns/pause-all`), 'POST') ?? '';
+    expect(pauseAll).toMatch(/roles:\s*\['owner',\s*'editor'\]/);
+    expect(pauseAll).toMatch(/allowLocked:\s*true/);
+    expect(pauseAll).toMatch(/idempotent:\s*true/);
+    const resumeAll = handlerSource(fileOf(`${WS}/campaigns/resume-all`), 'POST') ?? '';
+    expect(resumeAll).toMatch(/roles:\s*\['owner',\s*'editor'\]/);
+    expect(resumeAll).toMatch(/idempotent:\s*true/);
+    expect(resumeAll).not.toMatch(/allowLocked/);
+  });
+
   it('aucun gestionnaire d’écriture dans app/api/v1 n’échappe au contrat', () => {
     const declared = new Set(writes);
     const found: string[] = [];
@@ -280,6 +295,8 @@ describe('TR-PAY-07 : routes d’écriture et lecture seule', () => {
 // seule sans y avoir été autorisée par une route `writable`. Une nouvelle tâche doit être classée ici.
 const JOBS: Record<string, string> = {
   'analysis-run': 'lancée par la route analyses (writable) ; finit ce qui a été autorisé',
+  'campaign-lock-pause':
+    'S19b : travail du système sur les espaces VERROUILLÉS seulement (liste SQL puis relecture de l’accès) ; ne fait que METTRE EN PAUSE, ne reprend jamais',
   'campaign-publish':
     'lancée par publish / relaunch / apply-fix (writable) ; finit la publication autorisée',
   'campaign-reconcile': 'rapprochement en LECTURE chez Meta des publications restées en cours',
@@ -304,11 +321,12 @@ describe('TR-PAY-07 : tâches de fond', () => {
 
 // Espace VERROUILLÉ (essai terminé sans abonnement, ou grâce écoulée ; décision de la personne du 26/10/2026) : TOUT est refusé,
 // lecture des statistiques comprise (`403 workspace_locked`), sauf cette liste : s'abonner ou renouveler (checkout, preuve de
-// paiement), mettre en pause une campagne qui diffuse chez Meta, écrire au support, lire l'état de l'espace pour afficher l'écran de
+// paiement), mettre en pause une campagne (ou toutes, S19b) qui diffuse chez Meta, écrire au support, lire l'état de l'espace pour afficher l'écran de
 // verrouillage, et la gestion du compte (routes sans espace, hors de ce contrôle). Toute autre route d'espace doit refuser.
 const LOCKED_OK = new Set([
   `GET ${WS}`,
   `POST ${CAMPAIGN}/pause`,
+  `POST ${WS}/campaigns/pause-all`,
   `POST ${WS}/checkout`,
   `POST ${WS}/payment-proofs`,
   `POST ${WS}/tickets`,

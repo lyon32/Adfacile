@@ -58,6 +58,7 @@ export const relaunchSchema = z.discriminatedUnion('mode', [
 export const listCampaignsQuery = z.strictObject({
   status: z.string().max(20).optional(),
   page_id: z.uuid().optional(),
+  pause_reason: z.string().max(20).optional(),
   limit: z.coerce.number().int().optional(),
   cursor: z.string().max(200).optional(),
 });
@@ -72,3 +73,6 @@ export const statsQuery = z.strictObject({
 export const overviewQuery = z.strictObject({
   range: z.string().max(10).optional(),
 });
+
+/** Actions sans paramètre (`pause-all`, `resume-all`) : le corps est l'objet vide, tout champ en trop est refusé (400). */
+export const emptyBodySchema = z.strictObject({});
