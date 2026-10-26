@@ -1,14 +1,16 @@
 -- =====================================================================
 -- Pubeka — migration 0021 (S19) : l'accès réel d'un espace dans la base (troisième barrière, SECURITY_NOTES §2.7)
--- Jusqu'ici `private.ws_writable()` ne lisait que `workspaces.status`. Or la grâce de 3 jours, la lecture seule après échéance et la
--- fin d'essai sont CALCULÉES à partir de l'abonnement (packages/billing, `workspaceAccess`) sans jamais écrire `workspaces.status` :
--- un éditeur dont l'abonnement était échu depuis plus de 3 jours pouvait donc encore écrire (pages, kit de marque, choix d'un
--- visuel, brouillons) en appelant PostgREST directement. `ws_writable` applique maintenant la MÊME règle que le code :
+-- Jusqu'ici `private.ws_writable()` ne lisait que `workspaces.status`. Or la grâce de 3 jours, le verrouillage après la grâce et la
+-- fin d'essai sont CALCULÉS à partir de l'abonnement (packages/billing, `workspaceAccess`) sans jamais écrire `workspaces.status` :
+-- un éditeur dont l'abonnement était échu pouvait donc encore écrire (pages, kit de marque, choix d'un visuel, brouillons) en appelant
+-- PostgREST directement. `ws_writable` applique maintenant la MÊME règle que le code (décision de la personne du 26/10/2026) :
 --   suspendu / lecture seule posés par l'administration passent avant tout ; sans abonnement : actif (l'essai démarre en S24) ;
---   abonnement `read_only` : lecture seule ; avant la fin de période : actif ; essai ou abonnement résilié échu : lecture seule
---   tout de suite ; sinon grâce de 72 h après la fin de période (ou jusqu'à `grace_until` si l'administration l'a prolongée),
---   puis lecture seule. Un test (supabase/tests/workspace-access.test.mjs + apps/web, `workspace-access.int.test.ts`) compare cette
---   règle à celle de TypeScript sur une grille de dates et d'états.
+--   abonnement `read_only` (hérité) : verrouillé ; avant la fin de période : actif ; essai terminé : VERROUILLÉ tout de suite ;
+--   formule payée (ou annulée : même chose) échue : grâce de 72 h (ou jusqu'à `grace_until` si l'administration l'a prolongée),
+--   puis VERROUILLÉ. Seul l'état « actif » permet d'écrire : la grâce, le verrouillage, la lecture seule et la suspension refusent.
+-- Les LECTURES restent permises par la RLS dans tous les états (is_member) : l'API refuse la lecture d'un espace verrouillé, mais la
+-- base la garde pour l'export et la suppression du compte (SECURITY_NOTES §2.2). Un test (supabase/tests/workspace-access.test.mjs
+-- + apps/web, `workspace-access.int.test.ts`) compare cette règle à celle de TypeScript sur une grille de dates et d'états.
 -- =====================================================================
 
 begin;
@@ -25,15 +27,15 @@ create or replace function private.access_at(
     when stored = 'suspended' then 'suspended'
     when stored = 'read_only' then 'read_only'
     when sub_status is null or period_end is null then 'active'
-    when sub_status = 'read_only' then 'read_only'
+    when sub_status = 'read_only' then 'locked'
     when at < period_end then 'active'
-    when sub_status in ('trialing', 'canceled') then 'read_only'
+    when sub_status = 'trialing' then 'locked'
     when at < (case when grace_until > period_end then grace_until else period_end + interval '72 hours' end) then 'grace'
-    else 'read_only'
+    else 'locked'
   end;
 $$;
 
--- Accès réel d'un espace maintenant : `active`, `grace`, `read_only`, `suspended` (null si l'espace n'existe pas).
+-- Accès réel d'un espace maintenant : `active`, `grace`, `locked`, `read_only`, `suspended` (null si l'espace n'existe pas).
 create or replace function private.ws_access(ws uuid)
 returns text language sql stable security definer set search_path = '' as $$
   select private.access_at(w.status, s.status, s.period_end, s.grace_until, now())
@@ -48,10 +50,10 @@ returns text language sql stable security definer set search_path = '' as $$
   where w.id = ws;
 $$;
 
--- Espace modifiable : actif ou en grâce. Même signature qu'en 0001 : les politiques RLS existantes en profitent sans changer.
+-- Espace modifiable : actif seulement. Même signature qu'en 0001 : les politiques RLS existantes en profitent sans changer.
 create or replace function private.ws_writable(ws uuid)
 returns boolean language sql stable security definer set search_path = '' as $$
-  select coalesce(private.ws_access(ws) in ('active', 'grace'), false);
+  select coalesce(private.ws_access(ws) = 'active', false);
 $$;
 
 create index if not exists subscriptions_workspace_created_idx on public.subscriptions (workspace_id, created_at desc);

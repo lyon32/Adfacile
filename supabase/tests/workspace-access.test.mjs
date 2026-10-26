@@ -60,18 +60,19 @@ const cases = [
   ['active', 'active', 0, null, -0.001, 'active'],
   ['active', 'active', 0, null, 0, 'grace'],
   ['active', 'active', 0, null, 2.999, 'grace'],
-  ['active', 'active', 0, null, 3, 'read_only'],
+  ['active', 'active', 0, null, 3, 'locked'],
   ['active', 'active', 0, 10, 9.999, 'grace'],
-  ['active', 'active', 0, 10, 10, 'read_only'],
+  ['active', 'active', 0, 10, 10, 'locked'],
   ['active', 'active', 0, -5, -0.001, 'active'],
   ['active', 'active', 0, -5, 1, 'grace'],
   ['active', 'trialing', 0, null, -0.001, 'active'],
-  ['active', 'trialing', 0, null, 0, 'read_only'],
+  ['active', 'trialing', 0, null, 0, 'locked'],
   ['active', 'canceled', 0, null, -0.001, 'active'],
-  ['active', 'canceled', 0, null, 0, 'read_only'],
-  ['active', 'read_only', 10, null, 0, 'read_only'],
+  ['active', 'canceled', 0, null, 0, 'grace'],
+  ['active', 'canceled', 0, null, 3, 'locked'],
+  ['active', 'read_only', 10, null, 0, 'locked'],
   ['active', 'grace', 0, null, 1, 'grace'],
-  ['active', 'grace', 0, null, 4, 'read_only'],
+  ['active', 'grace', 0, null, 4, 'locked'],
   ['active', null, null, null, 0, 'active'],
   ['read_only', 'active', 10, null, 0, 'read_only'],
   ['suspended', 'active', 10, null, 0, 'suspended'],
@@ -95,8 +96,8 @@ const createDraft = () => as('authenticated', EDITOR, (tx) =>
 const writable = async () => (await q(`select private.ws_writable($1) w`, [WS]))[0].w;
 
 await check('abonnement en cours : l’éditeur crée un brouillon', async () => { await subscribe('active', 10); return !(await denied(createDraft)) && (await writable()); });
-await check('J+1 (grâce) : l’éditeur écrit encore', async () => { await subscribe('active', -1); return !(await denied(createDraft)) && (await writable()); });
-await check('J+5 : écriture directe REFUSÉE par la base, sans que workspaces.status ait changé', async () => {
+await check('J+1 (grâce) : écriture directe REFUSÉE (la grâce ne permet que lire, acheter des crédits et mettre en pause)', async () => { await subscribe('active', -1); return (await denied(createDraft)) && !(await writable()); });
+await check('J+5 (verrouillé) : écriture directe REFUSÉE par la base, sans que workspaces.status ait changé', async () => {
   await subscribe('active', -5);
   const stored = (await q(`select status from public.workspaces where id=$1`, [WS]))[0].status;
   return stored === 'active' && (await denied(createDraft)) && !(await writable());
