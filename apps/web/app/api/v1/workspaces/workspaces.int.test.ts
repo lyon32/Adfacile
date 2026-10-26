@@ -80,6 +80,7 @@ describeRoute('getWorkspace', {
       id: seeded.workspace.id,
       name: seeded.workspace.name,
       status: 'active',
+      status_cause: null,
       role: 'viewer',
       plan: 'trial',
       period_end: null,

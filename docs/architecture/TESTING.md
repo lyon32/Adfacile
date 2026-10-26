@@ -96,7 +96,7 @@ Lancé **à la main ou une fois par semaine** (pas à chaque commit, car il coû
 
 | Module | Unitaire | Intégration | Parcours |
 |---|---|---|---|
-| `packages/billing` | **Tout** : montants, frais, TVA, change, upgrade, accès (grâce, lecture seule) | — | paiement de bout en bout |
+| `packages/billing` | **Tout** : montants, frais, TVA, change, upgrade, accès (grâce, verrouillé, lecture seule de l'administration) | — | paiement de bout en bout |
 | `packages/media` | prix en crédits, aiguilleur, `shouldOfferFallback`, rendu des calques (dimensions, zones, débordement) | copie dans le stockage privé | génération visible un par un |
 | `packages/platforms/meta` | tests portés d'AdFacile (TR-PLA-02), traduction des erreurs Meta, chiffrement des jetons | — | publication (fausse Meta) |
 | `packages/agents` | `runAgent` : validation, 1 seul nouvel essai, détection d'injection, `wrapUntrusted` | — | — (banc) |
@@ -136,7 +136,7 @@ Lancé **à la main ou une fois par semaine** (pas à chaque commit, car il coû
 | TR-PAY-01 / 04 (formules, crédits) | Unitaire | Tableau de valeurs fixes (§5.5) |
 | TR-PAY-02 / 03 (registre) | Base + intégration | Réservation, consommation, libération, ordre mois → bonus → achetés, crédits achetés jamais expirés |
 | TR-PAY-05 (activation sur webhook) | Intégration | Webhook signé + paiement relu chez SasPay → abonnement actif ; montant différent de celui enregistré → refus |
-| TR-PAY-07 (grâce, lecture seule) | Intégration | J+3 : écriture refusée `403 workspace_read_only` ; pause **acceptée** ; paiement et ticket acceptés |
+| TR-PAY-07 (grâce, verrouillé) | Intégration | Grâce (J+1) : écriture refusée `403 workspace_read_only`, lecture et pause acceptées ; J+4 : tout refusé `403 workspace_locked` sauf pause, paiement, ticket et lecture de l'état de l'espace |
 | TR-PAY-08 (upgrade) | Unitaire + intégration | Starter → Pro : 7 000 XAF, +5 crédits, même date de fin (APPFLOW §15.4) |
 | TR-PAY-10 / 11 (essai, parrainage) | Intégration | Deuxième essai refusé ; 2 + 2 crédits au **premier** paiement du filleul seulement |
 | TR-DON-02 / 04, TR-PAY-06, TR-PLA-07, TR-NOT-03, TR-OBS-02 | Intégration (tâches en `inline`) | Chaque tâche planifiée lancée avec une horloge fixée produit exactement l'effet attendu, et rien de plus si on la relance |
@@ -149,7 +149,7 @@ Lancé **à la main ou une fois par semaine** (pas à chaque commit, car il coû
 | P2 | Créer une campagne : sources → questions → proposition (affichage progressif) → visuel → aperçu → publier | parcours principal, quota, fausse Meta |
 | P3 | Générer 3 visuels : coût affiché, visuels affichés un par un, échec d'un visuel = crédit rendu | crédits, Realtime, TR-PRF-06 |
 | P4 | Payer une formule (fausse SasPay) → webhook → abonnement actif ; puis acheter des crédits | paiement, idempotence |
-| P5 | Abonnement expiré → lecture seule → mise en pause acceptée, création refusée | TR-PAY-07 |
+| P5 | Abonnement expiré → grâce (lecture, pause) → verrouillé (un seul écran, pause acceptée) → renouvellement | TR-PAY-07 |
 | P6 | Hors connexion : modifier un réglage, couper le réseau, revenir → envoyé ; bouton Publier désactivé | TR-PLT-08 |
 | P7 | Administration : `404` sans droits ; avec aal2 → offrir des crédits → ligne dans le journal | TR-SEC-06, TR-ADM-01 |
 

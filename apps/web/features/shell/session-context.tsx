@@ -14,16 +14,24 @@ export interface SessionValue {
   lastName: string | null;
   locale: Locale;
   theme: Theme;
+  /** Fuseau de la personne, pour afficher une date d'échéance (jamais l'heure de l'appareil). */
+  timezone?: string;
+  /** Heure du serveur au rendu : sert au décompte de la grâce (EC-TIME-03). */
+  serverNow?: string;
   workspace: {
     id: string;
     name: string;
     role: MemberRole;
     plan: PlanName;
-    status: 'active' | 'read_only' | 'suspended';
+    status: 'active' | 'grace' | 'locked' | 'read_only' | 'suspended';
+    /** Fin de la grâce (ISO) : seulement utile quand `status` vaut `grace`. */
+    graceUntil?: string | null;
+    /** Pourquoi l'espace n'est pas actif (message exact du bandeau). */
+    statusCause?: 'grace' | 'trial_ended' | 'subscription_ended' | 'admin' | null;
   } | null;
 }
 
-const SessionContext = createContext<SessionValue | null>(null);
+export const SessionContext = createContext<SessionValue | null>(null);
 
 export function SessionProvider({
   value,

@@ -7,7 +7,7 @@ import { campaignIdParam } from '../../../../../campaigns/params';
 import { controlDeps } from '../../../../../campaigns/services';
 
 export const POST = api(
-  { auth: 'member', roles: ['owner', 'editor'], rateLimit: 'write' },
+  { auth: 'member', roles: ['owner', 'editor'], allowLocked: true, rateLimit: 'write' },
   async (ctx, { params }) => ({
     status: 200,
     body: await pauseCampaign(ctx, campaignIdParam(params), controlDeps()),

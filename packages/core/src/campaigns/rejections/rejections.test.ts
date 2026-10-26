@@ -285,6 +285,203 @@ describe('explication par le Modérateur (après un refus seulement)', () => {
     expect(gateway.calls).toHaveLength(1);
   });
 
+  it('TR-PAY-07 : un espace en lecture seule ou suspendu ne déclenche aucun appel au Modérateur (le refus reste en attente)', async () => {
+    for (const status of ['read_only', 'suspended'] as const) {
+      const { s } = await refusedWorld();
+      const workspace = s.w.db.rows('workspaces').find((row) => row.id === W);
+      Object.assign(workspace ?? {}, { status });
+      const deps = explainDeps();
+      const report = await explainPendingRejections(s.ctxAt(20), deps);
+      expect(deps.gateway.calls).toHaveLength(0);
+      expect(report).toEqual({ explained: 0, failed: 0, skipped: 1 });
+      expect(rejections(s)[0]).toMatchObject({ explain_status: 'pending' });
+      // Retour à la normale (renouvellement) : le refus est expliqué au passage suivant.
+      Object.assign(workspace ?? {}, { status: 'active' });
+      installMemoryRpc(s);
+      expect((await explainPendingRejections(s.ctxAt(30), deps)).explained).toBe(1);
+    }
+  });
+
+  it('TR-PAY-07 : un espace en lecture seule n’épuise pas le budget du passage (les autres espaces sont servis)', async () => {
+    const { s } = await refusedWorld();
+    const rows = rejections(s);
+    const first = rows[0];
+    if (first === undefined) throw new Error('refus absent');
+    rows.unshift({ ...first, id: '00000000-0000-4000-7000-000000000001', workspace_id: OTHER_W });
+    s.w.db.rows('workspaces').push({ id: OTHER_W, owner_id: 'x', status: 'read_only' });
+    installMemoryRpc(s);
+    const deps = explainDeps();
+    const report = await explainPendingRejections(s.ctxAt(20), deps, 1);
+    expect(report).toEqual({ explained: 1, failed: 0, skipped: 1 });
+  });
+
+  it('TR-PAY-07 : plus de 50 refus anciens d’espaces bloqués n’affament pas ceux d’un espace actif', async () => {
+    const { s } = await refusedWorld();
+    s.w.db.rows('workspaces').push({ id: OTHER_W, owner_id: 'x', status: 'read_only' });
+    const table = rejections(s);
+    const first = table[0];
+    if (first === undefined) throw new Error('refus absent');
+    for (let i = 0; i < 120; i += 1) {
+      table.push({
+        ...first,
+        id: `b0000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+        workspace_id: OTHER_W,
+        created_at: new Date(NOW.getTime() - (200 - i) * 60_000).toISOString(),
+      });
+    }
+    installMemoryRpc(s);
+    const deps = explainDeps();
+    const report = await explainPendingRejections(s.ctxAt(20), deps);
+    expect(report.explained).toBe(1);
+    expect(report.skipped).toBe(120);
+    expect(deps.gateway.calls).toHaveLength(1);
+    expect(
+      table.filter((row) => row.workspace_id === OTHER_W && row.explain_status === 'pending'),
+    ).toHaveLength(120);
+  });
+
+  it('TR-PAY-07 : l’état d’accès d’un espace n’est lu qu’une fois par passage', async () => {
+    const { s } = await refusedWorld();
+    s.w.db.rows('workspaces').push({ id: OTHER_W, owner_id: 'x', status: 'read_only' });
+    const table = rejections(s);
+    const first = table[0];
+    if (first === undefined) throw new Error('refus absent');
+    for (let i = 0; i < 30; i += 1) {
+      table.push({
+        ...first,
+        id: `c0000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+        workspace_id: OTHER_W,
+      });
+    }
+    installMemoryRpc(s);
+    const reads: string[] = [];
+    const original = s.w.db.from.bind(s.w.db);
+    Reflect.set(s.w.db, 'from', (table: string) => {
+      reads.push(table);
+      return original(table);
+    });
+    await explainPendingRejections(s.ctxAt(20), explainDeps());
+    expect(reads.filter((t) => t === 'workspaces' && true).length).toBeLessThanOrEqual(3);
+  });
+
+  it('décision S19 : le Modérateur n’explique rien dès que l’espace n’est plus actif (grâce de 3 jours, verrouillé), et reprend au renouvellement', async () => {
+    const day = 24 * 3600 * 1000;
+    const cases: [string, number][] = [
+      ['grâce', -1],
+      ['verrouillé', -5],
+    ];
+    for (const [label, endsInDays] of cases) {
+      const { s } = await refusedWorld();
+      const now = s.ctxAt(20).now();
+      Object.assign(s.w.db.rows('workspaces').find((row) => row.id === W) ?? {}, {
+        status: 'active',
+      });
+      const subscriptions = s.w.db.rows('subscriptions');
+      subscriptions.length = 0;
+      subscriptions.push({
+        workspace_id: W,
+        plan_code: 'pro',
+        status: 'active',
+        period_end: new Date(now.getTime() + endsInDays * day).toISOString(),
+        grace_until: null,
+        created_at: now.toISOString(),
+      });
+      const deps = explainDeps();
+      const report = await explainPendingRejections(s.ctxAt(20), deps);
+      expect(deps.gateway.calls, label).toHaveLength(0);
+      expect(report.skipped, label).toBe(1);
+      expect(rejections(s)[0], label).toMatchObject({ explain_status: 'pending' });
+      // Renouvellement : nouvelle période, le refus est expliqué.
+      subscriptions.push({
+        workspace_id: W,
+        plan_code: 'pro',
+        status: 'active',
+        period_end: new Date(now.getTime() + 30 * day).toISOString(),
+        grace_until: null,
+        created_at: new Date(now.getTime() + 1000).toISOString(),
+      });
+      installMemoryRpc(s);
+      expect((await explainPendingRejections(s.ctxAt(30), deps)).explained, label).toBe(1);
+    }
+  });
+
+  it('TR-PAY-07 : un refus qui reste « en attente » après une interruption fait avancer la fenêtre de lecture (aucun refus sauté ni relu)', async () => {
+    const { s } = await refusedWorld();
+    s.w.db.rows('workspaces').push({ id: OTHER_W, owner_id: 'x', status: 'read_only' });
+    const table = rejections(s);
+    const first = table[0];
+    if (first === undefined) throw new Error('refus absent');
+    // 45 refus bloqués, puis 4 refus d'espace actif de plus (5 au total avec le premier).
+    for (let i = 0; i < 45; i += 1) {
+      table.push({
+        ...first,
+        id: `d0000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+        workspace_id: OTHER_W,
+        created_at: new Date(NOW.getTime() - (500 - i) * 60_000).toISOString(),
+      });
+    }
+    for (let i = 0; i < 4; i += 1) {
+      table.push({
+        ...first,
+        id: `e0000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+        created_at: new Date(NOW.getTime() + (i + 1) * 60_000).toISOString(),
+      });
+    }
+    installMemoryRpc(s);
+    // Les 2 premières prises échouent : ces refus restent « en attente ».
+    let interruptions = 0;
+    s.w.db.beforeUpdate = (name, memory) => {
+      if (name === 'rejections' && interruptions < 2) {
+        interruptions += 1;
+        memory.failNext.add('rejections:update');
+      }
+    };
+    const starts: number[] = [];
+    const original = s.w.db.from.bind(s.w.db);
+    Reflect.set(s.w.db, 'from', (name: string) => {
+      const query = original(name);
+      if (name === 'rejections') {
+        const range = query.range.bind(query);
+        query.range = (from: number, to: number) => {
+          starts.push(from);
+          return range(from, to);
+        };
+      }
+      return query;
+    });
+    const report = await explainPendingRejections(s.ctxAt(20), explainDeps());
+    // Les refus d'espace actif restés « en attente » (interrompus) occupent encore la fenêtre : la 2e page commence après eux,
+    // ni avant (relecture) ni après (refus sauté).
+    const stuck = table.filter(
+      (row) => row.workspace_id !== OTHER_W && row.explain_status === 'pending',
+    ).length;
+    expect(stuck).toBeGreaterThanOrEqual(1);
+    expect(starts).toEqual([0, 45 + stuck]);
+    expect(report.explained).toBeGreaterThanOrEqual(1);
+    expect(report.failed).toBeGreaterThanOrEqual(1);
+  });
+
+  it('TR-PAY-07 : la lecture des refus en attente est triée par created_at PUIS par id (ordre déterministe à date égale)', async () => {
+    const { s } = await refusedWorld();
+    const orders: string[] = [];
+    const original = s.w.db.from.bind(s.w.db);
+    Reflect.set(s.w.db, 'from', (name: string) => {
+      const query = original(name);
+      if (name === 'rejections') {
+        const order = query.order.bind(query);
+        query.order = (column?: string, options?: { ascending?: boolean }) => {
+          orders.push(String(column));
+          return order(column, options);
+        };
+      }
+      return query;
+    });
+    installMemoryRpc(s);
+    await explainPendingRejections(s.ctxAt(20), explainDeps());
+    const at = orders.indexOf('created_at');
+    expect(orders.slice(at, at + 2)).toEqual(['created_at', 'id']);
+  });
+
   it('TR-AGT-01 : une sortie invalide est renvoyée une fois, puis l’échec est visible (2 appels au plus)', async () => {
     const { s } = await refusedWorld();
     const gateway = new FakeAiGateway().enqueue({ text: 'pas du json' }).enqueue({ text: '{}' });

@@ -2,6 +2,7 @@
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { CampaignsPage } from '../../../../features/campaigns/campaigns-page';
+import { isWritableStatus } from '../../../../features/shell/workspace-access';
 import { loadViewer } from '../../../../features/shell/viewer';
 
 export default async function CampaignsRoute(): Promise<ReactNode> {
@@ -11,7 +12,7 @@ export default async function CampaignsRoute(): Promise<ReactNode> {
   return (
     <CampaignsPage
       workspaceId={workspace.id}
-      canCreate={workspace.role !== 'viewer' && workspace.status === 'active'}
+      canCreate={workspace.role !== 'viewer' && isWritableStatus(workspace.status)}
     />
   );
 }

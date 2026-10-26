@@ -32,7 +32,17 @@ export type WebhookProvider = 'saspay' | 'meta' | 'higgsfield' | 'fal' | 'bytepl
 export type Access =
   | { auth: 'none' } // /public/*
   | { auth: 'user' } // /me, /notifications
-  | { auth: 'member'; roles?: readonly MemberRole[]; writable?: boolean } // /workspaces/{ws}/…
+  // `writable: true` : refusé en grâce, verrouillé, lecture seule ET suspension (seul `active` écrit). `'not_suspended'` : actions ✱ d'argent (paiement, preuve de paiement),
+  // permises en lecture seule mais refusées en suspension (SECURITY_NOTES §2.1, décision 4). Sans `writable` : lecture, pause, support.
+  // `allowLocked: true` : la route reste permise quand l'espace est VERROUILLÉ (essai terminé sans abonnement, ou grâce écoulée) : pause,
+  // lecture de l'espace pour afficher l'écran de verrouillage. Toute autre route renvoie `403 workspace_locked`, lecture comprise
+  // (décision de la personne du 26/10/2026). `writable: 'not_suspended'` (paiement, preuve de paiement) l'implique.
+  | {
+      auth: 'member';
+      roles?: readonly MemberRole[];
+      writable?: boolean | 'not_suspended';
+      allowLocked?: boolean;
+    } // /workspaces/{ws}/…
   | { auth: 'admin' } // /admin/* (aal2, sinon 404)
   | { auth: 'webhook'; provider: WebhookProvider };
 
@@ -158,6 +168,23 @@ function jsonResponse(status: number, body: unknown, headers: Headers): Response
   return new Response(JSON.stringify(body), { status, headers });
 }
 
+/** Contrôle de l'état de l'espace (SECURITY_NOTES §2.1) : voir `Access`. */
+function assertAccess(
+  access: WorkspaceAccess,
+  options: { writable?: boolean | 'not_suspended'; allowLocked?: boolean },
+): void {
+  const money = options.writable === 'not_suspended';
+  if (access === 'suspended' && (options.writable === true || money)) {
+    throw new AppError('workspace_suspended');
+  }
+  if (access === 'locked' && !money && options.allowLocked !== true) {
+    throw new AppError('workspace_locked');
+  }
+  if (options.writable === true && access !== 'active') {
+    throw new AppError('workspace_read_only');
+  }
+}
+
 export function createApi(getDeps: () => ApiDeps) {
   return function api<
     const A extends Access,
@@ -223,10 +250,7 @@ export function createApi(getDeps: () => ApiDeps) {
           if (options.roles !== undefined && !options.roles.includes(member.role)) {
             throw new AppError('role_insufficient');
           }
-          if (options.writable === true) {
-            if (member.access === 'suspended') throw new AppError('workspace_suspended');
-            if (member.access === 'read_only') throw new AppError('workspace_read_only');
-          }
+          assertAccess(member.access, options);
           workspace = { id: workspaceId, role: member.role, access: member.access };
         }
 

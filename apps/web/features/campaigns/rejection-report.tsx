@@ -32,6 +32,7 @@ import {
 } from './rejection-api';
 import { splitAtExcerpt } from './rejection-text';
 import { StatusPill } from './status';
+import { isWritableStatus } from '../shell/workspace-access';
 
 export interface RejectionPageProps {
   workspace: { id: string; role: 'owner' | 'editor' | 'viewer'; status: string };
@@ -145,7 +146,7 @@ function RejectionContent({
   const key = useRef<string | null>(null);
 
   const canAct = workspace.role === 'owner' || workspace.role === 'editor';
-  const writable = workspace.status === 'active';
+  const writable = isWritableStatus(workspace.status);
   const report = rejection.report;
   const variant = rejection.variant;
   const waiting = rejection.status === 'pending' || rejection.status === 'running';

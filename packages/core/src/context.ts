@@ -5,8 +5,8 @@ import type { DbClient, ServiceClient } from '@pubeka/db';
 export type Locale = 'fr' | 'en';
 export type MemberRole = 'owner' | 'editor' | 'viewer';
 export type PlanCode = 'starter' | 'pro' | 'business';
-/** État d'accès de l'espace ; la règle complète (grâce, fin d'essai) arrive en S19. */
-export type WorkspaceAccess = 'active' | 'grace' | 'read_only' | 'suspended';
+/** État d'accès réel de l'espace (SECURITY_NOTES §2.1) : calculé par `loadWorkspaceAccess` / `@pubeka/billing` (grâce de 3 jours, verrouillage, décisions de l'administration). */
+export type WorkspaceAccess = 'active' | 'grace' | 'locked' | 'read_only' | 'suspended';
 
 export interface Ctx {
   requestId: string;

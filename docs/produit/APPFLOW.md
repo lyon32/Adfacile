@@ -25,7 +25,7 @@
 16. Notifications
 17. Aide et support
 18. Parrainage
-19. Fin d'abonnement, lecture seule, suppression du compte
+19. Fin d'abonnement, grâce, espace verrouillé, suppression du compte
 20. Administration
 21. États transverses (chargement, vide, erreurs)
 22. Différences téléphone / ordinateur
@@ -250,7 +250,7 @@ Liste verte / rouge, chaque ligne rouge a **[Comment faire]** qui ouvre le guide
 | Meta non connecté | Carte « Connecte ton compte Meta pour publier » **[Connecter]** |
 | Essai en cours | Bandeau « Essai : X jours restants · 1 campagne · 3 visuels » **[Choisir une formule]** |
 | Grâce (paiement en retard) | Bandeau orange « Ton abonnement a expiré le JJ/MM. Il te reste X jours pour renouveler. **[Payer]** » |
-| Lecture seule | Bandeau rouge (voir §19) |
+| Lecture seule (administration) ou grâce | Bandeau (voir §19) |
 | Maintenance | Page dédiée avec le message de l'administrateur |
 
 ---
@@ -264,7 +264,7 @@ Assistant en **une colonne** (max 640 px), avec aperçu à droite sur grand écr
 |---|---|
 | Meta non connecté | « Connecte ton compte Meta pour publier. » **[Connecter]** (on peut quand même préparer la campagne : **[Préparer sans publier]**) |
 | Quota de campagnes atteint | « Tu as publié tes X campagnes de ce mois. » **[Passer à Pro]** · **[Préparer quand même]** (publication bloquée) |
-| Lecture seule | Écran bloqué (voir §19) |
+| Verrouillé | Écran bloqué unique (voir §19.2) |
 
 ### 8.1 Étape « Sources »
 ```
@@ -555,14 +555,15 @@ J-3, J-1, J0 : bandeau + notification + e-mail « Ton abonnement se termine le J
 ## 19. Fin d'abonnement, lecture seule, suppression
 
 ### 19.1 Délai de grâce (3 jours)
-Tout fonctionne ; bandeau orange permanent avec compte à rebours et **[Payer]**.
+Formule payée échue (ou annulée) : **lecture**, **achat de crédits** et **mise en pause** seulement (décision de la personne 26/10/2026). Bandeau orange permanent : « Renouvelle avant le JJ/MM », « Il te reste X jours », « Passé le JJ/MM, tu n'auras plus accès à rien et toutes tes publicités seront mises en pause » (promesse honorée par S19b), et **[Payer]** (grisé, « Bientôt disponible », jusqu'à S24/S25).
 
-### 19.2 Lecture seule
-- Bandeau rouge : « Ton abonnement est terminé. Tes campagnes continuent chez Meta, mais tu ne peux plus créer, générer ni modifier. **[Renouveler]** ».
-- Accessible : tableau de bord, statistiques, visuels (téléchargement), réglages, support, paiement.
-- Bloqué (boutons désactivés avec infobulle « Renouvelle ton abonnement ») : nouvelle campagne, génération, modification, reprise.
-- **Toujours autorisé : [Mettre en pause]** une campagne en cours. La pause est **envoyée directement à Meta Ads** (la pub s'arrête chez Meta, le client ne dépense plus).
+### 19.2 Espace verrouillé (décision de la personne 26/10/2026)
+Essai terminé **sans abonnement** (tout de suite), ou grâce de 3 jours écoulée.
+- **Un seul écran** remplace l'application : « Ton essai est terminé » + **[Choisir une formule]**, ou « Ton abonnement est terminé » + **[Renouveler]** (boutons grisés, « Bientôt disponible », jusqu'à S24/S25). Les campagnes déjà lancées continuent chez Meta **jusqu'à la pause automatique** : À la fin de la grâce, ou à la fin d'un essai sans abonnement, **toutes les publicités du compte sont mises en pause automatiquement** (session **S19b**, prérequis **bloquant** de mise en production, avec la route `pause-all`) ; la **reprise est MANUELLE** après le renouvellement, avec « Reprendre mes pubs » (jamais automatique) ; en attendant, la personne peut les arrêter dans le Gestionnaire de publicités de Meta.
+- L'API refuse tout (`403 workspace_locked`), lecture des statistiques comprise, **sauf** : s'abonner ou renouveler (paiement, preuve de paiement), **mettre en pause** une campagne qui diffuse chez Meta, écrire au support, exporter et supprimer son compte, se déconnecter, lire l'état de l'espace.
+- À la fin de la grâce, Pubeka **met en pause toutes les publicités en cours** du compte jusqu'au renouvellement (session S19b : le bandeau de grâce l'annonce déjà).
 - Les **crédits achetés restent** et redeviennent utilisables au renouvellement.
+- **Lecture seule** et **suspension** décidées par l'administration restent distinctes : bandeau dédié, écriture refusée (`workspace_read_only` / `workspace_suspended`), lecture et pause permises ; boutons d'écriture désactivés avec infobulle.
 
 ### 19.3 Supprimer son compte
 ```

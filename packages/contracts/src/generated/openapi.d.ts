@@ -1038,7 +1038,7 @@ export interface paths {
          *     (503 `provider_unavailable`, `meta.reason = publish_disabled`) tant que la publication réelle n'est pas activée.
          *     409 : refus déjà corrigé, rapport pas encore prêt (`rejection_not_explained`), produit interdit ou correction non applicable en un
          *     clic (visuel, page de destination : `fix_not_applicable`), refus partiel d'un test A/B dont l'autre publicité continue
-         *     (`partial_rejection`), campagne qui n'est pas refusée (`invalid_transition`).
+         *     (`partial_rejection`), campagne qui n'est pas refusée (`invalid_transition`), campagne que Meta ne montre plus refusée (`no_longer_rejected` : le statut est relu chez Meta avant toute écriture ; 502 `meta_error` si la lecture échoue), clé d'idempotence déjà utilisée par une autre publication (`idempotency_key_reused`). Si l'ancienne campagne est encore chez Meta au moment de la tâche, rien n'est créé : la campagne passe en `error` avec `publication_error.reason` = `previous_campaign_still_live`, `previous_campaign_unreadable` ou `previous_campaign_not_removed`, le refus reste ouvert et peut être corrigé de nouveau.
          */
         post: operations["applyRejectionFix"];
         delete?: never;
@@ -1835,7 +1835,7 @@ export interface components {
             message: string;
         };
         /** @enum {string} */
-        ErrorCode: "validation_failed" | "unauthenticated" | "session_expired" | "mfa_required" | "forbidden" | "role_insufficient" | "workspace_read_only" | "workspace_suspended" | "not_found" | "conflict" | "idempotency_key_reused" | "already_published" | "gone" | "file_too_large" | "unsupported_file_type" | "insufficient_credits" | "campaign_quota_reached" | "page_limit_reached" | "member_limit_reached" | "plan_feature_locked" | "trial_already_used" | "illegal_product" | "source_unreadable" | "unsafe_url" | "meta_not_connected" | "meta_token_expired" | "meta_payment_method_missing" | "meta_error" | "budget_too_low" | "rate_limited" | "daily_generation_cap" | "provider_unavailable" | "payment_provider_error" | "webhook_signature_invalid" | "maintenance" | "internal_error";
+        ErrorCode: "validation_failed" | "unauthenticated" | "session_expired" | "mfa_required" | "forbidden" | "role_insufficient" | "workspace_read_only" | "workspace_suspended" | "workspace_locked" | "not_found" | "conflict" | "idempotency_key_reused" | "already_published" | "gone" | "file_too_large" | "unsupported_file_type" | "insufficient_credits" | "campaign_quota_reached" | "page_limit_reached" | "member_limit_reached" | "plan_feature_locked" | "trial_already_used" | "illegal_product" | "source_unreadable" | "unsafe_url" | "meta_not_connected" | "meta_token_expired" | "meta_payment_method_missing" | "meta_error" | "budget_too_low" | "rate_limited" | "daily_generation_cap" | "provider_unavailable" | "payment_provider_error" | "webhook_signature_invalid" | "maintenance" | "internal_error";
         Maintenance: {
             active: boolean;
             message?: string | null;
@@ -1913,8 +1913,16 @@ export interface components {
             /** Format: uuid */
             id: string;
             name: string;
-            /** @enum {string} */
-            status: "active" | "read_only" | "suspended";
+            /**
+             * @description Accès réel de l'espace (SECURITY_NOTES §2.1, décision de la personne du 26/10/2026) : `grace` = formule payée échue depuis moins de 3 jours (lecture, achat de crédits et pause seulement) ; `locked` = essai terminé sans abonnement ou grâce écoulée (tout est refusé sauf s'abonner, payer, pause, support, compte : `403 workspace_locked`) ; toutes les publicités du compte sont alors mises en pause automatiquement (session S19b, `pause-all`) et la reprise est manuelle ; `read_only` et `suspended` = décisions de l'administration
+             * @enum {string}
+             */
+            status: "active" | "grace" | "locked" | "read_only" | "suspended";
+            /**
+             * @description Pourquoi l'espace n'est pas simplement actif : `grace`, `trial_ended` (essai terminé), `subscription_ended` (formule payée ou résiliée échue), `admin` (décision de l'administration) ; `null` quand l'espace est actif
+             * @enum {string|null}
+             */
+            status_cause?: "grace" | "trial_ended" | "subscription_ended" | "admin" | null;
             /** @enum {string} */
             role: "owner" | "editor" | "viewer";
             /**
@@ -1924,7 +1932,10 @@ export interface components {
             plan: "trial" | "starter" | "pro" | "business";
             /** Format: date-time */
             period_end?: string | null;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Fin de la grâce (3 jours après `period_end`, ou date prolongée par l'administration)
+             */
             grace_until?: string | null;
             quotas?: components["schemas"]["Quotas"];
         };

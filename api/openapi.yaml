@@ -1631,6 +1631,7 @@ components:
         - role_insufficient
         - workspace_read_only
         - workspace_suspended
+        - workspace_locked
         - not_found
         - conflict
         - idempotency_key_reused
@@ -1728,11 +1729,12 @@ components:
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
-        status: { type: string, enum: [ active, read_only, suspended ] }
+        status: { type: string, enum: [ active, grace, locked, read_only, suspended ], description: "Accès réel de l'espace (SECURITY_NOTES §2.1, décision de la personne du 26/10/2026) : `grace` = formule payée échue depuis moins de 3 jours (lecture, achat de crédits et pause seulement) ; `locked` = essai terminé sans abonnement ou grâce écoulée (tout est refusé sauf s'abonner, payer, pause, support, compte : `403 workspace_locked`) ; toutes les publicités du compte sont alors mises en pause automatiquement (session S19b, `pause-all`) et la reprise est manuelle ; `read_only` et `suspended` = décisions de l'administration" }
+        status_cause: { type: [ string, 'null' ], enum: [ grace, trial_ended, subscription_ended, admin, null ], description: "Pourquoi l'espace n'est pas simplement actif : `grace`, `trial_ended` (essai terminé), `subscription_ended` (formule payée ou résiliée échue), `admin` (décision de l'administration) ; `null` quand l'espace est actif" }
         role: { type: string, enum: [ owner, editor, viewer ] }
         plan: { type: string, enum: [ trial, starter, pro, business ], description: "Formule de l'abonnement le plus récent ; `trial` pendant l'essai et tant qu'aucune formule n'a été choisie (limites de Starter)" }
         period_end: { type: [ string, 'null' ], format: date-time }
-        grace_until: { type: [ string, 'null' ], format: date-time }
+        grace_until: { type: [ string, 'null' ], format: date-time, description: "Fin de la grâce (3 jours après `period_end`, ou date prolongée par l'administration)" }
         quotas: { $ref: '#/components/schemas/Quotas' }
     Quotas:
       type: object

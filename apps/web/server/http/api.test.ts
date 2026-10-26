@@ -46,7 +46,7 @@ interface Harness {
   auth: Authentication;
   maintenance: boolean;
   role: 'owner' | 'editor' | 'viewer' | null;
-  access: 'active' | 'grace' | 'read_only' | 'suspended';
+  access: 'active' | 'grace' | 'locked' | 'read_only' | 'suspended';
   limited: boolean;
   admin: boolean;
   reported: unknown[];
@@ -315,8 +315,58 @@ describe('api() : ordre des contrôles', () => {
     expect((await read(req(`/api/v1/workspaces/${WS}/x`), seg({ workspaceId: WS }))).status).toBe(
       204,
     );
+    // Décision du 26/10/2026 : la grâce n'ouvre plus l'écriture (lecture, achat de crédits et pause seulement).
     h.access = 'grace';
+    expect((await json(await write(r(), seg({ workspaceId: WS })))).code).toBe(
+      'workspace_read_only',
+    );
+    h.access = 'locked';
+    expect((await json(await write(r(), seg({ workspaceId: WS })))).code).toBe('workspace_locked');
+    h.access = 'active';
     expect((await write(r(), seg({ workspaceId: WS }))).status).toBe(204);
+  });
+
+  it('espace VERROUILLÉ : toute lecture est refusée (403 workspace_locked) sauf les routes qui déclarent allowLocked', async () => {
+    const h = harness();
+    const api = createApi(() => h.deps);
+    const read = api({ auth: 'member', rateLimit: 'read' }, () => Promise.resolve({ status: 204 }));
+    const readAllowed = api({ auth: 'member', allowLocked: true, rateLimit: 'read' }, () =>
+      Promise.resolve({ status: 204 }),
+    );
+    const pause = api({ auth: 'member', allowLocked: true, rateLimit: 'write' }, () =>
+      Promise.resolve({ status: 204 }),
+    );
+    const get = () => req(`/api/v1/workspaces/${WS}/x`);
+    const post = () => req(`/api/v1/workspaces/${WS}/x`, { method: 'POST' });
+    for (const access of ['active', 'grace', 'read_only', 'suspended'] as const) {
+      h.access = access;
+      expect((await read(get(), seg({ workspaceId: WS }))).status, access).toBe(204);
+    }
+    h.access = 'locked';
+    const refused = await read(get(), seg({ workspaceId: WS }));
+    expect(refused.status).toBe(403);
+    expect((await json(refused)).code).toBe('workspace_locked');
+    expect((await readAllowed(get(), seg({ workspaceId: WS }))).status).toBe(204);
+    expect((await pause(post(), seg({ workspaceId: WS }))).status).toBe(204);
+    // Même verrouillé, un membre d'un autre espace reçoit 404 et le rôle est vérifié avant l'état.
+    expect(h.steps.some((x) => x.startsWith('rate:'))).toBe(true);
+  });
+
+  it("writable: 'not_suspended' (paiement, preuve de paiement) : permis en lecture seule et en grâce, refusé en suspension (décision 4)", async () => {
+    const h = harness();
+    const api = createApi(() => h.deps);
+    const pay = api({ auth: 'member', writable: 'not_suspended', rateLimit: 'write' }, () =>
+      Promise.resolve({ status: 204 }),
+    );
+    const r = () => req(`/api/v1/workspaces/${WS}/x`, { method: 'POST' });
+    for (const access of ['active', 'grace', 'read_only', 'locked'] as const) {
+      h.access = access;
+      expect((await pay(r(), seg({ workspaceId: WS }))).status).toBe(204);
+    }
+    h.access = 'suspended';
+    const refused = await pay(r(), seg({ workspaceId: WS }));
+    expect(refused.status).toBe(403);
+    expect((await json(refused)).code).toBe('workspace_suspended');
   });
 
   it('429 rate_limited avec Retry-After, avant le handler', async () => {

@@ -109,6 +109,7 @@ function failureOf(
       return { kind: 'rate_limited' };
     case 'workspace_read_only':
     case 'workspace_suspended':
+    case 'workspace_locked':
       return { kind: 'read_only' };
     case 'conflict': {
       if (meta.reason === 'fx_changed')

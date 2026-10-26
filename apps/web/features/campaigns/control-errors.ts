@@ -56,6 +56,7 @@ export function controlFailureOf(error: unknown): ControlFailure {
       return { kind: meta.reason === 'invalid_transition' ? 'invalid_state' : 'stale' };
     case 'workspace_read_only':
     case 'workspace_suspended':
+    case 'workspace_locked':
       return { kind: 'read_only' };
     case 'page_limit_reached':
       return { kind: 'page_limit' };

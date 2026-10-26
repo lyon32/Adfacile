@@ -53,6 +53,20 @@
       "business": "Formule Business",
       "trial": "Essai gratuit"
     },
+    "access": {
+      "label": "État de l’abonnement",
+      "grace_title": "Renouvelle avant le {date}",
+      "grace_body": "Ton abonnement est arrivé à échéance. Tu peux encore consulter tes campagnes, acheter des crédits et les mettre en pause, mais plus rien créer ni modifier. Passé le {date}, tu n’auras plus accès à rien et toutes tes publicités seront mises en pause automatiquement. Après ton renouvellement, tu les relanceras toi-même avec « Reprendre mes pubs » : rien ne repart tout seul. {days, plural, one {Il te reste # jour.} other {Il te reste # jours.}}",
+      "suspended_title": "Ton espace est suspendu",
+      "suspended_body": "Tu peux consulter tes campagnes, les mettre en pause et écrire au support. Le reste est bloqué tant que la suspension dure.",
+      "suspended_cta": "Écrire au support",
+      "admin_read_only_title": "Ton espace est en lecture seule",
+      "admin_read_only_body": "L’équipe Pubeka a mis cet espace en lecture seule. Tu peux consulter tes campagnes et les mettre en pause ; pour le reste, écris au support.",
+      "admin_read_only_cta": "Écrire au support",
+      "soon": "Bientôt disponible",
+      "grace_cta": "Payer",
+      "ask_owner": "Demande au propriétaire de renouveler l’abonnement."
+    },
     "banner": {
       "empty_title": "Ta première campagne t’attend",
       "empty_body": "Colle le lien de ton site ou de ta Page : Pubeka prépare la pub.",
@@ -73,6 +87,18 @@
       "sign_out": "Se déconnecter",
       "close": "Fermer",
       "update_failed": "Le changement n’a pas été enregistré. Réessaie."
+    },
+    "locked": {
+      "label": "Accès verrouillé",
+      "trial_ended_title": "Ton essai est terminé",
+      "trial_ended_body": "Choisis une formule pour retrouver tes campagnes, tes statistiques et tes visuels. Tes publicités ne sont plus gérées depuis Pubeka tant que tu n’as pas pris d’abonnement : elles seront mises en pause automatiquement, et tu les relanceras toi-même avec « Reprendre mes pubs » une fois abonné. Pour les arrêter tout de suite, ouvre le Gestionnaire de publicités de Meta.",
+      "trial_ended_cta": "Choisir une formule",
+      "subscription_ended_title": "Ton abonnement est terminé",
+      "subscription_ended_body": "Renouvelle ton abonnement pour retrouver tes campagnes, tes statistiques et tes visuels. Tes publicités ne sont plus gérées depuis Pubeka tant que tu n’as pas renouvelé : elles seront mises en pause automatiquement, et tu les relanceras toi-même avec « Reprendre mes pubs » après le renouvellement. Pour les arrêter tout de suite, ouvre le Gestionnaire de publicités de Meta.",
+      "subscription_ended_cta": "Renouveler",
+      "soon": "Bientôt disponible",
+      "ask_owner": "Demande au propriétaire de l’espace de renouveler l’abonnement.",
+      "restricted_note": "Ton accès est restreint : seuls l’abonnement, le support et ton profil restent disponibles."
     }
   },
   "dashboard": {
@@ -510,6 +536,7 @@
     },
     "pages": {
       "loading": "Chargement des Pages…",
+      "renew_to_edit": "Renouvelle ton abonnement pour modifier tes Pages.",
       "load_failed": "Les Pages n’ont pas pu être chargées.",
       "empty_title": "Aucune Page pour le moment",
       "empty_body": "Connecte ton compte Meta pour retrouver tes Pages Facebook.",
@@ -535,7 +562,8 @@
         "forbidden": "Tu n’as pas le droit de faire cela. Demande au propriétaire de l’espace.",
         "read_only": "Ton abonnement est expiré : renouvelle-le pour modifier tes Pages.",
         "generic": "Impossible d’enregistrer pour le moment. Réessaie dans quelques instants."
-      }
+      },
+      "admin_read_only": "Cet espace est en lecture seule : l’équipe Pubeka l’a décidé."
     },
     "brand": {
       "loading": "Chargement du kit de marque…",
@@ -577,11 +605,13 @@
       "saving": "Enregistrement…",
       "save_failed": "Impossible d’enregistrer pour le moment. Réessaie dans quelques instants.",
       "read_only": "Seuls le propriétaire et les éditeurs modifient le kit de marque.",
+      "renew_to_edit": "Renouvelle ton abonnement pour modifier le kit de marque.",
       "errors": {
         "color_invalid": "Couleur au format #RRGGBB, par exemple #1A2B3C.",
         "phone_invalid": "Numéro au format international, par exemple +237677000000.",
         "too_long": "Texte trop long."
-      }
+      },
+      "admin_read_only": "Cet espace est en lecture seule : l’équipe Pubeka l’a décidé."
     }
   },
   "campaign": {
@@ -1170,6 +1200,7 @@
       "resume": "Reprendre",
       "relaunch": "Relancer",
       "duplicate": "Dupliquer",
+      "renew_tooltip": "Renouvelle ton abonnement pour le faire",
       "stopped_title": "Meta a arrêté ta pub : le paiement a échoué.",
       "stopped_body": "Règle ta facture dans le Gestionnaire de publicités de Meta (carte bancaire, ou fonds si ton compte en propose), puis relance ta campagne ici.",
       "read_only": "Ton espace est en lecture seule : tu peux encore mettre en pause, mais pas reprendre ni dupliquer.",
@@ -1177,7 +1208,9 @@
       "tab_results": "Résultats",
       "tab_ads": "Pubs",
       "tab_settings": "Réglages",
-      "tab_history": "Historique"
+      "tab_history": "Historique",
+      "grace_notice": "Ton abonnement est arrivé à échéance : tu peux encore mettre en pause, mais pas reprendre ni dupliquer.",
+      "admin_tooltip": "Cet espace est en lecture seule"
     },
     "errors": {
       "publish_disabled": "La publication réelle est désactivée pour le moment.",

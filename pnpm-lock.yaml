@@ -403,12 +403,21 @@ importers:
       '@pubeka/config':
         specifier: workspace:*
         version: link:../config
+      '@types/node':
+        specifier: 24.19.0
+        version: 24.19.0
+      '@vitest/coverage-v8':
+        specifier: 5.0.2
+        version: 5.0.2(vitest@5.0.2)
       eslint:
         specifier: 10.11.0
         version: 10.11.0(jiti@2.7.0)(supports-color@7.2.0)
       typescript:
         specifier: 6.0.3
         version: 6.0.3
+      vitest:
+        specifier: 5.0.2
+        version: 5.0.2(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@24.19.0)(jiti@2.7.0))
 
   packages/config:
     dependencies:
@@ -464,6 +473,9 @@ importers:
       '@pubeka/agents':
         specifier: workspace:*
         version: link:../agents
+      '@pubeka/billing':
+        specifier: workspace:*
+        version: link:../billing
       '@pubeka/contracts':
         specifier: workspace:*
         version: link:../contracts

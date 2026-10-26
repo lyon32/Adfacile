@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { MemberCtx, MemberRole, WorkspaceAccess } from '../context';
 import { FakeClient, type FakeResponse } from '../fake-client.test-helper';
-import { assertRole, assertWritable } from './guards';
+import { assertNotSuspended, assertRole, assertWritable } from './guards';
 import { assertMembersFitPlan, subscriptionsOf } from './plan-limits';
 import { getWorkspace, listWorkspaces, renameWorkspace } from './workspaces';
 
@@ -45,7 +45,7 @@ describe('assertRole / assertWritable (SECURITY_NOTES §2.7)', () => {
     }).not.toThrow();
   });
 
-  it('lecture seule et suspension refusées ; la grâce reste modifiable', () => {
+  it('décision du 26/10/2026 : seul « active » écrit ; grâce et lecture seule → workspace_read_only, verrouillé → workspace_locked, suspendu → workspace_suspended', () => {
     const f = new FakeClient();
     expect(() => {
       assertWritable(ctx(f, f, 'owner', 'read_only'));
@@ -55,7 +55,27 @@ describe('assertRole / assertWritable (SECURITY_NOTES §2.7)', () => {
     }).toThrow(expect.objectContaining({ code: 'workspace_suspended' }));
     expect(() => {
       assertWritable(ctx(f, f, 'owner', 'grace'));
+    }).toThrow(expect.objectContaining({ code: 'workspace_read_only' }));
+    expect(() => {
+      assertWritable(ctx(f, f, 'owner', 'locked'));
+    }).toThrow(expect.objectContaining({ code: 'workspace_locked' }));
+    expect(() => {
+      assertWritable(ctx(f, f, 'owner', 'active'));
     }).not.toThrow();
+  });
+});
+
+describe('assertNotSuspended (paiement et preuve de paiement, décision 4)', () => {
+  it('permis en grâce, lecture seule et verrouillé (s’abonner, payer), refusé en suspension', () => {
+    const f = new FakeClient();
+    for (const access of ['active', 'grace', 'read_only', 'locked'] as const) {
+      expect(() => {
+        assertNotSuspended(ctx(f, f, 'owner', access));
+      }).not.toThrow();
+    }
+    expect(() => {
+      assertNotSuspended(ctx(f, f, 'owner', 'suspended'));
+    }).toThrow(expect.objectContaining({ code: 'workspace_suspended' }));
   });
 });
 
@@ -98,6 +118,7 @@ describe('subscriptionsOf : formule de chaque espace', () => {
     expect(subs.get(third)).toEqual({
       plan: 'trial',
       limitsOf: 'starter',
+      status: null,
       period_end: null,
       grace_until: null,
     });
@@ -198,6 +219,7 @@ describe('listWorkspaces', () => {
         id: WS,
         name: 'Boutique Awa',
         status: 'active',
+        status_cause: null,
         role: 'owner',
         plan: 'trial',
         period_end: null,
@@ -208,6 +230,7 @@ describe('listWorkspaces', () => {
         id: WS2,
         name: 'Agence',
         status: 'read_only',
+        status_cause: 'admin',
         role: 'viewer',
         plan: 'pro',
         period_end: '2026-10-01T00:00:00Z',
@@ -240,6 +263,81 @@ describe('getWorkspace / renameWorkspace', () => {
     const ws = await getWorkspace(ctx(db, svc, 'editor'));
     expect(ws).toMatchObject({ id: WS, role: 'editor', plan: 'trial' });
     expect(db.calls[0]?.ops).toContainEqual(['eq', 'id', WS]);
+  });
+
+  it.each([
+    ['2026-10-11T09:00:00Z', 'grace'],
+    ['2026-10-09T09:00:00Z', 'locked'],
+    ['2026-11-01T09:00:00Z', 'active'],
+  ] as const)(
+    'TR-PAY-07 : abonnement finissant le %s → statut renvoyé « %s » (now = 12/10/2026)',
+    async (periodEnd, expected) => {
+      const db = new FakeClient().reply(
+        { data: { id: WS, name: 'B', status: 'active' }, error: null },
+        { data: [{ workspace_id: WS }], error: null },
+      );
+      const svc = new FakeClient().reply(
+        {
+          data: [
+            {
+              workspace_id: WS,
+              plan_code: 'pro',
+              status: 'active',
+              period_end: periodEnd,
+              grace_until: null,
+            },
+          ],
+          error: null,
+        },
+        PLANS,
+      );
+      expect((await getWorkspace(ctx(db, svc))).status).toBe(expected);
+    },
+  );
+
+  it.each([
+    ['active', 'active', '2026-11-01T09:00:00Z', null],
+    ['active', 'active', '2026-10-11T09:00:00Z', 'grace'],
+    ['active', 'active', '2026-10-09T09:00:00Z', 'subscription_ended'],
+    ['active', 'trialing', '2026-10-09T09:00:00Z', 'trial_ended'],
+    ['active', 'canceled', '2026-10-09T09:00:00Z', 'subscription_ended'],
+    ['read_only', 'trialing', '2026-11-01T09:00:00Z', 'admin'],
+    ['suspended', 'active', '2026-11-01T09:00:00Z', 'admin'],
+  ] as const)(
+    'cause du statut : espace %s, abonnement %s finissant le %s → %s',
+    async (stored, subStatus, periodEnd, cause) => {
+      const db = new FakeClient().reply(
+        { data: { id: WS, name: 'B', status: stored }, error: null },
+        { data: [{ workspace_id: WS }], error: null },
+      );
+      const svc = new FakeClient().reply(
+        {
+          data: [
+            {
+              workspace_id: WS,
+              plan_code: 'pro',
+              status: subStatus,
+              period_end: periodEnd,
+              grace_until: null,
+            },
+          ],
+          error: null,
+        },
+        PLANS,
+      );
+      expect((await getWorkspace(ctx(db, svc))).status_cause).toBe(cause);
+    },
+  );
+
+  it('sans abonnement : actif, aucune cause (jamais « essai terminé »)', async () => {
+    const db = new FakeClient().reply(
+      { data: { id: WS, name: 'B', status: 'active' }, error: null },
+      { data: [{ workspace_id: WS }], error: null },
+    );
+    const svc = new FakeClient().reply({ data: [], error: null }, PLANS);
+    const view = await getWorkspace(ctx(db, svc));
+    expect(view.status).toBe('active');
+    expect(view.status_cause).toBeNull();
   });
 
   it('renomme (propriétaire) puis relit l’espace', async () => {

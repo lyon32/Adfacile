@@ -70,6 +70,7 @@ export function startErrorKey(
     case 'forbidden':
     case 'workspace_read_only':
     case 'workspace_suspended':
+    case 'workspace_locked':
       return 'forbidden';
     case 'provider_unavailable':
     case 'maintenance':

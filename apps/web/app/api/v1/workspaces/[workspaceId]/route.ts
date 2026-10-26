@@ -3,7 +3,8 @@ import { getWorkspace, renameWorkspace } from '@pubeka/core';
 import { api } from '../../../../../server/http/routes';
 import { RenameWorkspaceSchema } from '../schemas';
 
-export const GET = api({ auth: 'member', rateLimit: 'read' }, async (ctx) => ({
+// `allowLocked` : l'écran de verrouillage (« Choisis une formule » / « Renouvelle ») a besoin de l'état de l'espace.
+export const GET = api({ auth: 'member', allowLocked: true, rateLimit: 'read' }, async (ctx) => ({
   status: 200,
   body: await getWorkspace(ctx),
 }));

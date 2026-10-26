@@ -174,15 +174,13 @@ describe('EC-META-10 · limite de débit de Meta pendant « Actualiser »', () =
 describe('TR-PLA-05 · EC-META-08 · statuts relus chez Meta par la tâche', () => {
   async function signal(workspaceId: string, campaignId: string, status: string): Promise<void> {
     // Ce que fait le webhook : un signal journalisé. Le statut, lui, est RELU chez Meta.
-    const r = await svc()
-      .from('campaign_status_events')
-      .insert({
-        workspace_id: workspaceId,
-        campaign_id: campaignId,
-        status,
-        source: 'webhook',
-        payload: null,
-      });
+    const r = await svc().from('campaign_status_events').insert({
+      workspace_id: workspaceId,
+      campaign_id: campaignId,
+      status,
+      source: 'webhook',
+      payload: null,
+    });
     expect(r.error).toBeNull();
   }
   const run = () =>
