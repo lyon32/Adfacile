@@ -201,6 +201,7 @@ Installé par la personne. **Facultatif**, à utiliser **si le besoin se présen
 | Agents IA                                | [docs/agents/](docs/agents/README.md) · banc : `bench/`                                                                                                                         |
 | Apparence                                | [DESIGN-SYSTEM](docs/design/DESIGN-SYSTEM.md)                                                                                                                                    |
 | Médias, crédits                        | [capacites-medias](docs/architecture/capacites-medias.md) · [catalogue-modeles](docs/architecture/catalogue-modeles.md) · [plans-et-credits](docs/produit/plans-et-credits.md) |
+| Ce qui reste à reprendre d'AdFacile (SasPay S25, intérêts Meta, insights S29, légal S33) | [HERITAGE-ADFACILE](docs/architecture/HERITAGE-ADFACILE.md) |
 
 ## 8. Commandes
 
