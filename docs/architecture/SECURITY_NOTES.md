@@ -43,11 +43,20 @@ Un utilisateur peut être membre de **plusieurs** espaces, avec un rôle différ
 | État de l'espace | Quand | Effet sur les droits |
 |---|---|---|
 | `active` | abonnement ou essai en cours | les droits du rôle s'appliquent |
-| `grace` | jusqu'à 3 jours après la fin de la période (✅ Q48) | comme `active`, avec un bandeau « Renouvelle avant le JJ/MM » |
-| `read_only` | après la grâce, ou essai terminé (✅ décision 5, 10/10/2026) | lecture seule, **sauf** les actions marquées ✱ dans les tableaux |
+| `grace` | jusqu'à 3 jours après la fin de période d'une formule payée, ou son annulation : la fin de période est le seul moment qui compte, sans relance de facturation (✅ Q48, décision de la personne 26/10/2026) | **lecture** des campagnes et statistiques, **achat de crédits** et **mise en pause** ; ni création, ni publication, ni reprise, ni génération, ni modification (`403 workspace_read_only`) ; bandeau « Renouvelle avant le JJ/MM… toutes tes publicités seront mises en pause » avec compte à rebours |
+| `locked` | essai terminé **sans abonnement** (immédiat, sans grâce), ou grâce de 3 jours écoulée (décision de la personne 26/10/2026, remplace la « lecture seule après la grâce » de la décision 5) | **tout est refusé**, lecture des statistiques comprise (`403 workspace_locked`), **sauf** : s'abonner ou renouveler (paiement, preuve de paiement), **mettre en pause** une campagne qui diffuse chez Meta, écrire au support, exporter et supprimer son compte, se déconnecter, lire l'état de l'espace (pour afficher l'écran « Choisis une formule » / « Renouvelle »). Les campagnes déjà lancées continuent chez Meta (EC-PAY-11). La base garde les lectures (export, suppression) |
+| `read_only` | décision de l'administration | lecture seule, **sauf** les actions marquées ✱ dans les tableaux |
 | `suspended` | décision de l'administration | lecture des campagnes et statistiques, **mise en pause** et **support** seulement ; **pas de paiement** tant que la suspension dure (✅ décision 4) ; tout le reste `403 workspace_suspended` |
 
-✱ = toujours permis en lecture seule : **mettre en pause** une campagne (envoyé directement à Meta, pour que le client arrête de dépenser), **payer**, **envoyer une preuve de paiement**, **écrire au support**, **gérer son profil**.
+✱ = toujours permis en lecture seule, en grâce et verrouillé (la pause et le support aussi en suspension ; le paiement et la preuve de paiement **jamais** en suspension, option `writable: 'not_suspended'`) : **mettre en pause** une campagne (envoyé directement à Meta, pour que le client arrête de dépenser), **payer**, **envoyer une preuve de paiement**, **écrire au support**, **gérer son profil**.
+
+### 2.1 bis Modèle de l'accès (décision de la personne 26/10/2026) et préparation de S19b
+
+- **Essai** (`trialing`, 7 jours, 1 campagne, 3 visuels photo) : actif. **Formule payée** en période : actif. Un espace **sans abonnement ni essai démarré** (avant S24) reste **actif avec les limites Starter** ; S24 branchera l'essai.
+- Un espace qui prend un abonnement **sans faire l'essai** n'a plus droit à l'essai : indicateur « essai déjà utilisé ou ignoré » à poser en **S24** (colonne ou ligne d'abonnement d'essai : pas de migration en S19).
+- `effectiveAccess()`, `graceEndsAt()` et `lockAt()` (`packages/billing`) exposent le **moment exact** du verrouillage (fin d'essai, fin de grâce, `grace_until` prolongé compris) : la session **S19b** (pause automatique de toutes les publicités du compte à la fin de la grâce, jusqu'au renouvellement, tâche planifiée + cas d'usage + reprise après renouvellement) s'en sert pour savoir quels espaces traiter. **Le bandeau de grâce annonce déjà cette pause : promesse honorée par S19b, ne pas déployer en production avant.**
+- Tâches de fond : la synchronisation des statuts et des statistiques continue pour tous les espaces (miroir de Meta) ; une publication déjà lancée **finit** (pas de contrôle d'accès au démarrage de `runPublication`). Le **Modérateur** (texte IA, coût de Pubeka) n'explique plus rien dès que l'espace n'est plus actif (grâce comprise) : les refus restent « en attente » et sont expliqués au renouvellement.
+- Boutons « Payer » et « Écrire au support » des bandeaux et de l'écran verrouillé : affichés mais grisés, infobulle « Bientôt disponible », tant que `/abonnement` (S24, S25) et `/support` (S28) n'existent pas. Page de paiement **dans Pubeka** : S25.
 
 ### 2.2 Compte et équipe
 
@@ -315,7 +324,7 @@ Avec la fausse Meta (`PUBEKA_FAKE_PROVIDERS` contenant `meta`, ou `all`) l'inter
 | EC-PAY-08 | Preuve de paiement envoyée pour un paiement déjà activé | Refus | `409 conflict` |
 | EC-PAY-09 | Période qui commence un 31 | Le mois suivant se termine le **dernier jour** du mois s'il n'a pas de 31 (ex. 31 janvier → 28 ou 29 février) 🔶 | — |
 | EC-PAY-10 | Affichage en XOF au lieu de XAF | Les deux francs CFA ont la même valeur (même parité fixe avec l'euro) : seule l'unité affichée change, aucun calcul | — |
-| EC-PAY-11 | Fin de l'essai avec une campagne en cours | Espace en lecture seule ; la campagne **continue chez Meta** (le client paie Meta directement) ; la pause reste possible | — |
+| EC-PAY-11 | Fin de l'essai avec une campagne en cours | Espace **verrouillé** (décision de la personne 26/10/2026) ; la campagne **continue chez Meta** (le client paie Meta directement) ; la pause reste possible | — |
 | EC-PAY-12 | Parrainage avec son propre code, ou filleul qui paie depuis le même numéro Mobile Money que le parrain | Pas de récompense 🔶 | — |
 | EC-PAY-13 | Deuxième essai gratuit sur un nouveau compte | Un essai par compte (✅ Q51) ; la détection des doublons entre comptes viendra plus tard | — |
 
@@ -371,6 +380,6 @@ Les 5 points ouverts ont été tranchés ; les règles sont reportées dans les 
 | 2 | Deux personnes modifient la même campagne | **Numéro de version** obligatoire ; version périmée → `409 conflict` (EC-TEAM-08) |
 | 3 | Crédits rendus après la fin de la période | Rendus en **bonus** (EC-CRED-12) |
 | 4 | Espace suspendu | Lecture, **pause**, support ; **pas de paiement** (§2.1) |
-| 5 | Fin de l'essai | **Lecture seule**, comme un abonnement expiré, avec un bandeau « Choisis une formule » (§2.1) |
+| 5 | Fin de l'essai | ~~Lecture seule~~ **Remplacée le 26/10/2026** : essai terminé sans abonnement = espace **verrouillé** tout de suite, écran « Choisis une formule » (§2.1) |
 
 Conséquences techniques (LLD §10, migration `0003_api_support.sql`) : route de transfert de propriété et colonne `version` des campagnes ajoutées à `openapi.yaml` (E8, E9) ; libération des crédits en bonus après la fin de période (E4).
