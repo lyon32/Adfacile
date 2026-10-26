@@ -2,6 +2,7 @@
 export * from './context';
 export * from './account/me';
 export * from './public/public-info';
+export * from './workspaces/access';
 export * from './workspaces/guards';
 export * from './workspaces/members';
 export * from './workspaces/plan-limits';

@@ -39,9 +39,21 @@ export function workspaceAccess(sub: AccessSubscription, now: Date): Subscriptio
   if (Number.isNaN(end) || Number.isNaN(nowMs)) return 'read_only';
   if (nowMs < end) return 'active';
   if (sub.status === 'trialing' || sub.status === 'canceled') return 'read_only';
+  return nowMs < graceEndMs(sub, end) ? 'grace' : 'read_only';
+}
+
+function graceEndMs(sub: AccessSubscription, endMs: number): number {
   const extended = sub.grace_until === null ? Number.NaN : toMs(sub.grace_until);
-  const graceEnd = extended > end ? extended : end + GRACE_DAYS * DAY_MS;
-  return nowMs < graceEnd ? 'grace' : 'read_only';
+  return extended > endMs ? extended : endMs + GRACE_DAYS * DAY_MS;
+}
+
+/** Fin de la grâce d'une formule payée (affichée dans le bandeau « Renouvelle avant le… »). */
+export function graceEndsAt(sub: AccessSubscription): Date | null {
+  if (sub.status === 'trialing' || sub.status === 'canceled' || sub.status === 'read_only') {
+    return null;
+  }
+  const end = toMs(sub.period_end);
+  return Number.isNaN(end) ? null : new Date(graceEndMs(sub, end));
 }
 
 /**

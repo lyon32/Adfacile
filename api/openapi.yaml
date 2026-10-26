@@ -1728,11 +1728,11 @@ components:
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
-        status: { type: string, enum: [ active, read_only, suspended ] }
+        status: { type: string, enum: [ active, grace, read_only, suspended ], description: "Accès réel de l'espace (SECURITY_NOTES §2.1) : `grace` = abonnement échu depuis moins de 3 jours (tout fonctionne, bandeau de rappel) ; `read_only` = après la grâce ou essai terminé ; `suspended` = décision de l'administration" }
         role: { type: string, enum: [ owner, editor, viewer ] }
         plan: { type: string, enum: [ trial, starter, pro, business ], description: "Formule de l'abonnement le plus récent ; `trial` pendant l'essai et tant qu'aucune formule n'a été choisie (limites de Starter)" }
         period_end: { type: [ string, 'null' ], format: date-time }
-        grace_until: { type: [ string, 'null' ], format: date-time }
+        grace_until: { type: [ string, 'null' ], format: date-time, description: "Fin de la grâce (3 jours après `period_end`, ou date prolongée par l'administration)" }
         quotas: { $ref: '#/components/schemas/Quotas' }
     Quotas:
       type: object

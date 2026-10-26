@@ -1038,7 +1038,7 @@ export interface paths {
          *     (503 `provider_unavailable`, `meta.reason = publish_disabled`) tant que la publication réelle n'est pas activée.
          *     409 : refus déjà corrigé, rapport pas encore prêt (`rejection_not_explained`), produit interdit ou correction non applicable en un
          *     clic (visuel, page de destination : `fix_not_applicable`), refus partiel d'un test A/B dont l'autre publicité continue
-         *     (`partial_rejection`), campagne qui n'est pas refusée (`invalid_transition`).
+         *     (`partial_rejection`), campagne qui n'est pas refusée (`invalid_transition`), campagne que Meta ne montre plus refusée (`no_longer_rejected` : le statut est relu chez Meta avant toute écriture ; 502 `meta_error` si la lecture échoue), clé d'idempotence déjà utilisée par une autre publication (`idempotency_key_reused`). Si l'ancienne campagne est encore chez Meta au moment de la tâche, rien n'est créé : la campagne passe en `error` avec `publication_error.reason` = `previous_campaign_still_live`, `previous_campaign_unreadable` ou `previous_campaign_not_removed`, le refus reste ouvert et peut être corrigé de nouveau.
          */
         post: operations["applyRejectionFix"];
         delete?: never;
@@ -1913,8 +1913,11 @@ export interface components {
             /** Format: uuid */
             id: string;
             name: string;
-            /** @enum {string} */
-            status: "active" | "read_only" | "suspended";
+            /**
+             * @description Accès réel de l'espace (SECURITY_NOTES §2.1) : `grace` = abonnement échu depuis moins de 3 jours (tout fonctionne, bandeau de rappel) ; `read_only` = après la grâce ou essai terminé ; `suspended` = décision de l'administration
+             * @enum {string}
+             */
+            status: "active" | "grace" | "read_only" | "suspended";
             /** @enum {string} */
             role: "owner" | "editor" | "viewer";
             /**
@@ -1924,7 +1927,10 @@ export interface components {
             plan: "trial" | "starter" | "pro" | "business";
             /** Format: date-time */
             period_end?: string | null;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Fin de la grâce (3 jours après `period_end`, ou date prolongée par l'administration)
+             */
             grace_until?: string | null;
             quotas?: components["schemas"]["Quotas"];
         };

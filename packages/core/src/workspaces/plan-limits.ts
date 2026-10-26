@@ -1,6 +1,7 @@
 // Formule d'un espace et limites qui en découlent (plans-et-credits §1, ARCHITECTURE §5).
 // Lues avec le client service : l'abonnement n'est lisible que par le propriétaire (RLS),
 // alors que tous les membres voient la formule et les quotas (SECURITY_NOTES §2.2).
+import type { SubscriptionStatus } from '@pubeka/billing';
 import { AppError } from '@pubeka/contracts';
 import { unwrap, type ServiceClient } from '@pubeka/db';
 import type { PlanCode, ServiceCtx } from '../context';
@@ -18,6 +19,8 @@ export interface WorkspaceSubscription {
   plan: WorkspacePlan;
   /** Formule dont les limites s'appliquent. */
   limitsOf: PlanCode;
+  /** Statut brut de l'abonnement ; `null` sans abonnement. */
+  status: SubscriptionStatus | null;
   period_end: string | null;
   grace_until: string | null;
 }
@@ -59,6 +62,7 @@ export async function subscriptionsOf(
       out.set(row.workspace_id, {
         plan: row.status === 'trialing' ? 'trial' : code,
         limitsOf: code,
+        status: row.status,
         period_end: row.period_end,
         grace_until: row.grace_until,
       });
@@ -69,6 +73,7 @@ export async function subscriptionsOf(
       out.set(id, {
         plan: 'trial',
         limitsOf: DEFAULT_LIMITS_PLAN,
+        status: null,
         period_end: null,
         grace_until: null,
       });

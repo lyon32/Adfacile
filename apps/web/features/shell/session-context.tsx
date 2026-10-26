@@ -19,7 +19,9 @@ export interface SessionValue {
     name: string;
     role: MemberRole;
     plan: PlanName;
-    status: 'active' | 'read_only' | 'suspended';
+    status: 'active' | 'grace' | 'read_only' | 'suspended';
+    /** Fin de la grâce (ISO) : seulement utile quand `status` vaut `grace`. */
+    graceUntil?: string | null;
   } | null;
 }
 

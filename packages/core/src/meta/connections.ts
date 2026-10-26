@@ -5,6 +5,7 @@ import { AppError, type ErrorCode } from '@pubeka/contracts';
 import { check, one, unwrap } from '@pubeka/db';
 import type { PlatformAdAccount, PlatformPage } from '@pubeka/platforms';
 import type { Ctx, MemberCtx, MemberRole, WorkspaceAccess } from '../context';
+import { loadWorkspaceAccess } from '../workspaces/access';
 import { assertRole, assertWritable } from '../workspaces/guards';
 import type { MetaDeps } from './deps';
 import { consumeOAuthState, createOAuthState, readOAuthState, type ReturnTo } from './oauth-state';
@@ -81,10 +82,8 @@ async function callerMembership(
       .maybeSingle(),
   );
   if (member === null) return null;
-  const ws = unwrap<{ status: WorkspaceAccess } | null>(
-    await ctx.db.from('workspaces').select('status').eq('id', workspaceId).maybeSingle(),
-  );
-  return ws === null ? null : { role: member.role, access: ws.status };
+  const access = await loadWorkspaceAccess(ctx.db, ctx.svc, workspaceId, ctx.now());
+  return access === null ? null : { role: member.role, access };
 }
 
 /**

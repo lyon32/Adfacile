@@ -9,6 +9,7 @@
 import { AppError } from '@pubeka/contracts';
 import { check, one, unwrap } from '@pubeka/db';
 import type { Ctx, Locale, MemberCtx, MemberRole } from '../context';
+import { loadWorkspaceAccess } from './access';
 import { assertRole, assertWritable } from './guards';
 import { countMembers, INVITATION_TTL_MS, memberLimitOf } from './plan-limits';
 import { workspaceView, type Workspace } from './workspace-view';
@@ -207,12 +208,11 @@ export async function acceptInvitation(
   // La base refuse une invitation `owner` (0001) ; par prudence, jamais plus que lecteur.
   const role = invitation.role === 'owner' ? 'viewer' : invitation.role;
 
-  const workspace = unwrap<{ status: 'active' | 'read_only' | 'suspended' } | null>(
-    await ctx.svc.from('workspaces').select('status').eq('id', wsId).maybeSingle(),
-  );
-  if (workspace === null) throw new AppError('gone');
-  if (workspace.status === 'suspended') throw new AppError('workspace_suspended');
-  if (workspace.status === 'read_only') throw new AppError('workspace_read_only');
+  // Accès réel (abonnement échu compris), lu avec le client service : l'invité n'est pas encore membre.
+  const access = await loadWorkspaceAccess(ctx.svc, ctx.svc, wsId, now);
+  if (access === null) throw new AppError('gone');
+  if (access === 'suspended') throw new AppError('workspace_suspended');
+  if (access === 'read_only') throw new AppError('workspace_read_only');
 
   const already = unwrap<{ role: MemberRole } | null>(
     await ctx.svc

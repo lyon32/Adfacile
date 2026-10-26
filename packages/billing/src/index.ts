@@ -2,6 +2,7 @@
 export {
   GRACE_DAYS,
   effectiveAccess,
+  graceEndsAt,
   workspaceAccess,
   type AccessSubscription,
   type EffectiveAccess,

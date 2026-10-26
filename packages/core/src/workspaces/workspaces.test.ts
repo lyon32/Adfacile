@@ -98,6 +98,7 @@ describe('subscriptionsOf : formule de chaque espace', () => {
     expect(subs.get(third)).toEqual({
       plan: 'trial',
       limitsOf: 'starter',
+      status: null,
       period_end: null,
       grace_until: null,
     });
@@ -241,6 +242,36 @@ describe('getWorkspace / renameWorkspace', () => {
     expect(ws).toMatchObject({ id: WS, role: 'editor', plan: 'trial' });
     expect(db.calls[0]?.ops).toContainEqual(['eq', 'id', WS]);
   });
+
+  it.each([
+    ['2026-10-11T09:00:00Z', 'grace'],
+    ['2026-10-09T09:00:00Z', 'read_only'],
+    ['2026-11-01T09:00:00Z', 'active'],
+  ] as const)(
+    'TR-PAY-07 : abonnement finissant le %s → statut renvoyé « %s » (now = 12/10/2026)',
+    async (periodEnd, expected) => {
+      const db = new FakeClient().reply(
+        { data: { id: WS, name: 'B', status: 'active' }, error: null },
+        { data: [{ workspace_id: WS }], error: null },
+      );
+      const svc = new FakeClient().reply(
+        {
+          data: [
+            {
+              workspace_id: WS,
+              plan_code: 'pro',
+              status: 'active',
+              period_end: periodEnd,
+              grace_until: null,
+            },
+          ],
+          error: null,
+        },
+        PLANS,
+      );
+      expect((await getWorkspace(ctx(db, svc))).status).toBe(expected);
+    },
+  );
 
   it('renomme (propriétaire) puis relit l’espace', async () => {
     const db = new FakeClient().reply({ data: [{ id: WS }], error: null });

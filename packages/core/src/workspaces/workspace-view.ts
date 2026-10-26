@@ -1,6 +1,12 @@
 // Forme `Workspace` d'openapi.yaml : espace, rôle de l'utilisateur, formule et quotas.
+import {
+  effectiveAccess,
+  graceEndsAt,
+  type AccessSubscription,
+  type StoredWorkspaceStatus,
+} from '@pubeka/billing';
 import { one, unwrap } from '@pubeka/db';
-import type { Ctx, MemberRole } from '../context';
+import type { Ctx, MemberRole, WorkspaceAccess } from '../context';
 import {
   DEFAULT_LIMITS_PLAN,
   limitsFor,
@@ -9,7 +15,8 @@ import {
   type WorkspacePlan,
 } from './plan-limits';
 
-export type WorkspaceStatus = 'active' | 'read_only' | 'suspended';
+/** Accès réel de l'espace (abonnement et décisions de l'administration), pas la colonne brute. */
+export type WorkspaceStatus = WorkspaceAccess;
 
 export interface WorkspaceQuotas {
   members: number;
@@ -32,7 +39,8 @@ export interface Workspace {
 export interface WorkspaceRef {
   id: string;
   name: string;
-  status: WorkspaceStatus;
+  /** Valeur stockée dans `workspaces.status`. */
+  status: StoredWorkspaceStatus;
   role: MemberRole;
 }
 
@@ -55,14 +63,22 @@ export async function toWorkspaces(ctx: Ctx, refs: readonly WorkspaceRef[]): Pro
   return refs.map((ref) => {
     const sub = subscriptions.get(ref.id);
     const plan = limitsFor(limits, sub?.limitsOf ?? DEFAULT_LIMITS_PLAN);
+    const accessSub: AccessSubscription | null =
+      sub?.status && sub.period_end !== null
+        ? { status: sub.status, period_end: sub.period_end, grace_until: sub.grace_until }
+        : null;
     return {
       id: ref.id,
       name: ref.name,
-      status: ref.status,
+      status: effectiveAccess(ref.status, accessSub, ctx.now()),
       role: ref.role,
       plan: sub?.plan ?? 'trial',
       period_end: sub?.period_end ?? null,
-      grace_until: sub?.grace_until ?? null,
+      // Fin réelle de la grâce (3 jours après la période si l'administration n'a rien prolongé).
+      grace_until:
+        (accessSub === null ? null : graceEndsAt(accessSub)?.toISOString()) ??
+        sub?.grace_until ??
+        null,
       quotas: {
         members: counts.get(ref.id) ?? 0,
         members_limit: plan.max_members,

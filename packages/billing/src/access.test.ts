@@ -1,7 +1,13 @@
 // TR-PAY-07 : grâce de 3 jours après la fin de période, puis lecture seule ; la fin de l'essai
 // donne la lecture seule sans grâce (SECURITY_NOTES §2.1, décision 5 du §6).
 import { describe, expect, it } from 'vitest';
-import { GRACE_DAYS, effectiveAccess, workspaceAccess, type AccessSubscription } from './access';
+import {
+  GRACE_DAYS,
+  effectiveAccess,
+  graceEndsAt,
+  workspaceAccess,
+  type AccessSubscription,
+} from './access';
 
 const END = new Date('2026-11-10T12:00:00.000Z');
 const day = 24 * 3600 * 1000;
@@ -86,5 +92,19 @@ describe('effectiveAccess : état stocké de l’espace + abonnement', () => {
   it('actif avec abonnement échu : suit l’abonnement', () => {
     expect(effectiveAccess('active', sub(), new Date(END.getTime() + 5 * day))).toBe('read_only');
     expect(effectiveAccess('active', sub(), new Date(END.getTime() + day))).toBe('grace');
+  });
+});
+
+describe('graceEndsAt', () => {
+  it('3 jours après la fin de période, ou grace_until prolongé', () => {
+    expect(graceEndsAt(sub())?.toISOString()).toBe(new Date(END.getTime() + 3 * day).toISOString());
+    const longer = new Date(END.getTime() + 8 * day);
+    expect(graceEndsAt(sub({ grace_until: longer }))?.getTime()).toBe(longer.getTime());
+  });
+  it('pas de grâce pour un essai, une résiliation, une lecture seule ou une date illisible', () => {
+    expect(graceEndsAt(sub({ status: 'trialing' }))).toBeNull();
+    expect(graceEndsAt(sub({ status: 'canceled' }))).toBeNull();
+    expect(graceEndsAt(sub({ status: 'read_only' }))).toBeNull();
+    expect(graceEndsAt(sub({ period_end: 'x' }))).toBeNull();
   });
 });
