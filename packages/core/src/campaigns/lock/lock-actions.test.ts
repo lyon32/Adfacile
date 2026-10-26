@@ -238,3 +238,37 @@ describe('revue adversariale S19b — courses entre le client et « Reprendre me
     expect(rowOf(active.w.db, b).pause_reason ?? null).toBeNull();
   });
 });
+
+describe('contrôle indépendant S19b — lots plafonnés par requête, reprise rejouable', () => {
+  it('pause-all : 10 campagnes au plus par requête, « more » dit qu’il en reste, le clic suivant termine', async () => {
+    const t = lockWorld();
+    for (let i = 0; i < 12; i += 1) await t.add('active', { name: `Promo ${String(i)}` });
+    const first = await pauseAllCampaigns(t.memberAt('locked'), t.deps);
+    expect(first).toMatchObject({ paused: 10, more: true, failed: [] });
+    const second = await pauseAllCampaigns(t.memberAt('locked'), t.deps);
+    expect(second).toMatchObject({ paused: 2, more: false, failed: [] });
+    expect(t.fake.pauseAttempts).toBe(12);
+  });
+
+  it('resume-all : 10 campagnes au plus par requête, « more » et « remaining » disent ce qui reste, le clic suivant termine', async () => {
+    const t = lockWorld();
+    for (let i = 0; i < 12; i += 1) {
+      await t.add('paused', { pauseReason: 'billing_lock', name: `Promo ${String(i)}` });
+    }
+    const first = await resumeLockedCampaigns(t.memberAt('active'), t.deps);
+    expect(first).toMatchObject({ resumed: 10, more: true, remaining: 2, failed: [] });
+    const second = await resumeLockedCampaigns(t.memberAt('active'), t.deps);
+    expect(second).toMatchObject({ resumed: 2, more: false, remaining: 0 });
+    expect(t.fake.resumeAttempts).toBe(12);
+  });
+
+  it('exactement 10 campagnes : un seul passage, rien de « more »', async () => {
+    const t = lockWorld();
+    for (let i = 0; i < 10; i += 1) await t.add('paused', { pauseReason: 'billing_lock' });
+    expect(await resumeLockedCampaigns(t.memberAt('active'), t.deps)).toMatchObject({
+      resumed: 10,
+      more: false,
+      remaining: 0,
+    });
+  });
+});
