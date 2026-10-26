@@ -364,6 +364,12 @@ export async function explainPendingRejections(
     accessOf.set(workspaceId, allowed);
     return allowed;
   };
+  const isStillPending = async (id: string): Promise<boolean> => {
+    const row = unwrap<{ explain_status: string } | null>(
+      await ctx.svc.from('rejections').select('explain_status').eq('id', id).maybeSingle(),
+    );
+    return row?.explain_status === 'pending';
+  };
   const PAGE = 50;
   const MAX_PAGES = 40;
   const seen = new Set<string>();
@@ -395,11 +401,11 @@ export async function explainPendingRejections(
           workspaceId: item.workspace_id,
         });
         report[outcome] += 1;
-        if (outcome === 'skipped') offset += 1;
+        if (outcome !== 'explained' && (await isStillPending(item.id))) offset += 1;
       } catch (error) {
         report.failed += 1;
-        // Interrompu avant la prise : le refus reste « en attente », il occupe encore une place dans la fenêtre de lecture.
-        offset += 1;
+        // Interrompu : si le refus est resté « en attente », il occupe encore une place dans la fenêtre de lecture.
+        if (await isStillPending(item.id)) offset += 1;
         logger.error('Explication du refus interrompue', { rejectionId: item.id, err: error });
       }
     }

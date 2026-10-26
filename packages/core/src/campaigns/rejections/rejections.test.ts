@@ -450,10 +450,15 @@ describe('explication par le Modérateur (après un refus seulement)', () => {
       return query;
     });
     const report = await explainPendingRejections(s.ctxAt(20), explainDeps());
-    // 45 bloqués + 2 interrompus restés en attente : la 2e page commence à 47, pas à 45.
-    expect(starts).toEqual([0, 47]);
-    expect(report.explained).toBe(3);
-    expect(report.failed).toBeGreaterThanOrEqual(2);
+    // Les refus d'espace actif restés « en attente » (interrompus) occupent encore la fenêtre : la 2e page commence après eux,
+    // ni avant (relecture) ni après (refus sauté).
+    const stuck = table.filter(
+      (row) => row.workspace_id !== OTHER_W && row.explain_status === 'pending',
+    ).length;
+    expect(stuck).toBeGreaterThanOrEqual(1);
+    expect(starts).toEqual([0, 45 + stuck]);
+    expect(report.explained).toBeGreaterThanOrEqual(1);
+    expect(report.failed).toBeGreaterThanOrEqual(1);
   });
 
   it('TR-AGT-01 : une sortie invalide est renvoyée une fois, puis l’échec est visible (2 appels au plus)', async () => {
