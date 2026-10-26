@@ -1,9 +1,8 @@
 // Assistant de campagne, étape Proposition (APPFLOW §8.3) : parcours réel contre la pile locale et la FAUSSE IA, sans défilement
 // horizontal (TR-PLT-01), accessible (axe), clair et sombre, FR. Les états qu'on ne peut pas obtenir de la fausse IA
 // (écriture en cours, erreur au milieu du flux, taux de change, conflit de version) sont simulés côté navigateur.
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { createConfirmedUser, overflowsHorizontally, patchMe, signIn } from './support';
+import { createConfirmedUser, overflowsHorizontally, patchMe, signIn, axeAnalyze } from './support';
 
 // Un compte neuf par test : la limite « IA » (20 par heure et par espace) ne doit pas fausser un parcours.
 
@@ -26,7 +25,7 @@ async function checkScreen(
     path: `../../test-results/captures/${name}${SANS_MONTANT.has(name) ? '' : '-valeurs-essai'}-${info.project.name}-${theme}.png`,
     fullPage: true,
   });
-  const results = await new AxeBuilder({ page }).analyze();
+  const results = await axeAnalyze(page);
   expect(results.violations.map((v) => `${v.id} : ${v.nodes[0]?.target.join(' ') ?? ''}`)).toEqual(
     [],
   );

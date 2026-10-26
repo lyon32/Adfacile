@@ -1,6 +1,7 @@
 // Aides des parcours : création d'un compte de test par l'API d'administration de la pile
 // Supabase LOCALE (jamais un vrai service, TESTING §1), connexion par l'écran, mesure du
 // défilement horizontal.
+import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page } from '@playwright/test';
 
 const LOCAL_SUPABASE = /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/;
@@ -239,4 +240,28 @@ export async function reachPreview(
   await expect(page.getByRole('heading', { level: 1, name: 'Aperçu de ta pub' })).toBeVisible({
     timeout: 20_000,
   });
+}
+
+// ---- Analyse d'accessibilité stable ------------------------------------------------------------------------------------------
+
+/**
+ * Attend la fin des animations et transitions CSS FINIES de la page (les boucles infinies, comme un indicateur de chargement,
+ * sont ignorées). Sans cela, axe lit les couleurs d'un onglet PENDANT son fondu (`transition-colors`) : des gris intermédiaires
+ * (ex. #adada9 sur #525250, ratio 3,47) qui n'existent pas à l'état stable. Le défaut est intermittent selon la vitesse de la
+ * machine (diagnostic S18 : les 60 analyses lancées juste après un clic d'onglet en reproduisaient 89).
+ */
+export async function waitForAnimations(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const finite = document.getAnimations().filter((animation) => {
+      const end = animation.effect?.getComputedTiming().endTime;
+      return typeof end === 'number' && Number.isFinite(end);
+    });
+    await Promise.all(finite.map((animation) => animation.finished.catch(() => undefined)));
+  });
+}
+
+/** Analyse axe sur un écran STABLE (animations terminées). */
+export async function axeAnalyze(page: Page) {
+  await waitForAnimations(page);
+  return new AxeBuilder({ page }).analyze();
 }

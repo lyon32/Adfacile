@@ -1,9 +1,8 @@
 // Assistant de campagne, étapes Aperçu et Publier (APPFLOW §8.5 et §8.6) : parcours P2 réel contre la pile locale, la FAUSSE IA et la
 // FAUSSE Meta (PUBEKA_FAKE_PROVIDERS) : AUCUNE publicité réelle n'est créée. Sans défilement horizontal (TR-PLT-01), accessible (axe),
 // clair et sombre. Les erreurs qu'on ne peut pas provoquer avec la fausse Meta sont simulées côté navigateur (réponses du serveur).
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { overflowsHorizontally, reachPreview } from './support';
+import { overflowsHorizontally, reachPreview, axeAnalyze } from './support';
 
 async function checkScreen(
   page: Page,
@@ -17,7 +16,7 @@ async function checkScreen(
     path: `../../test-results/captures/${name}-valeurs-essai-${info.project.name}-${theme}.png`,
     fullPage: true,
   });
-  const results = await new AxeBuilder({ page }).analyze();
+  const results = await axeAnalyze(page);
   expect(results.violations.map((v) => `${v.id} : ${v.nodes[0]?.target.join(' ') ?? ''}`)).toEqual(
     [],
   );

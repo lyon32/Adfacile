@@ -1,6 +1,5 @@
 // Assistant de campagne, étapes Sources et Questions (APPFLOW §8.0 à §8.2) : parcours réel contre la pile locale et la FAUSSE IA
 // (PUBEKA_FAKE_PROVIDERS), sans défilement horizontal (TR-PLT-01), accessible (axe), clair et sombre, FR et EN.
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import {
   createConfirmedUser,
@@ -8,6 +7,7 @@ import {
   patchMe,
   signIn,
   type TestUser,
+  axeAnalyze,
 } from './support';
 
 let user: TestUser;
@@ -32,7 +32,7 @@ async function checkScreen(
     path: `../../test-results/captures/${name}-${info.project.name}-${theme}.png`,
     fullPage: true,
   });
-  const results = await new AxeBuilder({ page }).analyze();
+  const results = await axeAnalyze(page);
   expect(results.violations.map((v) => `${v.id} : ${v.nodes[0]?.target.join(' ') ?? ''}`)).toEqual(
     [],
   );

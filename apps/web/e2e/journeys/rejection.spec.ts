@@ -3,9 +3,8 @@
 // Meta et le rapport du Modérateur sont posés en base locale : le serveur de test n'expose aucune commande pour faire refuser une
 // pub par la fausse Meta ; l'enregistrement du refus, l'explication et la republication sont prouvés par les tests d'intégration.
 // Sans défilement horizontal (TR-PLT-01), accessible (axe). Textes d'essai (le produit n'en contient aucun).
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { overflowsHorizontally, reachPreview, serviceRest } from './support';
+import { overflowsHorizontally, reachPreview, serviceRest, axeAnalyze } from './support';
 
 async function checkScreen(
   page: Page,
@@ -18,7 +17,7 @@ async function checkScreen(
     path: `../../test-results/captures/${name}-valeurs-essai-${info.project.name}-${theme}.png`,
     fullPage: true,
   });
-  const results = await new AxeBuilder({ page }).analyze();
+  const results = await axeAnalyze(page);
   expect(results.violations.map((v) => `${v.id} : ${v.nodes[0]?.target.join(' ') ?? ''}`)).toEqual(
     [],
   );

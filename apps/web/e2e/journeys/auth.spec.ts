@@ -1,8 +1,7 @@
 // Écrans d'accès habillés (S04 + S09) : sans défilement horizontal (TR-PLT-01), axe sans violation,
 // clair et sombre, et bascule de langue sans texte français qui reste (TR-PLT-03).
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { overflowsHorizontally } from './support';
+import { overflowsHorizontally, axeAnalyze } from './support';
 
 const SCREENS = [
   { path: '/connexion', name: 'connexion', fr: 'Connexion', en: 'Sign in' },
@@ -31,7 +30,7 @@ for (const theme of ['light', 'dark'] as const) {
       await page.screenshot({
         path: `../../test-results/captures/${screen.name}-${info.project.name}-${theme}.png`,
       });
-      const results = await new AxeBuilder({ page }).analyze();
+      const results = await axeAnalyze(page);
       expect(
         results.violations.map((v) => `${v.id} : ${v.nodes[0]?.target.join(' ') ?? ''}`),
       ).toEqual([]);
