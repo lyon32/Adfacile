@@ -111,6 +111,7 @@ La session est finie quand **tout** ce qui suit est vrai, avec la preuve dans la
 | S16     | `core/campaigns` (publication), `jobs/src/tasks/campaign-*`, `api/…/campaigns/…/{publish,pause,resume,relaunch}`, `web/features/campaign-wizard` (Aperçu, Publier) |
 | S17     | `core/campaigns` (statuts, statistiques), `jobs/src/schedules`, `api/…/stats`, `web/features/campaigns`, tableau de bord                                             |
 | S18     | `packages/agents/src/moderateur`, `core/campaigns/rejections`, `api/…/rejections`                                                                                    |
+| S18b    | `packages/platforms` (modification d'une publicité), `core/campaigns` (modification, correction d'un refus), `api/…/campaigns/…/{update,apply-fix}`, `web/features/campaigns` (onglet Réglages) |
 | S19     | `packages/billing` (`workspaceAccess`), `web/server/http` (`writable`), bandeaux dans `web/features/shell`                                                            |
 | S20     | `packages/media` (catalogue, prix, aiguilleur), `api/media-models`                                                                                                    |
 | S21     | `packages/media/src/providers`, `core/generations`, `jobs/src/tasks/media-*`, `api/…/generations`, `api/webhooks/[provider]`                                         |
