@@ -126,14 +126,14 @@ describe('TR-PAY-07 : un éditeur qui appelle la base directement avec son jeton
       .from('campaigns')
       .insert({ workspace_id: s.workspace.id, name: 'direct', created_by: s.editor.id });
 
-  it('abonnement en cours et grâce : écriture directe acceptée', async () => {
+  it('abonnement en cours : écriture directe acceptée ; pendant la grâce de 3 jours : refusée (lire, acheter des crédits et pause seulement)', async () => {
     await subscribe('active', 10);
     expect((await draft()).error).toBeNull();
     await subscribe('active', -1);
-    expect((await draft()).error).toBeNull();
+    expect((await draft()).error?.code).toBe('42501');
   });
 
-  it('échu depuis plus de 3 jours : refusé par la RLS (42501), alors que workspaces.status est encore « active »', async () => {
+  it('échu depuis plus de 3 jours (verrouillé) : refusé par la RLS (42501), alors que workspaces.status est encore « active »', async () => {
     await subscribe('active', -5);
     const stored = await testServiceClient()
       .from('workspaces')

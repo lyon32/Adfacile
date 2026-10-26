@@ -21,7 +21,7 @@ export interface CampaignWizardProps {
   workspace: {
     id: string;
     role: 'owner' | 'editor' | 'viewer';
-    status: 'active' | 'grace' | 'read_only' | 'suspended';
+    status: 'active' | 'grace' | 'locked' | 'read_only' | 'suspended';
   } | null;
 }
 
