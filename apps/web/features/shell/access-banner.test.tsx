@@ -88,7 +88,7 @@ describe('AccessBanner', () => {
     expect(document.body.textContent).toContain(
       'After November 13, you will lose access to everything and all your ads will be paused.',
     );
-    expect(screen.getByRole('button', { name: 'Pay' }).disabled).toBe(true);
+    expect(screen.getByRole('button', { name: 'Pay' }).hasAttribute('disabled')).toBe(true);
   });
 
   it('lecture seule décidée par l’administration : message dédié, bouton « support » grisé, même pour un éditeur', () => {
