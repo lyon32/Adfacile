@@ -528,6 +528,7 @@
     },
     "pages": {
       "loading": "Loading Pages…",
+      "renew_to_edit": "Renew your subscription to edit your Pages.",
       "load_failed": "The Pages could not be loaded.",
       "empty_title": "No Page yet",
       "empty_body": "Connect your Meta account to find your Facebook Pages.",
@@ -595,6 +596,7 @@
       "saving": "Saving…",
       "save_failed": "Unable to save right now. Try again in a few moments.",
       "read_only": "Only the owner and editors change the brand kit.",
+      "renew_to_edit": "Renew your subscription to edit the brand kit.",
       "errors": {
         "color_invalid": "Color in #RRGGBB format, for example #1A2B3C.",
         "phone_invalid": "Number in international format, for example +237677000000.",
@@ -1191,6 +1193,7 @@
       "stopped_title": "Meta stopped your ad: the payment failed.",
       "stopped_body": "Settle your bill in Meta Ads Manager (bank card, or funds if your account offers them), then relaunch your campaign here.",
       "read_only": "Your workspace is read-only: you can still pause, but not resume or duplicate.",
+      "renew_tooltip": "Renew your subscription to do this",
       "tabs_label": "Campaign sections",
       "tab_results": "Results",
       "tab_ads": "Ads",

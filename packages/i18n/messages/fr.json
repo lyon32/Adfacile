@@ -528,6 +528,7 @@
     },
     "pages": {
       "loading": "Chargement des Pages…",
+      "renew_to_edit": "Renouvelle ton abonnement pour modifier tes Pages.",
       "load_failed": "Les Pages n’ont pas pu être chargées.",
       "empty_title": "Aucune Page pour le moment",
       "empty_body": "Connecte ton compte Meta pour retrouver tes Pages Facebook.",
@@ -595,6 +596,7 @@
       "saving": "Enregistrement…",
       "save_failed": "Impossible d’enregistrer pour le moment. Réessaie dans quelques instants.",
       "read_only": "Seuls le propriétaire et les éditeurs modifient le kit de marque.",
+      "renew_to_edit": "Renouvelle ton abonnement pour modifier le kit de marque.",
       "errors": {
         "color_invalid": "Couleur au format #RRGGBB, par exemple #1A2B3C.",
         "phone_invalid": "Numéro au format international, par exemple +237677000000.",
@@ -1188,6 +1190,7 @@
       "resume": "Reprendre",
       "relaunch": "Relancer",
       "duplicate": "Dupliquer",
+      "renew_tooltip": "Renouvelle ton abonnement pour le faire",
       "stopped_title": "Meta a arrêté ta pub : le paiement a échoué.",
       "stopped_body": "Règle ta facture dans le Gestionnaire de publicités de Meta (carte bancaire, ou fonds si ton compte en propose), puis relance ta campagne ici.",
       "read_only": "Ton espace est en lecture seule : tu peux encore mettre en pause, mais pas reprendre ni dupliquer.",

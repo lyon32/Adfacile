@@ -31,7 +31,7 @@ export interface SessionValue {
   } | null;
 }
 
-const SessionContext = createContext<SessionValue | null>(null);
+export const SessionContext = createContext<SessionValue | null>(null);
 
 export function SessionProvider({
   value,

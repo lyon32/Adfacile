@@ -141,6 +141,7 @@ export function CampaignPage({ workspace, campaignId }: CampaignPageProps): Reac
                 <Button
                   type="button"
                   disabled={pending || !writable}
+                  title={writable ? undefined : t('renew_tooltip')}
                   onClick={() => {
                     setConfirm('resume');
                   }}
@@ -152,6 +153,7 @@ export function CampaignPage({ workspace, campaignId }: CampaignPageProps): Reac
                 <Button
                   type="button"
                   disabled={pending || !writable}
+                  title={writable ? undefined : t('renew_tooltip')}
                   onClick={() => {
                     setConfirm('recover');
                   }}
@@ -163,6 +165,7 @@ export function CampaignPage({ workspace, campaignId }: CampaignPageProps): Reac
                 <Button
                   type="button"
                   disabled={pending || !writable}
+                  title={writable ? undefined : t('renew_tooltip')}
                   onClick={() => {
                     run('copy');
                   }}
@@ -174,6 +177,7 @@ export function CampaignPage({ workspace, campaignId }: CampaignPageProps): Reac
                   type="button"
                   variant="quiet"
                   disabled={pending || !writable}
+                  title={writable ? undefined : t('renew_tooltip')}
                   onClick={() => {
                     run('copy');
                   }}
