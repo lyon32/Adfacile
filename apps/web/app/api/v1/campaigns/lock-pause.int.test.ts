@@ -150,7 +150,7 @@ describeRoute('pauseAllCampaigns', {
     await subscribe(space, 'active', -5); // grâce écoulée : VERROUILLÉ
     const res = await pauseAll(space, space.owner);
     expect(res.status).toBe(200);
-    expect(await bilanOf(res)).toEqual({ paused: 1, failed: [], rate_limited: false });
+    expect(await bilanOf(res)).toEqual({ paused: 1, failed: [], rate_limited: false, more: false });
     expect(await row(id)).toMatchObject({ status: 'paused', pause_reason: 'billing_lock' });
     expect(await metaStatusOf(id)).toBe('paused');
     expect(await events(id)).toMatchObject([{ status: 'paused', source: 'user' }]);
@@ -198,7 +198,7 @@ describeRoute('pauseAllCampaigns', {
       const again = await pauseAll(space, space.owner, { key });
       expect(first.status).toBe(200);
       expect(again.headers.get('idempotent-replayed')).toBe('true');
-      expect(await bilanOf(again)).toEqual({ paused: 1, failed: [], rate_limited: false });
+      expect(await bilanOf(again)).toEqual({ paused: 1, failed: [], rate_limited: false, more: false });
       expect(fakeMeta().pauseAttempts - before).toBe(1);
       expect(await events(id)).toHaveLength(1);
     },
@@ -261,7 +261,7 @@ describeRoute('resumeAllCampaigns', {
     await subscribe(space, 'active', 30); // renouvelé
     const res = await resumeAll(space, space.owner);
     expect(res.status).toBe(200);
-    expect(await bilanOf(res)).toEqual({ resumed: 1, failed: [], remaining: 0, rate_limited: false });
+    expect(await bilanOf(res)).toEqual({ resumed: 1, failed: [], remaining: 0, rate_limited: false, more: false });
     // La base a effacé le motif toute seule (déclencheur de la migration 0022) en même temps que le statut.
     expect(await row(id)).toMatchObject({ status: 'active', pause_reason: null, paused_at: null });
     expect(await metaStatusOf(id)).toBe('active');

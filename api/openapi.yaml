@@ -575,6 +575,7 @@ paths:
         Action ✱ comme la pause d'une campagne : permise en grâce, verrouillé, lecture seule et suspension (le client doit toujours pouvoir
         arrêter de dépenser) ; jamais bloquée par l'interrupteur `PUBEKA_META_PUBLISH`. `Idempotency-Key` obligatoire (UUID v4) ; la même clé
         rejoue la même réponse. Corps : objet vide `{}` (tout autre champ : `400 validation_failed`).
+        Lot plafonné : 10 campagnes au plus par requête (`maxDuration` 120 s) ; `more: true` dit qu'il en reste, le client clique encore (rejouable).
 
         Pour CHAQUE campagne de l'espace en vérification, en diffusion ou en erreur (connue de Meta), Meta est appelé d'abord puis son statut
         est RELU : la campagne n'est marquée `paused` dans Pubeka que si Meta confirme (EC-META-07). Une campagne dont la pause échoue (jeton
@@ -604,7 +605,7 @@ paths:
       description: |
         Bouton « Reprendre mes pubs » (S19b), après le renouvellement. Propriétaire ou éditeur, espace ACTIF seulement (`403
         workspace_locked`, `workspace_read_only`… sinon), `Idempotency-Key` obligatoire (UUID v4), corps `{}`. La reprise est TOUJOURS
-        manuelle : aucune tâche ne reprend une publicité d'office.
+        manuelle : aucune tâche ne reprend une publicité d'office. Lot plafonné : 10 campagnes au plus par requête (`maxDuration` 120 s) ; `more: true` dit qu'il en reste, le client clique encore (rejouable : ce qui est repris n'est jamais repris deux fois).
 
         Ne reprend QUE les campagnes en pause avec le motif `billing_lock` : jamais une campagne que le client avait mise en pause lui-même.
         Reprendre ACTIVE la campagne chez Meta et dépense de l'argent : même interrupteur de sécurité que la reprise d'une campagne
@@ -1981,19 +1982,21 @@ components:
         code: { type: string, description: "Code de la liste fermée d'API_SPEC §4 : `meta_token_expired`, `meta_not_connected`, `meta_error`, `rate_limited`, `conflict`…" }
     PauseAllResult:
       type: object
-      required: [ paused, failed, rate_limited ]
+      required: [ paused, failed, rate_limited, more ]
       properties:
         paused: { type: integer, minimum: 0, description: "Campagnes mises en pause chez Meta (confirmé) ET dans Pubeka par cet appel." }
         failed: { type: array, items: { $ref: '#/components/schemas/PauseFailure' } }
         rate_limited: { type: boolean, description: "Meta a limité le débit : réessayer plus tard." }
+        more: { type: boolean, description: "Le lot de la requête (10 campagnes au plus) est plein et des campagnes restent à mettre en pause : cliquer encore." }
     ResumeAllResult:
       type: object
-      required: [ resumed, failed, remaining, rate_limited ]
+      required: [ resumed, failed, remaining, rate_limited, more ]
       properties:
         resumed: { type: integer, minimum: 0 }
         failed: { type: array, items: { $ref: '#/components/schemas/PauseFailure' } }
         remaining: { type: integer, minimum: 0, description: "Campagnes encore en pause à cause du verrouillage après cet appel." }
         rate_limited: { type: boolean }
+        more: { type: boolean, description: "Le lot de la requête (10 campagnes au plus) est plein et des campagnes restent à reprendre : cliquer encore." }
     Campaign:
       type: object
       required: [ id, name, platform, status, version, editable, cost ]

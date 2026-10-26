@@ -22,10 +22,15 @@ import {
   type PauseFailure,
 } from './pause-workspace';
 
+/** Campagnes traitées au plus par requête (chacune coûte des appels à Meta : la route a `maxDuration` 120 s). Le client reclique pour la suite. */
+export const ACTION_BATCH = 10;
+
 export interface PauseAllResult {
   paused: number;
   failed: PauseFailure[];
   rate_limited: boolean;
+  /** Des campagnes restent à traiter : le lot de la requête est plein, cliquer encore. */
+  more: boolean;
 }
 
 export interface ResumeAllResult {
@@ -34,6 +39,8 @@ export interface ResumeAllResult {
   /** Campagnes encore en pause à cause du verrouillage après cet appel (à reprendre au prochain clic). */
   remaining: number;
   rate_limited: boolean;
+  /** Des campagnes restent à reprendre : le lot de la requête est plein, cliquer encore. */
+  more: boolean;
 }
 
 /**
@@ -49,9 +56,14 @@ export async function pauseAllCampaigns(
   const report = await pauseWorkspaceCampaigns(ctx, deps, ctx.workspace.id, {
     source: 'user',
     reason: ctx.workspace.access === 'locked' ? BILLING_LOCK_REASON : null,
-    budget: { left: PAUSE_PER_WORKSPACE_MAX },
+    budget: { left: ACTION_BATCH },
   });
-  return { paused: report.paused, failed: report.failed, rate_limited: report.rate_limited };
+  return {
+    paused: report.paused,
+    failed: report.failed,
+    rate_limited: report.rate_limited,
+    more: report.budget_exhausted,
+  };
 }
 
 async function countLocked(ctx: MemberCtx): Promise<number> {
@@ -98,10 +110,16 @@ export async function resumeLockedCampaigns(
       .eq('status', 'paused')
       .eq('pause_reason', BILLING_LOCK_REASON)
       .order('created_at', { ascending: true })
-      .limit(PAUSE_PER_WORKSPACE_MAX),
+      .limit(ACTION_BATCH + 1),
   );
-  const result: ResumeAllResult = { resumed: 0, failed: [], remaining: 0, rate_limited: false };
-  for (const candidate of candidates) {
+  const result: ResumeAllResult = {
+    resumed: 0,
+    failed: [],
+    remaining: 0,
+    rate_limited: false,
+    more: candidates.length > ACTION_BATCH,
+  };
+  for (const candidate of candidates.slice(0, ACTION_BATCH)) {
     // Le motif est RELU juste avant chaque reprise : si le client a repris puis remis en pause cette campagne lui-même entre-temps, elle
     // n'a plus le motif du verrouillage et n'est pas touchée.
     if (!(await stillLocked(ctx, candidate.id))) continue;

@@ -24,7 +24,7 @@ describe('pauseAllCampaigns — bouton « Mettre toutes mes publicités en pause
     const a = await t.add('active');
     const b = await t.add('in_review');
     const result = await pauseAllCampaigns(t.memberAt('locked'), t.deps);
-    expect(result).toEqual({ paused: 2, failed: [], rate_limited: false });
+    expect(result).toEqual({ paused: 2, failed: [], rate_limited: false, more: false });
     for (const id of [a, b]) {
       expect(t.metaStatus(id)).toBe('paused');
       expect(rowOf(t.w.db, id)).toMatchObject({ status: 'paused', pause_reason: 'billing_lock' });
@@ -82,7 +82,7 @@ describe('pauseAllCampaigns — bouton « Mettre toutes mes publicités en pause
     await t.add('active');
     await pauseAllCampaigns(t.memberAt('locked'), t.deps);
     const again = await pauseAllCampaigns(t.memberAt('locked'), t.deps);
-    expect(again).toEqual({ paused: 0, failed: [], rate_limited: false });
+    expect(again).toEqual({ paused: 0, failed: [], rate_limited: false, more: false });
     expect(t.fake.pauseAttempts).toBe(1);
     expect(t.w.db.rows('campaign_status_events')).toHaveLength(1);
   });
@@ -95,7 +95,13 @@ describe('resumeLockedCampaigns — bouton « Reprendre mes pubs »', () => {
     const locked2 = await t.add('paused', { pauseReason: 'billing_lock' });
     const mine = await t.add('paused');
     const result = await resumeLockedCampaigns(t.memberAt('active'), t.deps);
-    expect(result).toEqual({ resumed: 2, failed: [], remaining: 0, rate_limited: false });
+    expect(result).toEqual({
+      resumed: 2,
+      failed: [],
+      remaining: 0,
+      rate_limited: false,
+      more: false,
+    });
     for (const id of [locked1, locked2]) {
       expect(rowOf(t.w.db, id)).toMatchObject({ status: 'active', paused_at: null });
       expect(rowOf(t.w.db, id).pause_reason ?? null).toBeNull();

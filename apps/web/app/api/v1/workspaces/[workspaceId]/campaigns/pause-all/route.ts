@@ -7,6 +7,13 @@ import { api } from '../../../../../../../server/http/routes';
 import { emptyBodySchema } from '../../../../campaigns/schemas';
 import { controlDeps } from '../../../../campaigns/services';
 
+/**
+ * Délai maximal (secondes ; la plateforme coupe au-delà). Un lot est de 10 campagnes au plus (`ACTION_BATCH`) ; chacune coûte quelques appels
+ * à Meta (ordre, relecture), de l'ordre de la seconde : 120 s laissent une large marge, comme la génération des propositions. Au-delà de 10
+ * campagnes, la réponse dit `more: true` et le client clique encore (rejouable : ce qui est fait n'est jamais refait).
+ */
+export const maxDuration = 120;
+
 export const POST = api(
   {
     auth: 'member',

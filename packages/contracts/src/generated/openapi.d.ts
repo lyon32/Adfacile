@@ -570,6 +570,7 @@ export interface paths {
          *     Action ✱ comme la pause d'une campagne : permise en grâce, verrouillé, lecture seule et suspension (le client doit toujours pouvoir
          *     arrêter de dépenser) ; jamais bloquée par l'interrupteur `PUBEKA_META_PUBLISH`. `Idempotency-Key` obligatoire (UUID v4) ; la même clé
          *     rejoue la même réponse. Corps : objet vide `{}` (tout autre champ : `400 validation_failed`).
+         *     Lot plafonné : 10 campagnes au plus par requête (`maxDuration` 120 s) ; `more: true` dit qu'il en reste, le client clique encore (rejouable).
          *
          *     Pour CHAQUE campagne de l'espace en vérification, en diffusion ou en erreur (connue de Meta), Meta est appelé d'abord puis son statut
          *     est RELU : la campagne n'est marquée `paused` dans Pubeka que si Meta confirme (EC-META-07). Une campagne dont la pause échoue (jeton
@@ -604,7 +605,7 @@ export interface paths {
          * Reprendre les publicités mises en pause par le verrouillage
          * @description Bouton « Reprendre mes pubs » (S19b), après le renouvellement. Propriétaire ou éditeur, espace ACTIF seulement (`403
          *     workspace_locked`, `workspace_read_only`… sinon), `Idempotency-Key` obligatoire (UUID v4), corps `{}`. La reprise est TOUJOURS
-         *     manuelle : aucune tâche ne reprend une publicité d'office.
+         *     manuelle : aucune tâche ne reprend une publicité d'office. Lot plafonné : 10 campagnes au plus par requête (`maxDuration` 120 s) ; `more: true` dit qu'il en reste, le client clique encore (rejouable : ce qui est repris n'est jamais repris deux fois).
          *
          *     Ne reprend QUE les campagnes en pause avec le motif `billing_lock` : jamais une campagne que le client avait mise en pause lui-même.
          *     Reprendre ACTIVE la campagne chez Meta et dépense de l'argent : même interrupteur de sécurité que la reprise d'une campagne
@@ -2197,6 +2198,8 @@ export interface components {
             failed: components["schemas"]["PauseFailure"][];
             /** @description Meta a limité le débit : réessayer plus tard. */
             rate_limited: boolean;
+            /** @description Le lot de la requête (10 campagnes au plus) est plein et des campagnes restent à mettre en pause : cliquer encore. */
+            more: boolean;
         };
         ResumeAllResult: {
             resumed: number;
@@ -2204,6 +2207,8 @@ export interface components {
             /** @description Campagnes encore en pause à cause du verrouillage après cet appel. */
             remaining: number;
             rate_limited: boolean;
+            /** @description Le lot de la requête (10 campagnes au plus) est plein et des campagnes restent à reprendre : cliquer encore. */
+            more: boolean;
         };
         Campaign: {
             /** Format: uuid */
