@@ -532,6 +532,14 @@ Table finale : **22 transitions** sur 9 états × 12 événements (108 paires, 8
 export function workspaceAccess(sub: { status: SubscriptionStatus; period_end: Date; grace_until: Date | null }, now: Date):
   'active' | 'grace' | 'read_only';
 // grâce = 3 jours après period_end ; ensuite lecture seule.
+// S19 : essai (`trialing`) terminé ou abonnement `canceled` échu = lecture seule tout de suite, sans grâce ;
+// `grace_until` prolongé par l'administration prime sur les 3 jours ; date illisible = lecture seule.
+export function effectiveAccess(stored: 'active' | 'read_only' | 'suspended', sub: AccessSubscription | null, now: Date):
+  'active' | 'grace' | 'read_only' | 'suspended';
+// suspension et lecture seule posées par l'administration passent avant l'abonnement ; sans abonnement : 'active' (l'essai démarre en S24).
+export function graceEndsAt(sub: AccessSubscription): Date | null;
+// `packages/core/src/workspaces/access.ts` : `loadWorkspaceAccess(db, svc, workspaceId, now)` évalue l'accès À CHAQUE requête
+// (api(), callback Meta, acceptation d'invitation) : aucune tâche planifiée n'est nécessaire pour finir la grâce.
 
 export function upgradeQuote(current: Plan, target: Plan, sub: { period_end: Date }, now: Date):
   { amount_xaf: number; extra_credits: number; keeps_period_end: Date };

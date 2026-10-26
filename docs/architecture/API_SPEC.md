@@ -60,6 +60,8 @@ La connexion elle-même (Google, Apple, e-mail + mot de passe, lien magique) pas
 
 **Espace en lecture seule** (abonnement expiré après 3 jours de grâce) : toute écriture renvoie `403 workspace_read_only`, **sauf** la mise en pause d'une campagne, le paiement et les tickets de support.
 
+S19 : `Workspace.status` est l'accès réel de l'espace (`active`, `grace`, `read_only`, `suspended`), calculé à chaque requête avec l'échéance de l'abonnement ; `grace_until` est la fin de la grâce. L'essai terminé donne `read_only` sans grâce. Le test `server/http/write-routes.test.ts` classe chaque route d'écriture du contrat (`writable: true` partout, sauf les actions ✱ de SECURITY_NOTES §2.1) et échoue pour une route non classée.
+
 ---
 
 ## 3. Format d'erreur standardisé
