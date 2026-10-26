@@ -21,6 +21,7 @@ export const ERROR_STATUS = {
   role_insufficient: 403,
   workspace_read_only: 403,
   workspace_suspended: 403,
+  workspace_locked: 403,
   mfa_required: 403,
   trial_already_used: 403,
   not_found: 404,

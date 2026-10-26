@@ -11,6 +11,7 @@ import { useState, type ReactNode } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { SelectField } from '../settings/select-field';
+import { useRenewalMessage, useWorkspaceWritable } from '../shell/use-writable';
 import {
   BRAND_TONES,
   useBrandKit,
@@ -109,6 +110,8 @@ function Form({
 }): ReactNode {
   const t = useTranslations('meta.brand');
   const common = useTranslations('common');
+  const writable = useWorkspaceWritable();
+  const renewal = useRenewalMessage();
   const [saved, setSaved] = useState(false);
   const putKit = usePutBrandKit(workspaceId);
   const updatePage = useUpdatePage(workspaceId);
@@ -293,7 +296,9 @@ function Form({
           ) : null}
         </div>
       ) : (
-        <p className="text-meta text-muted">{t('read_only')}</p>
+        <p className="text-meta text-muted">
+          {writable ? t('read_only') : renewal ? t('renew_to_edit') : t('admin_read_only')}
+        </p>
       )}
     </form>
   );
@@ -314,6 +319,7 @@ export function BrandKitPanel({
   onSaved,
 }: BrandKitFormProps): ReactNode {
   const t = useTranslations('meta.brand');
+  const writable = useWorkspaceWritable();
   const pages = usePages(workspaceId);
   const [picked, setPicked] = useState<string | null>(null);
   const active = pages.data?.data.filter((p) => p.active) ?? [];
@@ -366,7 +372,7 @@ export function BrandKitPanel({
           page={page}
           kit={kit.data}
           compact={compact}
-          canEdit={role !== 'viewer'}
+          canEdit={role !== 'viewer' && writable}
           onSaved={onSaved}
         />
       )}

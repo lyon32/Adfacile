@@ -27,6 +27,7 @@ import { AppError } from '@pubeka/contracts';
 import { unwrap, type Json, type ServiceClient, type TablesUpdate } from '@pubeka/db';
 import { createLogger, type Env } from '@pubeka/shared';
 import { journalAgentRun } from '../../agent-journal';
+import { loadWorkspaceAccess } from '../../workspaces/access';
 import type { ServiceCtx } from '../../context';
 import { copySchema, readJson } from '../campaign-schemas';
 import { fakeModerateurOutput } from './fake-moderateur';
@@ -346,26 +347,71 @@ export async function explainPendingRejections(
     logger.error('Explications perdues non traitées', { err: error });
     return 0;
   });
-  const pending = unwrap<{ id: string; workspace_id: string }[]>(
-    await ctx.svc
-      .from('rejections')
-      .select('id, workspace_id')
-      .eq('explain_status', 'pending')
-      .order('created_at', { ascending: true })
-      .limit(Math.max(1, Math.min(limit, 50))),
-  );
   const report = { explained: 0, failed: stale, skipped: 0 };
-  for (const item of pending) {
-    try {
-      const outcome = await explainRejection(ctx, deps, {
-        rejectionId: item.id,
-        workspaceId: item.workspace_id,
-      });
-      report[outcome] += 1;
-    } catch (error) {
-      report.failed += 1;
-      logger.error('Explication du refus interrompue', { rejectionId: item.id, err: error });
+  const budget = Math.max(1, Math.min(limit, 50));
+  // S19 : travail lancé par le système, pas par une action de la personne. Un espace en lecture seule ou suspendu n'en déclenche pas
+  // (appel payant du Modérateur) ; le refus reste « en attente » et sera expliqué au renouvellement. Ces refus ne comptent pas dans
+  // le budget et ne le consomment pas : on lit les refus par pages, les plus anciens d'abord, jusqu'à ce que le budget soit employé.
+  // L'accès de chaque espace est lu une seule fois par passage.
+  const accessOf = new Map<string, boolean>();
+  const mayExplain = async (workspaceId: string): Promise<boolean> => {
+    const known = accessOf.get(workspaceId);
+    if (known !== undefined) return known;
+    const access = await loadWorkspaceAccess(ctx.svc, ctx.svc, workspaceId, ctx.now());
+    // Décision S19 : le Modérateur (texte IA, coût de Pubeka, aucune action de la personne) n'explique plus rien dès que l'espace
+    // n'est plus actif : grâce, verrouillé, lecture seule de l'administration ou suspension.
+    const allowed = access === 'active';
+    accessOf.set(workspaceId, allowed);
+    return allowed;
+  };
+  const isStillPending = async (id: string): Promise<boolean> => {
+    const row = unwrap<{ explain_status: string } | null>(
+      await ctx.svc.from('rejections').select('explain_status').eq('id', id).maybeSingle(),
+    );
+    return row?.explain_status === 'pending';
+  };
+  const PAGE = 50;
+  const MAX_PAGES = 40;
+  const seen = new Set<string>();
+  let attempted = 0;
+  // Les refus expliqués quittent l'état « en attente » : seuls les refus laissés en attente décalent la page suivante.
+  let offset = 0;
+  for (let page = 0; page < MAX_PAGES && attempted < budget; page += 1) {
+    const pending = unwrap<{ id: string; workspace_id: string }[]>(
+      await ctx.svc
+        .from('rejections')
+        .select('id, workspace_id')
+        .eq('explain_status', 'pending')
+        .order('created_at', { ascending: true })
+        // Départage déterministe à `created_at` égal : la fenêtre de lecture par pages ne saute ni ne relit aucun refus.
+        .order('id', { ascending: true })
+        .range(offset, offset + PAGE - 1),
+    );
+    for (const item of pending) {
+      if (attempted >= budget) break;
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+      if (!(await mayExplain(item.workspace_id))) {
+        report.skipped += 1;
+        offset += 1;
+        continue;
+      }
+      attempted += 1;
+      try {
+        const outcome = await explainRejection(ctx, deps, {
+          rejectionId: item.id,
+          workspaceId: item.workspace_id,
+        });
+        report[outcome] += 1;
+        if (outcome !== 'explained' && (await isStillPending(item.id))) offset += 1;
+      } catch (error) {
+        report.failed += 1;
+        // Interrompu : si le refus est resté « en attente », il occupe encore une place dans la fenêtre de lecture.
+        if (await isStillPending(item.id)) offset += 1;
+        logger.error('Explication du refus interrompue', { rejectionId: item.id, err: error });
+      }
     }
+    if (pending.length < PAGE) break;
   }
   return report;
 }

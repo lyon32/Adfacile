@@ -2,7 +2,7 @@ import 'server-only';
 // Dépendances réelles de `api()` : Supabase (session, appartenance, limites, idempotence),
 // horloge, journal. Prouvées par les tests d'intégration sur la pile locale (`test:int`).
 import { createServerClient } from '@supabase/ssr';
-import { getMaintenance } from '@pubeka/core';
+import { getMaintenance, loadWorkspaceAccess } from '@pubeka/core';
 import {
   createServiceClient,
   createUserClient,
@@ -108,9 +108,9 @@ export function realApiDeps(): ApiDeps {
         .eq('profile_id', userId)
         .maybeSingle();
       if (member.error !== null || member.data === null) return null;
-      const ws = await db.from('workspaces').select('status').eq('id', workspaceId).maybeSingle();
-      if (ws.error !== null || ws.data === null) return null;
-      return { role: member.data.role, access: ws.data.status };
+      // Accès réel : état posé par l'administration + échéance de l'abonnement (S19, TR-PAY-07).
+      const access = await loadWorkspaceAccess(db, service, workspaceId, now());
+      return access === null ? null : { role: member.data.role, access };
     },
     // L'administration (aal2, admin_users, verrouillage) arrive en S30 : 404 pour tous d'ici là.
     isAdmin: () => Promise.resolve(false),

@@ -267,6 +267,7 @@ describe('acceptInvitation', () => {
     const svc = new FakeClient().reply(
       invitation(),
       ok({ status: 'active' }),
+      ok([]), // abonnement
       ok(null), // pas encore membre
       ok([{ id: INV }]), // réservation
       PRO,
@@ -285,13 +286,13 @@ describe('acceptInvitation', () => {
       quotas: { members: 2, members_limit: 2 },
     });
     expect(svc.calls[0]?.ops).toContainEqual(['eq', 'token_hash', 'h(jeton)']);
-    expect(svc.calls[3]?.ops).toEqual(
+    expect(svc.calls[4]?.ops).toEqual(
       expect.arrayContaining([
         ['update', { accepted_at: NOW.toISOString() }],
         ['is', 'accepted_at', null],
       ]),
     );
-    expect(svc.calls[7]?.ops).toContainEqual([
+    expect(svc.calls[8]?.ops).toContainEqual([
       'insert',
       { workspace_id: WS, profile_id: INVITEE, role: 'editor' },
     ]);
@@ -331,7 +332,13 @@ describe('acceptInvitation', () => {
   });
 
   it('EC-TEAM-03 : double clic, la réservation échoue → gone', async () => {
-    const svc = new FakeClient().reply(invitation(), ok({ status: 'active' }), ok(null), ok([]));
+    const svc = new FakeClient().reply(
+      invitation(),
+      ok({ status: 'active' }),
+      ok([]), // abonnement
+      ok(null),
+      ok([]),
+    );
     await expect(
       acceptInvitation(inviteeCtx(new FakeClient(), svc), 'x', tokens),
     ).rejects.toMatchObject({
@@ -361,6 +368,7 @@ describe('acceptInvitation', () => {
     const svc = new FakeClient().reply(
       invitation(),
       ok({ status: 'active' }),
+      ok([]), // abonnement
       ok({ role: 'viewer' }),
       ok([{ id: INV }]),
       PRO,
@@ -375,6 +383,7 @@ describe('acceptInvitation', () => {
     const svc = new FakeClient().reply(
       invitation(),
       ok({ status: 'active' }),
+      ok([]), // abonnement
       ok(null),
       ok([{ id: INV }]),
       PRO,
@@ -394,6 +403,7 @@ describe('acceptInvitation', () => {
     const svc = new FakeClient().reply(
       invitation(),
       ok({ status: 'active' }),
+      ok([]), // abonnement
       ok(null),
       ok([{ id: INV }]),
       PRO,
@@ -409,9 +419,9 @@ describe('acceptInvitation', () => {
     ).rejects.toMatchObject({
       code: 'member_limit_reached',
     });
-    expect(svc.calls[9]?.ops).toEqual(
+    expect(svc.calls[10]?.ops).toEqual(
       expect.arrayContaining([['delete'], ['eq', 'profile_id', INVITEE]]),
     );
-    expect(svc.calls[10]?.ops).toContainEqual(['update', { accepted_at: null }]);
+    expect(svc.calls[11]?.ops).toContainEqual(['update', { accepted_at: null }]);
   });
 });

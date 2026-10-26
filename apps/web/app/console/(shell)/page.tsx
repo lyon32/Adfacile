@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Dashboard } from '../../../features/campaigns/dashboard';
 import { loadViewer } from '../../../features/shell/viewer';
+import { isWritableStatus } from '../../../features/shell/workspace-access';
 
 export default async function DashboardPage(): Promise<ReactNode> {
   const [t, viewer] = await Promise.all([getTranslations('dashboard'), loadViewer()]);
@@ -33,7 +34,7 @@ export default async function DashboardPage(): Promise<ReactNode> {
       ) : (
         <Dashboard
           workspaceId={workspace.id}
-          canCreate={workspace.role !== 'viewer' && workspace.status === 'active'}
+          canCreate={workspace.role !== 'viewer' && isWritableStatus(workspace.status)}
         />
       )}
     </div>

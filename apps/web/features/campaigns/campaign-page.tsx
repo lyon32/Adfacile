@@ -25,6 +25,7 @@ import { HistoryTab } from './tab-history';
 import { ResultsTab } from './tab-results';
 import { SettingsTab } from './tab-settings';
 import { StatusPill, useStatusMessage } from './status';
+import { isWritableStatus } from '../shell/workspace-access';
 
 export interface CampaignPageProps {
   workspace: { id: string; role: 'owner' | 'editor' | 'viewer'; status: string };
@@ -77,7 +78,11 @@ export function CampaignPage({ workspace, campaignId }: CampaignPageProps): Reac
 
   const status = asStatus(campaign.status);
   const canAct = workspace.role === 'owner' || workspace.role === 'editor';
-  const writable = workspace.status === 'active';
+  const writable = isWritableStatus(workspace.status);
+  // Grâce : l'abonnement est à renouveler ; lecture seule de l'administration : message distinct (jamais « renouvelle »).
+  const tooltip = writable
+    ? undefined
+    : t(workspace.status === 'grace' ? 'renew_tooltip' : 'admin_tooltip');
   const failure = control.isError ? controlFailureOf(control.error) : null;
   const published = status !== 'draft' && status !== 'publishing' && status !== 'error';
 
@@ -140,6 +145,7 @@ export function CampaignPage({ workspace, campaignId }: CampaignPageProps): Reac
                 <Button
                   type="button"
                   disabled={pending || !writable}
+                  title={tooltip}
                   onClick={() => {
                     setConfirm('resume');
                   }}
@@ -151,6 +157,7 @@ export function CampaignPage({ workspace, campaignId }: CampaignPageProps): Reac
                 <Button
                   type="button"
                   disabled={pending || !writable}
+                  title={tooltip}
                   onClick={() => {
                     setConfirm('recover');
                   }}
@@ -162,6 +169,7 @@ export function CampaignPage({ workspace, campaignId }: CampaignPageProps): Reac
                 <Button
                   type="button"
                   disabled={pending || !writable}
+                  title={tooltip}
                   onClick={() => {
                     run('copy');
                   }}
@@ -173,6 +181,7 @@ export function CampaignPage({ workspace, campaignId }: CampaignPageProps): Reac
                   type="button"
                   variant="quiet"
                   disabled={pending || !writable}
+                  title={tooltip}
                   onClick={() => {
                     run('copy');
                   }}
@@ -198,7 +207,7 @@ export function CampaignPage({ workspace, campaignId }: CampaignPageProps): Reac
         ) : null}
         {!writable && canAct && published ? (
           <p role="status" className="text-meta text-muted">
-            {t('read_only')}
+            {t(workspace.status === 'grace' ? 'grace_notice' : 'read_only')}
           </p>
         ) : null}
         {failure === null ? null : (

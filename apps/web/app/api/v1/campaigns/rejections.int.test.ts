@@ -49,13 +49,16 @@ afterAll(() => {
   overrideSyncJobs(undefined);
 });
 
-const REASON = 'Your ad wasn’t approved because it makes claims that are misleading or unrealistic.';
+const REASON =
+  'Your ad wasn’t approved because it makes claims that are misleading or unrealistic.';
 const svc = () => testServiceClient();
 
 function fakeMeta(): FakeMetaConnector {
   const connector = createFullMetaConnector(getEnv(), () => new Date());
   if (!(connector instanceof FakeMetaConnector)) {
-    throw new Error('PUBEKA_FAKE_PROVIDERS doit contenir « meta » : ce test n’appelle jamais le vrai Meta');
+    throw new Error(
+      'PUBEKA_FAKE_PROVIDERS doit contenir « meta » : ce test n’appelle jamais le vrai Meta',
+    );
   }
   return connector;
 }
@@ -84,7 +87,11 @@ async function refsOf(campaignId: string) {
 
 const serviceCtx = () => ({ requestId: 'req_INT', svc: svc(), now: () => new Date() });
 
-const runSync = () => syncCampaignStatuses(serviceCtx(), createSyncDeps(getEnv(), () => new Date()));
+const runSync = () =>
+  syncCampaignStatuses(
+    serviceCtx(),
+    createSyncDeps(getEnv(), () => new Date()),
+  );
 const runExplain = () => explainPendingRejections(serviceCtx(), createExplainDeps(getEnv()));
 
 async function rejectionRows(campaignId: string) {
@@ -125,7 +132,10 @@ const rparams = (sx: SeededWorkspace, campaignId: string, rejectionId: string) =
 });
 
 const list = (sx: SeededWorkspace, who: Who, campaignId: string) =>
-  listRoute(call('GET', base(sx, campaignId), who.headers), campaignParams(sx.workspace.id, campaignId));
+  listRoute(
+    call('GET', base(sx, campaignId), who.headers),
+    campaignParams(sx.workspace.id, campaignId),
+  );
 const get = (sx: SeededWorkspace, who: Who, campaignId: string, rejectionId: string) =>
   getRoute(
     call('GET', `${base(sx, campaignId)}/${rejectionId}`, who.headers),
@@ -139,11 +149,10 @@ const apply = (
   key: string | null = randomUUID(),
 ) =>
   applyRoute(
-    call(
-      'POST',
-      `${base(sx, campaignId)}/${rejectionId}/apply-fix`,
-      { ...who.headers, ...(key === null ? {} : { 'idempotency-key': key }) },
-    ),
+    call('POST', `${base(sx, campaignId)}/${rejectionId}/apply-fix`, {
+      ...who.headers,
+      ...(key === null ? {} : { 'idempotency-key': key }),
+    }),
     rparams(sx, campaignId, rejectionId),
   );
 
@@ -152,14 +161,17 @@ interface Problem {
   status: number;
   meta?: Record<string, unknown>;
 }
-const problemOf = async (res: Response): Promise<Problem> => (await json(res)) as unknown as Problem;
+const problemOf = async (res: Response): Promise<Problem> =>
+  (await json(res)) as unknown as Problem;
 
 describeRoute('listRejections', {
   success: async () => {
     const { campaign, rejectionId } = await refusedCampaign(s);
     const res = await list(s, s.owner, campaign.id);
     expect(res.status).toBe(200);
-    const body = (await json(res)) as { data: { id: string; status: string; meta_reason: string }[] };
+    const body = (await json(res)) as {
+      data: { id: string; status: string; meta_reason: string }[];
+    };
     expect(body.data.map((r) => r.id)).toEqual([rejectionId]);
     expect(body.data[0]).toMatchObject({ status: 'ready', meta_reason: REASON });
     // Un lecteur lit aussi.
@@ -174,7 +186,9 @@ describeRoute('listRejections', {
     const stranger = await seedWorkspace();
     expect((await list(stranger, stranger.owner, campaign.id)).status).toBe(404);
   },
-  forbiddenRole: na('lecture : tout membre, y compris un lecteur, peut lire (testé dans « succès »)'),
+  forbiddenRole: na(
+    'lecture : tout membre, y compris un lecteur, peut lire (testé dans « succès »)',
+  ),
   invalidBody: na('GET sans corps ; l’identifiant mal formé est testé ci-dessous'),
   extra: {
     'identifiant mal formé : 400 ; campagne inconnue : 404': async () => {
@@ -217,7 +231,9 @@ describeRoute('getRejection', {
     const stranger = await seedWorkspace();
     expect((await get(stranger, stranger.owner, campaign.id, rejectionId)).status).toBe(404);
   },
-  forbiddenRole: na('lecture : tout membre, y compris un lecteur, peut lire (testé dans « succès »)'),
+  forbiddenRole: na(
+    'lecture : tout membre, y compris un lecteur, peut lire (testé dans « succès »)',
+  ),
   invalidBody: na('GET sans corps ; l’identifiant mal formé est testé ci-dessous'),
   extra: {
     'identifiant mal formé : 400 ; refus inconnu : 404': async () => {
@@ -255,7 +271,9 @@ describeRoute('applyRejectionFix', {
     // Aucun quota décompté ni retenu pour cette republication.
     expect(after?.quota_state).toBe(before?.quota_state);
     const copy = await svc().from('campaigns').select('copy').eq('id', campaign.id).single();
-    expect((copy.data?.copy as { primary_text: string }).primary_text).toContain('Découvrez nos produits');
+    expect((copy.data?.copy as { primary_text: string }).primary_text).toContain(
+      'Découvrez nos produits',
+    );
     expect((copy.data?.copy as { headline: string }).headline).toBe('Thé minceur');
     // Le refus est marqué corrigé ; l'ancienne campagne refusée est retirée de chez Meta, une neuve a pris sa place.
     expect((await rejectionRows(campaign.id))[0]?.fixed_and_republished).toBe(true);
@@ -268,7 +286,9 @@ describeRoute('applyRejectionFix', {
   },
   unauthenticated: async () => {
     const { campaign, rejectionId } = await refusedCampaign(s);
-    expect((await apply(s, { ...s.owner, headers: {} }, campaign.id, rejectionId)).status).toBe(401);
+    expect((await apply(s, { ...s.owner, headers: {} }, campaign.id, rejectionId)).status).toBe(
+      401,
+    );
     expect((await campaignRow(campaign.id))?.status).toBe('rejected');
   },
   otherWorkspace: async () => {
@@ -304,16 +324,17 @@ describeRoute('applyRejectionFix', {
       expect((await campaignRow(campaign.id))?.publish_attempt).toBe(attempts);
       expect(fakeMeta().createAttempts).toBeGreaterThan(0);
     },
-    'deux clics simultanés avec deux clés : une seule republication (409 pour l’autre)': async () => {
-      const { campaign, rejectionId } = await refusedCampaign(s);
-      const results = await Promise.all([
-        apply(s, s.owner, campaign.id, rejectionId),
-        apply(s, s.owner, campaign.id, rejectionId),
-      ]);
-      const statuses = results.map((r) => r.status).sort();
-      expect(statuses).toEqual([202, 409]);
-      expect((await campaignRow(campaign.id))?.publish_attempt).toBeGreaterThan(0);
-    },
+    'deux clics simultanés avec deux clés : une seule republication (409 pour l’autre)':
+      async () => {
+        const { campaign, rejectionId } = await refusedCampaign(s);
+        const results = await Promise.all([
+          apply(s, s.owner, campaign.id, rejectionId),
+          apply(s, s.owner, campaign.id, rejectionId),
+        ]);
+        const statuses = results.map((r) => r.status).sort();
+        expect(statuses).toEqual([202, 409]);
+        expect((await campaignRow(campaign.id))?.publish_attempt).toBeGreaterThan(0);
+      },
     'interrupteur de publication réelle éteint : 503, rien n’est modifié': async () => {
       const { campaign, rejectionId } = await refusedCampaign(s);
       const recorder = new JobRecorder();
@@ -328,122 +349,151 @@ describeRoute('applyRejectionFix', {
       expect((await campaignRow(campaign.id))?.status).toBe('rejected');
       expect((await rejectionRows(campaign.id))[0]?.fixed_and_republished).toBe(false);
     },
-    'B1 : ancienne campagne redevenue active chez Meta (appel gagné) : 409 no_longer_rejected, rien n’est créé ni supprimé': async () => {
-      const { campaign, rejectionId } = await refusedCampaign(s);
-      const refs = await refsOf(campaign.id);
-      const fake = fakeMeta();
-      fake.simulateRemoteStatus(refs, { status: 'active', rawStatus: 'ACTIVE' });
-      const created = fake.createAttempts;
-      try {
-        const res = await apply(s, s.owner, campaign.id, rejectionId);
+    'B1 : ancienne campagne redevenue active chez Meta (appel gagné) : 409 no_longer_rejected, rien n’est créé ni supprimé':
+      async () => {
+        const { campaign, rejectionId } = await refusedCampaign(s);
+        const refs = await refsOf(campaign.id);
+        const fake = fakeMeta();
+        fake.simulateRemoteStatus(refs, { status: 'active', rawStatus: 'ACTIVE' });
+        const created = fake.createAttempts;
+        try {
+          const res = await apply(s, s.owner, campaign.id, rejectionId);
+          expect(res.status).toBe(409);
+          expect((await problemOf(res)).meta).toMatchObject({ reason: 'no_longer_rejected' });
+          expect(fake.createAttempts).toBe(created);
+          expect(fake.campaigns.get(refs.campaignId)?.deleted).toBe(false);
+          expect((await campaignRow(campaign.id))?.status).toBe('rejected');
+          expect((await rejectionRows(campaign.id))[0]?.fixed_and_republished).toBe(false);
+        } finally {
+          fake.simulateRemoteStatus(refs, undefined);
+        }
+      },
+    'A2 : la clé de la publication d’origine ne republie rien (409 idempotency_key_reused)':
+      async () => {
+        const { campaign, rejectionId } = await refusedCampaign(s);
+        const row = await svc()
+          .from('campaigns')
+          .select('publish_idempotency_key')
+          .eq('id', campaign.id)
+          .single();
+        const res = await apply(
+          s,
+          s.owner,
+          campaign.id,
+          rejectionId,
+          row.data?.publish_idempotency_key,
+        );
         expect(res.status).toBe(409);
-        expect((await problemOf(res)).meta).toMatchObject({ reason: 'no_longer_rejected' });
-        expect(fake.createAttempts).toBe(created);
-        expect(fake.campaigns.get(refs.campaignId)?.deleted).toBe(false);
+        expect((await problemOf(res)).code).toBe('idempotency_key_reused');
         expect((await campaignRow(campaign.id))?.status).toBe('rejected');
         expect((await rejectionRows(campaign.id))[0]?.fixed_and_republished).toBe(false);
-      } finally {
-        fake.simulateRemoteStatus(refs, undefined);
-      }
-    },
-    'A2 : la clé de la publication d’origine ne republie rien (409 idempotency_key_reused)': async () => {
-      const { campaign, rejectionId } = await refusedCampaign(s);
-      const row = await svc()
-        .from('campaigns')
-        .select('publish_idempotency_key')
-        .eq('id', campaign.id)
-        .single();
-      const res = await apply(s, s.owner, campaign.id, rejectionId, row.data?.publish_idempotency_key);
-      expect(res.status).toBe(409);
-      expect((await problemOf(res)).code).toBe('idempotency_key_reused');
-      expect((await campaignRow(campaign.id))?.status).toBe('rejected');
-      expect((await rejectionRows(campaign.id))[0]?.fixed_and_republished).toBe(false);
-    },
+      },
     'lecture seule : 403 workspace_read_only': async () => {
       const ro = await seedWorkspace();
       const { campaign, rejectionId } = await refusedCampaign(ro);
-      const updated = await svc().from('workspaces').update({ status: 'read_only' }).eq('id', ro.workspace.id);
+      const updated = await svc()
+        .from('workspaces')
+        .update({ status: 'read_only' })
+        .eq('id', ro.workspace.id);
       expect(updated.error).toBeNull();
       const res = await apply(ro, ro.owner, campaign.id, rejectionId);
       expect(res.status).toBe(403);
       expect((await problemOf(res)).code).toBe('workspace_read_only');
     },
-    'produit interdit par Meta : 409 fix_not_applicable, aucun bouton, rien ne repart': async () => {
-      const { campaign, rejectionId } = await refusedCampaign(s, {
-        reason: 'Your ad wasn’t approved because it promotes tobacco or related products.',
-      });
-      const view = (await json(await get(s, s.owner, campaign.id, rejectionId)));
-      expect(view).toMatchObject({ can_fix: false, fix_applicable: false });
-      const res = await apply(s, s.owner, campaign.id, rejectionId);
-      expect(res.status).toBe(409);
-      expect((await problemOf(res)).meta).toMatchObject({ reason: 'fix_not_applicable', cause: 'product_not_allowed' });
-      expect((await campaignRow(campaign.id))?.status).toBe('rejected');
-    },
+    'produit interdit par Meta : 409 fix_not_applicable, aucun bouton, rien ne repart':
+      async () => {
+        const { campaign, rejectionId } = await refusedCampaign(s, {
+          reason: 'Your ad wasn’t approved because it promotes tobacco or related products.',
+        });
+        const view = await json(await get(s, s.owner, campaign.id, rejectionId));
+        expect(view).toMatchObject({ can_fix: false, fix_applicable: false });
+        const res = await apply(s, s.owner, campaign.id, rejectionId);
+        expect(res.status).toBe(409);
+        expect((await problemOf(res)).meta).toMatchObject({
+          reason: 'fix_not_applicable',
+          cause: 'product_not_allowed',
+        });
+        expect((await campaignRow(campaign.id))?.status).toBe('rejected');
+      },
     'refus déjà corrigé : 409 already_fixed': async () => {
       const { campaign, rejectionId } = await refusedCampaign(s);
       expect((await apply(s, s.owner, campaign.id, rejectionId)).status).toBe(202);
       const res = await apply(s, s.owner, campaign.id, rejectionId);
       expect(res.status).toBe(409);
     },
-    'EC-META-06 : refus PARTIEL d’un test A/B — la campagne continue, le Modérateur ne traite que la pub refusée': async () => {
-      const ab = await seedWorkspace();
-      const made = await publishedCampaign(ab);
-      await queryTestDb(
-        `set session_replication_role = replica; update public.campaigns set status='active' where id='${made.campaign.id}'; set session_replication_role = origin;`,
-      );
-      const refs = await refsOf(made.campaign.id);
-      // Une 2e publicité (variante B) : la publication d'un test A/B arrive avec l'étape Visuel (S23), on la sème ici.
-      const first = await svc().from('ads').update({ variant: 'A' }).eq('campaign_id', made.campaign.id).select('id');
-      expect(first.error).toBeNull();
-      const second = await svc()
-        .from('ads')
-        .insert({
-          workspace_id: ab.workspace.id,
-          campaign_id: made.campaign.id,
-          meta_ad_id: String(Math.floor(1e14 + Math.random() * 9e14)),
-          format: '4:5',
-          status: 'active',
-          variant: 'B',
-        })
-        .select('id')
-        .single();
-      expect(second.error).toBeNull();
+    'EC-META-06 : refus PARTIEL d’un test A/B — la campagne continue, le Modérateur ne traite que la pub refusée':
+      async () => {
+        const ab = await seedWorkspace();
+        const made = await publishedCampaign(ab);
+        await queryTestDb(
+          `set session_replication_role = replica; update public.campaigns set status='active' where id='${made.campaign.id}'; set session_replication_role = origin;`,
+        );
+        const refs = await refsOf(made.campaign.id);
+        // Une 2e publicité (variante B) : la publication d'un test A/B arrive avec l'étape Visuel (S23), on la sème ici.
+        const first = await svc()
+          .from('ads')
+          .update({ variant: 'A' })
+          .eq('campaign_id', made.campaign.id)
+          .select('id');
+        expect(first.error).toBeNull();
+        const second = await svc()
+          .from('ads')
+          .insert({
+            workspace_id: ab.workspace.id,
+            campaign_id: made.campaign.id,
+            meta_ad_id: String(Math.floor(1e14 + Math.random() * 9e14)),
+            format: '4:5',
+            status: 'active',
+            variant: 'B',
+          })
+          .select('id')
+          .single();
+        expect(second.error).toBeNull();
 
-      // Meta : la publicité A est refusée, B continue. (La fausse Meta ne connaît qu'une publicité : on lit A par son identifiant.)
-      const fake = fakeMeta();
-      fake.simulateApproval(refs);
-      const original = fake.fetchRejection.bind(fake);
-      fake.fetchRejection = (token, r) =>
-        r.adId === refs.adId
-          ? Promise.resolve({ reason: REASON, adId: r.adId })
-          : original(token, r);
-      try {
-        const report = await runSync();
-        expect(report.rejections).toBeGreaterThanOrEqual(1);
-        await runExplain();
-      } finally {
-        fake.fetchRejection = original;
-      }
+        // Meta : la publicité A est refusée, B continue. (La fausse Meta ne connaît qu'une publicité : on lit A par son identifiant.)
+        const fake = fakeMeta();
+        fake.simulateApproval(refs);
+        const original = fake.fetchRejection.bind(fake);
+        fake.fetchRejection = (token, r) =>
+          r.adId === refs.adId
+            ? Promise.resolve({ reason: REASON, adId: r.adId })
+            : original(token, r);
+        try {
+          const report = await runSync();
+          expect(report.rejections).toBeGreaterThanOrEqual(1);
+          await runExplain();
+        } finally {
+          fake.fetchRejection = original;
+        }
 
-      expect((await campaignRow(made.campaign.id))?.status).toBe('active');
-      const rows = await rejectionRows(made.campaign.id);
-      expect(rows).toHaveLength(1);
-      const [rejection] = rows;
-      const adA = await svc().from('ads').select('id').eq('campaign_id', made.campaign.id).eq('variant', 'A').single();
-      expect(rejection?.ad_id).toBe(adA.data?.id);
-      expect(rejection?.explain_status).toBe('ready');
-      const ads = await svc().from('ads').select('variant, status').eq('campaign_id', made.campaign.id).order('variant');
-      expect(ads.data).toEqual([
-        { variant: 'A', status: 'rejected' },
-        { variant: 'B', status: 'active' },
-      ]);
+        expect((await campaignRow(made.campaign.id))?.status).toBe('active');
+        const rows = await rejectionRows(made.campaign.id);
+        expect(rows).toHaveLength(1);
+        const [rejection] = rows;
+        const adA = await svc()
+          .from('ads')
+          .select('id')
+          .eq('campaign_id', made.campaign.id)
+          .eq('variant', 'A')
+          .single();
+        expect(rejection?.ad_id).toBe(adA.data?.id);
+        expect(rejection?.explain_status).toBe('ready');
+        const ads = await svc()
+          .from('ads')
+          .select('variant, status')
+          .eq('campaign_id', made.campaign.id)
+          .order('variant');
+        expect(ads.data).toEqual([
+          { variant: 'A', status: 'rejected' },
+          { variant: 'B', status: 'active' },
+        ]);
 
-      const view = (await json(await get(ab, ab.owner, made.campaign.id, rejection?.id ?? '')));
-      expect(view).toMatchObject({ partial: true, variant: 'A', fix_applicable: false });
-      const res = await apply(ab, ab.owner, made.campaign.id, rejection?.id ?? '');
-      expect(res.status).toBe(409);
-      expect((await problemOf(res)).meta).toMatchObject({ reason: 'partial_rejection' });
-      expect((await campaignRow(made.campaign.id))?.status).toBe('active');
-    },
+        const view = await json(await get(ab, ab.owner, made.campaign.id, rejection?.id ?? ''));
+        expect(view).toMatchObject({ partial: true, variant: 'A', fix_applicable: false });
+        const res = await apply(ab, ab.owner, made.campaign.id, rejection?.id ?? '');
+        expect(res.status).toBe(409);
+        expect((await problemOf(res)).meta).toMatchObject({ reason: 'partial_rejection' });
+        expect((await campaignRow(made.campaign.id))?.status).toBe('active');
+      },
   },
 });

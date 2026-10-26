@@ -282,7 +282,7 @@ Détail chiffré : [plans-et-credits.md](../produit/plans-et-credits.md).
 - Page de paiement hébergée (*checkout session*) → **webhook signé** SasPay → activation.
 - **Clé d'idempotence obligatoire** sur tout paiement (sinon une relance réseau débite deux fois).
 - **Frais SasPay payés par le client** (Q46). **Pas de remboursement** (Q47).
-- **Délai de grâce : 3 jours** après l'échéance (Q48), puis **lecture seule** : statistiques visibles, aucune nouvelle campagne, génération ni modification ; les campagnes en cours continuent chez Meta.
+- **Délai de grâce : 3 jours** après l'échéance (Q48 ; décision de la personne 26/10/2026) : lecture, achat de crédits et mise en pause ; aucune nouvelle campagne, publication, reprise, génération ni modification. Puis l'espace est **verrouillé** : plus rien sauf renouveler, mettre en pause, écrire au support et gérer son compte ; un essai terminé sans abonnement est verrouillé tout de suite. À la fin de la grâce, **toutes les publicités du compte sont mises en pause automatiquement** (session S19b, prérequis bloquant de mise en production) ; la **reprise est manuelle** après renouvellement.
 - Mois de quota à partir de la **date de souscription** (Q12).
 - **Preuve de paiement** (capture + numéro de transaction) envoyée par l'utilisateur → visible dans l'administration → activation manuelle possible (Q38).
 

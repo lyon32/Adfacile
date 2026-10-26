@@ -138,7 +138,7 @@ Même logique que l'étape 4 du parcours campagne, sans créer de campagne :
 
 ### 4.6 Fin d'abonnement
 - Les campagnes en cours **continuent** chez Meta, puisque c'est le compte du client.
-- Pubeka passe en **lecture seule** : statistiques consultables, aucune nouvelle campagne, aucune modification, aucune génération.
+- **Grâce de 3 jours** (formule payée échue ou annulée) : lecture, achat de crédits et mise en pause ; aucune nouvelle campagne, modification ni génération (décision de la personne 26/10/2026). Ensuite l'espace est **verrouillé** : plus d'accès à rien, sauf s'abonner, mettre en pause, écrire au support et gérer son compte ; Pubeka mettra alors **automatiquement** en pause toutes les publicités du compte (session S19b, prérequis **bloquant** de mise en production avec la route `pause-all`) ; la **reprise est manuelle** après le renouvellement (« Reprendre mes pubs », jamais automatique) ; en attendant, la personne peut les arrêter dans le Gestionnaire de publicités de Meta. **Essai terminé sans abonnement : verrouillé tout de suite.**
 
 ---
 

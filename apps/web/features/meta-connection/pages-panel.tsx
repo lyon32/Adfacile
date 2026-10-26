@@ -8,6 +8,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { ApiError } from '../../lib/api';
 import { SelectField } from '../settings/select-field';
+import { useRenewalMessage, useWorkspaceWritable } from '../shell/use-writable';
 import { usePages, useUpdatePage, type MetaPage } from './api';
 
 type Role = 'owner' | 'editor' | 'viewer';
@@ -19,7 +20,7 @@ export function pageErrorKey(
   if (!(error instanceof ApiError)) return 'generic';
   if (error.code === 'page_limit_reached') return 'limit';
   if (error.code === 'conflict') return 'locked';
-  if (error.code === 'workspace_read_only') return 'read_only';
+  if (error.code === 'workspace_read_only' || error.code === 'workspace_locked') return 'read_only';
   if (error.code === 'role_insufficient' || error.code === 'forbidden') return 'forbidden';
   return 'generic';
 }
@@ -40,8 +41,9 @@ function PageRow({
   }) => void;
 }): ReactNode {
   const t = useTranslations('meta.pages');
-  const canToggle = role === 'owner';
-  const canEdit = role === 'owner' || role === 'editor';
+  const writable = useWorkspaceWritable();
+  const canToggle = role === 'owner' && writable;
+  const canEdit = (role === 'owner' || role === 'editor') && writable;
   const locked = page.locked_for_period === true && page.active;
   const switchId = `page-active-${page.id}`;
   return (
@@ -113,6 +115,8 @@ function PageRow({
 
 export function PagesPanel({ workspaceId, role }: { workspaceId: string; role: Role }): ReactNode {
   const t = useTranslations('meta.pages');
+  const writable = useWorkspaceWritable();
+  const renewal = useRenewalMessage();
   const pages = usePages(workspaceId);
   const update = useUpdatePage(workspaceId);
 
@@ -169,6 +173,11 @@ export function PagesPanel({ workspaceId, role }: { workspaceId: string; role: R
           {t(`errors.${pageErrorKey(update.error)}`)}
         </p>
       ) : null}
+      {writable ? null : (
+        <p className="text-meta text-muted">
+          {renewal ? t('renew_to_edit') : t('admin_read_only')}
+        </p>
+      )}
       {role === 'owner' ? null : <p className="text-meta text-muted">{t('only_owner')}</p>}
     </div>
   );

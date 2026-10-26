@@ -58,7 +58,9 @@ La connexion elle-même (Google, Apple, e-mail + mot de passe, lien magique) pas
 | Inviter, retirer, changer un rôle | ✅ | ❌ | ❌ |
 | Connecter ou déconnecter Meta | ✅ | ❌ | ❌ |
 
-**Espace en lecture seule** (abonnement expiré après 3 jours de grâce) : toute écriture renvoie `403 workspace_read_only`, **sauf** la mise en pause d'une campagne, le paiement et les tickets de support.
+**Espace en grâce** (3 jours après la fin de période) ou **en lecture seule** décidée par l'administration : toute écriture renvoie `403 workspace_read_only`, **sauf** la mise en pause d'une campagne, le paiement, la preuve de paiement et les tickets de support. **Espace verrouillé** (essai terminé sans abonnement, ou grâce écoulée) : toute route d'espace, lecture comprise, renvoie `403 workspace_locked`, sauf la pause, le paiement, la preuve de paiement, le support et la lecture de l'état de l'espace.
+
+S19 : `Workspace.status` est l'accès réel de l'espace (`active`, `grace`, `locked`, `read_only`, `suspended`), calculé à chaque requête avec l'échéance de l'abonnement ; `grace_until` est la fin de la grâce de 3 jours ; `status_cause` dit pourquoi. L'essai terminé sans abonnement donne `locked` sans grâce (décision de la personne 26/10/2026). `locked` refuse toute route d'espace, lecture comprise (`403 workspace_locked`), sauf celles qui déclarent `allowLocked` ou `writable: 'not_suspended'`. Le test `server/http/write-routes.test.ts` classe chaque route d'écriture du contrat (`writable: true` partout, sauf les actions ✱ de SECURITY_NOTES §2.1) et échoue pour une route non classée.
 
 ---
 
@@ -142,8 +144,9 @@ Liste fermée : tout nouveau code doit être ajouté à l'énumération `ErrorCo
 | `plan_feature_locked` | 402 | Fonction absente de la formule (ex. Optimiseur en Starter) | Propose la formule supérieure |
 | `forbidden` | 403 | Origine refusée, action interdite | Message neutre |
 | `role_insufficient` | 403 | Rôle trop faible (ex. `viewer` qui publie) | « Demande au propriétaire » |
-| `workspace_read_only` | 403 | Abonnement expiré (après la grâce) | Bandeau « Renouvelle pour modifier » |
+| `workspace_read_only` | 403 | Pendant la grâce de 3 jours après la fin de période (lecture, achat de crédits et pause seulement), ou lecture seule décidée par l'administration | Bandeau « Renouvelle avant le JJ/MM » |
 | `workspace_suspended` | 403 | Espace suspendu par l'administration | Lien vers le support |
+| `workspace_locked` | 403 | Espace verrouillé : essai terminé sans abonnement, ou grâce de 3 jours écoulée (décision de la personne du 26/10/2026). Seuls s'abonner ou renouveler, mettre en pause, écrire au support et gérer son compte restent permis | Écran « Choisis une formule » ou « Renouvelle » |
 | `mfa_required` | 403 | Réauthentification récente nécessaire | Demande de se reconnecter |
 | `trial_already_used` | 403 | Essai déjà utilisé sur ce compte | Propose une formule |
 | `not_found` | 404 | Introuvable, autre espace, ou `/admin` sans droits | Page « introuvable » |

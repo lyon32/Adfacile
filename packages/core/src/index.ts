@@ -2,6 +2,9 @@
 export * from './context';
 export * from './account/me';
 export * from './public/public-info';
+export * from './workspaces/access';
+// Règle pure de l'accès (S19), ré-exportée pour que les tests de web la comparent à la règle SQL (web n'importe pas billing).
+export { effectiveAccess, workspaceAccess } from '@pubeka/billing';
 export * from './workspaces/guards';
 export * from './workspaces/members';
 export * from './workspaces/plan-limits';

@@ -12,6 +12,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@pubeka/billing": "workspace:*",
     "@pubeka/contracts": "workspace:*",
     "@pubeka/db": "workspace:*",
     "@pubeka/platforms": "workspace:*",

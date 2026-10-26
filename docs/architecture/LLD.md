@@ -351,7 +351,7 @@ Seules les fonctions **non triviales** sont listées. Les signatures sont en Typ
 type Access =
   | { auth: 'none' }                                    // /public/*
   | { auth: 'user' }                                    // /me, /notifications
-  | { auth: 'member'; roles?: MemberRole[]; writable?: boolean } // /workspaces/{ws}/…
+  | { auth: 'member'; roles?: MemberRole[]; writable?: boolean | 'not_suspended'; allowLocked?: boolean } // /workspaces/{ws}/… ; allowLocked : route permise quand l'espace est VERROUILLÉ (pause, lecture de l'espace) ; toute autre route refuse `workspace_locked`, lecture comprise
   | { auth: 'admin' }                                   // /admin/* (aal2, sinon 404)
   | { auth: 'webhook'; provider: WebhookProvider };
 
@@ -378,7 +378,7 @@ type ApiResult =
 
 Ordre fixe des contrôles (ne pas le changer) : `request_id` → maintenance → `Origin` (si écriture avec cookie) → session → appartenance → rôle → espace modifiable → limite de débit → idempotence → validation du corps → *handler*. Toute exception non `AppError` devient `500 internal_error`, envoyée à Sentry avec le `request_id`.
 
-`writable: true` est **obligatoire** sur toute écriture, sauf les trois exceptions de la lecture seule (API_SPEC §2.3) : pause d'une campagne, paiement, tickets.
+`writable: true` (seul l'état `active` écrit : grâce → `workspace_read_only`, verrouillé → `workspace_locked`) est **obligatoire** sur toute écriture, sauf les exceptions ✱ de la lecture seule (API_SPEC §2.3, SECURITY_NOTES §2.1) : pause d'une campagne, tickets et assistant, profil. Le paiement, la preuve de paiement et l'annulation d'une génération en file (✱ en lecture seule, mais refusés en suspension, décision 4) déclarent `writable: 'not_suspended'` : seule la suspension les refuse (`workspace_suspended`). Le test `write-routes.test.ts` classe chaque route d'écriture.
 
 ### 6.2 Erreurs — `packages/contracts/src/errors.ts` et `apps/web/server/http/problem.ts`
 
@@ -529,9 +529,23 @@ Table finale : **22 transitions** sur 9 états × 12 événements (108 paires, 8
 ### 6.9 Abonnement et montants — `packages/billing/src/`
 
 ```ts
-export function workspaceAccess(sub: { status: SubscriptionStatus; period_end: Date; grace_until: Date | null }, now: Date):
-  'active' | 'grace' | 'read_only';
-// grâce = 3 jours après period_end ; ensuite lecture seule.
+export function workspaceAccess(sub: AccessSubscription, now: Date): 'active' | 'grace' | 'locked';
+// Décision de la personne 26/10/2026 : en période : actif ; essai (`trialing`) terminé : VERROUILLÉ tout de suite ; formule payée
+// ou annulée (`canceled`) échue : grâce de 3 jours (`grace_until` prolongé par l'administration prime), puis VERROUILLÉ ;
+// statut d'abonnement `read_only` (hérité) ou date/heure illisible : verrouillé. Frontières à la milliseconde.
+export function effectiveAccess(stored: 'active' | 'read_only' | 'suspended', sub: AccessSubscription | null, now: Date):
+  'active' | 'grace' | 'locked' | 'read_only' | 'suspended';
+// suspension et lecture seule posées par l'administration passent avant l'abonnement ; sans abonnement : 'active' (l'essai démarre en S24).
+export function accessCause(stored, sub, now): 'grace' | 'trial_ended' | 'subscription_ended' | 'admin' | null;
+export function graceEndsAt(sub: AccessSubscription): Date | null;
+export function lockAt(sub: AccessSubscription): Date | null;
+// `lockAt` = l'instant EXACT du verrouillage (fin d'essai, ou fin de grâce) : la session S19b (pause automatique des publicités à la
+// fin de la grâce, tâche planifiée + reprise après renouvellement) s'en sert pour savoir quels espaces traiter.
+// Reprise MANUELLE (décision confirmée le 26/10/2026) : la pause automatique de S19b n'est jamais suivie d'une reprise automatique ; bouton « Reprendre mes pubs ».
+// PRÉREQUIS BLOQUANT de mise en production, à livrer dans S19b : `POST /workspaces/{id}/campaigns/pause-all` (owner/editor, `allowLocked`, idempotente) pour le bouton de l'écran verrouillé ET la tâche de fin de grâce.
+// `packages/core/src/workspaces/access.ts` : `loadWorkspaceAccess(db, svc, workspaceId, now)` évalue l'accès À CHAQUE requête
+// (api(), callback Meta, acceptation d'invitation) : aucune tâche planifiée n'est nécessaire pour finir la grâce. La base applique la
+// même règle (`private.ws_access`, `ws_writable`, migration 0021), comparée à celle-ci par un test sur une grille.
 
 export function upgradeQuote(current: Plan, target: Plan, sub: { period_end: Date }, now: Date):
   { amount_xaf: number; extra_credits: number; keeps_period_end: Date };

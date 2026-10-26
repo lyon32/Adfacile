@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
+import { AccessBanner } from './access-banner';
+import { LockedNotice, LockedScreen } from './locked-screen';
 import { AccountPanel } from './account-panel';
 import { Logo } from './logo';
 import { ACCOUNT_ITEMS, MENU_ITEMS, TAB_ITEMS, isActive, type NavItem } from './nav-config';
@@ -186,7 +188,13 @@ export function AppShell({
 }): ReactNode {
   const t = useTranslations('shell');
   const pathname = usePathname();
+  const session = useSession();
   const [accountOpen, setAccountOpen] = useState(false);
+  // Espace verrouillé : un seul écran remplace le contenu, sauf l'abonnement, le support et le profil (qui restent joignables).
+  const lockedState = session.workspace?.status === 'locked';
+  const locked =
+    lockedState &&
+    !['/abonnement', '/support', '/reglages/profil'].some((href) => isActive(pathname, href));
   const openAccount = (): void => {
     setAccountOpen(true);
   };
@@ -206,8 +214,11 @@ export function AppShell({
           tabIndex={-1}
           className="mx-auto w-full max-w-5xl px-4 pt-6 pb-28 outline-none min-[980px]:px-10 min-[980px]:pt-10 min-[980px]:pb-16"
         >
-          {pathname === '/' || pathname.startsWith('/bienvenue') ? null : banner}
-          {children}
+          {lockedState ? null : <AccessBanner />}
+          {/* Verrouillé : JAMAIS le bandeau du haut (il lit les statistiques, refusées en `workspace_locked`), même sur les pages restées joignables. */}
+          {lockedState || pathname === '/' || pathname.startsWith('/bienvenue') ? null : banner}
+          {lockedState && !locked ? <LockedNotice /> : null}
+          {locked ? <LockedScreen /> : children}
         </main>
       </div>
       <MobileTabs pathname={pathname} onOpenAccount={openAccount} />

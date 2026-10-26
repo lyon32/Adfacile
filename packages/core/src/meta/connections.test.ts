@@ -106,7 +106,7 @@ describe('completeMetaConnect : refus avant tout appel à Meta', () => {
       connector?: FakeMetaConnector;
     } = {},
   ) => {
-    const svc = opts.svc ?? new FakeClient().reply(ok(true));
+    const svc = opts.svc ?? new FakeClient().reply(ok(true), ok([]));
     const connector = opts.connector ?? new FakeMetaConnector();
     const result = await completeMetaConnect(
       plainCtx(opts.db ?? new FakeClient(), svc),
@@ -197,6 +197,7 @@ describe('completeMetaConnect : connexion', () => {
     const connector = new FakeMetaConnector();
     const svc = new FakeClient().reply(
       ok(true), // state consommé
+      ok([]), // abonnement (accès de l'espace)
       ok(CONN), // upsert_meta_connection
       ...STARTER_PLAN,
       ok(null), // upsert ad_accounts
@@ -244,6 +245,7 @@ describe('completeMetaConnect : connexion', () => {
       });
     const svc = new FakeClient().reply(
       ok(true),
+      ok([]), // abonnement
       ok(CONN),
       ...STARTER_PLAN,
       ok(null),
@@ -270,7 +272,7 @@ describe('completeMetaConnect : connexion', () => {
     async (code) => {
       const connector = new FakeMetaConnector();
       connector.exchangeCode = () => Promise.reject(new AppError(code));
-      const svc = new FakeClient().reply(ok(true));
+      const svc = new FakeClient().reply(ok(true), ok([]));
       const result = await completeMetaConnect(
         plainCtx(memberDb(), svc),
         { state: stateFor({ returnTo: 'onboarding' }), code: 'abc' },
@@ -278,7 +280,7 @@ describe('completeMetaConnect : connexion', () => {
       );
       expect(result.location).toBe('/bienvenue/meta?meta=error&reason=meta');
       // Aucun jeton, aucune connexion enregistrés.
-      expect(svc.calls.map((c) => c.target)).toEqual(['rpc:record_webhook_event']);
+      expect(svc.calls.map((c) => c.target)).toEqual(['rpc:record_webhook_event', 'subscriptions']);
     },
   );
 
@@ -287,7 +289,7 @@ describe('completeMetaConnect : connexion', () => {
     connector.exchangeCode = () => Promise.reject(new Error('panne de la base'));
     await expect(
       completeMetaConnect(
-        plainCtx(memberDb(), new FakeClient().reply(ok(true))),
+        plainCtx(memberDb(), new FakeClient().reply(ok(true), ok([]))),
         { state: stateFor(), code: 'abc' },
         metaDeps(connector),
       ),
