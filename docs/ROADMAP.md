@@ -45,7 +45,7 @@
 | 2. Interface de base | S08-S09 | ✅ ✅ |
 | 3. Meta | S10-S12 | ✅ ✅ ✅ |
 | 4. Agents et création de campagne | S13-S16 | ✅ ⬜ ⬜ ⬜ |
-| 5. Vie de la campagne | S17-S19 | ✅ ⬜ ⬜ |
+| 5. Vie de la campagne | S17-S19 | ✅ ⬜ ✅ |
 | 6. Images | S20-S23 | ⬜ ⬜ ⬜ ⬜ |
 | 7. Argent | S24-S26 | ⬜ ⬜ ⬜ |
 | 8. Notifications, support, Optimiseur | S27-S29 | ⬜ ⬜ ⬜ |
@@ -214,6 +214,14 @@
 - **Livrables** : `workspaceAccess()` ; `writable` vérifié sur toutes les routes existantes ; bandeaux ; pause toujours permise.
 - **Fait quand** : parcours P5 au vert ; test qui liste les routes d'écriture et vérifie que seules les actions ✱ échappent à la lecture seule.
 - **Hors périmètre** : paiement (S25).
+- **État (S19, 26/10/2026)** : états `active` / `grace` (3 jours) / `locked` (code `workspace_locked`), barrière base de données (migration 0021), bandeaux et écran verrouillé. Décisions de la personne : essai terminé sans abonnement = verrouillé tout de suite ; abonnement terminé ou annulé = grâce de 3 jours (statistiques, crédits, pause) puis verrouillé ; **pas de livraison en production sans S19b**.
+
+#### S19b · Pause automatique en fin de grâce · M · après : S19, S17 · 🚫 bloque S36
+- **But** : à la fin de la grâce de 3 jours (ou à la fin d'un essai sans abonnement), toutes les publicités du compte sont mises en pause chez Meta, sans toucher aux autres comptes (décision de la personne, 26/10/2026) ; la reprise est **manuelle** après le renouvellement.
+- **Lire** : SECURITY_NOTES §2.1 bis (prérequis `pause-all`) · APPFLOW §19 · TRD TR-PAY-07 · EC-PAY-11 · JOURNAL S17 et S19 · packages/billing (`lockAt`, `graceEndsAt`).
+- **Livrables** : route `POST /workspaces/{id}/campaigns/pause-all` (propriétaire et éditeur, `allowLocked`, idempotente, `Idempotency-Key`) ; tâche planifiée Trigger.dev (qui repère les espaces dont la grâce est finie et met leurs pubs en pause, rejouable sans double effet, jamais de reprise automatique) ; bouton « Mettre toutes mes publicités en pause » sur l'écran verrouillé ; bouton « Reprendre mes pubs » après renouvellement (confirmation avant dépense) ; la pause n'est jamais bloquée par `PUBEKA_META_PUBLISH`.
+- **Fait quand** : espace en grâce puis verrouillé avec des pubs actives : toutes en pause chez la fausse Meta, aucun autre compte touché ; renouvellement : pubs toujours en pause jusqu'au clic ; relance de la tâche sans double effet ; test d'horloge fixée aux frontières (J+3 exact) ; variables d'environnement Trigger.dev posées et tâche prouvée sur staging.
+- **Hors périmètre** : paiement (S25), rappels par e-mail (S26).
 
 ### Phase 6 — Images
 
@@ -267,6 +275,7 @@
 - **Livrables** : route `payment-proofs` (+ ticket « Paiement ») ; parrainage (2 + 2 crédits au premier paiement du filleul) ; rappels J-3, J-1, J0 et fin de grâce ; écrans `/abonnement/preuve`, `/parrainage`.
 - **Fait quand** : TR-PAY-11 ; EC-PAY-08, 12 ; tâches de rappel lancées avec une horloge fixée.
 - **Hors périmètre** : traitement des preuves par l'administration (S31).
+- **Dépendance (S19)** : la route `uploads` et la politique de stockage `storage_upload_own_workspace` exigent `ws_writable()` (état `active` seulement depuis la migration 0021) : un client en grâce ou verrouillé ne peut pas envoyer une preuve de paiement. Prévoir une route et une politique de dépôt dédiées aux actions ✱ (non suspendu), en nouvelle migration.
 
 ### Phase 8 — Notifications, support, Optimiseur
 
@@ -283,6 +292,7 @@
 - **Livrables** : routes `tickets` et messages, pièces jointes ; agent Assistant avec l'état du compte (SSE) ; bulle d'aide sur tous les écrans ; écrans `/support`.
 - **Fait quand** : TR-SUP-01 ; l'Assistant propose un ticket quand il ne sait pas (test) ; banc vert.
 - **Hors périmètre** : réponse depuis l'administration (S31).
+- **Dépendance (S19)** : les pièces jointes passent par `uploads` et la politique de stockage `ws_writable()` (état `active` seulement depuis la migration 0021) : le support doit rester utilisable en grâce et verrouillé (action ✱). Même route et politique de dépôt dédiées que S26.
 
 #### S29 · Optimiseur et statistiques premium · M · après : S17
 - **But** : des suggestions chiffrées, appliquées seulement si le client le veut.
@@ -339,6 +349,7 @@
 - **But** : le MVP chez les clients.
 - **Lire** : CI_CD §5, §9 · TRD §17 · TESTING §8.
 - **Livrables** : variables de production (ENV_SETUP §2), Supabase Pro, première exécution de `release.yml`, vérification post-lancement.
+- **Prérequis bloquants (ne pas lancer sans eux)** : **S19b livrée** (le bandeau de grâce et l'écran verrouillé promettent la pause automatique des publicités et le bouton « Reprendre mes pubs ») ; variables d'environnement Trigger.dev posées (sinon aucune tâche planifiée ne tourne : synchronisation, taux de change, pause automatique) ; **S14, S15, S16 et S18 cochées ✅** (tests réels).
 - **Fait quand** : **les 8 critères de TRD §17 sont vrais**, chacun avec sa preuve.
 - **Hors périmètre** : —
 

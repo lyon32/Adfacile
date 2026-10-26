@@ -113,6 +113,7 @@ La session est finie quand **tout** ce qui suit est vrai, avec la preuve dans la
 | S18     | `packages/agents/src/moderateur`, `core/campaigns/rejections`, `api/…/rejections`                                                                                    |
 | S18b    | `packages/platforms` (modification d'une publicité), `core/campaigns` (modification, correction d'un refus), `api/…/campaigns/…/{update,apply-fix}`, `web/features/campaigns` (onglet Réglages) |
 | S19     | `packages/billing` (`workspaceAccess`), `web/server/http` (`writable`), bandeaux dans `web/features/shell`                                                            |
+| S19b    | `core/campaigns` (pause de toutes les pubs, reprise), `api/…/campaigns/pause-all` et reprise, `jobs/src/schedules` (fin de grâce), `web/features/shell` (écran verrouillé) |
 | S20     | `packages/media` (catalogue, prix, aiguilleur), `api/media-models`                                                                                                    |
 | S21     | `packages/media/src/providers`, `core/generations`, `jobs/src/tasks/media-*`, `api/…/generations`, `api/webhooks/[provider]`                                         |
 | S22     | `packages/media/src/layers`, `packages/agents/src/designer`, `core/visuals`                                                                                           |
